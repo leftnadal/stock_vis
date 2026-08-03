@@ -33,7 +33,18 @@ from apps.chain_sight.services.peer_domain_tagging import (
 from packages.shared.stocks.models import Stock
 
 OUTPUT_DIR = "outputs/peer_domain_tagging"
-RATE_SLEEP_S = 4.2  # Gemini free 15 RPM 안전 여유
+RATE_SLEEP_S = 4.2  # Gemini free 15 RPM 안전 여유(유료는 --rate-sleep로 완화)
+
+# Gemini 2.5 Flash 유료 공시 단가(USD/1M tokens, 2026-01 기준). 실단가 = 실측 토큰 × 단가.
+PRICE_INPUT_PER_1M = 0.30
+PRICE_OUTPUT_PER_1M = 2.50
+
+
+def _usd_cost(prompt_tokens, completion_tokens):
+    return (
+        prompt_tokens / 1_000_000 * PRICE_INPUT_PER_1M
+        + completion_tokens / 1_000_000 * PRICE_OUTPUT_PER_1M
+    )
 
 
 def _norm_pair(a, b):
@@ -62,6 +73,8 @@ class Command(BaseCommand):
         parser.add_argument("--dry-run", action="store_true", help="DB 무기록·CSV만(기본)")
         parser.add_argument("--limit", type=int, default=0, help="소표본 상한(0=무제한)")
         parser.add_argument("--force", action="store_true", help="이미 태깅된 쌍도 재태깅")
+        parser.add_argument("--rate-sleep", type=float, default=RATE_SLEEP_S,
+                            help=f"콜 간 sleep 초(기본 {RATE_SLEEP_S}=free. 유료는 완화 가능)")
         parser.add_argument("--pilot-csv", type=str, default="",
                             help="A3 파일럿: 기존 실험 CSV를 파이프라인 판정에 태움(신규 LLM 0)")
 
@@ -72,7 +85,8 @@ class Command(BaseCommand):
             return
         apply_db = opts["apply"]
         dry_run = opts["dry_run"] or not apply_db  # 명시 --apply 아니면 항상 dry-run
-        self._run(dry_run=dry_run, limit=opts["limit"], force=opts["force"])
+        self._run(dry_run=dry_run, limit=opts["limit"], force=opts["force"],
+                  rate_sleep=opts["rate_sleep"])
 
     # ── 쌍 수집 + 컨텍스트 ──
     def _collect_pairs(self, force):
@@ -93,7 +107,7 @@ class Command(BaseCommand):
             pairs[key] = pairs.get(key, False) or tagged
         return pairs
 
-    def _run(self, *, dry_run, limit, force):
+    def _run(self, *, dry_run, limit, force, rate_sleep=RATE_SLEEP_S):
         pairs = self._collect_pairs(force)
         todo = [p for p, tagged in pairs.items() if force or not tagged]
         skipped_tagged = len(pairs) - len(todo)
@@ -134,10 +148,20 @@ class Command(BaseCommand):
 
         from apps.market_pulse.llm.client import generate_with_circuit
 
+        # 실단가 집계: LLMRawResponse의 usage 포집(래퍼가 .text만 반환하므로 여기서 누적).
+        usage = {"prompt": 0, "completion": 0, "latency_ms": 0, "calls": 0}
+
         def llm_call(system, contents):
             resp = generate_with_circuit(system_instruction=system, contents=contents)
+            usage["prompt"] += getattr(resp, "prompt_tokens", 0) or 0
+            usage["completion"] += getattr(resp, "completion_tokens", 0) or 0
+            usage["latency_ms"] += getattr(resp, "latency_ms", 0) or 0
+            usage["calls"] += 1
             return getattr(resp, "text", "") or ""
 
+        self.stdout.write(
+            f"rate_sleep={rate_sleep}s · {'APPLY(prod 기록·증분)' if not dry_run else 'DRY-RUN'}"
+        )
         results = []
         json_fail = circuit_fail = 0
         n = len(todo)
@@ -161,47 +185,58 @@ class Command(BaseCommand):
                 circuit_fail += 1
                 self.stderr.write(f"  [{i}/{n}] LLM 오류: {type(e).__name__}: {e}")
                 if circuit_fail >= 3:
-                    self.stderr.write("HALT: 서킷/LLM 오류 3회 — 중단.")
+                    self.stderr.write("HALT: 서킷/LLM 오류 3회 — 중단(재개점 보존).")
                     break
-                time.sleep(RATE_SLEEP_S)
+                time.sleep(rate_sleep)
                 continue
+            circuit_fail = 0  # 성공 시 연속 카운터 리셋(3'연속'만 HALT)
 
             if not out["ok"]:
                 json_fail += 1
             results.append(((a, b), terc, same, out))
+            # 재개 안전: --apply면 콜당 즉시 DB 기록(중단 시 진척 보존 → 재실행이 skip).
+            if not dry_run:
+                self._write_pair_db(a, b, out)
             if len(results) >= 10 and json_fail / len(results) > 0.10:
                 self.stderr.write(
                     f"HALT: JSON 파싱붕괴 {json_fail}/{len(results)} > 10% — 프롬프트 재설계 필요."
                 )
                 break
-            if i % 20 == 0:
-                self.stdout.write(f"  진행 {i}/{n} (json_fail={json_fail})")
-            time.sleep(RATE_SLEEP_S)
+            # 1,000콜 단위 누계 요약(진행 로그).
+            if i % 1000 == 0:
+                adopt_c = sum(1 for _, _, _, o in results if o.get("adopted_tag"))
+                veto_c = sum(1 for _, _, _, o in results if o.get("veto"))
+                est_c = sum(1 for _, _, _, o in results if o.get("is_estimate"))
+                cost = _usd_cost(usage["prompt"], usage["completion"])
+                self.stdout.write(
+                    f"  [{i}/{n}] 채택={adopt_c} 거부권={veto_c} 추정={est_c} "
+                    f"json_fail={json_fail} 누계비용≈${cost:.4f}"
+                )
+            time.sleep(rate_sleep)
 
         if not dry_run:
-            self._write_db(results)
-            self.stdout.write(f"✅ DB 기록 {len(results)}쌍 (draft·status·machine_check, 승인본 무접촉)")
+            self.stdout.write(
+                f"✅ DB 증분 기록 {len(results)}쌍 (draft·status·machine_check, 승인본 무접촉)"
+            )
         else:
             self.stdout.write("dry-run: DB 무기록.")
 
         self._write_csv(results)
-        self._write_summary(results, json_fail, circuit_fail)
+        self._write_summary(results, json_fail, circuit_fail, usage)
 
     # ── DB 기록(쌍 단위 — 방향 엣지 양쪽에 동일 태그. 승인본 relation_domain 무접촉) ──
-    def _write_db(self, results):
-        from django.db import transaction
+    # 콜당 즉시 기록(재개 안전): 중단돼도 이미 기록된 쌍은 재실행 시 idempotent skip.
+    def _write_pair_db(self, a, b, out):
         from django.db.models import Q
-        with transaction.atomic():
-            for (a, b), _terc, _same, out in results:
-                RelationConfidence.objects.filter(
-                    Q(symbol_a=a, symbol_b=b) | Q(symbol_a=b, symbol_b=a),
-                    relation_type__in=PEER_RELATION_TYPES,
-                ).update(
-                    relation_domain_draft=out["draft"],
-                    domain_review_status=out["review_status"],
-                    domain_machine_check=out["machine_check"],
-                    # relation_domain(승인본)은 절대 미기록(하드 룰)
-                )
+        RelationConfidence.objects.filter(
+            Q(symbol_a=a, symbol_b=b) | Q(symbol_a=b, symbol_b=a),
+            relation_type__in=PEER_RELATION_TYPES,
+        ).update(
+            relation_domain_draft=out["draft"],
+            domain_review_status=out["review_status"],
+            domain_machine_check=out["machine_check"],
+            # relation_domain(승인본)은 절대 미기록(하드 룰)
+        )
 
     def _write_csv(self, results):
         path = os.path.join(OUTPUT_DIR, "peer_tag_batch.csv")
@@ -223,12 +258,17 @@ class Command(BaseCommand):
                 ])
         self.stdout.write(f"CSV: {path} ({len(results)}행)")
 
-    def _write_summary(self, results, json_fail, circuit_fail):
+    def _write_summary(self, results, json_fail, circuit_fail, usage=None):
         status = Counter(out["review_status"] for _, _, _, out in results)
         veto_n = sum(1 for _, _, _, out in results if out["veto"])
         est_n = sum(1 for _, _, _, out in results if out["is_estimate"])
         adopted = sum(1 for _, _, _, out in results if out["adopted_tag"])
         tags = Counter(out["adopted_tag"] for _, _, _, out in results if out["adopted_tag"])
+        # 거부권 발동 목록(감사).
+        vetoed = [
+            f"{a}↔{b}({terc}·{'동일' if same else '상이' if same is False else '?'})"
+            for (a, b), terc, same, out in results if out["veto"]
+        ]
         n = len(results) or 1
         summary = {
             "total": len(results),
@@ -236,10 +276,25 @@ class Command(BaseCommand):
             "review_status": dict(status),
             "adopted": adopted, "veto": veto_n,
             "veto_rate": round(veto_n / n, 4),
+            "veto_list": vetoed,
             "is_estimate": est_n, "estimate_rate": round(est_n / n, 4),
             "distinct_adopted_tags": len(tags),
             "tag_frequency_top": tags.most_common(30),
         }
+        if usage:
+            cost = _usd_cost(usage["prompt"], usage["completion"])
+            calls = usage["calls"] or 1
+            summary["usage"] = {
+                "calls": usage["calls"],
+                "prompt_tokens": usage["prompt"],
+                "completion_tokens": usage["completion"],
+                "avg_prompt_per_call": round(usage["prompt"] / calls, 1),
+                "avg_completion_per_call": round(usage["completion"] / calls, 1),
+                "avg_latency_ms": round(usage["latency_ms"] / calls, 1),
+                "total_cost_usd": round(cost, 6),
+                "cost_per_call_usd": round(cost / calls, 8),
+                "price_basis": f"in ${PRICE_INPUT_PER_1M}/1M · out ${PRICE_OUTPUT_PER_1M}/1M (Gemini 2.5 Flash paid)",
+            }
         path = os.path.join(OUTPUT_DIR, "summary.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(summary, f, ensure_ascii=False, indent=2)
@@ -248,6 +303,13 @@ class Command(BaseCommand):
             f"estimate={est_n}({summary['estimate_rate']:.1%}) "
             f"status={dict(status)} distinct_tags={len(tags)} json_fail={json_fail} → {path}"
         )
+        if usage:
+            u = summary["usage"]
+            self.stdout.write(
+                f"실단가: {u['calls']}콜 · in {u['prompt_tokens']}tok/out {u['completion_tokens']}tok "
+                f"· ${u['cost_per_call_usd']:.8f}/콜 · 총 ${u['total_cost_usd']:.6f} "
+                f"· 지연 {u['avg_latency_ms']:.0f}ms/콜"
+            )
 
     # ── A3 파일럿: 기존 실험 CSV(㉯ 결과)를 파이프라인 판정에 태움(신규 LLM 0) ──
     def _pilot(self, csv_path):
