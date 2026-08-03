@@ -8,6 +8,20 @@
 
 ---
 
+## [2026-08-03] D-L2X-AUTO-ADJUDICATION — L2-X 사람 전건검수 → 결정론 자동판정 + 감사 [chainsight]
+
+> 트랙: ⑳-3 L2-X 자동판정 전환. 배경: 대조자료 제공에도 사람이 LLM 주장 반박 구조적 곤란(15건 실검수 소견).
+
+**결정**: L2-X PEER 추측 태깅 판정을 **전건 사람 검수 폐기 → 결정론 자동 판정 + 사람은 판정기 감사만**. **채점용 LLM 호출 0**(순환 채점 금지 — 판정기는 결정론+실데이터만). sweep 재실행 없음(기존 240행에 판정 컬럼 추가).
+
+**판정기 3종**: ⑴ grounding(claim 용어 ↔ desc 접지) ⑵ market(가격상관 불일치 신호, 단독판정 아님) ⑶ cross(known_fact ∧ 저접지 = 과신).
+
+**grounding 전략(C 하이브리드)**: claim=한국어 / desc=영어 → SEC β `ground_evidence`(동일언어 substring) **직접 이식 불가**. `normalize()`만 재사용. 영어토큰 직매칭(심볼·회사명 제외) + 한→영 동의어 사전(데이터 파일 `peer_grounding_dict.json`, 버킷+normalized_tag+claim 빈출 시드). **en/syn 접지 비율 분리**(사전 갭이 진짜 ungrounded로 오염 방지, #79 교훈). ungrounded 빈출은 사전 보강 후 재집계(결정론=비용0).
+
+**Why**: LLM 자기보고(rationale)를 사람이 반증하기 어려움 → 판정 권위를 결정론 실데이터(FMP desc·가격상관)로 이전. 사람은 판정기 산출을 감사(동의/이견)만 → 확장성+객관성.
+
+**How to apply**: `peer_adjudicator.py`(3판정기)·`peer_tag_experiment --judge`(병합 CSV)·`--aggregate` v2(구간별 지표+감사 표본). 검수도구 감사 모드(grounded_ratio 헤더→[동의/이견]). 실측(240,LLM0): grounded 중앙 0.83·하·상이 과신 0.4(최고). 후속=verdict 회수 후 L2-SOURCE-DECISION.
+
 ## [2026-08-03] D-GATE-AUDIT-TRAIL — 도메인 태깅 게이트 판정 감사 추적 [chainsight]
 
 > 트랙: ⑳-3 S3-LAND S3. L1 프로덕션 파이프라인.
