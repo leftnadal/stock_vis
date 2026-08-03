@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useExplorationStore } from '@/lib/stores/explorationStore';
 import MarketGraphCanvas from './MarketGraphCanvas';
 import RelationCardList from './RelationCardList';
+import MindmapView from './MindmapView';
 
-type DrillView = 'list' | 'map';
+type DrillView = 'list' | 'mindmap' | 'map';
 
 /**
  * ⑳-3 S2 D-3 (지도-B): ego 모드 [지도] 토글 접기.
@@ -16,8 +17,15 @@ type DrillView = 'list' | 'map';
 const MAP_ENABLED = false;
 
 /**
+ * ⑳-3 S3-MINDMAP S5: 마인드맵(맵-3) 뷰 플래그.
+ * ON이면 ego 모드에 목록/마인드맵 토글 노출(기본=목록, 마인드맵은 opt-in).
+ * 라이브 스크린샷 검증(게이트) 후 유지/조정.
+ */
+const MINDMAP_ENABLED = true;
+
+/**
  * ego 드릴다운 래퍼 (⑳-2 S2/C안).
- * - ego 모드(centerSymbol 존재): 기본 = 목록(관계 카드 리스트). 지도-B로 [지도] 토글 접힘.
+ * - ego 모드(centerSymbol 존재): 기본 = 목록(관계 카드 리스트). MINDMAP_ENABLED면 마인드맵 토글.
  * - 비-ego(섹터/빈 상태): MarketGraphCanvas 그대로(기존 동작 불변).
  */
 export default function EgoDrilldown() {
@@ -29,15 +37,20 @@ export default function EgoDrilldown() {
     return <MarketGraphCanvas />;
   }
 
-  // 지도-B: 토글 숨김 → 목록(RelationCardList)만. MarketGraphCanvas는 코드 보존(미마운트).
-  if (!MAP_ENABLED) {
+  // 지도-B + 마인드맵 OFF: 토글 숨김 → 목록만.
+  if (!MAP_ENABLED && !MINDMAP_ENABLED) {
     return <RelationCardList />;
   }
+
+  const options: DrillView[] = MAP_ENABLED
+    ? (['list', 'mindmap', 'map'] as DrillView[])
+    : (['list', 'mindmap'] as DrillView[]);
+  const label: Record<DrillView, string> = { list: '목록', mindmap: '마인드맵', map: '지도' };
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1" role="tablist" aria-label="드릴다운 뷰 전환">
-        {(['list', 'map'] as DrillView[]).map((v) => (
+        {options.map((v) => (
           <button
             key={v}
             role="tab"
@@ -50,12 +63,14 @@ export default function EgoDrilldown() {
                 : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800',
             ].join(' ')}
           >
-            {v === 'list' ? '목록' : '지도'}
+            {label[v]}
           </button>
         ))}
       </div>
 
-      {view === 'list' ? <RelationCardList /> : <MarketGraphCanvas />}
+      {view === 'list' && <RelationCardList />}
+      {view === 'mindmap' && <MindmapView />}
+      {view === 'map' && <MarketGraphCanvas />}
     </div>
   );
 }
