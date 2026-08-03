@@ -1225,3 +1225,19 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 요청서 작성 시 실행 단계의 **전제 코드 경로를 실측 확증하지 않고** 문서(설계 의도)로 선행 기술. grounding 필드는 additive·미노출(설계상 read-path 무관)이었으나 요청서는 노출이 존재하는 듯 기술. 문서 선행이 코드 선행을 대체하지 못함(#79 변종).
 
 **해결·점검**: 지시서·요청서의 **각 실행 단계는 착수 前 전제 코드 경로를 grep/실측 확증** 후 비준. 부재 시 → 그 단계는 "구축 필요"로 재분류·별도 트랙 이관(사변 구축 금지). SEC β 사례 = D-SECB-GATE2-AMEND-1(G-d 제거→SECB-EXPOSURE 이관). cf. #79.
+
+## [chainsight] 파이프라인 배포 ≠ 데이터 적재 — 코드 착지가 DB 반영을 뜻하지 않음 (#83, 2026-08-03 S3-MINDMAP) [chainsight][process]
+
+**증상**: D-DOMAIN-AUTOMATION(도메인 태깅 파이프라인)이 배포·원장상 "완료"로 기록됐으나, S3-MINDMAP 착수 시 실측(S3-R)하니 `relation_domain`·`relation_domain_draft`·`domain_machine_check` **DB 전건 0**. 마인드맵 카테고리 재료가 전무 → 착수조건("relation_domain 승인본 반영")이 미충족인데 충족으로 오인될 뻔함.
+
+**원인**: 파이프라인 커맨드(`tag_relation_domains`)가 **dry-run(CSV만·DB무기록)으로만** 실행됐고 `--apply`(실기록)는 미실행. "코드/마이그레이션 착지 = 데이터 적재"로 착각. 태그는 검수 CSV에만 존재, DB엔 부재.
+
+**해결·점검**: ⑴ "파이프라인 배포"와 "데이터 적재"를 **원장에서 분리 기록**(배포=코드 착지, 적재=`--apply` 실행+행수 실측). ⑵ 다운스트림(마인드맵 등) 착수조건은 **DB 행수 실측으로 확증**(`.exclude(field__isnull=True).count()`), 원장 "완료" 라벨 신뢰 금지. ⑶ 본 건 복구 = S0 `backfill_review_domains`(검수 CSV→DB 133건). cf. #79·[[lesson_dev_prod_shared_db]].
+
+## [chainsight] 2단계 apply에서 키 변형 후 재실행 매칭 실패 — already-applied 감지 필요 (#84, 2026-08-03 REVIEW-P2 회고) [chainsight]
+
+**증상**: REVIEW-P2 실반영에서 `apply_review_verdicts --apply`(CHANGE 타입 교체) 후 `--apply-change-rev`가 build_plan을 재실행할 때, CHANGE 행의 원 키(PARTNER_WITH)가 이미 COMPETES_WITH로 바뀌어 forward-exact 매칭=0 → H-C(부분반영 금지) 오발·HALT. DB는 안전했으나(무변경 HALT) 2단계 진행이 막힘.
+
+**원인**: 매칭 키(symbol_a,symbol_b,relation_type)가 **반영으로 변형되는데**(CHANGE=type 교체, CHANGE_REV=방향 스왑), 2단계 커맨드가 매 단계 build_plan을 전량 재실행 → 이미 반영된 행이 원 키로 안 잡혀 unmatched=H-C. CHANGE_REV엔 already_swapped 멱등 감지가 있었으나 CHANGE엔 누락(비대칭).
+
+**해결·점검**: 키가 변형되는 반영은 **결과 키로 '이미 반영됨'을 감지**(already_applied: 결과 키+approved 확인)해 unmatched 대신 흡수 → 전체 재실행 idempotent. CHANGE·CHANGE_REV 대칭 처리. 교훈: 다단계 apply에서 매칭 키가 변형되면 각 단계의 재매칭이 앞 단계 결과를 삼킬 수 있음 — 멱등 감지를 모든 변형 유형에 대칭 적용.

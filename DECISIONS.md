@@ -8,6 +8,38 @@
 
 ---
 
+## [2026-08-03] D-MINDMAP-HYBRID-v2 — ego 마인드맵 3층 체계(SEC 도메인·시장 industry·뉴스) [chainsight][frontend]
+
+> 트랙: ⑳-3 S3-MINDMAP. 브랜치 `monorepo/sess-s3-mindmap`. D-MINDMAP(맵-3) 방향 개정. 선행 D-DOMAIN-AUTOMATION·D-REVIEW-VERDICT-VOCAB.
+
+**결정**: 마인드맵을 **3층 하이브리드**로 개정한다(순수 도메인 태그 마인드맵 폐기 — S3-R 실측: 태그가 심볼 엣지의 ~2-9%만 커버).
+- **L1 (SEC 도메인)**: `relation_domain`(승인본 태그) 보유 SEC 관계 → 태그별 상위 가지. 무태그 SEC는 관계 유형별 "유형 수납" 폴백.
+- **L2 (시장 Peer)**: PEER_OF → has_peer_source(경쟁·Peer)/동종산업 상위 구분 + 상대 노드 `industry_bucket` 하위 그룹. **엣지 무기록, 서빙 시 파생**(industry 변경 자동추종).
+- **L3 (뉴스)**: CO_MENTIONED → "뉴스 동반언급" 단일(기사 태그 하위그룹은 AV 복원 후).
+- **PRICE_CORRELATED 제외**(Peer 중복) — 건수만 투명화.
+
+**방향 개정 경위(2026-08-03)**: 자동화 우선(⓪-b) + 시장관계 카테고리 확장(①-C). S3-R 정찰이 ⑴ 도메인 태그 DB 0건(파이프라인 dry-run만) ⑵ 태그 커버리지 SEC 1.68%만 ⑶ ego API relation_domain None 하드코딩을 실측 → 순수 태그 마인드맵은 화면 90-98%가 미분류 잔여. 시장관계(PEER)를 industry 축으로 병용해야 의미 있음.
+
+**How to apply**: L1 태그=S0 backfill(CSV normalized_tag→relation_domain) + S1 자동 파이프라인. L2=`industry_buckets.industry_to_bucket`(128 industry→13 버킷) 서빙 파생. ego API additive(relation_domain 실값·노드 industry_bucket). FE=`egoToMindmap`(순수)+`MindmapView`(MINDMAP_ENABLED). industry 커버리지 94.1%(STEP0). ⚠️라이브 스크린샷 검증은 배포 게이트.
+
+## [2026-08-03] D-AUTO-SWITCH-ON — 도메인 태깅 자동승인 활성(잠정 0.75) [chainsight]
+
+**결정**: `DOMAIN_AUTO_APPROVE` env 스위치 ON(go-live=env+재기동 게이트). 임계 `DOMAIN_CONFIDENCE_THRESHOLD`=**0.75 잠정**.
+
+**Why**: D-DOMAIN-AUTOMATION 안전핀②(첫 배치 검수 후 활성)를 REVIEW-P2 검수 완료로 해제. 자동화 우선 방향 개정. 임계는 잠정 — 신규 관계 유입으로 검증 축적 필요.
+
+**How to apply**: `settings.DOMAIN_AUTO_APPROVE`(env 기본 false). **타입 변경 비자동 안전핀은 스위치 무관 항상 유지**(decide_gate 하드룰). 검수 verdict 270건은 자동 파이프라인 대상 제외(is_human_reviewed 보호 가드). **임계 0.75는 잠정 — 언앵커 40건 처리로 conf 기준점 확보 후 재확정**(TASKQUEUE REVIEW-UNANCHORED-40).
+
+## [2026-08-03] D-LLM-RECALL-RULE-v2 — LLM 재호출 금지 룰 축소(verdict 보유분 보호로) [chainsight][llm]
+
+> D-DOMAIN-AUTOMATION 안전핀·common-bugs #80 개정. preserve-both.
+
+**결정**: "LLM 재호출/재분류 금지" 룰의 범위를 **"검수 verdict 보유 270건 보호"로 축소**한다. verdict 미보유 관계(신규 SEC·PEER 등)에 대한 LLM 태깅·실험은 허용.
+
+**Why**: 원 룰은 "LLM 재호출 결과 자동반영 금지"(비결정성 drift 방지, #80). 그러나 자동화(D-AUTO-SWITCH-ON)와 L2-X 실험(PEER 추측 태깅)은 verdict 없는 관계에 LLM을 새로 적용하는 것이라 원 룰의 취지(인간 재정 덮어쓰기 금지)와 무충돌. 룰을 전면 금지가 아닌 "인간 판정 보호"로 정밀화.
+
+**How to apply**: 보호=`is_human_reviewed`(review_status有∧machine_check無) 가드가 커맨드·훅에서 verdict 270 제외. L2-X는 240쌍 한정·DB무기록. 타입 변경 비자동은 유지. verdict 보유분 재호출·자동반영은 여전히 금지.
+
 ## [2026-08-01] D-REVIEW-VERDICT-VOCAB — 검수 verdict 어휘 5종 + CHANGE_REV 방향 스왑 의미론 [chainsight]
 
 > 트랙: ⑳-3 REVIEW-P2. 브랜치 `monorepo/sess-review-p2`. 입력=동결 `docs/etc/review_batch_v6_labeled.csv`(270행). 선행 [D-DOMAIN-AUTOMATION](#).
