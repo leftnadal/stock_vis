@@ -21,7 +21,11 @@ from django.core.management.base import BaseCommand
 from django.db.models import Q
 
 from apps.chain_sight.models import RelationConfidence
-from apps.chain_sight.services.domain_tagging import SEC_RELATION_TYPES, tag_one
+from apps.chain_sight.services.domain_tagging import (
+    SEC_RELATION_TYPES,
+    exclude_human_reviewed,
+    tag_one,
+)
 from packages.shared.stocks.models import Stock
 
 OUTPUT_DIR = "outputs/domain_tagging"
@@ -43,6 +47,8 @@ class Command(BaseCommand):
         limit = opts["limit"]
 
         qs = RelationConfidence.objects.filter(relation_type__in=SEC_RELATION_TYPES)
+        # ⑳-3 S3-MINDMAP S1: 검수 verdict 보유 270건은 자동 파이프라인 대상에서 제외(보호).
+        qs = exclude_human_reviewed(qs)
         if new_only:
             qs = qs.filter(Q(relation_domain_draft__isnull=True))
         qs = qs.order_by("relation_type", "symbol_a", "symbol_b")

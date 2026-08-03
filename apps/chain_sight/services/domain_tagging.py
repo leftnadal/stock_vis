@@ -70,6 +70,27 @@ def _auto_approve_enabled() -> bool:
     return bool(getattr(settings, "DOMAIN_AUTO_APPROVE", False))
 
 
+# ── 검수 산출물 보호 (⑳-3 S3-MINDMAP S1) ─────────────────────
+# verdict 보유 270건(REVIEW-P2)은 자동 파이프라인의 재태깅·덮어쓰기 대상에서 제외한다.
+# 식별: domain_review_status는 있으나 domain_machine_check는 없음.
+#   - 파이프라인은 태깅 시 domain_machine_check를 '항상' 기록한다.
+#   - 따라서 review_status가 있는데 machine_check가 없으면 = 인간 검수(verdict) 산출.
+# 신규 SEC 관계(둘 다 null)는 제외되지 않아 정상 태깅되고, 파이프라인이 처리하면
+# machine_check가 생겨 이후 이 가드에 걸리지 않는다(자기 정합).
+def is_human_reviewed(rc) -> bool:
+    """RelationConfidence 인스턴스가 검수 verdict 보유(보호 대상)인가."""
+    return rc.domain_review_status is not None and rc.domain_machine_check is None
+
+
+def exclude_human_reviewed(qs):
+    """auto-tagging 대상 QuerySet에서 verdict 보유분(270) 제외."""
+    from django.db.models import Q
+
+    return qs.exclude(
+        Q(domain_review_status__isnull=False) & Q(domain_machine_check__isnull=True)
+    )
+
+
 # ── 프롬프트 계약 ─────────────────────────────────────────────
 _SYSTEM = (
     "너는 미국 상장사 간 관계를 분류하는 금융 애널리스트다. "
