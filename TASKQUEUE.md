@@ -1144,10 +1144,10 @@
 - 근거: `Stock.forward_pe` 미러 = price ÷ **forward EPS** 의존. forward EPS = analyst-estimates 소관인데 B2 확정으로 SFI는 estimates 무접촉(chain_sight.EstimateSnapshot 단일 정본, D-I1-4). → I-1의 유령필드 미러는 `analyst_target_price + analyst_rating_*×5`만, forward_pe 제외.
 - 후속: I-2/I-3에서 chain_sight estimates 정본(eps_avg)을 재사용해 forward_pe 산출·미러(이중 수집 없이). 소비 사이클 소관.
 
-## SFI-I1-BUGNUM — common-bugs 채번 후보 3건 (mgmt 배치 부여 대기, 2026-08-01) [harness]
+## SFI-I1-BUGNUM — common-bugs 채번 후보 3건 (✅ done, BATCH-20 부여 2026-08-01) [harness]
 - 규칙: D-NUMBERING-MGMT-ONLY(채번=mgmt 전용, build 세션은 채번 후보만). SFI-I1이 자가채번 #80/#81/#82 → origin/main 선점(MGMT-BATCH-18 `fa3e20de`)과 충돌 발견 → **채번 회수**(headings "채번 후보"로 정정).
-- 채번 후보(차기 mgmt 배치가 push 직전 재grep 후 실측+1 부여):
-  ⓐ get_rating `/stable/rating` 404 오경로 → ratings-snapshot (backend/stocks)
-  ⓑ analyst-estimates `period` 필수(누락=400, 6월 audit http-400 오진) (backend/stocks)
-  ⓒ RECON-STALE-BASE — 측정 세션 stale base false-missing → fresh origin/main + base HEAD 명기 (process/harness/git)
-- 위치: `sub_claude_md/common-bugs.md` 말미 3헤딩(현 "채번 후보" 표기). mgmt가 번호만 치환.
+- ✅ **BATCH-20 부여 완료**(push-직전 재grep, 실측+1 from #82):
+  ⓐ get_rating `/stable/rating` 404 오경로 → ratings-snapshot = **#83** (backend/stocks)
+  ⓑ analyst-estimates `period` 필수(누락=400, 6월 audit http-400 오진) = **#84** (backend/stocks)
+  ⓒ RECON-STALE-BASE — 측정 세션 stale base false-missing → fresh origin/main + base HEAD 명기 = **#85** (process/harness/git)
+- 부수: SFI-I1 채번 회수의 botched orphan(`get_rating (#80,...)` 본문 없는 중복 헤딩)도 BATCH-20이 제거(bare #80=0 복원).

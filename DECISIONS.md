@@ -42,6 +42,7 @@
 
 **How to apply**: common-bugs 3쌍 헤딩을 `#70a/#70b`·`#71a/#71b`·`#72a/#72b`로 개정 + 각 하단 한 줄 주석. 본문 무수정. 재발 방지 = D-NUMBERING-MGMT-ONLY(아래).
 - **적용 이력**: #78 3중복(규칙 시행 전 발생분)에 a/b/c 확장 적용 (BATCH-19) — a=20b-f2 GOAL-CREATE-UI(`3ba4cf00` 11:04)·b=SEAL-PUSH-1b heat 로그(`9540993a` 11:38)·c=SEC β R2 2-dot diff(`663b17e5` 12:54), 착지 시간순.
+- **적용 이력**: #80·#81 각 2중복에 a/b 확장 적용 (BATCH-20) — #80: a=COVERAGE-DETAIL migrate(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 LLM 모순(`6d610d67` 13:40) / #81: a=실행환경 절대경로(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 localStorage 캐시(`6d610d67` 13:40), 착지 시간순. ⚠b(REVIEW-P2)는 규칙 시행(07-31) 후 비mgmt 세션 채번 = 규칙 위반 경위(ⓑ 조사, 처방 디렉터 회부).
 
 ## [2026-07-31] D-NUMBERING-MGMT-ONLY — common-bugs 채번은 mgmt 세션 전용 (재발 방지) [harness]
 
@@ -5424,6 +5425,8 @@ S2-C gate는 타입 자동변경을 하지 않으므로(하드룰) **자동 재�
   - ① **`stale pending 백-어노테이션` = TH blocked**(`dep=TH-RUNTIME-DEPLOY`, 실존 ID → 설계대로 승격 제외).
   - ② **`실행 트리 정합` = #47 transient**(미머지 브랜치에서 health 실행 시 worktree HEAD ≠ origin/main으로 뜨는 구조적 신호 — no-ff 머지 후 post-merge에서 자동 해소. read-only/미머지 세션의 정상 동작).
   근거: 07-29 STRIP-REHOME-LAND에서 지시서가 "1 WARN(TH)"만 기대해 #47을 누락 → 문언상 "TH 외 WARN → HALT"에 걸려 사용자 판단을 재차 물음(불필요한 왕복). #47은 매 미머지 LAND의 표준 transient이므로 **상수로 못박아** 재발 방지. cf. DECISIONS 326 백-어노테이션(승격 후 첫 실측에서 동일 2종 WARN 확인). post-merge 기대값 = **14 OK / 1 WARN(TH) / 0 FAIL**(#47은 머지로 해소).
+
+**보강 — mgmt 배치 자가 머지 허용 (2026-08-01, MGMT-BATCH-20)**: **mgmt 배치의 origin/main 착지는 자가 머지 허용** — 조건: 메타 4종 한정 diff 전수 확인 + D-LANDING 허용 조합(위 2종 WARN) + push 직전 재fetch(#40). **Gate 4(파괴적 작업 승인)는 삭제·마이그 적용·배포에 적용되며 메타 문서 머지에는 불요.** 근거: BATCH-19 착지 시 자가 머지 가부를 승인 턴으로 회부했으나, 메타 4종 한정 diff는 파괴적 작업이 아니므로 매 배치 승인 왕복이 불필요 — 해석을 규약으로 못박아 재발 방지.
 ---
 
 ## [2026-07-30] D-EOD-FRESH — beat 자가 신선도 보장(B안)
