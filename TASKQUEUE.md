@@ -158,7 +158,7 @@
 |----|------|-------|------------|--------|-----------------|
 | TH-RUNTIME-DEPLOY | TH 트랙(sess-cs-theme-heat) 정식 머지 → worker_sync + 재기동 → TH beat 3종 재활성화(C8 EstimateSnapshot 포함) | @infra (TH 소유 세션) | TH 트랙 클린 체크포인트 머지 | **✅ done 2026-07-29** | 마이그 renumber 0016~24→0019~27(`995f8846`)·역병합·push origin/main `f7f3f63d`·DB name UPDATE 9행(showmigrations 0014~27 선형·migrate --check clean)·worker_sync 3트리 f7f3f63d·theme_heat 3종 registered 게이트 통과 |
 | TH-BEAT-REENABLE | UNREGISTERED 3 beat(collect-theme-filings·theme-heat-daily·snapshot-analyst-estimates) 재활성화 | @infra | TH-RUNTIME-DEPLOY | **✅ done 2026-07-29** | `PeriodicTask enabled=True` 3행(트랜잭션) + `PeriodicTasks.update_changed()`(DatabaseScheduler Schedule changed 확인). 다음 발화: theme-heat-daily 18:00 ET·filings 17:30 ET·estimates 금 16:30 ET. **익일 산출물 행 확인 대기** |
-| TH-RESUME-CORPUS-UNFREEZE | TH 트랙 재개 — corpus unfreeze + TNV 백필 세션 1 | @infra (TH 소유 세션) | **트리거: SEC β 종결** | **대기(트리거)** | G2 앵커(92/19/0/0, ≤07-11 스코프)는 **백필 후 비교 대상 아님** 조항 승계(corpus 확장 시 앵커 무효). SEC β 종결 전 착수 금지 |
+| TH-RESUME-CORPUS-UNFREEZE | TH 트랙 재개 — ~~corpus unfreeze~~ + TNV 집계 백필 세션 1 (정정: corpus 무동결, 실동결=TNV 집계) | @infra (TH 소유 세션) | **트리거: SEC β 종결(충족)** | **▶ 실행중 (TH-SESSION-1, TNV만·override 배제)** | G2 앵커(92/19/0/0, ≤07-11 스코프)는 **백필 후 비교 대상 아님** 조항 승계(corpus 확장 시 앵커 무효). override 재산출=TH-OVR-RECUT 분리. cf. D-TH-TRIGGER-CORRECT |
 
 > **오늘 조치(완료)**: UNREGISTERED 3 beat `enabled=False`(에러 플러드 + 깨진 C8 발화 차단). 정상 배포 beat(heat-score-daily·seed-snapshot-cleanup) 무접촉. **C8 첫 EstimateSnapshot(금 16:30 ET) 1주+ 연기** — 시한 때문에 미머지 26커밋 강행 머지 금지(최악). 재개는 TH 트랙 소유자/디렉터가 클린 머지 후.
 
@@ -1155,10 +1155,16 @@
   - ⑷ **1751건 전량 재추출 비용 추정** — 표본 실측 $0.047/5 filings = **$0.0094/filing** 외삽 → deterministic_v1 = **351 distinct filings** × $0.0094 ≈ **$3.3**(LLM 351콜). **오차 명기**: 표본은 인용 풍부 filing(평균 24 cites)이라 substrate 평균(5.0 cites/filing)보다 출력 비용 상향 편향 = **과대추정 방향**(실제 ≤ $3.3 추정). 재시도·quota 미포함.
 - 근거: G-e 결과 `docs/features/chain-sight/sec_beta_ge_v2_result.md` + caveat(300자 초과). cf. SECB-PROMPT-V2(소비 완료), D-SECB-GATE-E.
 
-## TH-TRIGGER-FIRED — TH Session 1 트리거 발화 (2026-08-03, SEC β 종결 선행 충족) [theme-heat]
+## TH-TRIGGER-FIRED — TH Session 1 트리거 발화 (2026-08-03, SEC β 종결 선행 충족) [theme-heat] ✅ **소비 완료 (TH-SESSION-1, 2026-08-03)**
 - **발화 조건 충족**: SEC β 트랙 종결 선언 확정(`sec_beta_closure_declaration.md`) → TH Session 1 선행 조건 해소.
-- **Session 1 범위**: Theme Heat corpus **unfreeze** + ThemeTermOverride 재산출(TNV) **백필 개시**(대상 창 = 2026-07-12 → 현재, 50일+). corpus unfreeze 게이트 통과 확인 → TNV 백필 1차 창 → heat 재산출 파급 검증.
-- ⚠️ ThemeTermOverride 215(ovr_v1) **재적재 금지**(기존 override 트랙 계약). **실행 지시서는 디렉터 별도 작성 예정** — 본 항목은 트리거 발화 등재만.
+- **~~Session 1 범위(원안)~~**: ~~Theme Heat corpus unfreeze + ThemeTermOverride 재산출(TNV) 백필 개시(대상 창 = 2026-07-12 → 현재, 50일+)~~ → **정정(TH-RECON-1 실측)**: corpus(DailyNewsKeyword)는 **동결된 적 없음**(08-03 최신). 실동결 = **TNV 집계**(ThemeNewsVolume, beat 부재→수동 의존, 07-25 정지). **정정 스코프 = TNV 집계 백필 07-26→08-03(9일·DB 집계·외부 API 0) + stale heat 재산출**(07-26→08-03 멱등 upsert). '07-12'는 override G2 스코프(≤07-11)의 오전이. cf. D-TH-TRIGGER-CORRECT.
+- ⚠️ ThemeTermOverride 215(ovr_v1) **재적재 금지**(기존 override 트랙 계약) — 본 세션 무접촉(사전/사후 스냅샷 입증). override 재산출은 TH-OVR-RECUT(보류)로 분리.
+- **결정 후보(등재만·미실행)**: TNV 집계 beat 승격(자동화) 여부 — 이 세션 등록 금지(#28 beat drift·stale dict가 DB 덮어씀, origin/main 정렬 런타임 트리에서만 등록). 별도 결정.
+
+## TH-OVR-RECUT — 확장 corpus 기반 override 재판정 (보류, 2026-08-03) [theme-heat]
+- **성격**: 확장된 corpus(07-12 이후분 포함)를 근거로 ThemeTermOverride(현 215 ovr_v1)를 **재판정**하는 별도 결정 사이클. **트리거 = 사전 품질 저하 관측 시**(현 미발동).
+- **선행 설계**: G2 앵커(92/19/0/0, ≤07-11 스코프)의 **이관 설계 포함** — 재판정 시 앵커 무효화되므로 신 앵커 정의·비교 기준 재수립 필요. ovr_v2 generation 신설 여부 포함.
+- 근거: TH-RESUME-CORPUS-UNFREEZE 조항(corpus 확장 시 G2 앵커 무효). 배제 결정(TH-SESSION-1 판정②, override 재산출 배제·TNV만).
 
 ## SECB-EXPOSURE — grounding_status 노출 설계 결정 사이클 (2026-08-01, Gate2 개정 B-2) [sec-beta][ux]
 - **성격**: 디렉터 세션·**목업 필수** 결정 사이클(소비자 UX 결정). **소비자 결정 전 구축 금지**(γ 사변 구축 금지, D-SECB-GATE2-AMEND-1).
