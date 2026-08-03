@@ -8,6 +8,18 @@
 
 ---
 
+## [2026-08-03] D-LLM-RATIONALE-AUDIT — LLM 태깅 근거(rationale) 구조화 감사 기록 [chainsight][llm]
+
+> 트랙: ⑳-3 S3-MINDMAP 패치2. L1 프로덕션 파이프라인 + L2-X 실험 공통.
+
+**결정**: LLM 도메인 태깅 시 **구조화 rationale**{claim, claim_type(known_fact|inference|uncertain), basis_hint, counter_signal}를 함께 요구하고, `domain_machine_check.llm_rationale` JSON 키에 **전건(auto/pending 무관) 감사 기록**한다. 마이그레이션 0(JSONField 키 additive).
+
+**Why**: 자동 태깅(D-AUTO-SWITCH-ON)·PEER 추측 실험(L2-X)에서 "왜 그 태그인가"를 사후 분석해야 오류 패턴을 잡는다. 특히 **보류(pending) 건의 사후 분석이 핵심**(무엇이 확실치 않았나). claim_type/counter_signal은 "known_fact인데 틀림"·"반대 신호 존재 시 정확도" 같은 매트릭스를 가능케 함.
+
+**한계 명시(자기보고)**: rationale는 LLM의 **자기 진술**이지 검증된 판정이 아니다 — 사후 합리화(post-hoc rationalization) 가능. 따라서 ⑴ 게이팅·자동승인에 rationale을 **입력으로 쓰지 않음**(decide_gate 무참조) ⑵ ego API·화면 **미노출**(감사 전용) ⑶ **부속이 본체를 블록하지 않음**: rationale 형식 실패 시 null 기록하되 태깅(gate/draft)은 정상 진행.
+
+**How to apply**: 코어 `extract_rationale`(방어적 파싱, 공유). L1=`tag_one` mc["llm_rationale"], DB write 경로가 domain_machine_check로 자동 저장. L2-X=결과 CSV rationale_A/B + 집계 매트릭스(claim_type/basis_hint/counter_signal별 WRONG율). 검수도구 claim 표시.
+
 ## [2026-08-03] D-MINDMAP-HYBRID-v2 — ego 마인드맵 3층 체계(SEC 도메인·시장 industry·뉴스) [chainsight][frontend]
 
 > 트랙: ⑳-3 S3-MINDMAP. 브랜치 `monorepo/sess-s3-mindmap`. D-MINDMAP(맵-3) 방향 개정. 선행 D-DOMAIN-AUTOMATION·D-REVIEW-VERDICT-VOCAB.

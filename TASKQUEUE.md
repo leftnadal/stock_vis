@@ -14,7 +14,7 @@
 | S3-MINDMAP-DEPLOY | 배포·재시작·라이브 스크린샷 게이트 — S0 백필 `--apply`(태그 133), DOMAIN_AUTO_APPROVE ON(env+재기동), 머지·web rebuild·daphne/worker 재기동. 마인드맵 라이브 렌더 스크린샷([[feedback_ui_slice_live_screenshot]]) 검증. | @infra/ops | 병진 승인 | 🆕 **게이트 대기(prod-write 3종+빌드)** |
 | REVIEW-UNANCHORED-40 | 언앵커 40건 배치 → **conf 임계 0.75 재확정 재료**(D-AUTO-SWITCH-ON 잠정 해소). | @backend/rag | AV 복원 | 🆕 등재(임계 재확정 연결) |
 | L2-X-MCAP-BACKFILL | **L2-X 실험 선행 조건** — market_capitalization 백필. 실측 커버리지 26/544(층화 모집단 49<240) → mcap 3분위 층화 불가. FMP quote/profile로 peer 유니버스 mcap 백필 필요. | @backend | FMP 소비 게이트 | 🆕 등재(L2-X 블록 해소용) |
-| L2-SOURCE-DECISION | L2-X verdict 회수 → 구간별 실측 → L2 소스 결정(교체/하이브리드/현행유지). 채택 시 "추정" 라벨 동반 승격. | 설계 | L2-X 실행(mcap 백필 후) | 🆕 등재(실험 후) |
+| L2-SOURCE-DECISION | L2-X verdict 회수 → 구간별 실측 + **"왜 틀리는가" 매트릭스**(claim_type별 WRONG율·basis_hint 유무별·counter_signal 존재군 정확도차, 패치2) → L2 소스 결정(교체/하이브리드/현행유지). 채택 시 "추정" 라벨 동반 승격. | 설계 | L2-X 실행(mcap 백필 후) | 🆕 등재(실험 후) |
 | L3-NEWS-SUBGROUP | L3 마인드맵 뉴스 하위그룹(기사 태그별) 본격 가동 — 현재 단일 가지. | @backend/rag | **AV 복원** | 🆕 등재(AV 게이트) |
 | FMP-INDUSTRY-GAP | ego 서빙 심볼 industry 결측 33/555(94.1% 커버)·Stock 부재 19 — 필요 시 FMP profile 백필. 현재 커버리지 충분(게이트 통과)이라 낮은 우선순위. | @backend | - | 💤 등재만(우선순위 낮음) |
 
