@@ -200,6 +200,8 @@ def aggregate_v2(rows):
     def _true(v):
         return str(v).strip().lower() == "true"
 
+    from apps.chain_sight.services.peer_adjudicator import veto as _veto
+
     by_cell = collections.defaultdict(list)
     by_variant = collections.defaultdict(list)
     gap_freq = collections.Counter()
@@ -211,6 +213,8 @@ def aggregate_v2(rows):
             "low": (gr is not None and gr < LOW_GROUNDING),
             "mm": _true(r.get("market_mismatch")),
             "oc": _true(r.get("overconfident")),
+            # L2-ADOPT 거부권(0.2): CSV에 veto 컬럼 있으면 그대로, 없으면 gr로 파생(재현성).
+            "veto": _true(r["veto"]) if r.get("veto") not in (None, "") else _veto(gr),
         }
         by_cell[cell].append(rec)
         by_variant[r.get("prompt_variant", "")].append(rec)
@@ -227,6 +231,9 @@ def aggregate_v2(rows):
             "low_grounding_rate": round(sum(x["low"] for x in recs) / n, 3) if n else None,
             "market_mismatch_rate": round(sum(x["mm"] for x in recs) / n, 3) if n else None,
             "overconfident_rate": round(sum(x["oc"] for x in recs) / n, 3) if n else None,
+            # 거부권 발동률(기각→버킷 폴백 비율).
+            "veto_rate": round(sum(x["veto"] for x in recs) / n, 3) if n else None,
+            "veto_count": sum(x["veto"] for x in recs),
         }
 
     return {
@@ -290,7 +297,7 @@ class Command(BaseCommand):
         import json
         from apps.chain_sight.models.relation_discovery import PriceCoMovement
         from apps.chain_sight.services.peer_adjudicator import (
-            ground_claim, load_dict, market_flag, overconfident, quartiles,
+            ground_claim, load_dict, market_flag, overconfident, quartiles, veto,
         )
         src = JUDGED_CSV if False else RESULT_CSV
         if not os.path.exists(src):
@@ -333,10 +340,15 @@ class Command(BaseCommand):
         _, conf_q3 = quartiles([r["_conf"] for r in rows])
         gr_q1, _ = quartiles([r["_gr"] for r in rows])
 
-        # ── Pass 2: market_mismatch + overconfident ──
+        # ── Pass 2: market_mismatch + overconfident + veto(L2-ADOPT 거부권 0.2) ──
         for r in rows:
             r["market_mismatch"] = market_flag(r["correlation"], r["_conf"], corr_q1, conf_q3)
             r["overconfident"] = overconfident(r.get("claim_type"), r["_gr"], gr_q1)
+            # 거부권: grounded_ratio ≤ 0.2(또는 접지불가) → LLM 태그 기각·버킷 폴백.
+            r["veto"] = veto(r["_gr"])
+            r["veto_reason"] = (
+                "no_claim" if r["_gr"] is None else ("low_grounding" if r["veto"] else "")
+            )
             r["correlation"] = "" if r["correlation"] is None else round(r["correlation"], 4)
             del r["_conf"], r["_gr"]
 
@@ -453,6 +465,32 @@ class Command(BaseCommand):
                 f"── ㉮㉯ 접지 격차: A avg={va.get('A',{}).get('avg_grounded')} "
                 f"B avg={va.get('B',{}).get('avg_grounded')} ──"
             )
+            # ── L2-ADOPT 거부권(0.2) 발동 요약 + 기각 목록 ──
+            from apps.chain_sight.services.peer_adjudicator import veto as _veto2
+            def _is_vetoed(r):
+                v = r.get("veto")
+                if v not in (None, ""):
+                    return str(v).strip().lower() == "true"
+                return _veto2(_fnum(r.get("grounded_ratio")))
+            vetoed = [r for r in rows if _is_vetoed(r)]
+            total_veto = len(vetoed)
+            self.stdout.write(
+                f"── ★거부권(grounded≤0.2) 발동 {total_veto}/{len(rows)} "
+                f"({total_veto/len(rows):.1%}) → 버킷 폴백 ──"
+            )
+            for cell, s in sorted(agg["by_cell"].items()):
+                self.stdout.write(
+                    f"    {cell:8} veto={s['veto_count']}/{s['n']} ({s['veto_rate']:.1%})"
+                )
+            self.stdout.write("── 기각 목록(거부권 발동 쌍) ──")
+            for r in vetoed:
+                gr = r.get("grounded_ratio")
+                self.stdout.write(
+                    f"    {r['symbol_a']}↔{r['symbol_b']} [{r.get('mcap_tercile')}·"
+                    f"{r.get('industry_same')}·{r.get('prompt_variant')}] "
+                    f"tag={r.get('llm_tag','')[:20]} grounded={gr} "
+                    f"reason={r.get('veto_reason','')}"
+                )
             self.stdout.write(f"── dict_gap 빈출(사전 보강 감사): {agg['dict_gap_top'][:12]} ──")
             # 감사 표본 추출 → 검수 도구 로드 호환(grounded_ratio 헤더=감사 모드)
             sample = audit_sample(rows)
