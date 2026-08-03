@@ -1138,9 +1138,13 @@
 - 트리거: **잔여 순수 not_found율 >15% 재발 시**에만 재스코프. 범위 = **합성/재서술 클러스터**(G1.6 잔여 nf 유니크 19 ≈ G1.5 합성8+재서술5). **선제 도입 금지**(V-B=2콜, V-A 결정론 계약 위배).
 - 현 상태: G1.6 재분류 후 잔여 명목 1.54%/유니크 2.03% ≤15% → **미발동**.
 
-## SECB-PROMPT-V2 — tail 발산 방지 프롬프트 (2026-07-31, G1.6 §5) [sec-beta]
+## SECB-PROMPT-V2 — tail 발산 방지 프롬프트 (2026-07-31, G1.6 §5) [sec-beta] ✅ **소비 완료 (G-e, 2026-08-03)**
 - 범위: **Gate 2 존치**(이 세션 밖). 표적 = tail 발산 방지 문구(G1.5 부수② 초안, "verbatim exact sentence·리스트 절단 금지"). partial_match 410건이 verbatim tail 규율 대상.
 - 근거: G1.6 §3 샘플 = 경쟁사 리스트 접두 verbatim + tail 회사명 발산(원문 실재, 조작 아님) → prompt v2로 verbatim 강제.
+- **✅ G-e 측정 완료 (SECB-GE-EXEC-1, 2026-08-03)**: R1~R5 verbatim 규율(`SECB-GE-R1R5-SPEC.md`) 삽입 v2 프롬프트로 표본 5 filings 재추출·paired 측정. **tail율 71.07%→0.72%**(v1 121/86 → v2 139/1). DB 쓰기 0(물리 격리 b·`var/secb_ge_v2_sample/`). 결과 `docs/features/chain-sight/sec_beta_ge_v2_result.md`. ⚠️ caveat=v2 evidence 300자 상시 초과(R2>R3). **전량 롤아웃=별도 결정 사이클**(본 측정 세션 밖).
+
+## SECB-GE-OBS-17ROW — v1 1768 vs marker 1751 — 17행 관찰 (2026-08-03, G-e STEP0) [sec-beta]
+- 관찰: SupplyChainEvidence total **1768** / prompt_version='v1' **1768** / grounding_method='deterministic_v1' marker **1751** → **17행이 grounded 미표기**(백필 대상 밖·이후 신규 유입 추정). G-e paired 측정은 marker 1751 기준(무영향). 노출/재백필 필요성은 SECB-EXPOSURE·후속에서 판단(현 저우선·등재만).
 
 ## SECB-EXPOSURE — grounding_status 노출 설계 결정 사이클 (2026-08-01, Gate2 개정 B-2) [sec-beta][ux]
 - **성격**: 디렉터 세션·**목업 필수** 결정 사이클(소비자 UX 결정). **소비자 결정 전 구축 금지**(γ 사변 구축 금지, D-SECB-GATE2-AMEND-1).
