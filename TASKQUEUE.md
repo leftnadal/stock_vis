@@ -1138,9 +1138,26 @@
 - 트리거: **잔여 순수 not_found율 >15% 재발 시**에만 재스코프. 범위 = **합성/재서술 클러스터**(G1.6 잔여 nf 유니크 19 ≈ G1.5 합성8+재서술5). **선제 도입 금지**(V-B=2콜, V-A 결정론 계약 위배).
 - 현 상태: G1.6 재분류 후 잔여 명목 1.54%/유니크 2.03% ≤15% → **미발동**.
 
-## SECB-PROMPT-V2 — tail 발산 방지 프롬프트 (2026-07-31, G1.6 §5) [sec-beta]
+## SECB-PROMPT-V2 — tail 발산 방지 프롬프트 (2026-07-31, G1.6 §5) [sec-beta] ✅ **소비 완료 (G-e, 2026-08-03)**
 - 범위: **Gate 2 존치**(이 세션 밖). 표적 = tail 발산 방지 문구(G1.5 부수② 초안, "verbatim exact sentence·리스트 절단 금지"). partial_match 410건이 verbatim tail 규율 대상.
 - 근거: G1.6 §3 샘플 = 경쟁사 리스트 접두 verbatim + tail 회사명 발산(원문 실재, 조작 아님) → prompt v2로 verbatim 강제.
+- **✅ G-e 측정 완료 (SECB-GE-EXEC-1, 2026-08-03)**: R1~R5 verbatim 규율(`SECB-GE-R1R5-SPEC.md`) 삽입 v2 프롬프트로 표본 5 filings 재추출·paired 측정. **tail율 71.07%→0.72%**(v1 121/86 → v2 139/1). DB 쓰기 0(물리 격리 b·`var/secb_ge_v2_sample/`). 결과 `docs/features/chain-sight/sec_beta_ge_v2_result.md`. ⚠️ caveat=v2 evidence 300자 상시 초과(R2>R3). **전량 롤아웃=별도 결정 사이클**(본 측정 세션 밖).
+
+## SECB-GE-OBS-17ROW — v1 1768 vs marker 1751 — 17행 관찰 (2026-08-03, G-e STEP0) [sec-beta]
+- 관찰: SupplyChainEvidence total **1768** / prompt_version='v1' **1768** / grounding_method='deterministic_v1' marker **1751** → **17행이 grounded 미표기**(백필 대상 밖·이후 신규 유입 추정). G-e paired 측정은 marker 1751 기준(무영향). 노출/재백필 필요성은 SECB-EXPOSURE·후속에서 판단(현 저우선·등재만).
+
+## SECB-V2-ROLLOUT — v2 프롬프트 전량 적용 결정 (2026-08-03, G-e 후속) [sec-beta]
+- **성격**: G-e 표본 측정(tail 71.07%→0.72%)을 근거로 한 **전량 배포·substrate 통합 결정 사이클**. 측정 세션이 pass/fail·배포를 하지 않음(D-SECB-GATE-E). **전제 4건 해소 전 착수 금지**:
+  - ⑴ **`evidence_text` DB 컬럼 실제 max_length 실측** — 300 초과 저장 시 절단/오류 거동 포함(현 모델은 TextField=무제한이나 실 DDL·다운스트림 `[:100]` basis 등 확인).
+  - ⑵ **길이 정책 재설계** — R2(완전 문장) vs 300캡 우선순위 확정: 프롬프트를 고칠지(캡 상향/명문화) or 스키마를 고칠지(evidence 길이 정책).
+  - ⑶ **인용 집합 변동 취급** — v2 재추출이 인용 수 변경(COR 28→46): 기존 v1 행 **대체**냐 v2 **병존**이냐 결정.
+  - ⑷ **1751건 전량 재추출 비용 추정** — 표본 실측 $0.047/5 filings = **$0.0094/filing** 외삽 → deterministic_v1 = **351 distinct filings** × $0.0094 ≈ **$3.3**(LLM 351콜). **오차 명기**: 표본은 인용 풍부 filing(평균 24 cites)이라 substrate 평균(5.0 cites/filing)보다 출력 비용 상향 편향 = **과대추정 방향**(실제 ≤ $3.3 추정). 재시도·quota 미포함.
+- 근거: G-e 결과 `docs/features/chain-sight/sec_beta_ge_v2_result.md` + caveat(300자 초과). cf. SECB-PROMPT-V2(소비 완료), D-SECB-GATE-E.
+
+## TH-TRIGGER-FIRED — TH Session 1 트리거 발화 (2026-08-03, SEC β 종결 선행 충족) [theme-heat]
+- **발화 조건 충족**: SEC β 트랙 종결 선언 확정(`sec_beta_closure_declaration.md`) → TH Session 1 선행 조건 해소.
+- **Session 1 범위**: Theme Heat corpus **unfreeze** + ThemeTermOverride 재산출(TNV) **백필 개시**(대상 창 = 2026-07-12 → 현재, 50일+). corpus unfreeze 게이트 통과 확인 → TNV 백필 1차 창 → heat 재산출 파급 검증.
+- ⚠️ ThemeTermOverride 215(ovr_v1) **재적재 금지**(기존 override 트랙 계약). **실행 지시서는 디렉터 별도 작성 예정** — 본 항목은 트리거 발화 등재만.
 
 ## SECB-EXPOSURE — grounding_status 노출 설계 결정 사이클 (2026-08-01, Gate2 개정 B-2) [sec-beta][ux]
 - **성격**: 디렉터 세션·**목업 필수** 결정 사이클(소비자 UX 결정). **소비자 결정 전 구축 금지**(γ 사변 구축 금지, D-SECB-GATE2-AMEND-1).

@@ -5654,3 +5654,11 @@ FIX-1 코드의 불변식 주석은 "is_eod_fresh 가드가 비거래일을 차�
 **Why**: EstimateSnapshot이 이미 배포·가동 중(theme_heat TH-3, beat 등록 금 16:30 ET)인데 SFI가 동명·동엔드포인트 모델을 만들면 이중 수집·의미 중복. 두 원장은 유니버스(SP500 vs coach 14종, 겹침 6·갭 8)·케이던스·목적(C8 리비전 z vs coach 화면 신호)이 모두 달라 통합보다 역할 분리가 정합. 통합 단일 원장은 별도 사이클(cf. MP-UNIFY) 소관.
 
 **부수 결정 — 모델 키 = `symbol` CharField(FK 아님).** 기존 EstimateSnapshot 형제 관례 준수 + coach 갭 8종(비SP500)이 Stock 행 부재 가능 → FK 강제 회피. 유령필드 미러는 별도로 Stock을 symbol 조회해 존재 시에만 갱신.
+
+## [2026-08-03] SEC β G-e — v2 프롬프트 tail 발산 측정 + 배달사고 #8 (D-SECB-GATE-E)
+
+> SECB-GE-EXEC-1 Phase B. 정의서 `sec_beta_ge_prompt_v2_scope.md` 감독 승인 후 착수. 트랙 최초·유일 LLM 호출(5콜). worktree `monorepo/sess-secb-ge`.
+
+**D-SECB-GATE-E (v2 프롬프트 측정 = 방향성 확인, 배포 아님)**: R1~R5 verbatim 규율([`SECB-GE-R1R5-SPEC.md`](docs/features/chain-sight/SECB-GE-R1R5-SPEC.md) 단일 출처) 삽입 v2 프롬프트로 표본 5 filings(AKAM·COR·CAT·ISRG·FIX = 인용≥8 중 tail 상위, 3단 키 `tail desc→cites desc→accession asc`) 재추출·paired 측정. **결과: tail율 71.07%(v1 121/86) → 0.72%(v2 139/1)** — partial_match(리스트 절단) 유형 v2 표본서 0건. `MAX_EVIDENCE_CHARS=300`(v1 캡 역산). grounding=`ground_evidence_g16`(순수 함수·DB 무접촉·LLM 0), LLM은 추출에만. **저장=물리 격리(b)**: prod/dev DB 쓰기 **0**, 결과 `var/secb_ge_v2_sample/`(gitignore) JSON + 요약 `sec_beta_ge_v2_result.md`. prod 사전/사후 스냅샷 동일 입증(1768/1751·v2 0·1273/41/410/27 불변). **⚠️ caveat(롤아웃 결정 재료)**: v2 evidence 길이가 R3의 300자 상한 상시 초과(ISRG 평균 587·max 646) — 모델이 R2(완전 문장)>R3(캡) 우선. **측정 세션 계약**: pass/fail 낙인·전량 배포·substrate 통합 없음(별도 결정 사이클). 신규 코드 = `SUPPLY_CHAIN_EXTRACTION_PROMPT_V2`(additive)+`secb_ge_v2_sample` 커맨드(prod 읽기전용)+g16 재사용, 마이그 0·모델 변경 0·v1 경로 무변경(extractor.py 무접촉).
+
+**배달사고 #8 (참조 사양이 chat-only·repo 미커밋, 규율이 실행 前 적발)**: 디렉터 비준문이 "v2 프롬프트 = v1 구조 + 델타 R1~R5 삽입(디렉터 사양서 참조)"라 지시했으나, 참조된 R1~R5 사양이 **repo·전 브랜치·미추적·핸드오프 어디에도 미커밋**(chat 후속 메시지에만 존재). 실행 세션이 R1~R5를 **임의 창작하지 않고 HALT·회부**(측정 대상 자체이므로 창작 시 측정 오염) → 감독이 `SECB-GE-R1R5-SPEC`로 원문 전달·`3cbfc02f` 커밋으로 해소. 사고 계열 통산 **#8**(#6=base 지시서 누락·#7=게이트 정의 미전달에 이어). **귀책=디렉터**(비준문 복사 블록 밖에 사양 배치). 교훈=참조된 사양의 repo 미커밋 시 임기응변 금지·회부(배달 게이트 규율, cf. #6·#7). cf. TASKQUEUE SECB-PROMPT-V2(소비 완료).
