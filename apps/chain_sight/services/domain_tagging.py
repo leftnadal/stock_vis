@@ -222,6 +222,50 @@ def decide_gate(mc: dict) -> tuple[str, str]:
     return "pending", "pending"
 
 
+def build_gate_audit(mc: dict, relation_type: str = "") -> dict:
+    """게이트 판정 감사 추적(⑳-3 S3-MINDMAP S3). **행위보존** — 판정 로직 무변경, 기록만.
+
+    decide_gate의 조건을 미러링해 발동 룰·비교 원값·판정 경로를 재구성한다.
+    목적: 자가모순 53건류 미스터리 재발 시 로그 즉답(캘리브레이션 전력 참조).
+    decide_gate와 동일 판정을 내는지는 테스트(gate_audit_matches_decide)로 못박는다.
+    """
+    type_change_proposed = (not mc["type_match_ok"]) or bool(mc.get("suggested_type"))
+    all_checks = (
+        mc["target_in_basis"] and mc["type_signature_ok"] and mc["confidence_ok"]
+    )
+    values = {
+        # 룰별 비교 원값 (자가모순·타입매치의 좌우 피연산자·confidence 원값)
+        "self_contradiction": mc.get("self_contradiction"),
+        "type_match_ok": mc.get("type_match_ok"),
+        "suggested_type": mc.get("suggested_type"),
+        "relation_type": relation_type,  # type_match 좌변(현재 타입)
+        "target_in_basis": mc.get("target_in_basis"),
+        "type_signature_ok": mc.get("type_signature_ok"),
+        "confidence_ok": mc.get("confidence_ok"),
+        "confidence": mc.get("confidence"),
+        "confidence_threshold": _threshold(),
+        "auto_approve_enabled": _auto_approve_enabled(),
+    }
+    if mc.get("self_contradiction"):
+        path, fired = "self_contradiction→pending", ["self_contradiction"]
+    elif type_change_proposed:
+        fired = []
+        if not mc["type_match_ok"]:
+            fired.append("type_mismatch")
+        if mc.get("suggested_type"):
+            fired.append("suggested_type_present")
+        path = "type_change→pending"
+    elif all_checks:
+        path = "all_checks→auto_candidate"
+        fired = ["all_checks_pass",
+                 "auto_approve_on" if values["auto_approve_enabled"] else "auto_approve_off"]
+    else:
+        fired = [f"{k}_fail" for k in ("target_in_basis", "type_signature_ok", "confidence_ok")
+                 if not mc.get(k)]
+        path = "checks_fail→pending"
+    return {"decision_path": path, "fired_rules": fired, "values": values}
+
+
 def first_domain_tag(llm_out: dict) -> str | None:
     tags = llm_out.get("domain_tags")
     if isinstance(tags, list) and tags:
@@ -280,6 +324,8 @@ def tag_one(*, symbol_a, symbol_b, center, relation_type, basis, target_name, ll
     # 부속이 본체를 블록하지 않음: 형식 실패면 null이지만 태깅(gate/draft)은 그대로 진행.
     mc["llm_rationale"] = extract_rationale(llm_out)
     gate_class, review_status = decide_gate(mc)
+    # S3: 게이트 판정 감사 추적(행위보존 — decide_gate 무변경, 기록만).
+    mc["gate_audit"] = build_gate_audit(mc, relation_type)
     return {
         "ok": True,
         "draft": first_domain_tag(llm_out),

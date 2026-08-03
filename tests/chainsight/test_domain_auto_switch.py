@@ -41,6 +41,56 @@ class TestHumanReviewedGuard:
         assert p.id in ids and fresh.id in ids
 
 
+def _mc(**over):
+    base = {
+        "target_in_basis": True, "type_signature_ok": True, "confidence_ok": True,
+        "confidence": 0.9, "type_match_ok": True, "suggested_type": None,
+        "self_contradiction": False,
+    }
+    base.update(over)
+    return base
+
+
+class TestGateAudit:
+    """S3 — 게이트 감사 추적(행위보존: audit 경로 ↔ decide_gate 판정 일치)."""
+
+    def test_schema_has_rules_values_path(self):
+        a = dt.build_gate_audit(_mc(), "SUPPLIES_TO")
+        assert set(a) == {"decision_path", "fired_rules", "values"}
+        assert a["values"]["relation_type"] == "SUPPLIES_TO"
+        assert a["values"]["confidence"] == 0.9
+        assert "confidence_threshold" in a["values"]
+
+    @override_settings(DOMAIN_AUTO_APPROVE=True, DOMAIN_CONFIDENCE_THRESHOLD=0.75)
+    def test_audit_path_matches_decide_gate(self):
+        cases = [
+            _mc(self_contradiction=True),                       # self_contradiction
+            _mc(type_match_ok=False, suggested_type="PARTNER_WITH"),  # type_change
+            _mc(),                                              # all_checks→auto
+            _mc(target_in_basis=False),                        # checks_fail
+        ]
+        for mc in cases:
+            gate_class, status = dt.decide_gate(mc)
+            audit = dt.build_gate_audit(mc, "SUPPLIES_TO")
+            # 감사 경로가 decide_gate 판정과 정합(행위보존 증명)
+            if mc["self_contradiction"]:
+                assert audit["decision_path"] == "self_contradiction→pending"
+                assert status == "pending"
+            elif not mc["type_match_ok"] or mc["suggested_type"]:
+                assert audit["decision_path"] == "type_change→pending"
+                assert status == "pending"
+            elif mc["target_in_basis"] and mc["type_signature_ok"] and mc["confidence_ok"]:
+                assert audit["decision_path"] == "all_checks→auto_candidate"
+                assert status == "auto"  # 스위치 ON
+            else:
+                assert audit["decision_path"] == "checks_fail→pending"
+
+    def test_fired_rules_recorded(self):
+        a = dt.build_gate_audit(_mc(target_in_basis=False, confidence_ok=False), "PEER_OF")
+        assert "target_in_basis_fail" in a["fired_rules"]
+        assert "confidence_ok_fail" in a["fired_rules"]
+
+
 class TestExtractRationale:
     def test_valid_rationale(self):
         out = dt.extract_rationale({"rationale": {
