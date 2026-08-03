@@ -1229,10 +1229,9 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 요청서 작성 시 실행 단계의 **전제 코드 경로를 실측 확증하지 않고** 문서(설계 의도)로 선행 기술. grounding 필드는 additive·미노출(설계상 read-path 무관)이었으나 요청서는 노출이 존재하는 듯 기술. 문서 선행이 코드 선행을 대체하지 못함(#79 변종).
 
 **해결·점검**: 지시서·요청서의 **각 실행 단계는 착수 前 전제 코드 경로를 grep/실측 확증** 후 비준. 부재 시 → 그 단계는 "구축 필요"로 재분류·별도 트랙 이관(사변 구축 금지). SEC β 사례 = D-SECB-GATE2-AMEND-1(G-d 제거→SECB-EXPOSURE 이관). cf. #79.
-## FMPFundamentals.get_rating이 `/stable/rating`(404 오경로) 호출 — 올바른 경로 `/stable/ratings-snapshot` (#80, SFI-I1 Part A 2026-08-01) [backend][stocks]
-<!-- ▼ 아래 3건 = SFI-I1(build 세션) 발견. D-NUMBERING-MGMT-ONLY에 따라 번호 미부여(채번 후보) — 차기 mgmt 배치가 push 직전 재grep 후 실측+1로 부여. -->
+<!-- 아래 3건 = SFI-I1(build 세션) 발견·채번 회수분(자가채번 #80~82 → origin/main 선점 충돌로 회수). BATCH-20 push-직전 재grep으로 #83~#85 부여(실측+1, SFI-I1-BUGNUM 완료). -->
 
-## FMPFundamentals.get_rating이 `/stable/rating`(404 오경로) 호출 — 올바른 경로 `/stable/ratings-snapshot` (채번 후보, SFI-I1 Part A 2026-08-01) [backend][stocks]
+## FMPFundamentals.get_rating이 `/stable/rating`(404 오경로) 호출 — 올바른 경로 `/stable/ratings-snapshot` (#83, SFI-I1 Part A 2026-08-01) [backend][stocks]
 
 **증상**: `FMPFundamentals.get_rating(symbol)`이 항상 None 반환(로그 `FMP API HTTP 오류 (rating/X): 404`). 종합 투자등급이 화면·엔진 어디에도 채워지지 않음.
 
@@ -1240,7 +1239,7 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **규칙**: SFI-I1에서 `get_rating`을 `/stable/ratings-snapshot`로 교정. **항상 None이었으므로 회귀 없음 — 행위 변화는 "None→값"뿐**(테스트로 명시). 신규 래퍼 메서드 `get_ratings_snapshot`가 정본 경로, `get_rating`은 이를 위임.
 
-## `/stable/analyst-estimates`는 `period` 파라미터 필수 — 누락 시 HTTP 400, 6월 audit "http-400"은 오진 (채번 후보, SFI-I1 Part A 2026-08-01) [backend][stocks]
+## `/stable/analyst-estimates`는 `period` 파라미터 필수 — 누락 시 HTTP 400, 6월 audit "http-400"은 오진 (#84, SFI-I1 Part A 2026-08-01) [backend][stocks]
 
 **증상**: `/stable/analyst-estimates?symbol=X` → 400 `Query Error: Invalid or missing query parameter - period`. 6월 `fmp_api_audit/report.md`(라인 157)가 이를 `http-400`으로 기록 → "이 엔드포인트는 못 씀(플랜 차단)"으로 오해될 소지.
 
@@ -1250,7 +1249,7 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **규칙**: 래퍼 `get_analyst_estimates`는 `period="annual"` **고정**(quarter는 402이므로 파라미터로 열지 않음). audit의 `analyst-estimates http-400` 항목은 "period 누락 오진"으로 정정 인식.
 
-## recon/측정 세션이 stale base 위에서 "부재" 오판(false-missing) — fresh origin/main 강제 (채번 후보, RECON-STALE-BASE, SFI-I1 2026-08-01) [process][harness][git]
+## recon/측정 세션이 stale base 위에서 "부재" 오판(false-missing) — fresh origin/main 강제 (#85, RECON-STALE-BASE, SFI-I1 2026-08-01) [process][harness][git]
 
 **증상**: SIGNAL-FORWARD-INFRA 프리플라이트 recon이 실측 대상 2건을 "repo 부재"로 오판:
 - `RUN-TOTAL-PERSIST` 백로그 = "TASKQUEUE 무매치"(실제 origin/main TASKQUEUE:1103 등재됨).
