@@ -7,7 +7,7 @@
     "update": "ungrounded 빈출이 정상 도메인어면 여기 보충 후 --judge 재실행(결정론, 비용0)."
   },
   "dict": {
-    "반도체": ["semiconductor"],
+    "반도체": ["semiconductor", "chip"],
     "메모리": ["memory"],
     "스토리지": ["storage"],
     "저장장치": ["storage", "drive"],
@@ -126,6 +126,31 @@
     "건물": ["building"],
     "정보": ["information"],
     "상업용": ["commercial"],
-    "주거용": ["residential"]
+    "주거용": ["residential"],
+    "호텔": ["hotel", "lodging"],
+    "리조트": ["resort"],
+    "프랜차이즈": ["franchise", "franchising"],
+    "체인": ["chain"],
+    "피자": ["pizza"],
+    "레스토랑": ["restaurant"],
+    "외식": ["restaurant", "dining"],
+    "하드웨어": ["hardware"],
+    "프로세서": ["processor"],
+    "컴퓨터": ["computer", "computing"],
+    "프린터": ["printer", "printing", "imaging"],
+    "구독": ["subscription"],
+    "패션": ["fashion", "apparel"],
+    "명품": ["luxury"],
+    "수면": ["sleep"],
+    "호흡기": ["respiratory"],
+    "질환": ["disease", "disorder", "condition"],
+    "브랜드": ["brand"],
+    "인포테인먼트": ["infotainment"],
+    "차량용": ["automotive", "vehicle", "automobile"],
+    "포장재": ["packaging"],
+    "콕핏": ["cockpit"],
+    "고객관계관리": ["customer relationship management", "crm"],
+    "데이팅": ["dating"],
+    "관계관리": ["relationship management"]
   }
 }
