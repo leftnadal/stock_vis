@@ -8,6 +8,44 @@
 
 ---
 
+## [2026-08-03] D-L2-SOURCE — L2 Peer 소스 결정 2: LLM 태그 채택 + 판정기 거부권 [chainsight]
+
+> 트랙: ⑳-3 L2-ADOPT. 브랜치 `monorepo/sess-l2-adopt`(base origin/main `34a171dd`). 선행 D-L2X-AUTO-ADJUDICATION.
+> L2-SOURCE-DECISION(교체/하이브리드/현행) 재개점의 **결정 2** 확정.
+
+**결정**: PEER_OF L2 도메인 소스를 **LLM 태그 기본 채택**으로 한다(교체안). 단 결정론 **판정기 거부권**을
+둔다 — `grounded_ratio ≤ 0.2`(고정 임계) 발동 시 태그 기각 → **업종 버킷(industry_bucket) 폴백**.
+- 프롬프트 ㉯(심볼+회사명+industry), **claim 영어 출력**(L2X-SWEEP-EN-CLAIM 흡수 — 영어 desc 동일언어 접지).
+- **하·상이 구획(저시총·타산업) "추정"(is_estimate) 라벨** — 실험상 최저 접지·최고 과신.
+- 거부권 status = **'pending'**(미채택→버킷 폴백). **'rejected' 금지**(ego 서빙이 soft-drop=관계 은닉 → 거부권은
+  "태그 기각"이지 "관계 은닉"이 아니므로). relation_domain(승인본)은 **절대 미기록**(L1 하드 룰 계승).
+
+**Why**: 사람이 LLM rationale를 반증하기 어렵다는 D-L2X 소견 + 실험(240쌍 자동판정)에서 인간 16/18 BETTER·
+1 WRONG(CRM↔MTCH). 판정기가 그 1 WRONG을 grounded 0.0으로 정확 포착 → **결정론 거부권이 명백한 오류만
+고정밀 차단**(과신 플래그 gr_q1=0.667은 저정밀). LLM 태그는 industry_bucket보다 세분·구체 → 마인드맵 L2 정보량↑.
+거부권+버킷 폴백으로 안전망 확보(태그 실패 시 항상 버킷 존재).
+
+**스코어·실험 근거**: A1 재집계(240쌍·LLM 0) 거부권 0.2 발동 **1/240(0.4%)** = CRM↔MTCH(하·동일, grounded 0.0,
+"구독형 SaaS" 표면 공통점 vs B2B CRM/B2C 데이팅). A3 파일럿(㉯ 120쌍·LLM 0) 채택 119·거부권 1·추정라벨 20.
+B단계 예상 폴백 ~241쌍(2.6%: 거부권 ~37 + 결측 204), 채택 ~95%+.
+
+**How to apply**: 코어 `services/peer_domain_tagging.py`(커맨드·훅 공유): `tag_peer_one`(초안→`ground_claim`→
+`veto`→machine_check), `is_estimate_cell`, source='L2-ADOPT'. 판정기 `peer_adjudicator.veto`(고정 0.2·None 보수적
+기각). 배치 `tag_peer_domains`(--dry-run/--apply 게이트/--pilot-csv/idempotent·재개·rate 4.2s). 훅
+`tasks/domain_tasks.tag_peer_domain_task`(단건, L1 휴면 패턴 — 활성화=배포 게이트). 서빙: ego API `peer_domain`
+(채택분 source=L2-ADOPT ∧ status=auto)·`peer_domain_estimate` additive → FE `egoMindmap` L2 하위그룹 llm_tag
+우선·버킷 폴백. **마이그레이션 0**(기존 필드 재사용, STEP 0 스키마 게이트 PASS: relation_domain choices=None).
+
+**STEP 0 측정**: PEER distinct 무방향 쌍 9,365(raw=distinct·중복 1.000x), 태깅 가능 9,161(97.8%)·결측 204,
+industry_same 동일1,790/상이7,402/미상173, "추정"(하·상이) 2,498. SEC verdict 270 타입 분리 무접촉.
+
+**검증**: pytest 신규 16(veto 경계 4 + L2 e2e 12) + 회귀 domain 43·experiment 11·ego 38 GREEN. 마인드맵 vitest
+12(신규 3). makemigrations 무변경. tsc 0. **A단계 무비용(신규 LLM 0)**. 아티팩트 `outputs/peer_experiment/`(240쌍
+실험)·`outputs/peer_domain_tagging/`(파일럿). 리포트 `docs/chain_sight/L2_ADOPT_A_STAGE_REPORT.md`.
+
+**게이트(미승인)**: B단계 전량 태깅(비용 발생)·`--apply`(prod 태그 기록)·머지·배포 = 병진님 승인. 견적(A4):
+Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직후 마이크로배치 5-10콜로 실단가 확정 권장.
+
 ## [2026-08-03] D-L2X-AUTO-ADJUDICATION — L2-X 사람 전건검수 → 결정론 자동판정 + 감사 [chainsight]
 
 > 트랙: ⑳-3 L2-X 자동판정 전환. 배경: 대조자료 제공에도 사람이 LLM 주장 반박 구조적 곤란(15건 실검수 소견).
