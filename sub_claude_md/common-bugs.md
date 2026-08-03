@@ -1146,21 +1146,24 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **해결**: "룰 개선 = 분류 정확도↑"와 "volume 감축"을 분리 판단. 감축 목표가 있으면 먼저 **지배 블로커를 실측**(블로커별 분해)하고, 그게 동결 임계·evidence면 룰 튜닝 대신 임계 재튜닝(분포 확보 후) 또는 evidence 재추출(EVIDENCE-CAP-REEXTRACT)을 레버로 지정. cf. reclassify_v2_analysis.md §3, TASKQUEUE EVIDENCE-CAP-REEXTRACT.
 
-## heat/celery beat 로그는 stocks.log가 아니라 launchd StandardErrorPath에만 기록됨 — "로그 없음"을 "미실행"으로 오판 금지 (#78, SEAL-PUSH-1b 2026-07-31) [ops] [chainsight] [process]
+## heat/celery beat 로그는 stocks.log가 아니라 launchd StandardErrorPath에만 기록됨 — "로그 없음"을 "미실행"으로 오판 금지 (#78b, SEAL-PUSH-1b 2026-07-31) [ops] [chainsight] [process]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. 기존 '#78' 단독 인용은 문맥상 해당 내용 쪽. b=착지 9540993a 2026-07-31 11:38)*
 
 **증상**: 07-29 theme-heat-daily 실행 상세(섹터별 not_computed·미저장 사유)를 확인하려 `stocks.log`를 grep했으나 `heat`·`2026-07-29` 라인 **0건**. 미실행으로 오판할 뻔함(실제로는 09:57 정상 발화·저장 6행).
 
 **원인**: chainsight heat 로거(`logger = logging.getLogger(__name__)`)의 출력은 celery worker 프로세스 stdout/stderr로 가고, celery는 launchd로 기동되므로 **`~/Library/Logs/stockvis/celery-worker-error.log`**(plist `StandardErrorPath`)에만 남는다. repo 루트 `stocks.log`는 Django dev-server(runserver) 경로용이라 beat/worker 실행 로그가 없다. 심지어 worker **런타임 트리**(`~/worktrees/sv-worker-runtime/stocks.log`)에도 heat 라인은 없음(FileHandler 미배선).
 
 **해결**: beat/worker 태스크 로그를 찾을 땐 **launchd plist의 `StandardOutPath`/`StandardErrorPath`를 먼저 확인**(`grep -A1 StandardErrorPath ~/Library/LaunchAgents/com.stockvis.celery-*.plist`) → 해당 파일을 grep. heat 계열 = `celery-worker-error.log`. "stocks.log에 없음 = 미실행" 추론 금지. cf. [[reference_worker_runtime_tree]] · plist 목록 `com.stockvis.celery-{worker,worker-neo4j,beat}.plist`.
-## 화면 ✓ ≠ DB 영속 — 상태 생성 UI 체크는 확인 쿼리 동반 필수 (#78, 20b-f2 GOAL-CREATE-UI 2026-07-31) [portfolio][coach][process]
+## 화면 ✓ ≠ DB 영속 — 상태 생성 UI 체크는 확인 쿼리 동반 필수 (#78a, 20b-f2 GOAL-CREATE-UI 2026-07-31) [portfolio][coach][process]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. 기존 '#78' 단독 인용은 문맥상 해당 내용 쪽. a=선착지 3ba4cf00 2026-07-31 11:04)*
 
 **증상**: 20b-f1 온보딩 라이브 검증에서 "목표 입력 ✓"로 체크했으나, 실제 DB에는 goid545 UserGoal 0건 — beat 대상(`portfolio_goal__isnull=False`) 0명이 되어 nightly가 아무것도 안 만들 뻔함. 화면상 "입력했다"는 인상과 DB 영속이 불일치.
 
 **원인**: (1) 그 상태를 **생성하는 UI 경로가 실제로 없었음**(knobs PATCH는 기존 UserGoal 요구, 목표 생성은 admin/shell만) → 사용자가 화면에서 뭔가 눌렀어도 목표가 안 만들어짐. (2) 라이브 체크리스트가 "화면에서 봤다"만 확인하고 DB 영속을 안 봄.
 
 **해결**: **상태를 새로 생성하는 검증(온보딩·목표 설정·최초 등록 등)은 화면 ✓만으로 PASS 금지 — 반드시 확인 쿼리(`.objects.filter(...).count()`/존재)로 DB 영속을 동반 증명**한다. cf. G-S4 `goal 보유자: []`가 이 갭을 잡아냄. [[lesson_dev_prod_shared_db]](캡처 데모 청소도 검증 쿼리 동반 규약과 동형).
-## [게이트] 2-dot diff(A..B)로 브랜치 병합/손실 판정 시 오탐 — 3-dot(A...B)·merge-base 명시 비교로 회피 (#78, 2026-07-31 SEC β R2) [git][process]
+## [게이트] 2-dot diff(A..B)로 브랜치 병합/손실 판정 시 오탐 — 3-dot(A...B)·merge-base 명시 비교로 회피 (#78c, 2026-07-31 SEC β R2) [git][process]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. 기존 '#78' 단독 인용은 문맥상 해당 내용 쪽. c=후착지 663b17e5 2026-07-31 12:54)*
 
 **증상**: "이 브랜치가 main에 병합됐나 / 지우면 손실 있나" 게이트에서 `git diff main..branch`(2-dot)가 실제와 어긋난 결과(무관 차이 혼입 = 오탐, 또는 병합 판정 오음)를 냄. 특히 main이 그새 전진하면 2-dot이 오도한다.
 
