@@ -103,3 +103,29 @@ def test_real_dict_loads():
     d = load_dict()
     assert "반도체" in d and "금융" in d
     assert isinstance(d["반도체"], list)
+
+
+class TestVeto:
+    """L2-ADOPT 거부권 — 고정 임계 0.2 경계값."""
+
+    def test_below_threshold_vetoed(self):
+        from apps.chain_sight.services.peer_adjudicator import veto
+        assert veto(0.0) is True
+        assert veto(0.1) is True
+
+    def test_boundary_02_vetoed(self):
+        # 경계: grounded == 0.2 는 기각(≤ 0.2).
+        from apps.chain_sight.services.peer_adjudicator import veto
+        assert veto(0.2) is True
+
+    def test_just_above_threshold_adopted(self):
+        from apps.chain_sight.services.peer_adjudicator import veto, VETO_GROUNDING
+        assert VETO_GROUNDING == 0.2
+        assert veto(0.21) is False
+        assert veto(0.667) is False
+        assert veto(1.0) is False
+
+    def test_none_conservatively_vetoed(self):
+        # 접지 불가(claim 없음) → 보수적 기각 → 버킷 폴백.
+        from apps.chain_sight.services.peer_adjudicator import veto
+        assert veto(None) is True
