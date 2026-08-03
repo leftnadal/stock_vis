@@ -61,6 +61,18 @@ def parse_verdict(raw):
     raise VerdictParseError(v)
 
 
+def match_forward_exact(symbol_pair, relation_type):
+    """CSV symbol_pair('X↔Y')를 '↔'로 split한 순서로 forward-exact 매칭.
+
+    CSV의 symbol_pair 순서가 DB 방향(symbol_a→symbol_b)을 보존한다는 실측(STEP 0)에 근거.
+    S0 backfill 등 다른 CSV 소비 경로가 이 함수를 재사용한다(매칭 로직 단일 소스).
+    """
+    x, y = symbol_pair.split("↔")
+    return RelationConfidence.objects.filter(
+        symbol_a=x, symbol_b=y, relation_type=relation_type
+    )
+
+
 def build_plan(rows):
     """CSV 행 리스트 → 반영 계획(DB 조회만, 무변경).
 
@@ -92,9 +104,7 @@ def build_plan(rows):
             continue
 
         x, y = pair.split("↔")
-        qs = RelationConfidence.objects.filter(
-            symbol_a=x, symbol_b=y, relation_type=rtype
-        )
+        qs = match_forward_exact(pair, rtype)
         n = qs.count()
         if n != 1:
             # 재실행 멱등: CHANGE/CHANGE_REV는 반영 후 원 키(relation_type/방향)가 사라진다.
