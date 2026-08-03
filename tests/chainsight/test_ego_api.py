@@ -160,6 +160,7 @@ class TestEgoGraphAPI:
         assert d["nodes"] == [{
             "symbol": "LONE", "name": "LONE Inc.", "sector": "Technology",
             "pagerank_rank": None, "betweenness_rank": None,  # ⑲ S3 additive, 스냅샷 부재 시 null
+            "industry_bucket": None,  # ⑳-3 S3-MINDMAP additive, industry 부재 시 null
         }]
 
     def test_unknown_symbol_404(self, ego_data, auth_client):
@@ -265,6 +266,52 @@ class TestEgoRouteContract:
 
         with pytest.raises(Resolver404):
             resolve(self.OLD_BROKEN_PATH)
+
+
+class TestEgoMindmapFields:
+    """⑳-3 S3-MINDMAP S3 — L1 relation_domain 실값 + L2 노드 industry_bucket 노출."""
+
+    @pytest.fixture
+    def mm_data(self, db):
+        Stock.objects.create(symbol="MHUB", stock_name="Hub Inc.", sector="Technology",
+                             industry="Semiconductors")
+        Stock.objects.create(symbol="MSUP", stock_name="Sup Inc.", sector="Technology",
+                             industry="Software - Application")
+        Stock.objects.create(symbol="MRAW", stock_name="Raw Inc.", sector="Energy",
+                             industry="Some Unmapped Industry")
+        rc = _rc("MHUB", "MSUP", "SUPPLIES_TO", 85.0)
+        rc.relation_domain = "반도체·메모리"   # L1 승인본 태그
+        rc.save(update_fields=["relation_domain"])
+        _rc("MHUB", "MRAW", "PEER_OF", 60.0)   # 태그 없음
+        return None
+
+    def test_relation_domain_exposed_actual_value(self, mm_data, auth_client):
+        d = auth_client.get("/api/v1/chainsight/ego/MHUB/").json()
+        edges = {e["target"]: e for e in d["edges"]}
+        assert edges["MSUP"]["relation_domain"] == "반도체·메모리"  # 실값(하드코딩 None 아님)
+        assert edges["MRAW"]["relation_domain"] is None            # 미태깅 → null 폴백
+
+    def test_node_industry_bucket(self, mm_data, auth_client):
+        d = auth_client.get("/api/v1/chainsight/ego/MHUB/").json()
+        nodes = {n["symbol"]: n for n in d["nodes"]}
+        assert nodes["MHUB"]["industry_bucket"] == "반도체·메모리"
+        assert nodes["MSUP"]["industry_bucket"] == "클라우드·엔터프라이즈SW"
+        assert nodes["MRAW"]["industry_bucket"] == "Some Unmapped Industry"  # 원값 폴백
+
+    def test_industry_bucket_null_when_no_stock_industry(self, db, auth_client):
+        Stock.objects.create(symbol="NOI", stock_name="No Ind", sector="", industry=None)
+        Stock.objects.create(symbol="NX2", stock_name="X2", sector="")
+        _rc("NOI", "NX2", "PEER_OF", 50.0)
+        d = auth_client.get("/api/v1/chainsight/ego/NOI/").json()
+        nodes = {n["symbol"]: n for n in d["nodes"]}
+        assert nodes["NOI"]["industry_bucket"] is None
+
+    def test_mindmap_fields_no_extra_queries(self, mm_data, auth_client):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as ctx:
+            auth_client.get("/api/v1/chainsight/ego/MHUB/")
+        assert len(ctx.captured_queries) <= 8  # 동일 쿼리 컬럼 추가(N+1 없음)
 
 
 class TestEgoSoftDropFilter:

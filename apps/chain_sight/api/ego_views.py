@@ -21,6 +21,7 @@ from apps.chain_sight.models import (
     RelationPairSnapshot,
     SymbolCentrality,
 )
+from apps.chain_sight.services.industry_buckets import industry_to_bucket
 from apps.chain_sight.utils import normalize_pair
 from packages.shared.stocks.models import Stock
 
@@ -166,6 +167,8 @@ class EgoGraphView(APIView):
                 "has_industry_source",
                 "has_news_source",
                 "evidence_sources",
+                # ⑳-3 S3-MINDMAP S3: L1 도메인 태그(승인본) additive — 동일 쿼리 컬럼 추가.
+                "relation_domain",
             )[:limit]
         )
 
@@ -198,7 +201,7 @@ class EgoGraphView(APIView):
         stock_map = {
             s.symbol: s
             for s in Stock.objects.filter(symbol__in=node_syms).only(
-                "symbol", "stock_name", "sector"
+                "symbol", "stock_name", "sector", "industry"
             )
         }
 
@@ -246,6 +249,8 @@ class EgoGraphView(APIView):
                 "sector": (st.sector if st else "") or "",
                 "pagerank_rank": rk["pagerank_rank"] if rk else None,
                 "betweenness_rank": rk["betweenness_rank"] if rk else None,
+                # ⑳-3 S3-MINDMAP S3: L2 industry 버킷(파생, 엣지 무기록). industry 변경 자동추종.
+                "industry_bucket": industry_to_bucket(st.industry if st else None),
             })
 
         # 엣지 payload (+ trend 요약)
@@ -289,8 +294,8 @@ class EgoGraphView(APIView):
                     if isinstance(e.get("evidence_sources"), dict)
                     else None
                 ),
-                # relation_domain: 모델 필드 미존재(S2-B) → null 자리 확보(additive).
-                "relation_domain": None,
+                # ⑳-3 S3-MINDMAP S3: L1 도메인 태그(승인본) 실값 노출. 미태깅은 null → 유형 수납 폴백.
+                "relation_domain": e.get("relation_domain"),
             })
 
         payload = {
