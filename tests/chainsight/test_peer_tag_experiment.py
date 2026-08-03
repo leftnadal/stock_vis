@@ -80,6 +80,32 @@ class TestAggregate:
         assert agg["by_variant"]["A"] == {"BETTER": 1}
         assert agg["by_variant"]["B"] == {"SAME": 1}
 
+    def test_why_wrong_matrix(self):
+        rows = [
+            # known_fact인데 틀림 = 위험 신호
+            {"claim_type": "known_fact", "basis_hint": "10-K", "counter_signal": "", "verdict": "WRONG"},
+            {"claim_type": "known_fact", "basis_hint": "10-K", "counter_signal": "", "verdict": "SAME"},
+            {"claim_type": "uncertain", "basis_hint": "", "counter_signal": "경쟁", "verdict": "WRONG"},
+        ]
+        agg = aggregate(rows)
+        # claim_type별 WRONG율
+        assert agg["by_claim_type_wrong_rate"]["known_fact"] == 0.5   # 1/2
+        assert agg["by_claim_type_wrong_rate"]["uncertain"] == 1.0    # 1/1
+        # basis_hint 유무별
+        assert agg["by_basis_hint_wrong_rate"]["present"] == 0.5      # 1/2
+        assert agg["by_basis_hint_wrong_rate"]["absent"] == 1.0       # 1/1
+        # counter_signal 존재군 vs 부재군
+        assert agg["counter_signal_wrong_rate"]["present"] == 1.0     # 1/1
+        assert agg["counter_signal_wrong_rate"]["absent"] == 0.5      # 1/2
+
+
+class TestRationalePrompt:
+    def test_system_prompt_requests_rationale(self):
+        from apps.chain_sight.management.commands.peer_tag_experiment import _SYSTEM
+        assert "rationale" in _SYSTEM
+        assert "claim_type" in _SYSTEM
+        assert "counter_signal" in _SYSTEM
+
 
 def _synthetic():
     peers, mcap, ind = [], {}, {}

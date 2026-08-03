@@ -112,7 +112,12 @@ def build_sample(peers, mcap_map, industry_map):
 _SYSTEM = (
     "너는 미국 상장사 간 관계를 분류하는 금융 애널리스트다. 두 Peer 종목이 어떤 사업 "
     "도메인에서 경쟁·연결되는지 짧은 한국어 명사구 1개로 태깅한다. "
-    '반드시 JSON만 출력: {"domain_tag": "명사구", "confidence": 0.0}'
+    "반드시 JSON만 출력(설명·마크다운 금지):\n"
+    '{"domain_tag": "명사구", "confidence": 0.0, '
+    '"rationale": {"claim": "판단 근거 1문장", "claim_type": "known_fact", '
+    '"basis_hint": "근거 힌트", "counter_signal": "반대 신호(없으면 빈 문자열)"}}\n'
+    "- claim_type: known_fact(확실히 아는 사실)|inference(추론)|uncertain(불확실) 중 하나.\n"
+    "- rationale는 감사용 자기보고 — 왜 그 태그인지, 무엇이 판단을 뒤집을 수 있는지."
 )
 
 
@@ -130,24 +135,45 @@ def build_experiment_prompt(row, names, industries):
     return _SYSTEM, [user]
 
 
-def aggregate(rows):
-    """verdict 채운 결과 → 구간별 BETTER/SAME/WRONG율 + ㉮㉯ 격차. 순수 함수.
+def _wrong_rate(counter):
+    """WRONG / 판정 합. 판정 0이면 None."""
+    total = sum(counter.values())
+    return round(counter.get("WRONG", 0) / total, 3) if total else None
 
-    verdict 어휘: BETTER(㉯가 더 나음)/SAME/WRONG(둘 다 틀림)/'' (미채움).
+
+def aggregate(rows):
+    """verdict 채운 결과 → 구간·claim_type·basis_hint·counter_signal 매트릭스. 순수 함수.
+
+    verdict 어휘: BETTER/SAME/WRONG/'' (미채움). "왜 틀리는가" 매트릭스(패치2):
+      - by_claim_type: claim_type별 WRONG율(known_fact가 틀리면 위험 신호).
+      - by_basis_hint_present: 근거 힌트 유무별 WRONG율.
+      - by_counter_signal: counter_signal 존재군 vs 부재군 WRONG율 차이.
     """
     from collections import Counter, defaultdict
 
     by_cell = defaultdict(Counter)
     by_variant = defaultdict(Counter)
+    by_claim_type = defaultdict(Counter)
+    by_basis_hint = defaultdict(Counter)   # present|absent
+    by_counter = defaultdict(Counter)      # present|absent
     for r in rows:
         v = (r.get("verdict") or "").strip().upper()
         if not v:
             continue
-        cell = (r.get("mcap_tercile", ""), r.get("industry_same", ""))
-        by_cell[cell][v] += 1
+        by_cell[(r.get("mcap_tercile", ""), r.get("industry_same", ""))][v] += 1
         by_variant[r.get("prompt_variant", "")][v] += 1
-    return {"by_cell": {k: dict(v) for k, v in by_cell.items()},
-            "by_variant": {k: dict(v) for k, v in by_variant.items()}}
+        by_claim_type[(r.get("claim_type") or "none").strip().lower()][v] += 1
+        by_basis_hint["present" if (r.get("basis_hint") or "").strip() else "absent"][v] += 1
+        by_counter["present" if (r.get("counter_signal") or "").strip() else "absent"][v] += 1
+
+    return {
+        "by_cell": {k: dict(v) for k, v in by_cell.items()},
+        "by_variant": {k: dict(v) for k, v in by_variant.items()},
+        "by_claim_type": {k: dict(v) for k, v in by_claim_type.items()},
+        "by_claim_type_wrong_rate": {k: _wrong_rate(v) for k, v in by_claim_type.items()},
+        "by_basis_hint_wrong_rate": {k: _wrong_rate(v) for k, v in by_basis_hint.items()},
+        "counter_signal_wrong_rate": {k: _wrong_rate(v) for k, v in by_counter.items()},
+    }
 
 
 class Command(BaseCommand):
@@ -199,43 +225,54 @@ class Command(BaseCommand):
         names = dict(Stock.objects.filter(symbol__in=syms).values_list("symbol", "stock_name"))
         industries = _industry_map(syms)
 
-        from apps.chain_sight.services.domain_tagging import parse_llm_json
+        import json
+        from apps.chain_sight.services.domain_tagging import extract_rationale, parse_llm_json
         from apps.market_pulse.llm.client import generate_with_circuit
 
         calls, fail = 0, 0
         for r in rows:
             system, contents = build_experiment_prompt(r, names, industries)
+            r.setdefault("rationale_A", "")
+            r.setdefault("rationale_B", "")
             try:
                 resp = generate_with_circuit(system_instruction=system, contents=contents)
                 calls += 1
                 out = parse_llm_json(getattr(resp, "text", "") or "")
-                if not out:
+                rat = extract_rationale(out) if out else None
+                # 패치2: 형식붕괴 = JSON 파싱 실패 OR rationale 누락(rationale도 측정 대상).
+                if not out or rat is None:
                     fail += 1
-                    r["llm_tag"], r["llm_conf"] = "", ""
-                else:
-                    tag = out.get("domain_tag", "")
-                    r["llm_tag"] = tag
+                if out:
+                    r["llm_tag"] = out.get("domain_tag", "")
                     r["llm_conf"] = out.get("confidence", "")
                     r["normalized_bucket"] = industry_to_bucket(industries.get(r["symbol_a"]))
+                if rat:
+                    rj = json.dumps(rat, ensure_ascii=False)
+                    r[f"rationale_{r['prompt_variant']}"] = rj  # 변형별 컬럼(㉮/㉯)
+                    r["claim_type"] = rat["claim_type"]
+                    r["basis_hint"] = rat["basis_hint"]
+                    r["counter_signal"] = rat["counter_signal"]
             except Exception as e:  # noqa: BLE001
                 fail += 1
                 self.stderr.write(f"  LLM 오류: {type(e).__name__}: {e}")
             r["verdict"] = ""  # 병진 검수용 빈칸
             if calls >= 10 and fail / calls > 0.10:
-                self.stderr.write(f"HALT: 형식붕괴 {fail}/{calls} > 10%.")
+                self.stderr.write(f"HALT: 형식붕괴(태그·rationale) {fail}/{calls} > 10%.")
                 break
             time.sleep(RATE_SLEEP_S)
 
         with open(RESULT_CSV, "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=[
                 "symbol_a", "symbol_b", "mcap_tercile", "industry_same", "prompt_variant",
-                "llm_tag", "llm_conf", "normalized_bucket", "verdict",
+                "llm_tag", "llm_conf", "normalized_bucket",
+                "rationale_A", "rationale_B", "claim_type", "basis_hint", "counter_signal",
+                "verdict",
             ])
             w.writeheader()
             for r in rows:
                 w.writerow({k: r.get(k, "") for k in w.fieldnames})
         self.stdout.write(
-            f"✅ LLM 호출 {calls}회(한정 {TARGET}) · 형식붕괴 {fail} → {RESULT_CSV}"
+            f"✅ LLM 호출 {calls}회(240쌍 한정) · 형식붕괴 {fail} → {RESULT_CSV}"
         )
 
     def _aggregate(self):

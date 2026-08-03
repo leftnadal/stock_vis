@@ -188,6 +188,13 @@ function csvField(v){
 
 // ── 파생 계산(휴리스틱: SD플립·오탐후보·pending 사유) ─────────────
 function truthy(v){ return String(v).trim().toLowerCase()==="true" || String(v).trim()==="1"; }
+// ⑳-3 패치2: L2-X rationale(rationale_A/B = JSON 문자열) 파싱 → {claim, claim_type, counter_signal}.
+function rationaleOf(r){
+  const raw = (r.rationale_A && r.rationale_A.trim()) || (r.rationale_B && r.rationale_B.trim()) || "";
+  if(!raw) return null;
+  try { const o = JSON.parse(raw); return (o && typeof o==="object") ? o : null; }
+  catch(e){ return null; }
+}
 function otherSymbol(pair){
   const p=String(pair).split("↔"); return p.length===2 ? p[1] : "";
 }
@@ -344,6 +351,14 @@ function renderCard(r,i){
     ${r._fp? `<span class="chip fpbadge">⚠ 오탐 후보(단어경계)</span>`:""}
   </div>
   <div class="reason">사유: ${esc(r._reason)}</div>`;
+  // ⑳-3 패치2: LLM 근거(rationale) claim 표시 — L2-X 판정 재료. rationale_A/B(JSON) 파싱.
+  const rat = rationaleOf(r);
+  if(rat && rat.claim){
+    html+=`<div class="reason">🔎 LLM 근거: ${esc(rat.claim)}`
+      + (rat.claim_type? ` <span class="chip">${esc(rat.claim_type)}</span>`:"")
+      + (rat.counter_signal? ` · 반대신호: ${esc(rat.counter_signal)}`:"")
+      + `</div>`;
+  }
   if(r._sd){
     html+=`<div class="sdnote">↔ SD 방향 플립(휴리스틱): 재화·부품 흐름 방향 = <b>SUPPLIES_TO 정본</b>, DEPENDS_ON = 매출 의존 한정</div>`;
   }
