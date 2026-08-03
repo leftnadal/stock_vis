@@ -14,7 +14,8 @@
 | S3-MINDMAP-DEPLOY | 배포·재시작·라이브 스크린샷 게이트 — S0 백필 `--apply`(태그 133), DOMAIN_AUTO_APPROVE ON(env+재기동), 머지·web rebuild·daphne/worker 재기동. 마인드맵 라이브 렌더 스크린샷([[feedback_ui_slice_live_screenshot]]) 검증. | @infra/ops | 병진 승인 | 🆕 **게이트 대기(prod-write 3종+빌드)** |
 | REVIEW-UNANCHORED-40 | 언앵커 40건 배치 → **conf 임계 0.75 재확정 재료**(D-AUTO-SWITCH-ON 잠정 해소). | @backend/rag | AV 복원 | 🆕 등재(임계 재확정 연결) |
 | L2-X-MCAP-BACKFILL | **L2-X 실험 선행 조건** — market_capitalization 백필. 실측 커버리지 26/544(층화 모집단 49<240) → mcap 3분위 층화 불가. FMP quote/profile로 peer 유니버스 mcap 백필 필요. | @backend | FMP 소비 게이트 | 🆕 등재(L2-X 블록 해소용) |
-| L2-SOURCE-DECISION | L2-X verdict 회수 → 구간별 실측 + **"왜 틀리는가" 매트릭스**(claim_type별 WRONG율·basis_hint 유무별·counter_signal 존재군 정확도차, 패치2) → L2 소스 결정(교체/하이브리드/현행유지). 채택 시 "추정" 라벨 동반 승격. | 설계 | L2-X 실행(mcap 백필 후) | 🆕 등재(실험 후) |
+| L2-SOURCE-DECISION | L2-X verdict 회수 → 구간별 실측 + **"왜 틀리는가" 매트릭스**(claim_type별 WRONG율·basis_hint 유무별·counter_signal 존재군 정확도차, 패치2) → L2 소스 결정(교체/하이브리드/현행유지). 채택 시 "추정" 라벨 동반 승격. | 설계 | L2-X 실행(mcap 백필 후) | ⏳ **sweep 완료(S3-LAND, mcap 96.2%·240쌍 실호출) → 병진님 verdict 검수 대기**(세션 밖). CSV=`outputs/peer_experiment/peer_experiment_result.csv`. verdict 채운 뒤 --aggregate는 다음 사이클 |
+| INGEST-FUNNEL-COUNTERS | 관계 유입 퍼널 카운터(발견→기계검증→게이트→auto/pending→검수) 계측 — L1 자동화 사후분석 2순위. gate_audit(D-GATE-AUDIT-TRAIL) 연계 단계별 드랍 집계. 신규 SEC 유입 재개돼야 의미(현재 0). | @backend | **AV 복원 트랙 합류**(유입 재개) | 🆕 등재(2순위, AV 게이트) |
 | L3-NEWS-SUBGROUP | L3 마인드맵 뉴스 하위그룹(기사 태그별) 본격 가동 — 현재 단일 가지. | @backend/rag | **AV 복원** | 🆕 등재(AV 게이트) |
 | FMP-INDUSTRY-GAP | ego 서빙 심볼 industry 결측 33/555(94.1% 커버)·Stock 부재 19 — 필요 시 FMP profile 백필. 현재 커버리지 충분(게이트 통과)이라 낮은 우선순위. | @backend | - | 💤 등재만(우선순위 낮음) |
 
@@ -657,7 +658,7 @@
 | CS-LAZY | `apps/chain_sight`→`services.{validation,news,serverless}` lazy import 정리 방향(교차 트랙 결합) | 결정 안건(경계) | 동일(전 트랙 STEP 0 후 일괄) | 🆕 보류 |
 | CS-CHOICES | ~~`RELATION_TYPE_CHOICES` ↔ DB drift — `PARTNER_WITH`·`DEPENDS_ON` 미정의~~ **✅ PARTNER_WITH·DEPENDS_ON 추가(⑰ S1-a, mig 0017 no-op)**. 잔여=`HAS_THEME`·`HELD_BY_SAME_FUND` **0행 choices 제거 후보**(파괴적, 아래 GRAPH-CHOICES-0ROW로 분리) | chain_sight | ⑰ S1-a | 🟡 부분해소 |
 | GRAPH-EGO-NEO4J-REEVAL | Neo4j 거취 재평가 — **동결 중**(D-GRAPH-EGO-BACKEND). **트리거**: 멀티홉(2+hop)·커뮤니티탐지(GDS)·대규모 순회가 제품 요구로 발생 시 Neo4j 재가동+dirty 270 재동기 재평가. 그 전엔 PG 네이티브 ego로 충분 | @backend/@infra | 트리거 충족 시 | 💤 동결 |
-| GRAPH-TRUTHSCORE-NORM | truth_score 정규화(0~85 미정규화 → 0~1 또는 0~100). **ego 화면이 소비자가 됨**(truth_score를 굵기/불투명도로 렌더) → 우선순위 상향 후보. 별도 트랙(ego API·기존 소비처 동시 영향, 행위보존 회귀 필요) | @backend | ego 화면 land 후 | 🆕 후보(상향) |
+| GRAPH-TRUTHSCORE-NORM | truth_score 정규화(0~85 미정규화 → 0~1 또는 0~100). **ego 화면이 소비자가 됨**(truth_score를 굵기/불투명도로 렌더) → 우선순위 상향 후보. 별도 트랙(ego API·기존 소비처 동시 영향, 행위보존 회귀 필요). **★요구사항 추가(S3-LAND, 3순위 사후분석): 재산출 시 산식 버전 + 입력 스냅샷을 기록**(gate_audit·rationale와 동형 감사추적 — "왜 이 점수" 재현 가능하게). | @backend | ego 화면 land 후 | 🆕 후보(상향) |
 | GRAPH-CHOICES-0ROW | 0행 choices(`HAS_THEME`·`HELD_BY_SAME_FUND`) 제거 — **파괴적**(choices 제거 시 기존 데이터 유입 경로 확인 필요, migration DDL 가능성). 보고만, 착수 전 영향분석 | @backend | 영향분석 후 | 🆕 후보(보류) |
 | GRAPH-NEO4J-SYNC-DEACTIVATE | neo4j sync 태스크 3종(`chainsight-neo4j-dirty-sync`·`sync-profiles-neo4j`·`sync-relations-neo4j`) 전부 enabled이나 Neo4j DOWN → dirty 270 재동기 실패 반복(무효 가동). **비활성 후보**(에러 누적 차단). beat 변경=병진 수동. Neo4j 재가동 결정(GRAPH-EGO-NEO4J-REEVAL)과 연동 | @infra | 병진 결정 | 🆕 후보(보고만) |
 | CS-TEST | EventBoard/Ranking 테스트 5건 404(`theme_tags` 플래그 OFF ↔ EventGroup 보드 기대, 라우트는 등록됨) | chain_sight 트랙 직접 | 동일(chain_sight 실작업 슬라이스) | 🆕 보류 |

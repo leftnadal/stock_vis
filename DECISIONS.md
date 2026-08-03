@@ -8,6 +8,18 @@
 
 ---
 
+## [2026-08-03] D-GATE-AUDIT-TRAIL — 도메인 태깅 게이트 판정 감사 추적 [chainsight]
+
+> 트랙: ⑳-3 S3-LAND S3. L1 프로덕션 파이프라인.
+
+**결정**: `decide_gate` 판정 시 `domain_machine_check.gate_audit` JSON 키에 **발동 룰 목록·룰별 비교 원값·최종 판정 경로**를 additive 기록한다. 마이그레이션 0(JSONField 키).
+
+**Why**: 자가모순 53건류 미스터리(캘리브레이션 전력)가 재발하면 "왜 이 판정이 났나"를 로그로 즉답해야 한다. 게이트가 4분기(self_contradiction/type_change/all_checks/checks_fail)로 분기하므로, 어느 룰이 발동했고 피연산자 원값(type_match 좌우·confidence vs 임계)이 무엇이었는지를 남긴다.
+
+**행위보존 원칙**: 게이트 **판정 로직은 무변경**. `build_gate_audit`이 `decide_gate`의 조건을 미러링해 **기록만** 한다. 정합성은 ⑴ 기존 게이트 테스트 GREEN(행위 불변 입증) ⑵ audit 경로↔decide_gate 판정 일치 테스트로 못박는다. 기록은 감사 전용(ego API·화면 미노출).
+
+**How to apply**: `domain_tagging.build_gate_audit(mc, relation_type)` → tag_one이 mc["gate_audit"] 기록 → DB write 경로가 domain_machine_check로 저장. 기록 범위=fired_rules·values(피연산자)·decision_path.
+
 ## [2026-08-03] D-LLM-RATIONALE-AUDIT — LLM 태깅 근거(rationale) 구조화 감사 기록 [chainsight][llm]
 
 > 트랙: ⑳-3 S3-MINDMAP 패치2. L1 프로덕션 파이프라인 + L2-X 실험 공통.
