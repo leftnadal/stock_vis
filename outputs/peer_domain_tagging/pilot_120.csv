@@ -1,0 +1,121 @@
+pair,mcap_tercile,industry_same,llm_tag,grounded_ratio,veto,adopted,is_estimate
+ADI↔QCOM,상,동일,신호 처리 및 연결 반도체,0.889,False,True,False
+CDNS↔UBER,상,동일,이질적인 소프트웨어 서비스,0.75,False,True,False
+AMT↔IRM,상,동일,데이터 인프라,0.75,False,True,False
+PGR↔TRV,상,동일,손해보험,0.75,False,True,False
+ACGL↔AIG,상,동일,다각화 보험 서비스,0.667,False,True,False
+KLAC↔NXPI,상,동일,반도체 제조 솔루션 및 부품,1.0,False,True,False
+ABBV↔JNJ,상,동일,전문의약품 시장 경쟁,0.6,False,True,False
+GD↔GE,상,동일,항공우주 제조,0.833,False,True,False
+PYPL↔V,상,동일,디지털 결제 서비스,0.778,False,True,False
+PCG↔XEL,상,동일,규제 전력 유틸리티,1.0,False,True,False
+D↔PEG,상,동일,규제 전력 사업,1.0,False,True,False
+EXC↔PCG,상,동일,규제 전력 유틸리티,0.75,False,True,False
+CI↔HUM,상,동일,건강 보험 서비스,0.75,False,True,False
+APP↔INTU,상,동일,애플리케이션 소프트웨어 산업,1.0,False,True,False
+ARES↔BLK,상,동일,자산 운용,1.0,False,True,False
+ED↔WEC,상,동일,규제 전력 유틸리티,0.833,False,True,False
+ABT↔BSX,상,동일,심혈관 및 신경 조절 의료기기,0.571,False,True,False
+INTC↔KLAC,상,동일,반도체 생산 공정,0.857,False,True,False
+AEP↔ED,상,동일,전력 유틸리티,0.625,False,True,False
+DUK↔XEL,상,동일,전력 유틸리티,0.857,False,True,False
+CAH↔JNJ,상,상이,제약 및 의료 제품 공급망,0.889,False,True,False
+PSX↔XOM,상,상이,석유 정제 및 유통,1.0,False,True,False
+DE↔HWM,상,상이,산업용 기계 및 부품 제조,1.0,False,True,False
+OXY↔PSX,상,상이,석유 가치 사슬,0.8,False,True,False
+AMAT↔ANET,상,상이,데이터센터 및 클라우드 인프라,0.6,False,True,False
+CARR↔HON,상,상이,빌딩 기술 솔루션,0.8,False,True,False
+ADBE↔INTU,상,상이,기업 생산성 소프트웨어,1.0,False,True,False
+C↔CME,상,상이,금융 파생상품 거래,0.8,False,True,False
+META↔ORCL,상,상이,AI 인프라,0.667,False,True,False
+BSX↔PFE,상,상이,질병 치료 및 예방,1.0,False,True,False
+ISRG↔MCK,상,상이,의료 공급망,0.667,False,True,False
+GLW↔NVDA,상,상이,디지털 시각화 및 데이터 인프라,0.9,False,True,False
+EBAY↔GM,상,상이,자동차 온라인 유통,0.667,False,True,False
+NOC↔ODFL,상,상이,기업 물류 운송 서비스,0.8,False,True,False
+GOOG↔MSI,상,상이,공공·기업 기술 솔루션,0.833,False,True,False
+DASH↔YUM,상,상이,음식 배달,0.833,False,True,False
+BLK↔MET,상,상이,자산 관리,1.0,False,True,False
+AAPL↔MCHP,상,상이,반도체 부품 공급망,0.778,False,True,False
+GLW↔GOOGL,상,상이,모바일/디스플레이 부품,0.545,False,True,False
+SO↔SRE,상,상이,유틸리티 서비스,0.857,False,True,False
+IP↔PKG,중,동일,골판지 포장재 제조,0.875,False,True,False
+D↔EVRG,중,동일,규제 전력 유틸리티,1.0,False,True,False
+EIX↔XEL,중,동일,규제 전력 유틸리티,0.833,False,True,False
+L↔PGR,중,동일,손해보험업,1.0,False,True,False
+CHD↔PG,중,동일,가정 및 개인용품,0.6,False,True,False
+BSX↔ZBH,중,동일,이식형 의료기기,0.8,False,True,False
+CMS↔EIX,중,동일,규제 전력 유틸리티,0.6,False,True,False
+L↔WRB,중,동일,재물 및 배상 책임 보험,0.833,False,True,False
+AEE↔PCG,중,동일,규제 전기 유틸리티,0.833,False,True,False
+ISRG↔WST,중,동일,정밀 의료 기술 및 부품,1.0,False,True,False
+DD↔ECL,중,동일,수처리 솔루션,1.0,False,True,False
+DVN↔EQT,중,동일,원유 및 천연가스 생산,0.875,False,True,False
+DGX↔IQV,중,동일,의료 진단 및 생명과학 연구,0.75,False,True,False
+NWS↔WBD,중,동일,미디어 콘텐츠,1.0,False,True,False
+CB↔L,중,동일,재물 및 상해 보험,1.0,False,True,False
+DELL↔HPQ,중,동일,컴퓨터 하드웨어 제조,0.889,False,True,False
+AEE↔AEP,중,동일,규제 전기 유틸리티,0.667,False,True,False
+NVDA↔Q,중,동일,반도체,0.333,False,True,False
+DTE↔ED,중,동일,규제 전력 유틸리티,1.0,False,True,False
+RMD↔WST,중,동일,의료기기 및 제약 부품 제조,0.889,False,True,False
+EXR↔IRM,중,상이,보관 서비스,1.0,False,True,False
+BR↔CTSH,중,상이,금융 IT 솔루션 및 서비스,0.833,False,True,False
+DOV↔MMM,중,상이,산업용 기술 및 제품,1.0,False,True,False
+OMC↔T,중,상이,미디어 및 광고 산업,0.8,False,True,False
+BG↔HSY,중,상이,설탕 및 감미료,1.0,False,True,False
+EFX↔IEX,중,상이,상이한 산업군,0.727,False,True,False
+EQT↔PSX,중,상이,석유가스 가치사슬,1.0,False,True,False
+DVN↔MPC,중,상이,원유 생산 및 정유,1.0,False,True,False
+AVB↔VTR,중,상이,부동산 투자,0.5,False,True,False
+K↔MNST,중,상이,간편식 및 음료,1.0,False,True,False
+GEV↔PPL,중,상이,전력 발전 및 유틸리티,0.75,False,True,False
+STZ↔TSN,중,상이,식품 및 음료,0.875,False,True,False
+BIIB↔GEHC,중,상이,제약 및 의료 진단 솔루션,0.667,False,True,False
+ABBV↔MRNA,중,상이,바이오 제약,1.0,False,True,False
+LH↔STE,중,상이,의료기관 운영 지원,0.714,False,True,False
+HPQ↔INTC,중,상이,PC 부품 공급망,0.5,False,True,False
+DTE↔SRE,중,상이,에너지 유틸리티,1.0,False,True,False
+LEN↔LOW,중,상이,주택 건설 및 개선,1.0,False,True,False
+HUBB↔OTIS,중,상이,건축 인프라 시스템,0.75,False,True,False
+EA↔FTV,중,상이,이종 산업,0.667,False,True,False
+FISV↔JKHY,하,동일,금융 IT 솔루션,0.889,False,True,False
+DPZ↔YUM,하,동일,글로벌 피자 체인,0.75,False,True,False
+EVRG↔PNW,하,동일,규제 전력 유틸리티,1.0,False,True,False
+HPE↔ZBRA,하,동일,엣지 통신 장비,1.0,False,True,False
+ALGN↔DXCM,하,동일,디지털 헬스케어 기기,0.857,False,True,False
+EPAM↔IBM,하,동일,디지털 전환 솔루션,0.833,False,True,False
+CRM↔MTCH,하,동일,구독형 클라우드 소프트웨어 서비스,0.0,True,False,False
+BLK↔IVZ,하,동일,자산운용,0.667,False,True,False
+INCY↔TECH,하,동일,바이오 의약품 개발 지원,1.0,False,True,False
+CBRE↔CSGP,하,동일,상업용 부동산 정보 및 서비스,0.75,False,True,False
+ALB↔LIN,하,동일,산업용 화학물질,0.6,False,True,False
+GNRC↔XYL,하,동일,산업용 유틸리티 장비,0.429,False,True,False
+ADSK↔DAY,하,동일,기업용 애플리케이션 소프트웨어,1.0,False,True,False
+INTU↔TYL,하,동일,재무 행정 소프트웨어,0.833,False,True,False
+HII↔TDG,하,동일,국방 플랫폼 및 부품 공급,0.833,False,True,False
+AOS↔GNRC,하,동일,건물 유틸리티 시스템,0.667,False,True,False
+CARR↔MAS,하,동일,건축 및 주택 개선 제품,0.75,False,True,False
+HOLX↔ISRG,하,동일,수술 장비,0.667,False,True,False
+ERIE↔MMC,하,동일,보험 중개 서비스,0.75,False,True,False
+CRWD↔GEN,하,동일,사이버 보안,1.0,False,True,False
+CBRE↔UDR,하,상이,부동산 자산 관리,0.625,False,True,True
+KKR↔MKTX,하,상이,채권 시장,1.0,False,True,True
+JCI↔POOL,하,상이,시설 관리 및 설비 공급,0.5,False,True,True
+EXPD↔PNR,하,상이,산업 공급망,0.875,False,True,True
+IQV↔UHS,하,상이,헬스케어 혁신 및 진료,0.9,False,True,True
+ALB↔CF,하,상이,산업용 화학물질,0.75,False,True,True
+ARE↔FRT,하,상이,상업용 부동산 투자,0.727,False,True,True
+NDSN↔PCAR,하,상이,산업 및 특수 목적 기계 제조,0.714,False,True,True
+HST↔MAA,하,상이,부동산 투자,0.667,False,True,True
+AES↔ETR,하,상이,전력 유틸리티,1.0,False,True,True
+GPN↔SWK,하,상이,산업 분야 무관,0.8,False,True,True
+KMX↔LOW,하,상이,소비자 재량 지출,0.5,False,True,True
+DOV↔POOL,하,상이,펌프 및 관련 장비,1.0,False,True,True
+CZR↔RCL,하,상이,리조트 및 크루즈 서비스,0.571,False,True,True
+HSIC↔MDT,하,상이,의료기기 및 용품 공급,0.667,False,True,True
+MAA↔SPG,하,상이,임대 부동산,0.5,False,True,True
+NRG↔TLN,하,상이,독립 전력 생산,0.4,False,True,True
+A↔WBA,하,상이,생명과학 연구 및 의약품 소매,0.818,False,True,True
+APA↔BKR,하,상이,석유 가스 개발 및 서비스,1.0,False,True,True
+MKTX↔NDAQ,하,상이,자본 시장 거래 및 데이터,0.571,False,True,True

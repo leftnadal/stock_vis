@@ -411,6 +411,10 @@ export interface EgoEdge {
   co_mention_count?: number | null;
   /** ⑳-3 S2: 도메인 태그(제품/시장). S2-B 전엔 항상 null(필드 자리 확보) */
   relation_domain?: string | null;
+  /** L2-ADOPT: PEER L2 도메인 태그(채택분만). 거부권/미태깅은 null → FE industry_bucket 폴백 */
+  peer_domain?: string | null;
+  /** L2-ADOPT: 하·상이 구획 "추정" 라벨(저시총·타산업) */
+  peer_domain_estimate?: boolean;
 }
 
 /** ego API meta */

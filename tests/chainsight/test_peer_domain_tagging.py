@@ -104,7 +104,7 @@ class TestTagPeerOneVeto:
         assert out["veto"] is True
         assert out["adopted_tag"] is None          # 기각 → 채택 없음
         assert out["draft"] == "결제 인프라"        # 원 태그는 감사 보존
-        assert out["review_status"] == "rejected"
+        assert out["review_status"] == "pending"  # 거부권→pending(버킷 폴백, soft-drop 아님)
         assert out["machine_check"]["bucket_fallback"] is True
         assert out["machine_check"]["veto_reason"] == "low_grounding"
 
@@ -139,7 +139,7 @@ class TestTagPeerOneJsonFail:
         assert out["ok"] is False
         assert out["veto"] is True
         assert out["adopted_tag"] is None
-        assert out["review_status"] == "rejected"
+        assert out["review_status"] == "pending"  # 거부권→pending(버킷 폴백, soft-drop 아님)
         assert out["machine_check"]["json_parse"] is False
         assert out["machine_check"]["veto_reason"] == "json_fail"
 
