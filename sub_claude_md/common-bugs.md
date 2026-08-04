@@ -1276,3 +1276,13 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **규칙**: ⑴ recon·측정·설계 세션은 **fresh `origin/main`에서 시작**(신규 트랙 base = origin/main, 분기 라인 위 기반 금지). ⑵ 보고 **첫 줄에 base HEAD 해시 명기**(#79 해시 앵커 규율의 base 판). ⑶ "부재/무매치" 판정 전 `git show origin/main:<path>`로 origin/main 대조 필수(로컬 브랜치 grep만으로 부재 단정 금지). ⑷ stale 발견 시 `git rebase --onto origin/main <old-base>`로 즉시 교정 후 재측정.
 
 **재발 점검 순서**: "X 부재" 인용 전 → 내 base = origin/main인가?(`git rev-list --count HEAD..origin/main`=0?) → 아니면 `git show origin/main:path` 대조 → 그래도 부재면 확정.
+
+## GLOBAL-SCOPE-TASK — 태스크에서 ORM 직접 읽기 시 user 스코프 명시 의무 (채번 후보, SFI-I-1b 2026-08-04) [backend][process]
+
+**증상**: SFI-I1 `_coach_universe()`(celery 태스크)가 `WalletHolding/WatchlistItem.objects.all()` 무필터로 읽어 **타 유저(admin) 테스트 데이터(레버리지 ETF 5종)까지 coach 유니버스에 유입** → 자동발화가 admin 심볼 수집. 동일 모델의 화면·dashboard·advisory 소비처는 전부 per-user였음(비대칭).
+
+**원인**: DRF 뷰는 `get_queryset`이 `request.user`로 스코프를 **구조적으로 강제**하지만, **celery 태스크·management 커맨드는 request가 없어 아무도 안 막아준다**. 개발자가 뷰의 per-user 관례를 태스크로 옮길 때 스코프를 빠뜨리기 쉽다(뷰 코드엔 필터가 있으니 "모델은 원래 per-user"라 착각).
+
+**규칙**: 태스크·커맨드에서 유저 소유 모델(Watchlist·Wallet·Portfolio 등)을 ORM 직접 조회할 때 **user 스코프를 명시**하라(어느 유저 집합인지 코드+docstring에 못박음). 멀티테넌트 유니버스는 소유자 정의(전 유저? 특정 유저 집합?)를 먼저 확정. 참조 좌표 = 같은 도메인의 nightly 태스크 필터(예: advisory `portfolio_goal__isnull=False`).
+
+**재발 점검**: 태스크에서 `<UserOwnedModel>.objects.all()`/무필터 `.filter()` 발견 → user 스코프 있나? → 없으면 소유자 정의 확인 후 명시.

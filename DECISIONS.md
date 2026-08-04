@@ -5700,3 +5700,27 @@ FIX-1 코드의 불변식 주석은 "is_eod_fresh 가드가 비거래일을 차�
 > TH-RECON-1 정찰(읽기전용) 실측으로 TH-TRIGGER-FIRED 원안의 오전이 정정. TH-SESSION-1 §A 반영.
 
 **D-TH-TRIGGER-CORRECT (트리거 스코프 오전이 정정)**: TH-TRIGGER-FIRED 원안 "corpus unfreeze + TNV 백필(07-12→현재, 50일+)"은 실측과 불일치 3건으로 정정한다 — ⑴ **corpus(DailyNewsKeyword)는 동결된 적 없음**: 최신 date=2026-08-03(오늘)·일 1행 불변식 충족·창 내 결측일 0(뉴스 키워드 추출 beat 상시 가동). "corpus unfreeze"는 부정확. ⑵ **실동결 = TNV 집계**(ThemeNewsVolume): 최신 date=07-25·집계 **beat 부재**(news_volume/tnv PeriodicTask 없음)→수동 커맨드 의존→미실행으로 정지. 입력 corpus는 계속 흘렀으므로 백필 = **07-26→08-03(9일) 순수 DB 재집계**(외부 API 0·LLM 0). ⑶ **'07-12'는 TNV 동결점이 아니라** ThemeTermOverride의 G2 스코프(≤07-11)에서 유래한 오전이. "50일+"도 과대(실 9일). **파생 리스크**: heat(theme-heat-daily, 08-02까지 발화)가 결손 TNV 성분(C3=`c3_narrative_from_db`)으로 07-26~08-02 산출 → TNV 백필 후 heat 07-26→08-03 멱등 재산출(`update_or_create(theme,date)`) 필요. **6/11 themes**(최신일 6 저장)은 이상 아님 — `heat_beat.py` 결측 성분 ≥3 섹터=`not_computed`(§6.1 status 미포함, 저장 안 함) 설계 동작. cf. TASKQUEUE TH-TRIGGER-FIRED(소비)·TH-OVR-RECUT(보류)·TH-RESUME-CORPUS-UNFREEZE. 감독 판정 4건(TH-SESSION-1, 백필=TNV만·override 배제 마진 2.25).
+
+---
+
+## D-I1b-1 (2026-08-04, SFI-I-1b — coach 유니버스 스코프 교정)
+
+**결정**: `_coach_universe()`(ingest 대상)를 **UserGoal 보유 유저의 WalletHolding ∪ WatchlistItem**으로 스코프한다. 좌표 = nightly advisory·snapshot 태스크와 **동일**(`User.objects.filter(portfolio_goal__isnull=False)`). 경로 = `WalletHolding.filter(wallet__user__in=goal_users)` ∪ `WatchlistItem.filter(watchlist__user__in=goal_users)`.
+
+**결함 인정**: SFI-I1의 `_coach_universe()`는 `WalletHolding/WatchlistItem.objects.all()` **글로벌 무필터**였고, 이는 결함이었다. 타 유저(admin) "내 관심종목"(레버리지 ETF 5종 포함 테스트 데이터)이 coach forward 신호 유니버스에 유입 → 자동발화가 admin 데이터까지 수집. 실측: 글로벌 14종 → 스코프 9종(제외 GEVG·IREG·OKLL·SMR·XE = admin 전용, UserGoal 없음). 화면·dashboard·advisory 소비처는 전부 per-user(`watchlist__user`)인데 SFI만 무스코프였음(비대칭 = 결함 증거).
+
+**Why**: coach는 "목표를 가진 유저의 포트폴리오 코칭" — 유니버스는 그 유저의 자산·관심으로 정의돼야 한다. 무필터는 멀티테넌트 경계 누수. migrate 무변경(코드만) — 기존 AnalystSignalSnapshot 행 보존(admin 심볼 과거 행은 무접촉, 다음 발화부터 새 스코프).
+
+## D-I1b-2 (2026-08-04, SLICE18 STEP0 stale 교정 — watchlist 정본 단일)
+
+**교정**: `DECISIONS.md:638`(SLICE18 STEP0, 2026)의 "chain_sight WatchlistViewSet이 `shared/users.WatchlistItem` 소비"는 **현재 stale**. 실측(SFI-I-1b) = `apps/chain_sight/views/watchlist_views.py`의 `WatchlistViewSet.get_queryset`은 **`SavedPath`(그래프 저장경로)를 읽음**(ego/saved-path 리디자인으로 전환). `/api/v1/chainsight/watchlist/`는 이름만 watchlist, 종목 관심목록 아님.
+
+**정본**: **stock watchlist 정본 = `users.WatchlistItem` 단일**. 소비처 = 화면(`/users/watchlist/*` per-user)·dashboard strip(per-user)·advisory(per-user)·SFI ingest(D-I1b-1로 per-user 교정). chain_sight watchlist = 별개 도메인(SavedPath). legacy 분기 아님(단일 정본 + 이름 충돌).
+
+## D-PROBE-PRODWRITE-RULE (2026-08-04, D-PROBE-PRODWRITE-EXCEPTION 승격 — 예외→규칙)
+
+**승격**: 기존 `D-PROBE-PRODWRITE-EXCEPTION`(2026-08-01, DECISIONS:5626)의 "1회 예외"를 **일반 규칙**으로 승격한다. **게이트 증거 + 세션 내 병진 명시 승인**이 갖춰지면 prod-write(migrate·beat 등록·수동 태스크 실행)를 **집행 허용**한다. 자율(승인 없는) prod-write는 여전히 금지.
+
+**허용 조건(3종 동시, 불변)**: ⑴ 게이트 증거 선행(sqlmigrate 눈확인·dry-run·확인쿼리 등 검증 산출), ⑵ **세션 내 병진 명시 승인 인용**([[feedback_deploy_approval_explicit_quote]]), ⑶ 사실 보고(출력 가져와 디렉터 판정).
+
+**이력 인용(예외 2건)**: ① f2 Part 3(2026-08-01, 세션 내 승인). ② **SFI-I1 배포**(2026-08-03: migrate 0012·beat 등록·수동 1회 — 병진 "작업 진행해줘" + push 병진 집행 후, 게이트 증거[sqlmigrate CREATE TABLE 단독·확인쿼리 #78] 동반, 자동발화 GREEN). 2건 모두 무사고 → 예외가 아닌 표준 절차로 승격 근거.
