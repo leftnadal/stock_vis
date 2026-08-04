@@ -38,10 +38,11 @@ class Command(BaseCommand):
         if opts["symbols"]:
             symbols = [s.upper() for s in opts["symbols"]]
         elif opts["symbols_from_universe"]:
+            # DOTSYM 옵션 1: dot 심볼(BRK.B·BF.B) 포함. FMP hyphen 변환은 FMPClient 경계 처리.
             symbols = sorted(
-                s for s in SP500Constituent.objects.filter(is_active=True)
-                .values_list("symbol", flat=True)
-                if "." not in s
+                SP500Constituent.objects.filter(is_active=True).values_list(
+                    "symbol", flat=True
+                )
             )
         else:
             raise CommandError("--symbols-from-universe 또는 --symbols 필요.")

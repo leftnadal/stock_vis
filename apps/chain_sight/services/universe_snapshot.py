@@ -6,7 +6,8 @@ Cycle 1 구현. Cycle 1 은 sector 단위라 구성 = S&P 500 유니버스이며
 그 일간 동결 원장(UniverseSnapshot)을 관리한다.
 
 핵심 규약:
-- 유니버스 = SP500Constituent(is_active) − '.' 포함 심볼 (FMP 프리미엄 402 회피, Bug #23).
+- 유니버스 = SP500Constituent(is_active) 전체 (dot 심볼 BRK.B·BF.B 포함 = DOTSYM 옵션 1).
+  FMP hyphen 변환은 FMPClient 경계에서 처리하므로 유니버스 단계 dot 제외는 폐지(Bug #23 해소).
   이는 backfill_insider_transactions 커맨드의 유니버스 정의와 **동일 소스**여야 한다.
 - 매 배치는 그날 유니버스를 스냅샷으로 박는다 (멱등 — 같은 batch_date 재호출 시 저장분 반환).
 - 이후 모든 성분 z 의 모집단은 배치 일자 스냅샷을 참조한다 (라이브 재조회 금지 = drift 차단).
@@ -26,17 +27,19 @@ logger = logging.getLogger(__name__)
 
 def live_universe_symbols() -> list[str]:
     """
-    현재 시점의 유니버스를 라이브 조회 (SP500 active − '.' 심볼), 정렬.
+    현재 시점의 유니버스를 라이브 조회 (SP500 active 전체, dot 심볼 포함), 정렬.
 
     backfill_insider_transactions 와 동일 정의 — 단일 소스 유지. 스냅샷 저장 순간에만
-    호출하고, 이후 소비는 스냅샷을 읽는다.
+    호출하고, 이후 소비는 스냅샷을 읽는다. (DOTSYM 옵션 1: dot 제외 폐지)
     """
     symbols = (
         SP500Constituent.objects.filter(is_active=True)
         .order_by("symbol")
         .values_list("symbol", flat=True)
     )
-    return sorted(s for s in symbols if "." not in s)
+    # DOTSYM 옵션 1: dot 심볼(BRK.B·BF.B)은 정본으로 유니버스에 포함. FMP hyphen 변환은
+    # FMPClient 경계에서 처리(Bug #23 회피는 이제 변환 계층 담당) → 여기서 제외하지 않는다.
+    return sorted(symbols)
 
 
 def _diff(prev: list[str], curr: list[str]) -> tuple[list[str], list[str]]:

@@ -160,11 +160,9 @@ def sync_sp500_financials(batch_size=101):
             )
         )
 
-        # FMP Starter Plan에서 지원하지 않는 심볼 제외 (BRK.B, BF.B 등)
-        skipped = [s for s in all_symbols if "." in s]
-        sp500_symbols = [s for s in all_symbols if "." not in s]
-        if skipped:
-            logger.info(f"Skipped FMP premium-only symbols: {skipped}")
+        # DOTSYM 옵션 1: dot 심볼(BRK.B·BF.B) 포함. FMP hyphen 변환은 FMPClient 경계 처리
+        # → 유니버스 dot 제외 폐지(Bug #23 은 변환 계층이 해소).
+        sp500_symbols = all_symbols
 
         if not sp500_symbols:
             return {"scheduled": 0, "total_sp500": 0, "oldest_update": None}
@@ -226,13 +224,12 @@ def bulk_sync_sp500_financials():
     from .models import BalanceSheet, SP500Constituent
 
     try:
-        sp500_symbols = [
-            s
-            for s in SP500Constituent.objects.filter(is_active=True).values_list(
+        # DOTSYM 옵션 1: dot 심볼(BRK.B·BF.B) 포함. FMP hyphen 변환은 FMPClient 경계 처리.
+        sp500_symbols = list(
+            SP500Constituent.objects.filter(is_active=True).values_list(
                 "symbol", flat=True
             )
-            if "." not in s  # FMP Starter Plan 미지원 심볼 제외
-        ]
+        )
 
         # 재무제표가 있는 종목 집합
         has_financials = set(

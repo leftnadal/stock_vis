@@ -48,8 +48,8 @@ class Command(BaseCommand):
             .order_by("symbol")
             .values_list("symbol", flat=True)
         )
-        # FMP 프리미엄 402 회피: '.' 포함 심볼 제외 (Bug #23)
-        symbols = [s for s in symbols if "." not in s]
+        # DOTSYM 옵션 1: dot 심볼 포함(BRK.B·BF.B). FMP hyphen 변환은 client 경계 처리
+        # → 유니버스 dot 제외 폐지(Bug #23 은 변환 계층이 해소). universe_snapshot 과 동일 정의.
 
         limit = opts["limit"]
         if dry_run and limit is None:

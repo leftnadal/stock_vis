@@ -29,17 +29,17 @@ def _mk(symbol, sector="Information Technology", active=True):
 @pytest.mark.django_db
 class TestUniverseSnapshotSave:
     def test_save_creates_snapshot_from_live_universe(self):
-        """저장: SP500 active − '.' 심볼을 배치 일자로 동결."""
+        """저장: SP500 active 전체(dot 심볼 포함)를 배치 일자로 동결."""
         _mk("AAA")
         _mk("BBB", sector="Financials")
-        _mk("CC.D")           # '.' 포함 → 제외 (FMP 402 회피)
+        _mk("CC.D")           # DOTSYM 옵션 1: '.' 포함도 편입 (FMP 변환은 client 경계)
         _mk("ZZZ", active=False)  # 비활성 → 제외
 
         symbols, snap, diff = us.get_or_create_universe_snapshot(batch_date=date(2026, 7, 7))
 
-        assert symbols == ["AAA", "BBB"]  # 정렬, '.'·비활성 제외
+        assert symbols == ["AAA", "BBB", "CC.D"]  # 정렬, dot 포함·비활성만 제외
         assert snap.batch_date == date(2026, 7, 7)
-        assert snap.symbols == ["AAA", "BBB"]
+        assert snap.symbols == ["AAA", "BBB", "CC.D"]
         assert diff["reused"] is False
         assert UniverseSnapshot.objects.count() == 1
 

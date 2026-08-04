@@ -196,7 +196,7 @@ def run_g2_dry_run(
         "meta": {
             "date_cut": date_cut.isoformat(),
             "generation": generation,
-            "universe": "SP500Constituent active − '.' 심볼 (live_universe_symbols)",
+            "universe": "SP500Constituent active 전체 (live_universe_symbols, dot 포함 = DOTSYM 옵션 1)",
             "override_terms": len(rows),
             "corpus_days": corpus_days,
             "corpus_term_hits": corpus_term_hits,
