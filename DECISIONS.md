@@ -8,6 +8,25 @@
 
 ---
 
+## [2026-08-01] D-DOTSYM — dot 심볼 복원 (옵션 1: 정본 dot 저장 + FMP 래퍼 경계 변환) [chainsight] [shared]
+
+**결정**: SP500 class-share 심볼(BRK.B·BF.B)을 유니버스에 복원. **DB·전 내부 계층의 정본 = dot 원형**, 하이픈 변환(BRK-B)은 **FMPClient 요청/응답 경계 단일 지점에서만** 발생(앱 계층은 변환의 존재를 모름 — 외부 API 표기법을 외부 접점에 봉인).
+- **Q1 (마진 2.20 자동)**: dot-필터 A+B+C **전량 제거**.
+- **Q2 (마진 1.55 자동)**: FMP client **전 심볼 메서드 일괄 변환 = 요청 경계 단일 지점**(`_make_request`) 삽입(26개 호출 수렴).
+- **Q3**: **heat 동반 503 편입 = 의도**(유니버스는 estimates·heat 공용 `live_universe_symbols`).
+- **Q4**: 유니버스 복원 = **코드만**(SP500Constituent 이미 503 상존), DB 시드 분기 폐기.
+- **Q5**: **C₃(`backfill_daily_prices`) 포함** — STEP 0 실측에서 dot-필터가 3→6개소로 확대 발견, Q1 취지(수집 경로 dot 배제 전량 제거) 적용. 미포함 시 estimates만 503·가격 501 반쪽.
+- **Q6**: **C₂(`tasks.py:232`) 제거 승인** — C 파일 동일 목적(SP500 수집).
+
+**Why**: dot 심볼이 유니버스에서 빠져 estimates 커버리지가 501/503(BRK.B·BF.B 상시 누락)이었음. 원인은 Bug #23(FMP 402) 회피를 위해 **유니버스 단계에서 dot 심볼을 배제**한 6개소 필터. 그러나 402의 실제 원인은 dot 표기(BRK.B) 자체로 호출한 것이고, FMP는 **하이픈(BRK-B)**을 요구 → 변환 계층으로 해소 가능(프로브 실증). 변환을 유니버스가 아닌 **API 경계에 봉인**하면 내부는 dot 정본을 유지하면서 전 엔드포인트가 정상 응답.
+
+**How to apply**:
+- Slice 1 (`c8fe4037`): `symbol_convert.py` 순수 함수(to/from) + `_make_request` 요청 정변환 단일 삽입.
+- Slice 1-3 (`44ebb186`): 응답 경계 역변환(`restore_symbols_in_response`) — 프로브 실측(FMP가 hyphen 회신) 근거.
+- Slice 2 (`cb6bf97d`): 필터 6지점 전량 제거 + 테스트 동기화 (revert = 6지점 완전 원복 롤백 단위).
+
+**검증**: Slice 1.5 라이브 프로브 **14/14 HTTP 200·402 0**(estimates/quote/profile/ratios/key-metrics/insider/EOD, BRK-B·BF-B) · 전체 스위트 **4488 passed/0 fail/53 skip**(사전 4460 대비 신규 테스트 +28, 기존 fail 0) · `makemigrations --dry-run` 0(스키마 무접촉) · `live_universe_symbols()` **503**(BRK.B·BF.B 포함) · estimates dry-run 저장 예정 symbol=**dot 원형**(prod 쓰기 0). Bug #23(FMP 402)은 변환 계층이 해소. 최종 게이트 = 08-07(목) 정규 cron 5회차(별도 PROBE-EST-5TH).
+
 ## [2026-07-31] D-NUMBERING-DUP — common-bugs 채번 충돌 = 중복 존치 + 구분자 부가 (A) [harness]
 
 **결정**: 병렬 세션 동시 착지로 발생한 common-bugs 헤딩 중복(#70·#71·#72 각 2건)을 **재채번(소급 renumber)하지 않고 존치**하되, **구분자(a/b) 부가**로 구분한다(A 채택). 가중합 **A 4.20 vs 재채번 B 2.90, 마진 1.30 → 자동 결정**.
