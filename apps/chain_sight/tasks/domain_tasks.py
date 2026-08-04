@@ -68,6 +68,7 @@ def _peer_terciles():
     """현 PEER 유니버스 pair_mcap 3분위 경계(t1,t2). 단건 훅 is_estimate 판정용."""
     from apps.chain_sight.management.commands.tag_peer_domains import compute_terciles
     from apps.chain_sight.services.peer_domain_tagging import PEER_RELATION_TYPES
+    from packages.shared.stocks.models import Stock
 
     rows = list(
         RelationConfidence.objects.filter(relation_type__in=PEER_RELATION_TYPES)

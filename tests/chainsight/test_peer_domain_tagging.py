@@ -5,6 +5,8 @@
 
 import json
 
+import pytest
+
 from apps.chain_sight.services.peer_domain_tagging import (
     TAG_SOURCE,
     build_peer_prompt,
@@ -171,3 +173,44 @@ class TestNeverWritesApproved:
         )
         assert "relation_domain" not in out           # 승인본 키 부재
         assert "draft" in out and "adopted_tag" in out
+
+
+@pytest.mark.django_db
+class TestHookL2Path:
+    """L2 훅(tag_peer_domain_task) — 스코프/임포트 회귀 + skip 가드(LLM 무호출)."""
+
+    def _mk(self):
+        from apps.chain_sight.models import RelationConfidence
+        from packages.shared.stocks.models import Stock
+        Stock.objects.create(symbol="AAA", stock_name="Alpha", industry="Semiconductors",
+                             description="A semiconductor company.", market_capitalization=10_000_000_000)
+        Stock.objects.create(symbol="BBB", stock_name="Beta", industry="Semiconductors",
+                             description="B memory chips.", market_capitalization=20_000_000_000)
+        Stock.objects.create(symbol="CCC", stock_name="Gamma", industry="Software",
+                             description="C software.", market_capitalization=5_000_000_000)
+        RelationConfidence.objects.create(symbol_a="AAA", symbol_b="BBB", relation_type="PEER_OF", truth_score=0.5)
+        RelationConfidence.objects.create(symbol_a="AAA", symbol_b="CCC", relation_type="PEER_OF", truth_score=0.5)
+
+    def test_peer_terciles_computes_no_nameerror(self):
+        # 회귀: _peer_terciles가 Stock 미임포트로 NameError 나지 않는지(스코프 버그).
+        self._mk()
+        from apps.chain_sight.tasks.domain_tasks import _peer_terciles
+        result = _peer_terciles()  # NameError 없이 실행되면 통과(스코프 회귀 핵심)
+        assert isinstance(result, tuple) and len(result) == 2  # (t1,t2)
+
+    def test_hook_skips_already_tagged(self):
+        # 이미 L2-ADOPT machine_check 있는 쌍 → LLM 무호출 skip(idempotent).
+        self._mk()
+        from apps.chain_sight.models import RelationConfidence
+        from apps.chain_sight.tasks.domain_tasks import tag_peer_domain_task
+        rc = RelationConfidence.objects.get(symbol_a="AAA", symbol_b="BBB")
+        rc.domain_machine_check = {"source": TAG_SOURCE}
+        rc.domain_review_status = "auto"
+        rc.save()
+        r = tag_peer_domain_task(rc.id)
+        assert r["skipped"] == "already-tagged"
+
+    def test_hook_skips_non_peer(self):
+        from apps.chain_sight.tasks.domain_tasks import tag_peer_domain_task
+        r = tag_peer_domain_task(999999)  # 미존재
+        assert r["skipped"] == "not-peer-or-missing"
