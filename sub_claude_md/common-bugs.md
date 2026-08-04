@@ -1286,3 +1286,16 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **규칙**: 태스크·커맨드에서 유저 소유 모델(Watchlist·Wallet·Portfolio 등)을 ORM 직접 조회할 때 **user 스코프를 명시**하라(어느 유저 집합인지 코드+docstring에 못박음). 멀티테넌트 유니버스는 소유자 정의(전 유저? 특정 유저 집합?)를 먼저 확정. 참조 좌표 = 같은 도메인의 nightly 태스크 필터(예: advisory `portfolio_goal__isnull=False`).
 
 **재발 점검**: 태스크에서 `<UserOwnedModel>.objects.all()`/무필터 `.filter()` 발견 → user 스코프 있나? → 없으면 소유자 정의 확인 후 명시.
+## 단일 공유 test DB에 pytest suite 동시 실행 시 가짜 에러 (#86, TH-SESSION-1 2026-08-03) [testing][process]
+
+**증상**: 세션 종료 앵커 suite가 갑자기 다수 에러 — reuse-db 경로는 `psycopg2.errors.DuplicateColumn: column "…" already exists`, `--create-db` 경로는 `database "test_stock_vis" is being accessed by other users` → `SystemExit: 2` → **전 테스트 setup error, 8초대 조기 종료**(collected N items 직후 EE…).
+
+**원인**: pytest는 단일 test DB(`test_stock_vis`)를 공유. suite를 백그라운드로 **겹쳐 실행**(run_in_background 다수, 또는 `( … ) &` 오르핀)하면 두 프로세스가 같은 DB를 동시 접근 → 한 런의 half-applied 마이그가 다른 런에 DuplicateColumn으로, 또는 --create-db가 DROP 실패. **코드 회귀 아님** — 오케스트레이션 아티팩트. 실측: 동일 커밋이 단독 실행 시 GREEN.
+
+**규칙**: 앵커/전체 suite는 **동시에 1개만**. 실행 전 `ps aux | grep pytest`(=0) + `psql -d stock_vis -tAc "SELECT count(*) FROM pg_stat_activity WHERE datname='test_stock_vis'"`(=0) 확인. 8초 내 다수 error = 거의 항상 이 동시성(또는 import 에러). 오르핀 발견 시 종료·DB 연결 0 확인 후 단독 재실행. cf. #27·#79(reuse-db 오염), lesson_dev_prod_shared_db(prod DB는 별개).
+
+## CC의 `git branch -D` 경계 — 병진 명시 + 손실 0 입증 동시 충족만 (#87, TH-SESSION-1 2026-08-03) [process][harness][git]
+
+**맥락**: cherry-pick으로 내용을 착지시킨 브랜치(예: sess-th-recon, 원본 커밋 6f8c6c7d → 새 해시 915494c1)는 `git branch -d`가 **커밋 미도달로 거부**(patch 등가성 미인식). `-D`가 필요하나 파괴적.
+
+**규칙**: CC의 `-D`는 **⑴ 병진의 건별 명시 지시 + ⑵ 손실 0 사전 입증(삭제 대상 브랜치의 고유 커밋 `git log origin/main..<br>`이 내용상 origin/main에 존재 = `git cat-file -e origin/main:<path>` 또는 파일 diff 공집합) 둘 다 충족 시에만**. 일괄·재량 -D 불허. ⚠️ `git diff origin/main <br>`(2-dot 전체 트리)의 삽입/삭제는 **브랜치가 뒤처져서** 생기는 아티팩트일 수 있음(#78 변종) → 손실 판정은 `origin/main..<br>` 고유 커밋 기준으로만. `git branch -d` 거부는 안전망 = 기본 존중, 뚫기 전 위 2조건 재확인.

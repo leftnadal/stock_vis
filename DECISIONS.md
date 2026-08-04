@@ -5725,3 +5725,12 @@ FIX-1 코드의 불변식 주석은 "is_eod_fresh 가드가 비거래일을 차�
 **허용 조건(3종 동시, 불변)**: ⑴ 게이트 증거 선행(sqlmigrate 눈확인·dry-run·확인쿼리 등 검증 산출), ⑵ **세션 내 병진 명시 승인 인용**([[feedback_deploy_approval_explicit_quote]]), ⑶ 사실 보고(출력 가져와 디렉터 판정).
 
 **이력 인용(예외 2건)**: ① f2 Part 3(2026-08-01, 세션 내 승인). ② **SFI-I1 배포**(2026-08-03: migrate 0012·beat 등록·수동 1회 — 병진 "작업 진행해줘" + push 병진 집행 후, 게이트 증거[sqlmigrate CREATE TABLE 단독·확인쿼리 #78] 동반, 자동발화 GREEN). 2건 모두 무사고 → 예외가 아닌 표준 절차로 승격 근거.
+## [2026-08-04] TNV 집계를 heat 태스크에 체이닝 — 재동결 구조적 방지 (D-TH-TNV-CHAIN)
+
+> TH-SESSION-1 후속. TNV 집계 beat 부재로 07-25 재동결됐던 문제의 **구조적 해결**. TH-TNV-CHAIN-1 세션.
+
+**D-TH-TNV-CHAIN (체이닝 = B안 확정)**: TNV 집계(ThemeNewsVolume)가 스케줄 beat 없이 수동 커맨드에만 의존해 재동결되는 문제를 3안 비교 후 **(B) 체이닝**으로 해결.
+- **선택지**: (A) 신규 TNV beat 등록(독립 스케줄) / (B) 기존 theme-heat-daily 태스크 선두에 `aggregate_theme_news_volume(당일)` 체이닝 / (C) 현상 유지(수동 백필 반복).
+- **가중합 4.15, 마진 1.30 → B 확정**. **근거**: ⑴ **#28 회피** — 신규 beat 등록은 config dict vs DB drift·stale 트리 재기동 시 덮어쓰기 리스크(3회 재발). B는 beat 0 신설로 이 함정을 원천 회피(회피 자체가 B의 채택 근거). ⑵ **순서 구조 보장** — heat의 C3 성분이 TNV를 소비하므로 "TNV→heat" 인접 실행이 데이터 정합을 보장(독립 beat는 발화 순서·시각 어긋남 위험). ⑶ 최소 침습 — 기존 태스크 내부 수정만, 산식 무변경.
+- **실패 정책**: TNV 예외 → **실패 전파(태스크 실패)**. 빈 재료로 조용히 heat 계산한 것이 재동결 사태의 본질 → 소리 내고 멈춤. 단 keywords=[] 정상 공백(written=0)은 실패 아님(예외≠0건 구분). 로그 `TNV_CHAIN date=… written=N zeroed=M`로 관측성 확보(B안 단점 보완).
+- **미래 재개점**: TNV·heat 주기 분화가 필요해지면 A안(독립 beat)로 승격 = TASKQUEUE TH-TNV-BEAT-SPLIT(보류). cf. common-bugs #28.
