@@ -137,7 +137,10 @@ def tag_peer_domain_task(self, rc_id: int):
 
         def llm_call(system, contents):
             from apps.market_pulse.llm.client import generate_with_circuit
-            resp = generate_with_circuit(system_instruction=system, contents=contents)
+            # thinking_budget=512(D-L2-THINKING-BUDGET, 배치와 동일).
+            resp = generate_with_circuit(
+                system_instruction=system, contents=contents, thinking_budget=512
+            )
             return getattr(resp, "text", "") or ""
 
         out = tag_peer_one(

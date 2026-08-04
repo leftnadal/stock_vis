@@ -152,7 +152,11 @@ class Command(BaseCommand):
         usage = {"prompt": 0, "completion": 0, "latency_ms": 0, "calls": 0}
 
         def llm_call(system, contents):
-            resp = generate_with_circuit(system_instruction=system, contents=contents)
+            # thinking_budget=512(D-L2-THINKING-BUDGET): "생성은 풍부하게, 필터는 거부권".
+            # 타산업 쌍 태그 방출 보존(ON 이상)하며 지연 8.8s→4.2s. 억지 태그는 veto가 필터.
+            resp = generate_with_circuit(
+                system_instruction=system, contents=contents, thinking_budget=512
+            )
             usage["prompt"] += getattr(resp, "prompt_tokens", 0) or 0
             usage["completion"] += getattr(resp, "completion_tokens", 0) or 0
             usage["latency_ms"] += getattr(resp, "latency_ms", 0) or 0
