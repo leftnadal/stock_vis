@@ -37,6 +37,19 @@
 | **corpus** | 08-03/155 | **08-03/155** | ✓ **무변경** |
 | full suite | 4561/0/53 @ 0e994427 | **4561/0/53** | ✓ 동일(문서 커밋뿐) |
 
+## 추가 검증 — heat가 백필 TNV를 소비 확인 (07-30 스팟)
+
+07-30(TNV 백필 5테마=1,2,3,5,7) heat 저장 6테마의 `components["C3"]` 실측 — 전부 present(missing=None), raw(news volume)=38~152. 백필 TNV 보유 테마(1,2,3,5)가 저장행에 포함·C3 계산됨 → **heat 재산출이 백필 TNV를 실제 소비**. (ThemeHeatScore `components` JSONField 저장 스키마 → 확인 가능.)
+
+| theme | TNV(07-30) | C3 s | C3 raw |
+|---|---|---|---|
+| 1 | 있음 | 0.085 | 152 |
+| 2 | 있음 | 0.631 | 51 |
+| 3 | 있음 | 0.516 | 48 |
+| 4 | 없음 | 0.565 | 56 |
+| 5 | 있음 | 0.736 | 38 |
+| 6 | 없음 | 0.746 | 50 |
+
 ## 멱등성·격리 근거
 
 - TNV=`aggregate_theme_news_volume` `update_or_create`(c3_narrative_service.py:189·202) / heat=`compute_theme_heat` `update_or_create(theme,date)`(heat_beat.py:13). 재실행 안전.

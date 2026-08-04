@@ -1166,6 +1166,11 @@
 - **선행 설계**: G2 앵커(92/19/0/0, ≤07-11 스코프)의 **이관 설계 포함** — 재판정 시 앵커 무효화되므로 신 앵커 정의·비교 기준 재수립 필요. ovr_v2 generation 신설 여부 포함.
 - 근거: TH-RESUME-CORPUS-UNFREEZE 조항(corpus 확장 시 G2 앵커 무효). 배제 결정(TH-SESSION-1 판정②, override 재산출 배제·TNV만).
 
+## CORPUS-SUNMON-EMPTYKW — DailyNewsKeyword 일·월요일 빈 키워드 반복 (관찰, 2026-08-03) [theme-heat][news]
+- **관찰**: DailyNewsKeyword 행은 존재하나 `keywords=[]`(빈 추출)가 **일·월요일 반복** — TH-SESSION-1 백필 창서 07-26(Sun)·07-27(Mon)·08-02(Sun)·08-03(Mon) 확정. **토요일(08-01)은 정상**(3 테마 크레딧). → 해당일 TNV 0행, **당일(특히 월) heat가 뉴스 성분(C3) 0/저값으로 계산**되는 영향.
+- **영향 범위**: heat C3=`c3_narrative_from_db`가 롤링 창 참조라 단일 공백일 영향은 완충되나, 일·월 연속 공백은 초반 뉴스 성분 저평가 가능. 6/11 not_computed 전환과는 무관(그 5테마는 C3 외 결측 ≥3).
+- **조치**: 원인 규명(키워드 추출 beat의 주말 스케줄/소스 공백)·조치는 **별도 세션**. 이 세션 조치 금지(관찰 등재만).
+
 ## SECB-EXPOSURE — grounding_status 노출 설계 결정 사이클 (2026-08-01, Gate2 개정 B-2) [sec-beta][ux]
 - **성격**: 디렉터 세션·**목업 필수** 결정 사이클(소비자 UX 결정). **소비자 결정 전 구축 금지**(γ 사변 구축 금지, D-SECB-GATE2-AMEND-1).
 - **미결 3**: ⑴ attach 지점(후보 `FilingDataView`/`filing/<symbol>/`·IsAdminUser, per-symbol=1-filing 자연 정합) ⑵ 스코핑(글로벌 `SEC_GROUNDING_ENABLED` flag + 1 filing 스모크 vs per-filing allowlist) ⑶ flag 정의 위치(settings) 포함.
