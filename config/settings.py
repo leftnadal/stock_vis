@@ -573,3 +573,10 @@ CHAINSIGHT_GROUP_SOURCE = os.getenv('CHAINSIGHT_GROUP_SOURCE', 'theme_tags')
 CHAINSIGHT_UPWARD_LEARNING_ENABLED = (
     os.getenv('CHAINSIGHT_UPWARD_LEARNING_ENABLED', 'false').lower() == 'true'
 )
+
+# ⑳-3 S3-MINDMAP S1: 도메인 태깅 자동승인(L1). OFF(기본)=auto 후보라도 pending에 머묾.
+# ON(go-live)은 .env DOMAIN_AUTO_APPROVE=true + 워커 재기동(= prod-write 게이트). 임계는
+# DOMAIN_CONFIDENCE_THRESHOLD(잠정 0.75, 언앵커 40건 후 재확정 — DECISIONS D-AUTO-SWITCH-ON).
+# 타입 변경 비자동 안전핀은 스위치와 무관하게 항상 유지(decide_gate 하드룰).
+DOMAIN_AUTO_APPROVE = os.getenv('DOMAIN_AUTO_APPROVE', 'false').lower() == 'true'
+DOMAIN_CONFIDENCE_THRESHOLD = float(os.getenv('DOMAIN_CONFIDENCE_THRESHOLD', '0.75'))

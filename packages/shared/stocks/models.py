@@ -1310,3 +1310,58 @@ class ImpressionLog(models.Model):
 
     def __str__(self):
         return f"{self.event_type} u{self.user_id} {self.surface}:{self.object_ref}"
+
+
+class AnalystSignalSnapshot(models.Model):
+    """가격·의견 계열 forward 신호 스냅샷 (SFI-I1, D-I1-4).
+
+    append 전용 시계열 정본(D-I1-2) — 동일 심볼 재수집 = 신규 행(덮어쓰기 없음).
+    유니버스 = coach(보유∪관심), 케이던스 = nightly. 4 신호: price target 컨센서스 ·
+    grades 분포+합의 · grades 월별 추세 · ratings 등급.
+
+    ★ estimates(eps/revenue)는 담지 않는다 — chain_sight.EstimateSnapshot 단일 정본
+      (이중 수집 금지, D-I1-4). symbol=CharField(FK 아님, coach 갭 8종 Stock 부재 대비).
+    """
+
+    symbol = models.CharField(max_length=16, db_index=True)
+    captured_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    source = models.CharField(max_length=16, default="fmp")
+
+    # price-target-consensus
+    target_consensus = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True
+    )
+    target_high = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True
+    )
+    target_low = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True
+    )
+    target_median = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True
+    )
+
+    # grades-consensus (분포 5단 + 합의 라벨)
+    grade_strong_buy = models.IntegerField(null=True, blank=True)
+    grade_buy = models.IntegerField(null=True, blank=True)
+    grade_hold = models.IntegerField(null=True, blank=True)
+    grade_sell = models.IntegerField(null=True, blank=True)
+    grade_strong_sell = models.IntegerField(null=True, blank=True)
+    grade_consensus = models.CharField(max_length=16, blank=True, default="")
+
+    # grades-historical (월별 추세 원본 배열)
+    grades_historical = models.JSONField(default=list, blank=True)
+
+    # ratings-snapshot (종합 퀀트등급)
+    rating = models.CharField(max_length=4, blank=True, default="")
+    overall_score = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        db_table = "stocks_analyst_signal_snapshot"
+        ordering = ["symbol", "-captured_at"]
+        indexes = [
+            models.Index(fields=["symbol", "-captured_at"]),
+        ]
+
+    def __str__(self):
+        return f"AnalystSignalSnapshot({self.symbol} @ {self.captured_at:%Y-%m-%d})"

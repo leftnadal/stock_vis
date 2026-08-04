@@ -247,8 +247,10 @@ class FMPFundamentalsService:
 
         try:
             with httpx.Client(timeout=10.0) as client:
+                # common-bugs 채번 후보(SFI-I1): /stable/rating은 404 오경로 →
+                # /stable/ratings-snapshot 정본. 정본 래퍼 = FMPClient.get_ratings_snapshot.
                 response = client.get(
-                    f"{self.BASE_URL}/stable/rating",
+                    f"{self.BASE_URL}/stable/ratings-snapshot",
                     params={"symbol": symbol, "apikey": self.api_key},
                 )
                 response.raise_for_status()

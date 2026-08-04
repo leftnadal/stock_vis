@@ -1,17 +1,18 @@
-"""SEC β G1 — grounding 백필 (dry-run 분포 + 실기록).
+"""SEC β G1 + G1.6 — grounding 백필 (dry-run 분포 + 실기록).
 
 미검증(`grounding_status IS NULL`) evidence 전건을 원문(raw store)과 매칭해 판정 기록.
-- **dry-run(기본)**: 쓰기 0건, 판정 4종 분포만 집계·리포트.
+- **dry-run(기본)**: 쓰기 0건, 판정 분포만 집계·리포트. `collect_records=True`면 id→status 반환(A-2 대조).
 - write: `select_for_update(skip_locked=True)` 배치(SEC 파이프라인 기존 규율) + `update_fields`.
 
-결정론 V-A — LLM 0콜(`ground_evidence` 경유).
+결정론 V-A — LLM 0콜. 판정 = `ground_evidence_g16`(V-A 매처 + not_found 접두≥70% → partial_match).
+  **단일 출처**: dry-run 리포트(grounding_g16_partial_reclassify.py)와 동일 함수 사용(로직 복제 금지).
 """
 import logging
 
 from django.db import transaction
 from django.utils import timezone
 
-from services.sec_pipeline.grounding import ground_evidence
+from services.sec_pipeline.grounding import ground_evidence_g16
 from services.sec_pipeline.models import SupplyChainEvidence
 
 logger = logging.getLogger(__name__)
@@ -28,12 +29,17 @@ def build_source_text(raw_doc) -> str:
 
 
 def _empty_tally() -> dict:
-    return {"verified": 0, "normalized_match": 0, "not_found": 0, "missing_source": 0}
+    return {"verified": 0, "normalized_match": 0, "partial_match": 0,
+            "not_found": 0, "missing_source": 0}
 
 
-def run_grounding_backfill(dry_run: bool = True) -> dict:
-    """미검증 evidence 전건 접지 판정. dry_run=True면 쓰기 0건·분포만."""
+def run_grounding_backfill(dry_run: bool = True, collect_records: bool = False) -> dict:
+    """미검증 evidence 전건 접지 판정. dry_run=True면 쓰기 0건·분포만.
+
+    collect_records=True(dry-run 전용): {evidence_id: status} 를 함께 반환(A-2 per-record 대조).
+    """
     tally = _empty_tally()
+    records: dict = {} if collect_records else None
 
     if dry_run:
         qs = (
@@ -42,10 +48,12 @@ def run_grounding_backfill(dry_run: bool = True) -> dict:
             .iterator()
         )
         for ev in qs:
-            status = ground_evidence(
+            status = ground_evidence_g16(
                 ev.evidence_text, build_source_text(ev.source_document)
             ).status
             tally[status] += 1
+            if records is not None:
+                records[ev.id] = status
     else:
         while True:
             with transaction.atomic():
@@ -58,7 +66,7 @@ def run_grounding_backfill(dry_run: bool = True) -> dict:
                     break
                 now = timezone.now()
                 for ev in batch:
-                    result = ground_evidence(
+                    result = ground_evidence_g16(
                         ev.evidence_text, build_source_text(ev.source_document)
                     )
                     ev.grounding_status = result.status
@@ -76,4 +84,7 @@ def run_grounding_backfill(dry_run: bool = True) -> dict:
         total,
         tally,
     )
-    return {"dry_run": dry_run, "total": total, "distribution": tally}
+    out = {"dry_run": dry_run, "total": total, "distribution": tally}
+    if records is not None:
+        out["records"] = records
+    return out

@@ -63,6 +63,7 @@ def test_dry_run_distribution_and_no_writes(cohort):
     assert result["distribution"] == {
         "verified": 1,
         "normalized_match": 1,
+        "partial_match": 0,  # G1.6: 이 cohort의 not_found 는 접두<70% → partial 승격 없음
         "not_found": 1,
         "missing_source": 1,
     }

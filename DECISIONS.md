@@ -26,6 +26,97 @@
 - Slice 2 (`cb6bf97d`): 필터 6지점 전량 제거 + 테스트 동기화 (revert = 6지점 완전 원복 롤백 단위).
 
 **검증**: Slice 1.5 라이브 프로브 **14/14 HTTP 200·402 0**(estimates/quote/profile/ratios/key-metrics/insider/EOD, BRK-B·BF-B) · 전체 스위트 **4488 passed/0 fail/53 skip**(사전 4460 대비 신규 테스트 +28, 기존 fail 0) · `makemigrations --dry-run` 0(스키마 무접촉) · `live_universe_symbols()` **503**(BRK.B·BF.B 포함) · estimates dry-run 저장 예정 symbol=**dot 원형**(prod 쓰기 0). Bug #23(FMP 402)은 변환 계층이 해소. 최종 게이트 = 08-07(목) 정규 cron 5회차(별도 PROBE-EST-5TH).
+## [2026-08-03] D-L2X-AUTO-ADJUDICATION — L2-X 사람 전건검수 → 결정론 자동판정 + 감사 [chainsight]
+
+> 트랙: ⑳-3 L2-X 자동판정 전환. 배경: 대조자료 제공에도 사람이 LLM 주장 반박 구조적 곤란(15건 실검수 소견).
+
+**결정**: L2-X PEER 추측 태깅 판정을 **전건 사람 검수 폐기 → 결정론 자동 판정 + 사람은 판정기 감사만**. **채점용 LLM 호출 0**(순환 채점 금지 — 판정기는 결정론+실데이터만). sweep 재실행 없음(기존 240행에 판정 컬럼 추가).
+
+**판정기 3종**: ⑴ grounding(claim 용어 ↔ desc 접지) ⑵ market(가격상관 불일치 신호, 단독판정 아님) ⑶ cross(known_fact ∧ 저접지 = 과신).
+
+**grounding 전략(C 하이브리드)**: claim=한국어 / desc=영어 → SEC β `ground_evidence`(동일언어 substring) **직접 이식 불가**. `normalize()`만 재사용. 영어토큰 직매칭(심볼·회사명 제외) + 한→영 동의어 사전(데이터 파일 `peer_grounding_dict.json`, 버킷+normalized_tag+claim 빈출 시드). **en/syn 접지 비율 분리**(사전 갭이 진짜 ungrounded로 오염 방지, #79 교훈). ungrounded 빈출은 사전 보강 후 재집계(결정론=비용0).
+
+**Why**: LLM 자기보고(rationale)를 사람이 반증하기 어려움 → 판정 권위를 결정론 실데이터(FMP desc·가격상관)로 이전. 사람은 판정기 산출을 감사(동의/이견)만 → 확장성+객관성.
+
+**How to apply**: `peer_adjudicator.py`(3판정기)·`peer_tag_experiment --judge`(병합 CSV)·`--aggregate` v2(구간별 지표+감사 표본). 검수도구 감사 모드(grounded_ratio 헤더→[동의/이견]). 실측(240,LLM0): grounded 중앙 0.83·하·상이 과신 0.4(최고). 후속=verdict 회수 후 L2-SOURCE-DECISION.
+
+## [2026-08-03] D-GATE-AUDIT-TRAIL — 도메인 태깅 게이트 판정 감사 추적 [chainsight]
+
+> 트랙: ⑳-3 S3-LAND S3. L1 프로덕션 파이프라인.
+
+**결정**: `decide_gate` 판정 시 `domain_machine_check.gate_audit` JSON 키에 **발동 룰 목록·룰별 비교 원값·최종 판정 경로**를 additive 기록한다. 마이그레이션 0(JSONField 키).
+
+**Why**: 자가모순 53건류 미스터리(캘리브레이션 전력)가 재발하면 "왜 이 판정이 났나"를 로그로 즉답해야 한다. 게이트가 4분기(self_contradiction/type_change/all_checks/checks_fail)로 분기하므로, 어느 룰이 발동했고 피연산자 원값(type_match 좌우·confidence vs 임계)이 무엇이었는지를 남긴다.
+
+**행위보존 원칙**: 게이트 **판정 로직은 무변경**. `build_gate_audit`이 `decide_gate`의 조건을 미러링해 **기록만** 한다. 정합성은 ⑴ 기존 게이트 테스트 GREEN(행위 불변 입증) ⑵ audit 경로↔decide_gate 판정 일치 테스트로 못박는다. 기록은 감사 전용(ego API·화면 미노출).
+
+**How to apply**: `domain_tagging.build_gate_audit(mc, relation_type)` → tag_one이 mc["gate_audit"] 기록 → DB write 경로가 domain_machine_check로 저장. 기록 범위=fired_rules·values(피연산자)·decision_path.
+
+## [2026-08-03] D-LLM-RATIONALE-AUDIT — LLM 태깅 근거(rationale) 구조화 감사 기록 [chainsight][llm]
+
+> 트랙: ⑳-3 S3-MINDMAP 패치2. L1 프로덕션 파이프라인 + L2-X 실험 공통.
+
+**결정**: LLM 도메인 태깅 시 **구조화 rationale**{claim, claim_type(known_fact|inference|uncertain), basis_hint, counter_signal}를 함께 요구하고, `domain_machine_check.llm_rationale` JSON 키에 **전건(auto/pending 무관) 감사 기록**한다. 마이그레이션 0(JSONField 키 additive).
+
+**Why**: 자동 태깅(D-AUTO-SWITCH-ON)·PEER 추측 실험(L2-X)에서 "왜 그 태그인가"를 사후 분석해야 오류 패턴을 잡는다. 특히 **보류(pending) 건의 사후 분석이 핵심**(무엇이 확실치 않았나). claim_type/counter_signal은 "known_fact인데 틀림"·"반대 신호 존재 시 정확도" 같은 매트릭스를 가능케 함.
+
+**한계 명시(자기보고)**: rationale는 LLM의 **자기 진술**이지 검증된 판정이 아니다 — 사후 합리화(post-hoc rationalization) 가능. 따라서 ⑴ 게이팅·자동승인에 rationale을 **입력으로 쓰지 않음**(decide_gate 무참조) ⑵ ego API·화면 **미노출**(감사 전용) ⑶ **부속이 본체를 블록하지 않음**: rationale 형식 실패 시 null 기록하되 태깅(gate/draft)은 정상 진행.
+
+**How to apply**: 코어 `extract_rationale`(방어적 파싱, 공유). L1=`tag_one` mc["llm_rationale"], DB write 경로가 domain_machine_check로 자동 저장. L2-X=결과 CSV rationale_A/B + 집계 매트릭스(claim_type/basis_hint/counter_signal별 WRONG율). 검수도구 claim 표시.
+
+## [2026-08-03] D-MINDMAP-HYBRID-v2 — ego 마인드맵 3층 체계(SEC 도메인·시장 industry·뉴스) [chainsight][frontend]
+
+> 트랙: ⑳-3 S3-MINDMAP. 브랜치 `monorepo/sess-s3-mindmap`. D-MINDMAP(맵-3) 방향 개정. 선행 D-DOMAIN-AUTOMATION·D-REVIEW-VERDICT-VOCAB.
+
+**결정**: 마인드맵을 **3층 하이브리드**로 개정한다(순수 도메인 태그 마인드맵 폐기 — S3-R 실측: 태그가 심볼 엣지의 ~2-9%만 커버).
+- **L1 (SEC 도메인)**: `relation_domain`(승인본 태그) 보유 SEC 관계 → 태그별 상위 가지. 무태그 SEC는 관계 유형별 "유형 수납" 폴백.
+- **L2 (시장 Peer)**: PEER_OF → has_peer_source(경쟁·Peer)/동종산업 상위 구분 + 상대 노드 `industry_bucket` 하위 그룹. **엣지 무기록, 서빙 시 파생**(industry 변경 자동추종).
+- **L3 (뉴스)**: CO_MENTIONED → "뉴스 동반언급" 단일(기사 태그 하위그룹은 AV 복원 후).
+- **PRICE_CORRELATED 제외**(Peer 중복) — 건수만 투명화.
+
+**방향 개정 경위(2026-08-03)**: 자동화 우선(⓪-b) + 시장관계 카테고리 확장(①-C). S3-R 정찰이 ⑴ 도메인 태그 DB 0건(파이프라인 dry-run만) ⑵ 태그 커버리지 SEC 1.68%만 ⑶ ego API relation_domain None 하드코딩을 실측 → 순수 태그 마인드맵은 화면 90-98%가 미분류 잔여. 시장관계(PEER)를 industry 축으로 병용해야 의미 있음.
+
+**How to apply**: L1 태그=S0 backfill(CSV normalized_tag→relation_domain) + S1 자동 파이프라인. L2=`industry_buckets.industry_to_bucket`(128 industry→13 버킷) 서빙 파생. ego API additive(relation_domain 실값·노드 industry_bucket). FE=`egoToMindmap`(순수)+`MindmapView`(MINDMAP_ENABLED). industry 커버리지 94.1%(STEP0). ⚠️라이브 스크린샷 검증은 배포 게이트.
+
+## [2026-08-03] D-AUTO-SWITCH-ON — 도메인 태깅 자동승인 활성(잠정 0.75) [chainsight]
+
+**결정**: `DOMAIN_AUTO_APPROVE` env 스위치 ON(go-live=env+재기동 게이트). 임계 `DOMAIN_CONFIDENCE_THRESHOLD`=**0.75 잠정**.
+
+**Why**: D-DOMAIN-AUTOMATION 안전핀②(첫 배치 검수 후 활성)를 REVIEW-P2 검수 완료로 해제. 자동화 우선 방향 개정. 임계는 잠정 — 신규 관계 유입으로 검증 축적 필요.
+
+**How to apply**: `settings.DOMAIN_AUTO_APPROVE`(env 기본 false). **타입 변경 비자동 안전핀은 스위치 무관 항상 유지**(decide_gate 하드룰). 검수 verdict 270건은 자동 파이프라인 대상 제외(is_human_reviewed 보호 가드). **임계 0.75는 잠정 — 언앵커 40건 처리로 conf 기준점 확보 후 재확정**(TASKQUEUE REVIEW-UNANCHORED-40).
+
+## [2026-08-03] D-LLM-RECALL-RULE-v2 — LLM 재호출 금지 룰 축소(verdict 보유분 보호로) [chainsight][llm]
+
+> D-DOMAIN-AUTOMATION 안전핀·common-bugs #80 개정. preserve-both.
+
+**결정**: "LLM 재호출/재분류 금지" 룰의 범위를 **"검수 verdict 보유 270건 보호"로 축소**한다. verdict 미보유 관계(신규 SEC·PEER 등)에 대한 LLM 태깅·실험은 허용.
+
+**Why**: 원 룰은 "LLM 재호출 결과 자동반영 금지"(비결정성 drift 방지, #80). 그러나 자동화(D-AUTO-SWITCH-ON)와 L2-X 실험(PEER 추측 태깅)은 verdict 없는 관계에 LLM을 새로 적용하는 것이라 원 룰의 취지(인간 재정 덮어쓰기 금지)와 무충돌. 룰을 전면 금지가 아닌 "인간 판정 보호"로 정밀화.
+
+**How to apply**: 보호=`is_human_reviewed`(review_status有∧machine_check無) 가드가 커맨드·훅에서 verdict 270 제외. L2-X는 240쌍 한정·DB무기록. 타입 변경 비자동은 유지. verdict 보유분 재호출·자동반영은 여전히 금지.
+
+## [2026-08-01] D-REVIEW-VERDICT-VOCAB — 검수 verdict 어휘 5종 + CHANGE_REV 방향 스왑 의미론 [chainsight]
+
+> 트랙: ⑳-3 REVIEW-P2. 브랜치 `monorepo/sess-review-p2`. 입력=동결 `docs/etc/review_batch_v6_labeled.csv`(270행). 선행 [D-DOMAIN-AUTOMATION](#).
+
+**결정**: 인간 검수 verdict 어휘를 **5종**으로 확정하고 `RelationConfidence.domain_review_status`(기존 mig 0028 필드, choices pending/approved/auto/rejected)에 반영한다.
+- `OK` → `approved` (검수 승인)
+- `DROP` → `rejected` (**soft-drop**: serving 제외 + 레코드·궤적 보존, 삭제 아님)
+- `HOLD` → `pending` (재분류 대기)
+- `CHANGE:<TYPE>` → `relation_type`=<TYPE> + `approved` (같은 방향, 타입만 교체)
+- `CHANGE_REV:<TYPE>` → **방향 스왑**(symbol_a↔symbol_b) + `relation_type`=<TYPE> + `canonical_direction`='a→b' + `approved`
+
+**결정 E(도구 UI)**: 검수 도구의 verdict 입력 UI 정식화는 **수요 반복 확인 후**로 유보(현재 1회성 배치 = CSV+로더로 충분). 반복 검수 수요가 확인되면 TASKQUEUE REVIEW-TOOL-V6-IMPROVE에서 승격.
+
+**Why**: 도메인 태깅 머신 게이트(D-DOMAIN-AUTOMATION)가 pending/auto로 남긴 예외를 **인간이 최종 해소**하는 어휘가 필요. verdict는 그 머신값의 인간 재정(裁定)이므로 같은 필드(`domain_review_status`)에 덮어쓰는 것이 의미 정합(별도 필드=중복 상태원). soft-drop은 오판정 복구·감사추적 위해 삭제 대신 상태 전환. CHANGE_REV는 "경쟁으로 오분류된 공급관계를 방향까지 바로잡음"(예: ANET↔AVGO COMPETES_WITH → AVGO SUPPLIES_TO ANET)을 표현.
+
+**How to apply**: 로더 `apps/chain_sight/management/commands/apply_review_verdicts.py`. verdict 접두사 파싱(`CHANGE_REV:` 우선). 매칭 키=(symbol_a,symbol_b,relation_type), CSV `symbol_pair`를 '↔' split한 순서가 DB 방향 보존 → **forward-exact 유일 매칭**(0/2+건 → HALT H-C). `--dry-run` 기본·트랜잭션 원자·idempotent. CHANGE_REV는 별도 플래그 `--apply-change-rev`(게이트 G1 스왑결과 엣지 기존재/G3 unique 위반 판정, 실패 시 해당 1건 HOLD). serving 제외=ego API `.exclude(domain_review_status='rejected')`. **STEP 0 실측(2026-08-01, origin/main `d484b9cb`)**: CSV 270행 forward-exact 270/270·mig 0028 DB 적용(`[X]`)·CHANGE_REV 대상 G1/G2/G3 전부 PASS. `basis_summary`는 스왑 시 원문 보존(재생성은 review-tool 위임). **실 DB 반영(--apply)은 dev=prod 공유DB prod-write → 병진 명시 승인 게이트**([[lesson_dev_prod_shared_db]]).
+## [2026-08-01] 관찰 — 구체 규칙 > 일반 Gate 틀 (web 재빌드 위임 사절) [harness] [process]
+
+**관찰(결정 아님)**: 08-01 COVERAGE-DETAIL-FE LAND 세션이 web 재빌드 집행을 "이어서 하겠다"고 **위임 제안**했으나, `#62`(FE 배포=재빌드, **웹 리빌드는 사용자 수동**) 문언을 우선해 **사절**하고 사용자 승인 대기로 전환. 가중합 사절 **4.60 vs 위임 3.05**.
+- **해석 관례 명문화**: 일반 게이트 틀(예: "LAND 후 배포까지 한 세션")과 구체 규칙(#62 웹 리빌드 사용자 수동)이 충돌하면 **구체 규칙이 우선**한다. 세션이 효율을 이유로 구체 규칙을 흡수·생략하지 않는다. (이후 사용자가 명시 승인 → 재빌드 집행은 정상 — 사절은 "승인 없이 자동 진행"에 대한 것.)
+- cf. [[feedback_deploy_approval_explicit_quote]](배포=명시 승인)·#62(FE 재빌드 사용자 수동).
 
 ## [2026-07-31] D-NUMBERING-DUP — common-bugs 채번 충돌 = 중복 존치 + 구분자 부가 (A) [harness]
 
@@ -38,6 +129,8 @@
 - **인용 해석 규약**: 기존 `#7N` 단독 인용은 **문맥상 해당 내용 쪽**을 가리킨다(구분자 부가 전 인용이라 모호 시 내용으로 판별).
 
 **How to apply**: common-bugs 3쌍 헤딩을 `#70a/#70b`·`#71a/#71b`·`#72a/#72b`로 개정 + 각 하단 한 줄 주석. 본문 무수정. 재발 방지 = D-NUMBERING-MGMT-ONLY(아래).
+- **적용 이력**: #78 3중복(규칙 시행 전 발생분)에 a/b/c 확장 적용 (BATCH-19) — a=20b-f2 GOAL-CREATE-UI(`3ba4cf00` 11:04)·b=SEAL-PUSH-1b heat 로그(`9540993a` 11:38)·c=SEC β R2 2-dot diff(`663b17e5` 12:54), 착지 시간순.
+- **적용 이력**: #80·#81 각 2중복에 a/b 확장 적용 (BATCH-20) — #80: a=COVERAGE-DETAIL migrate(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 LLM 모순(`6d610d67` 13:40) / #81: a=실행환경 절대경로(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 localStorage 캐시(`6d610d67` 13:40), 착지 시간순. ⚠b(REVIEW-P2)는 규칙 시행(07-31) 후 비mgmt 세션 채번 = 규칙 위반 경위(ⓑ 조사, 처방 디렉터 회부).
 
 ## [2026-07-31] D-NUMBERING-MGMT-ONLY — common-bugs 채번은 mgmt 세션 전용 (재발 방지) [harness]
 
@@ -5420,6 +5513,8 @@ S2-C gate는 타입 자동변경을 하지 않으므로(하드룰) **자동 재�
   - ① **`stale pending 백-어노테이션` = TH blocked**(`dep=TH-RUNTIME-DEPLOY`, 실존 ID → 설계대로 승격 제외).
   - ② **`실행 트리 정합` = #47 transient**(미머지 브랜치에서 health 실행 시 worktree HEAD ≠ origin/main으로 뜨는 구조적 신호 — no-ff 머지 후 post-merge에서 자동 해소. read-only/미머지 세션의 정상 동작).
   근거: 07-29 STRIP-REHOME-LAND에서 지시서가 "1 WARN(TH)"만 기대해 #47을 누락 → 문언상 "TH 외 WARN → HALT"에 걸려 사용자 판단을 재차 물음(불필요한 왕복). #47은 매 미머지 LAND의 표준 transient이므로 **상수로 못박아** 재발 방지. cf. DECISIONS 326 백-어노테이션(승격 후 첫 실측에서 동일 2종 WARN 확인). post-merge 기대값 = **14 OK / 1 WARN(TH) / 0 FAIL**(#47은 머지로 해소).
+
+**보강 — mgmt 배치 자가 머지 허용 (2026-08-01, MGMT-BATCH-20)**: **mgmt 배치의 origin/main 착지는 자가 머지 허용** — 조건: 메타 4종 한정 diff 전수 확인 + D-LANDING 허용 조합(위 2종 WARN) + push 직전 재fetch(#40). **Gate 4(파괴적 작업 승인)는 삭제·마이그 적용·배포에 적용되며 메타 문서 머지에는 불요.** 근거: BATCH-19 착지 시 자가 머지 가부를 승인 턴으로 회부했으나, 메타 4종 한정 diff는 파괴적 작업이 아니므로 매 배치 승인 왕복이 불필요 — 해석을 규약으로 못박아 재발 방지.
 ---
 
 ## [2026-07-30] D-EOD-FRESH — beat 자가 신선도 보장(B안)
@@ -5431,6 +5526,44 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 **구현(P1)**: `apps/monitor/services/pipeline.py::refresh_monitors` 서두에 `ensure_price_freshness` 게이트 — 활성 모니터 심볼 전수 중 `DailyPrice 최신 date < _expected_last_trading_day`인 심볼만 `StockSyncService.sync_prices(force=True)` 호출. 심볼별 try/except 격리(sync 실패해도 beat 본체 불사 — #65 교훈). 최신 심볼 스킵(S&P500은 22:00 자동수집분으로 no-op). shared 코드 무변경(호출만), 신규 모델·PeriodicTask·스케줄 0, 기존 22:45 발화 내 실행. 거래일 판정은 공휴일 미고려·주말 제외 관대 근사(초과 sync는 멱등 무해, stale 누락이 위험하므로 보수적). 테스트 monitor 226(신규 freshness 11: 거래일 경계·stale/fresh 판정·실패 격리·통합 실 시그니처·행위보존 no-op).
 
 **Phase 0 백필(2026-07-30)**: IONQ·TLN 각 30행 충전(236→266, 최신 06-15→07-29). 수동 refresh 후 coverage 0.44→0.6667 회복. ★화면 손익 정정: IONQ pnl +23.5%(stale 06-15 61.18 기준 허구)→**-35.44%**(실 07-29 31.99), TLN→-20.95%. 4종목 DailyPrice 멱등 무접촉(Δ0).
+
+## 추기 — EOD-FRESH-FIX-1 (게이트 기준일 오프바이원 · 2026-08-03 종결)
+
+### 경위
+- **발견 (2026-07-31, VERIFY-0731 F3)**: 게이트 첫 자동 실전에서 비편입 3종
+  (IONQ·TLN·IREN)이 1일 지연 고착. 원인 = `_expected_last_trading_day(as_of)`가
+  as_of−1일을 기대치로 삼는 오프바이원 — beat(22:45 UTC)는 미국 장 마감 후라
+  as_of 자체가 직전 거래일인데 하루를 더 뺐고, sp500_eod_service(as_of 당일 수집)와
+  기준일이 하루 어긋남.
+- **결정 (2026-07-31)**: A안(−1 제거, expected = as_of) 채택.
+  가중 스코어 A=0.895 / B(동적 기준)=0.743 / C(거래일 캘린더)=0.745.
+  중단 조건 = "게이트 도달 시 as_of는 거래일" 불변식이 거짓이면 폐기 → PRE-1 실측으로
+  성립 확인(is_eod_fresh 가드 선행 + 4개 주말 로그 게이트 무발화)하여 착수.
+- **수리 (2026-08-01 배포)**: pipeline.py 1지점 — 함수 제거 + expected=as_of +
+  불변식 주석. 머지 9c3d59d7. **monitor pytest 기준선 226 → 223**
+  (제거 함수 전용 테스트 4 삭제 + F3 회귀 테스트 1 신규).
+- **검증**:
+  - 창A (08-01, PASS): 게이트 synced=3(수리 전 0)·failed=0, 비편입 3종
+    latest=07-31(편입과 동일 좌표), 07-30 갭 캐치업 실증(sync는 days=90 캐치업형 —
+    PRE-2), beat 완주 monitors=6.
+  - 창B (08-02·03, 성립): 비거래일 게이트 무발화 이틀 — 단 차단 주체는 beat 스케줄
+    (하기 정정).
+
+### 실측 정정 — 비거래일 방어는 이중 구조
+FIX-1 코드의 불변식 주석은 "is_eod_fresh 가드가 비거래일을 차단"이라 서술했으나,
+실측(창B)상 **1차 차단 = beat 스케줄(요일 cron, 주말 Sending 0)**이고, is_eod_fresh
+가드는 **2차(주중 휴장일·EOD 지연 대비)**다. expected=as_of의 전제는 어느 층이 막든
+성립하므로 수리 유효성 불변. **주석 정정은 다음 monitor 코드 터치에 피기백**
+(전용 배포 없음 — 이 원장이 진실).
+
+### 잔여 관찰 (트랙 아님 · 수동)
+- 2차 가드 단독 방어(주중 휴장일)는 실전 미실증 — 다음 도래 09-07(Labor Day).
+  해당일 로그 1회 관찰이면 충분(게이트 무발화 기대). 실패 시에만 RECON.
+
+### 부수 확정 사실
+- 게이트 검사 유니버스 = 활성 모니터 전수(비편입 필터 없음, checked=6) — 편입은
+  fresh-skip이라 무해한 의도적 단순화(PRE-3). 현행 유지.
+- FMP 402 상시(BF.B/BRK.B, #23)는 본 트랙 전 과정에서 무관 별건 유지.
 
 ## [2026-07-31] SLICE-20B-F2 랜딩 관례 + GOAL-CREATE-UI 결정 [portfolio][coach][ops]
 
@@ -5461,3 +5594,109 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 **결정**: 목표 입력 화면 = **GoalForm 단일 컴포넌트, mode='create'|'edit'**. KnobsPanel 폼 코어(target_return_pct + 손잡이 5종)를 GoalForm으로 추출(행위보존, edit 모드=기존 PATCH). create 모드는 horizon_months·risk_tolerance 필드 추가 + POST. **입력 표면 1벌**(중복 폼 금지). edit 모드는 horizon/risk 변경 불가(PATCH 미지원 = 스코프 내 생성 전용).
 
 **Why**: 폼 중복은 drift 원천. 단일 컴포넌트 2모드 = 검증·레이아웃 단일 소스. STEP 0 실측: KnobsPanel 입력/제출 JSX 분리·순수 useState → 추출 행위보존 가능(HALT 2 불성립).
+## [2026-07-31] SEC β G1.6 R1 — 캐노니컬 베이스라인 확정 + "Neo4j-env" 오라벨 정정 (D-SECB-BASELINE, D-SECB-MISLABEL)
+
+> SEC β G1.6 회수 세션(`monorepo/sess-secb-g16`, Gate 0 `1c41a7e5`). R1 결과 D — 감독 판정 B(HEAD-앵커 비준 + 저비용 법의학 F1/F2)로 재개. dry-run 전용·DB 쓰기 0·LLM 0.
+
+**D-SECB-BASELINE (F3 — 캐노니컬 베이스라인)**: **4463 GREEN / 0 사전존재 / 53 skipped @ origin/main `9750b8bc`** (2026-07-31 실측, `--maxfail=200`). health_check 13 OK / 2 WARN(양성) / 0 FAIL. ★**규칙**: 베이스라인은 **세션마다 재실측하고 HEAD 해시를 병기**한다. **해시 없는 정적 수치의 세션 간 이월 금지**(구 "4084" stale 추정·"4050" 무앵커 이월이 전례 — cf. D-SECB-MISLABEL).
+
+**D-SECB-MISLABEL (F4 — 오라벨 정정, 과거 라인 편집 없음·append만)**: 다세션 verbatim 이월된 "13건 사전존재 = Neo4j-env" 라벨은 **검증 없이 이월된 오라벨**. 실측 반증: 13건(attention 6 + leadership_api 7) 전 코드경로(테스트 → `attention_service`·`leadership_eventgroup`·`event_group_reader`·`leadership_service`·`leadership_compute`·conftest) **neo4j 참조 0**, 격리 재실행 **29 passed**(neo4j fixture 없이). **F1**(main 이동분 규명): `4d0ed3b5..9750b8bc` 전 병합·커밋 병진 승인 트랙 귀속(MGMT15/16·CN-repair·TH-DEPLOY·⑳-3·credit p2a·EOD-fresh·MP-unify·strip-rehome), 신규 테스트 25파일=성장 출처, **유령 커밋 0**. **F2**(제4가설): `test_stock_vis` 마이그 179건 전부 **2026-07-31 11:37 적용 = DB fresh 재생성**(13 실패 시대 ≤07-28 이후) → 실 원인 = **결과 D: `--reuse-db` 데이터 오염, DB 재생성으로 해소(양성)**. 오라벨 이월 라인 예: DECISIONS 553·3761·3783·3810·3843·3877·3909. 정정 근거 = 본 세션 `1c41a7e5` 이후 F1/F2 실측. cf. common-bugs #79, TASKQUEUE SECB-REGRESSION-WATCH.
+
+## [2026-08-01] SEC β G1.6 랜딩 정합 — 정본 베이스라인 단일화 + 배달 사고 #7 (D-SECB-BASELINE-CANON)
+
+> 랜딩 커밋 `893d3cb6`(sess-secb-g16 → main no-ff). 랜딩 前 P4/P5/P6 게이트 전부 CLEAN.
+
+**D-SECB-BASELINE-CANON (P5 — 단일 정본, append 정정·과거 라인 편집 없음)**: 정본 베이스라인이 두 곳에 등재됨 — ⑴ `D-SECB-BASELINE`(DECISIONS, `663b17e5`) ⑵ SEAL-PUSH-1c(PROGRESS, `9540993a`). **양자 수치·앵커 동일**: **4463 GREEN / 0 사전존재 / 53 skipped @ `9750b8bc`**(모순 0 → P5 AUTO-HALT 미발동). 상호 보완: 663b17e5=`13 Neo4j-env` 오라벨 정정 / 9540993a=`119 pre-existing` 오라벨 정정 — **둘 다 0 사전존재로 수렴**. 정본 = 본 항목으로 단일화(수치 동일, 두 등재는 상호 참조). 향후 갱신은 세션 재실측+HEAD 해시 병기(D-SECB-BASELINE 규칙).
+
+**배달 사고 #7 (게이트 정의 미전달, 규율이 랜딩 前 적발)**: P4·P5 공식 정의(AUTO-HALT 기준)가 승인 메시지에 미전달 → 실행 세션이 임의 발명 대신 HALT·회부 → 감독 재전달로 해소. 사고 계열 통산 #7(#6=base 지시서 누락에 이어). 교훈 = 참조된 게이트의 정의 부재 시 임기응변 금지·회부(cf. Gate 0 규율).
+
+### D-SELECT-V2-RULE — L3 그라운딩 선별 v2 = (나) 어휘·규칙 점수 (결정론, 2026-08-01)
+
+**결정**: C-L3 그라운딩 선별 v2의 랭킹 규칙 = **(나) 어휘·규칙 점수** — 텍스트(title+summary) 기반 계층 macro 어휘 점수를 주축으로. sentiment_score/entity_count는 v1의 편향 원천이므로 **랭킹 축에서 제외**하고 동일 macro-score 내 결정론 tie-break으로만 사용. 신설 모듈 `apps/market_pulse/regime/grounding_v2.py`(v1 grounding.py 무접촉·additive).
+
+**가중합(합=1.00: 선별품질 .35·결정론 .20·683균일적용 .15·단순성 .15·메타강건 .15)**: (가) 메타우선 **4.15** / (나) 어휘 **8.55** / (다) 하이브리드 **7.78**. 마진 (나)−(다)=**0.77**(0.40~1.00 → 타이브레이커). **타이브레이커 → (나)**: (다)의 메타 보너스는 ⑴ 방금 피한 non-uniformity를 tie-break에 재도입, ⑵ v1이 쓴 sentiment/entity 재의존=company-sentiment 편향 재수입, ⑶ 1인 유지 단순성 열위.
+
+**(가) 실격 근거(STEP0 실측)**: AV `topics`/article-`relevance`는 provider가 **저장조차 안 함**(drop, `alphavantage.py`). `category`는 재수집분(batch1·2 10,503건) **전부 'company'**(분별 불가), 기존분은 혼재 → 불균일. `sentiment_score` 채움률 재수집 100% vs 기존 51.2% → 균일성 실격. **유일 균일·상시 신호 = title+summary 텍스트**(양 구간 ~100%).
+
+**모듈 계약(불변 요건)**: ①결정론(동일 입력→동일 출력, 입력 순서 무관) ②품질 하한(`min_score` 미달=제외, macro 없는 날 **빈 리스트=why=null**, 억지 채움 금지) ③provenance(score·hits·rank 동반) ④버전 태그 `select_v2.0`. 계층 어휘=STRONG(명백 거시구문 3.0/1.2)·MID(광의시장 1.5/0.6), 티커/ETF 보일러플레이트 매치 시 ×0.3 페널티(개별종목 index-name 오매치 중화), 소스가중(PR/신디케이션 ×0.7·품질와이어 ×1.15), near-dup 제목 접기.
+
+**REGEN-V2 인터페이스**: `select_grounding_v2(date, *, n=6, source_cap=3, min_score=1.2) → [{id,url,title,source,sentiment_score,entity_count,published_at,score,hits,rank,select_version}]`. v1 호환키(id/url/title = context_generator provenance 조립용) 보존. context_generator가 `select_grounding`→`select_grounding_v2` 전환 시 반환 스키마 상위호환. **REGEN-V2 진입조건 = 재수집 DONE(~8/8) + 본 모듈 랜딩**.
+
+**Why**: C-L3 1차(491건) 품질 한계(D-CL3-QUALITY-LIMIT)의 근본 = v1이 abs(sentiment)+entity로 "고감정 개별기업"을 선별. 선별 품질 = REGEN-V2 품질의 상한. 스팟 12일 실증(v1 vs v2): macro-rich일 v2 압도("PCE Inflation Cools, GDP Growth Strong"·"Treasury sell-off after Fed holds rates"·"ECB rate decision" vs v1의 "Q2 Results"·"Class Action"), 저볼륨일 v2 빈결과(정직) vs v1 개별주 억지. broad 거시 절대량 부족일은 부분개선(D-CL3-QUALITY-LIMIT 근본한계 유효 — 선별이 없는 신호를 만들진 못함). N·min_score는 초안(정밀 캘리브레이션=샘플 게이트).
+**D-SECB-BASELINE-CANON 갱신 (2026-08-01, A-3 실측 — 해시앵커 규칙 적용)**: 구 정본 `4463/0/53 @ 9750b8bc`는 **stale 앵커로 폐기**. 유효 정본 = **4460 GREEN / 0 사전존재 / 53 skip @ `4696790e`**. 시프트 −3 = `test_freshness.py` 11→8 통합(**EOD-FRESH-FIX-1 `68318fc3`**, P6 승인 병렬 트랙, off-by-one 수리). SEC β G1.6 A-1(`bbc93a84`)은 테스트 제거 0(단언 +1줄만)·grounding 13 pass = **내 작업발 회귀 0**. 감독 비준(2026-08-01). 이 폐기·갱신은 #79(미검증 수치 이월 금지)의 실적용 — 베이스라인은 항상 세션 재실측+HEAD 해시 병기.
+
+## [2026-08-01] SEC β Gate 2 배치 개정 — G-d 제거·노출 트랙 이관 (D-SECB-GATE2-AMEND-1)
+
+**D-SECB-GATE2-AMEND-1 (G-d flag-on 1 filing 배치 제거)**: Gate 2 사인오프 요청서 §비준 시점에 `SEC_GROUNDING_ENABLED` flag·grounding_status **노출 read-path가 코드에 부재**했음(2026-08-01 실측 grep: flag 정의 0·serializer/view grounding 참조 0·sec 엔드포인트=dashboard+FilingDataView 둘 다 미참조). G-d는 flag flip이 아니라 신규 구축(flag+게이트 노출+1-filing 스코핑)이며, **노출 설계 = 소비자(UX) 결정 미존재 상태의 사변 구축 금지(γ)** → 배치에서 **제거**, `SECB-EXPOSURE` 트랙 이관(디렉터 세션·목업 기반 결정). Gate 2 실집행분 = G-a(백업)·G-b(migrate 0003)·G-c(백필 1751, 4분포 1273/41/410/27 실현)로 종료. G-e(prompt v2)는 정의서 승인 후 별도. **교훈**: 요청서의 실행 단계는 **존재하는 코드 경로를 실측 확증 후 비준**할 것(#79 변종 — 설계 의도의 문서 선행이 코드 선행을 대체 못 함). cf. common-bugs #82, TASKQUEUE SECB-EXPOSURE. 감독 결정 B안(2026-08-01).
+## D-LAND-ATOMIC (2026-08-01, 반복 랜딩 경합 시 원자 집행 표준)
+
+병렬 세션이 같은 origin/main을 겨냥할 때 순진한 `push`는 non-fast-forward로 반복 reject된다(과거 P2a-1 병렬 랜딩 5회 reject 실증). 표준 집행 절차를 **fetch → reset → merge → push 원자 스크립트**로 고정한다.
+
+1. `git fetch origin` — 최신 origin/main 확보.
+2. 작업 브랜치를 origin/main 위로 `reset --hard`(또는 rebase) 후 슬라이스 커밋을 **cherry-pick/merge**로 재적재 — 계보를 origin/main 선형 위로 정렬.
+3. 자가검증(계보 N줄·pytest·pathspec) 통과 시 단일 `push`.
+4. **push는 병진(사용자) 수동** — 공유 main 접촉은 명시 승인 인용 필수([[feedback_deploy_approval_explicit_quote]]). Claude는 원자 스크립트를 **준비**하고 게이트를 **판정**하되 집행하지 않는다.
+
+**Why**: 경합 재시도를 임기응변(반복 pull/merge)으로 처리하면 계보 오염·중복 커밋·타 트랙 혼입 위험(HOLD-P1 `e37b2c7` 혼입 실증, [[lesson_branch_assignment_explicit_isolation]]). 절차를 원자 스크립트로 고정하면 재현·검증 가능.
+
+---
+
+## D-PROBE-PRODWRITE-EXCEPTION (2026-08-01, 일회용 probe prod-write 예외 원칙 + f2 Part 3 기록)
+
+**원칙 재확인**: dev=prod 물리 DB 공유([[lesson_dev_prod_shared_db]]) 하에서 shell/probe에 의한 prod-write는 **자율 금지**가 기본이다. 예외는 아래 3조건을 **모두** 충족할 때만 1회 허용한다:
+1. **일회용 probe 한정** — 반복·스케줄·상시 파이프라인이 아닌 단발 측정.
+2. **세션 내 병진 승인** — 해당 세션에서 사용자의 명시 승인 인용([[feedback_deploy_approval_explicit_quote]]).
+3. **실계정 무접촉 증명 의무** — 사용자 실계정·개인정보 무접촉을 산출물로 증명(어떤 테이블/키에 접촉했는지 명시).
+
+**기록 — f2 Part 3 prod-write 예외 1회**: 상위 지시서 f2 Part 3의 prod-write는 위 3조건을 충족한 세션 내 병진 승인 예외로 집행됨을 거버넌스 원장에 등재한다(증적은 해당 세션 산출물 소관).
+
+**Why**: prod-write 예외를 무기록으로 남기면 다음 세션이 관행으로 오인해 자율 prod-write가 번진다. 예외는 반드시 "1회·조건부"로 원장에 못박아 재사용 불가로 만든다.
+
+**본 세션(SIGNAL-FORWARD-INFRA 프리플라이트) 준수 증명**: STEP 1 FMP 프로브는 **read-only 외부 호출**(FMP 시장데이터)로 prod-write 아님. 접촉 = FMP `/stable/*` 조회 27콜 + 로컬 SELECT(AdvisoryRun·WalletHolding count). **사용자 실계정·DB write 무접촉**. FMP API 키는 마스킹 처리(`len=32,head=qA1W***`)로 원장·커밋에 원문 미기재([[feedback_secret_masking_policy]]).
+
+---
+
+## D-I1-RUNTOTAL-DETERMINATION (2026-08-01, SFI-I1 Part A.2 — RUN-TOTAL-PERSIST 판별 종결)
+
+**판별 = ① 등재 확인 → 종결.** `RUN-TOTAL-PERSIST`는 origin/main(`d484b9cb`) `TASKQUEUE.md`에 **이미 등재**됨(f2 track `3ba4cf00` SLICE-20B-F2 Part A, 2026-07-31). 심지어 "SIGNAL-FORWARD-INFRA 합류 후보 — 전방 신호 인프라와 원장 스키마 공통 설계"로 명시. 재등재·common-bugs 불일치 등재 불요.
+
+**부수 정정(보고-착지 불일치 근인)**: SFI 프리플라이트 recon 보고가 "RUN-TOTAL-PERSIST = repo 무매치"로 판정한 것은 **recon 브랜치가 origin/main이 아닌 분기된 HOLD-P1 라인(`b8d767aa`) 위에 기반**해 f2 랜딩(07-31) 이전 상태를 조회했기 때문(false-missing). SFI-I1에서 `git rebase --onto origin/main`으로 base를 origin/main으로 교정 → RUN-TOTAL-PERSIST 가시화, common-bugs 번호도 #62(stale)→#79(정본) 정합. **교훈**: recon/설계 세션 STEP 0의 "worktree 최신성 확인"(common-bugs #59)을 신규 트랙 base 선정에도 적용 — 분기 라인 위 기반 금지([[lesson_branch_assignment_explicit_isolation]]).
+
+---
+
+## D-I1-1 · D-I1-2 · D-I1-3 (2026-08-01, SFI-I1 아키텍처 결정 3건)
+
+**D-I1-1 — forward 신호 저장은 shared(`packages/shared/stocks`)에 둔다.** EstimateSnapshot 모델·FMP 래퍼 신호 메서드·writer 서비스 전부 shared 패키지. 근거: 신호는 앱 횡단 자산(advisory·chain_sight·dashboard 잠재 소비) → shared가 단일 출처. 경계 규율: shared는 `apps.*` import 금지(경계 가드 자동 검증). advisory 엔진·화면은 이 슬라이스에서 무접촉(소비는 별도 사이클).
+
+**D-I1-2 — EstimateSnapshot은 append 전용(시계열 정본).** 동일 심볼 재수집 = 신규 행 추가(덮어쓰기 금지). captured_at으로 시점 구분. Stock.analyst_* 필드는 **최신 스냅숏 미러**(빠른 조회용 파생)일 뿐, 정본 시계열은 EstimateSnapshot. 근거: RUN-TOTAL-PERSIST가 노출한 "동일 date update_or_create가 이전 값 소거" 문제([[상기 D-I1-RUNTOTAL]])를 forward 신호에서 반복하지 않기 위해 append로 설계.
+
+**D-I1-3 — SFI-I1은 "수집까지만"(collect-only).** 범위 = 래퍼 메서드 + 모델 + writer + nightly 태스크 정의. **화면·advisory 기대수익 로직·migrate·beat 등록은 무접촉**. advisory_engine.py:10의 "analyst_target_price를 기대수익 프록시로 쓰지 말라" 금지벽은 유지 — 신호를 수집·저장하되 기대수익 산출로 직결하는 소비는 별도 결정 사이클. migrate=prod-write·beat 등록=DB row 둘 다 병진 수동(공유 DB 절대 규칙).
+
+---
+
+## D-I1-4 (2026-08-01, SFI-I1 B2 확정 — forward 신호 역할 경계 명문화)
+
+병진 판정으로 모델 전략 **B2** 확정. forward 신호를 두 원장으로 역할 분리한다:
+
+- **가격·의견 계열 = `packages.shared.stocks.AnalystSignalSnapshot`(신규).** 4신호: price target(high/low/consensus/median) · grades 분포(strong_buy~strong_sell + consensus 라벨) · grades-historical(월별 추세) · ratings-snapshot(등급). 유니버스 = coach(WalletHolding ∪ WatchlistItem), 케이던스 = nightly.
+- **실적 추정(estimates) = `apps.chain_sight.EstimateSnapshot`(기존 정본, 무접촉).** eps/revenue, 유니버스 = SP500, 케이던스 = 주간(금). SFI는 **estimates를 수집·저장하지 않는다** — `client.get_analyst_estimates` 신규 호출 금지(존재 확인만).
+
+**동일 FMP 엔드포인트 이중 수집 금지.** `analyst-estimates`는 chain_sight가 단일 소유. `AnalystSignalSnapshot`는 estimates 페이로드를 담지 않는다.
+
+**Why**: EstimateSnapshot이 이미 배포·가동 중(theme_heat TH-3, beat 등록 금 16:30 ET)인데 SFI가 동명·동엔드포인트 모델을 만들면 이중 수집·의미 중복. 두 원장은 유니버스(SP500 vs coach 14종, 겹침 6·갭 8)·케이던스·목적(C8 리비전 z vs coach 화면 신호)이 모두 달라 통합보다 역할 분리가 정합. 통합 단일 원장은 별도 사이클(cf. MP-UNIFY) 소관.
+
+**부수 결정 — 모델 키 = `symbol` CharField(FK 아님).** 기존 EstimateSnapshot 형제 관례 준수 + coach 갭 8종(비SP500)이 Stock 행 부재 가능 → FK 강제 회피. 유령필드 미러는 별도로 Stock을 symbol 조회해 존재 시에만 갱신.
+
+## [2026-08-03] SEC β G-e — v2 프롬프트 tail 발산 측정 + 배달사고 #8 (D-SECB-GATE-E)
+
+> SECB-GE-EXEC-1 Phase B. 정의서 `sec_beta_ge_prompt_v2_scope.md` 감독 승인 후 착수. 트랙 최초·유일 LLM 호출(5콜). worktree `monorepo/sess-secb-ge`.
+
+**D-SECB-GATE-E (v2 프롬프트 측정 = 방향성 확인, 배포 아님)**: R1~R5 verbatim 규율([`SECB-GE-R1R5-SPEC.md`](docs/features/chain-sight/SECB-GE-R1R5-SPEC.md) 단일 출처) 삽입 v2 프롬프트로 표본 5 filings(AKAM·COR·CAT·ISRG·FIX = 인용≥8 중 tail 상위, 3단 키 `tail desc→cites desc→accession asc`) 재추출·paired 측정. **결과: tail율 71.07%(v1 121/86) → 0.72%(v2 139/1)** — partial_match(리스트 절단) 유형 v2 표본서 0건. `MAX_EVIDENCE_CHARS=300`(v1 캡 역산). grounding=`ground_evidence_g16`(순수 함수·DB 무접촉·LLM 0), LLM은 추출에만. **저장=물리 격리(b)**: prod/dev DB 쓰기 **0**, 결과 `var/secb_ge_v2_sample/`(gitignore) JSON + 요약 `sec_beta_ge_v2_result.md`. prod 사전/사후 스냅샷 동일 입증(1768/1751·v2 0·1273/41/410/27 불변). **⚠️ caveat(롤아웃 결정 재료)**: v2 evidence 길이가 R3의 300자 상한 상시 초과(ISRG 평균 587·max 646) — 모델이 R2(완전 문장)>R3(캡) 우선. **측정 세션 계약**: pass/fail 낙인·전량 배포·substrate 통합 없음(별도 결정 사이클). 신규 코드 = `SUPPLY_CHAIN_EXTRACTION_PROMPT_V2`(additive)+`secb_ge_v2_sample` 커맨드(prod 읽기전용)+g16 재사용, 마이그 0·모델 변경 0·v1 경로 무변경(extractor.py 무접촉).
+
+**배달사고 #8 (참조 사양이 chat-only·repo 미커밋, 규율이 실행 前 적발)**: 디렉터 비준문이 "v2 프롬프트 = v1 구조 + 델타 R1~R5 삽입(디렉터 사양서 참조)"라 지시했으나, 참조된 R1~R5 사양이 **repo·전 브랜치·미추적·핸드오프 어디에도 미커밋**(chat 후속 메시지에만 존재). 실행 세션이 R1~R5를 **임의 창작하지 않고 HALT·회부**(측정 대상 자체이므로 창작 시 측정 오염) → 감독이 `SECB-GE-R1R5-SPEC`로 원문 전달·`3cbfc02f` 커밋으로 해소. 사고 계열 통산 **#8**(#6=base 지시서 누락·#7=게이트 정의 미전달에 이어). **귀책=디렉터**(비준문 복사 블록 밖에 사양 배치). 교훈=참조된 사양의 repo 미커밋 시 임기응변 금지·회부(배달 게이트 규율, cf. #6·#7). cf. TASKQUEUE SECB-PROMPT-V2(소비 완료).
+
+## [2026-08-03] TH 트리거 문안 정정 — corpus 무동결·실동결=TNV 집계 (D-TH-TRIGGER-CORRECT)
+
+> TH-RECON-1 정찰(읽기전용) 실측으로 TH-TRIGGER-FIRED 원안의 오전이 정정. TH-SESSION-1 §A 반영.
+
+**D-TH-TRIGGER-CORRECT (트리거 스코프 오전이 정정)**: TH-TRIGGER-FIRED 원안 "corpus unfreeze + TNV 백필(07-12→현재, 50일+)"은 실측과 불일치 3건으로 정정한다 — ⑴ **corpus(DailyNewsKeyword)는 동결된 적 없음**: 최신 date=2026-08-03(오늘)·일 1행 불변식 충족·창 내 결측일 0(뉴스 키워드 추출 beat 상시 가동). "corpus unfreeze"는 부정확. ⑵ **실동결 = TNV 집계**(ThemeNewsVolume): 최신 date=07-25·집계 **beat 부재**(news_volume/tnv PeriodicTask 없음)→수동 커맨드 의존→미실행으로 정지. 입력 corpus는 계속 흘렀으므로 백필 = **07-26→08-03(9일) 순수 DB 재집계**(외부 API 0·LLM 0). ⑶ **'07-12'는 TNV 동결점이 아니라** ThemeTermOverride의 G2 스코프(≤07-11)에서 유래한 오전이. "50일+"도 과대(실 9일). **파생 리스크**: heat(theme-heat-daily, 08-02까지 발화)가 결손 TNV 성분(C3=`c3_narrative_from_db`)으로 07-26~08-02 산출 → TNV 백필 후 heat 07-26→08-03 멱등 재산출(`update_or_create(theme,date)`) 필요. **6/11 themes**(최신일 6 저장)은 이상 아님 — `heat_beat.py` 결측 성분 ≥3 섹터=`not_computed`(§6.1 status 미포함, 저장 안 함) 설계 동작. cf. TASKQUEUE TH-TRIGGER-FIRED(소비)·TH-OVR-RECUT(보류)·TH-RESUME-CORPUS-UNFREEZE. 감독 판정 4건(TH-SESSION-1, 백필=TNV만·override 배제 마진 2.25).

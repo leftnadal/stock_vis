@@ -11,7 +11,11 @@ import logging
 from celery import shared_task
 
 from apps.chain_sight.models import RelationConfidence
-from apps.chain_sight.services.domain_tagging import SEC_RELATION_TYPES, tag_one
+from apps.chain_sight.services.domain_tagging import (
+    SEC_RELATION_TYPES,
+    is_human_reviewed,
+    tag_one,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +29,9 @@ def tag_relation_domain_task(self, rc_id: int):
         ).first()
         if rc is None:
             return {"skipped": "not-sec-or-missing", "rc_id": rc_id}
+        # ⑳-3 S3-MINDMAP S1: 검수 verdict 보유분 보호 — 자동 태깅 덮어쓰기 금지.
+        if is_human_reviewed(rc):
+            return {"skipped": "human-reviewed", "rc_id": rc_id}
         if not rc.relation_basis_summary:
             return {"skipped": "no-basis", "rc_id": rc_id}
 

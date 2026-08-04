@@ -364,6 +364,11 @@ export interface EgoNode {
   symbol: string;
   name: string;
   sector: string;
+  /** ⑳-3 S3-MINDMAP: L2 industry 표시 버킷(파생, industry 없으면 null). additive */
+  industry_bucket?: string | null;
+  /** ⑲ S3: 중심성 순위(스냅샷 부재 시 null). additive */
+  pagerank_rank?: number | null;
+  betweenness_rank?: number | null;
 }
 
 /** ego 관계 등급 코드 (⑳-G): 표시점수 계단값→등급. 연속 신뢰도 아님. */

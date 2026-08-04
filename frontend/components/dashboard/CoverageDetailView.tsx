@@ -1,4 +1,13 @@
-import type { CoverageResponse } from '@/types/coverage'
+import { useImpressionTracker } from '@/hooks/useImpressionTracker'
+import type { CoverageResponse, CoverageUnexposedItem } from '@/types/coverage'
+
+/**
+ * 상세 페이지 impression surface (COVERAGE-DETAIL-FE).
+ * 백엔드 `ImpressionLog.SURFACE_COVERAGE_DETAIL`('coverage_detail', migrate 0011)과 정합.
+ * 유기 노출(dashboard_eod)과 분리 기록 → 커버리지 계산에서 제외(D-P2-COVERAGE-SURFACE).
+ * dashboard 구획 단일 출처(공용 hooks/impressionTelemetry.ts 미접촉).
+ */
+const SURFACE_COVERAGE_DETAIL = 'coverage_detail'
 
 function formatRate(rate: number): string {
   return `${Math.round(rate * 100)}%`
@@ -10,7 +19,8 @@ function formatRate(rate: number): string {
  * summary 카드 + 미노출 리스트(ticker · signal_tag · signal_date · 경과일).
  * 정렬·상한은 API 응답 그대로(FE 재정렬 금지 — 단일 출처).
  * meta.join_misses > 0 이면 각주 1줄. C-2 퍼널 영역은 만들지 않는다(빈 껍데기 금지).
- * impression 추적 없음(경로 B — ingest가 coverage_detail surface 미수용, C-2 이관).
+ * impression 추적: 각 미노출 행 단위로 surface='coverage_detail' 발신(COVERAGE-DETAIL-FE,
+ * surface 등재·migrate 0011 완료). C-2가 "어떤 종목이 상세에서 노출됐나"를 쓸 수 있게 행 그레인 유지.
  */
 export function CoverageDetailView({ data }: { data: CoverageResponse }) {
   const { window, summary, unexposed, meta } = data
@@ -36,15 +46,7 @@ export function CoverageDetailView({ data }: { data: CoverageResponse }) {
       ) : (
         <ul data-testid="coverage-unexposed-list" className="divide-y divide-gray-200 rounded-lg bg-white shadow">
           {unexposed.map((item) => (
-            <li
-              key={item.object_ref}
-              className="flex items-center justify-between px-4 py-3 text-sm"
-            >
-              <span className="font-medium text-gray-900">{item.ticker}</span>
-              <span className="text-gray-500">{item.signal_tag}</span>
-              <span className="text-gray-500">{item.signal_date}</span>
-              <span className="text-gray-400">{item.days_since_issue}일 경과</span>
-            </li>
+            <CoverageUnexposedRow key={item.object_ref} item={item} />
           ))}
         </ul>
       )}
@@ -55,6 +57,29 @@ export function CoverageDetailView({ data }: { data: CoverageResponse }) {
         </p>
       )}
     </div>
+  )
+}
+
+/**
+ * 미노출 발급 행 (COVERAGE-DETAIL-FE) — 행 단위 impression 추적.
+ * 뷰포트 50%×1초(useImpressionTracker 내부 상수) 충족 시 surface='coverage_detail' 발신.
+ * object_ref = API 제공값(SYMBOL:date:tag, dashboard_eod와 동일 그레인). fail-quiet(훅 자체 무해).
+ */
+function CoverageUnexposedRow({ item }: { item: CoverageUnexposedItem }) {
+  const { ref } = useImpressionTracker<HTMLLIElement>(
+    SURFACE_COVERAGE_DETAIL,
+    item.object_ref
+  )
+  return (
+    <li
+      ref={ref}
+      className="flex items-center justify-between px-4 py-3 text-sm"
+    >
+      <span className="font-medium text-gray-900">{item.ticker}</span>
+      <span className="text-gray-500">{item.signal_tag}</span>
+      <span className="text-gray-500">{item.signal_date}</span>
+      <span className="text-gray-400">{item.days_since_issue}일 경과</span>
+    </li>
   )
 }
 

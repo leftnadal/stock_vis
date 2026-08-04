@@ -70,6 +70,27 @@ def _auto_approve_enabled() -> bool:
     return bool(getattr(settings, "DOMAIN_AUTO_APPROVE", False))
 
 
+# ── 검수 산출물 보호 (⑳-3 S3-MINDMAP S1) ─────────────────────
+# verdict 보유 270건(REVIEW-P2)은 자동 파이프라인의 재태깅·덮어쓰기 대상에서 제외한다.
+# 식별: domain_review_status는 있으나 domain_machine_check는 없음.
+#   - 파이프라인은 태깅 시 domain_machine_check를 '항상' 기록한다.
+#   - 따라서 review_status가 있는데 machine_check가 없으면 = 인간 검수(verdict) 산출.
+# 신규 SEC 관계(둘 다 null)는 제외되지 않아 정상 태깅되고, 파이프라인이 처리하면
+# machine_check가 생겨 이후 이 가드에 걸리지 않는다(자기 정합).
+def is_human_reviewed(rc) -> bool:
+    """RelationConfidence 인스턴스가 검수 verdict 보유(보호 대상)인가."""
+    return rc.domain_review_status is not None and rc.domain_machine_check is None
+
+
+def exclude_human_reviewed(qs):
+    """auto-tagging 대상 QuerySet에서 verdict 보유분(270) 제외."""
+    from django.db.models import Q
+
+    return qs.exclude(
+        Q(domain_review_status__isnull=False) & Q(domain_machine_check__isnull=True)
+    )
+
+
 # ── 프롬프트 계약 ─────────────────────────────────────────────
 _SYSTEM = (
     "너는 미국 상장사 간 관계를 분류하는 금융 애널리스트다. "
@@ -79,11 +100,15 @@ _SYSTEM = (
     '{"domain_tags": ["명사구1", "명사구2"], '
     '"type_match": {"match": true, "suggested_type": null}, '
     '"refined_basis": "타깃 중심 1문장(선택, 없으면 빈 문자열)", '
-    '"confidence": 0.0}\n'
+    '"confidence": 0.0, '
+    '"rationale": {"claim": "판단 근거 1문장", "claim_type": "known_fact", '
+    '"basis_hint": "근거 출처 힌트", "counter_signal": "반대 신호(없으면 빈 문자열)"}}\n'
     "- domain_tags: 1~2개, 예 \"메모리·HBM\", \"GPU·데이터센터\". 문장에 근거 없으면 빈 배열.\n"
     "- type_match.match: 현재 관계 타입이 문장과 맞으면 true. 틀리면 false + suggested_type에 "
     "SUPPLIES_TO/COMPETES_WITH/DEPENDS_ON/PARTNER_WITH 중 하나.\n"
-    "- confidence: 0~1. 문장이 타깃을 명시하지 않으면 낮게."
+    "- confidence: 0~1. 문장이 타깃을 명시하지 않으면 낮게.\n"
+    "- rationale.claim_type: known_fact(문장에 명시)|inference(추론)|uncertain(불확실) 중 하나.\n"
+    "- rationale: 감사용 자기보고. basis_hint=근거 위치, counter_signal=판단을 뒤집을 신호."
 )
 
 
@@ -197,12 +222,81 @@ def decide_gate(mc: dict) -> tuple[str, str]:
     return "pending", "pending"
 
 
+def build_gate_audit(mc: dict, relation_type: str = "") -> dict:
+    """게이트 판정 감사 추적(⑳-3 S3-MINDMAP S3). **행위보존** — 판정 로직 무변경, 기록만.
+
+    decide_gate의 조건을 미러링해 발동 룰·비교 원값·판정 경로를 재구성한다.
+    목적: 자가모순 53건류 미스터리 재발 시 로그 즉답(캘리브레이션 전력 참조).
+    decide_gate와 동일 판정을 내는지는 테스트(gate_audit_matches_decide)로 못박는다.
+    """
+    type_change_proposed = (not mc["type_match_ok"]) or bool(mc.get("suggested_type"))
+    all_checks = (
+        mc["target_in_basis"] and mc["type_signature_ok"] and mc["confidence_ok"]
+    )
+    values = {
+        # 룰별 비교 원값 (자가모순·타입매치의 좌우 피연산자·confidence 원값)
+        "self_contradiction": mc.get("self_contradiction"),
+        "type_match_ok": mc.get("type_match_ok"),
+        "suggested_type": mc.get("suggested_type"),
+        "relation_type": relation_type,  # type_match 좌변(현재 타입)
+        "target_in_basis": mc.get("target_in_basis"),
+        "type_signature_ok": mc.get("type_signature_ok"),
+        "confidence_ok": mc.get("confidence_ok"),
+        "confidence": mc.get("confidence"),
+        "confidence_threshold": _threshold(),
+        "auto_approve_enabled": _auto_approve_enabled(),
+    }
+    if mc.get("self_contradiction"):
+        path, fired = "self_contradiction→pending", ["self_contradiction"]
+    elif type_change_proposed:
+        fired = []
+        if not mc["type_match_ok"]:
+            fired.append("type_mismatch")
+        if mc.get("suggested_type"):
+            fired.append("suggested_type_present")
+        path = "type_change→pending"
+    elif all_checks:
+        path = "all_checks→auto_candidate"
+        fired = ["all_checks_pass",
+                 "auto_approve_on" if values["auto_approve_enabled"] else "auto_approve_off"]
+    else:
+        fired = [f"{k}_fail" for k in ("target_in_basis", "type_signature_ok", "confidence_ok")
+                 if not mc.get(k)]
+        path = "checks_fail→pending"
+    return {"decision_path": path, "fired_rules": fired, "values": values}
+
+
 def first_domain_tag(llm_out: dict) -> str | None:
     tags = llm_out.get("domain_tags")
     if isinstance(tags, list) and tags:
         t = str(tags[0]).strip()
         return t[:80] or None
     return None
+
+
+_CLAIM_TYPES = {"known_fact", "inference", "uncertain"}
+
+
+def extract_rationale(llm_out: dict) -> dict | None:
+    """LLM 자기보고 근거(rationale) 방어적 추출 — 감사용.
+
+    ⑳-3 S3-MINDMAP 패치2: {claim, claim_type, basis_hint, counter_signal}.
+    부속(근거)이 본체(태깅)를 블록하지 않는다 — 누락·형식오류면 None 반환(태깅은 계속).
+    자기보고 한계: LLM이 사후 합리화할 수 있으므로 '판정'이 아닌 '자기 진술'로만 취급.
+    """
+    r = llm_out.get("rationale")
+    if not isinstance(r, dict):
+        return None
+    claim = str(r.get("claim", "")).strip()[:300]
+    if not claim:
+        return None
+    ct = str(r.get("claim_type", "")).strip().lower()
+    return {
+        "claim": claim,
+        "claim_type": ct if ct in _CLAIM_TYPES else "uncertain",
+        "basis_hint": str(r.get("basis_hint", "")).strip()[:200],
+        "counter_signal": str(r.get("counter_signal", "")).strip()[:200],
+    }
 
 
 def tag_one(*, symbol_a, symbol_b, center, relation_type, basis, target_name, llm_call):
@@ -226,7 +320,12 @@ def tag_one(*, symbol_a, symbol_b, center, relation_type, basis, target_name, ll
         target_name=target_name, llm_out=llm_out,
     )
     mc["json_parse"] = True
+    # 패치2: 근거(rationale) 감사 기록 — machine_check에 실어 domain_machine_check에 저장.
+    # 부속이 본체를 블록하지 않음: 형식 실패면 null이지만 태깅(gate/draft)은 그대로 진행.
+    mc["llm_rationale"] = extract_rationale(llm_out)
     gate_class, review_status = decide_gate(mc)
+    # S3: 게이트 판정 감사 추적(행위보존 — decide_gate 무변경, 기록만).
+    mc["gate_audit"] = build_gate_audit(mc, relation_type)
     return {
         "ok": True,
         "draft": first_domain_tag(llm_out),

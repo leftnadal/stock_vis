@@ -5,6 +5,31 @@
 
 ---
 
+## ⑳-3 S3-MINDMAP 후속 (2026-08-03)
+
+> 근거 DECISIONS `D-MINDMAP-HYBRID-v2`·`D-AUTO-SWITCH-ON`. 브랜치 `monorepo/sess-s3-mindmap`.
+
+| ID | Task | 분류 | Depends On | Status |
+|----|------|------|-----------|--------|
+| S3-MINDMAP-DEPLOY | 배포·재시작·라이브 스크린샷 게이트 — S0 백필 `--apply`(태그 133), DOMAIN_AUTO_APPROVE ON(env+재기동), 머지·web rebuild·daphne/worker 재기동. 마인드맵 라이브 렌더 스크린샷([[feedback_ui_slice_live_screenshot]]) 검증. | @infra/ops | 병진 승인 | 🆕 **게이트 대기(prod-write 3종+빌드)** |
+| REVIEW-UNANCHORED-40 | 언앵커 40건 배치 → **conf 임계 0.75 재확정 재료**(D-AUTO-SWITCH-ON 잠정 해소). | @backend/rag | AV 복원 | 🆕 등재(임계 재확정 연결) |
+| L2-X-MCAP-BACKFILL | **L2-X 실험 선행 조건** — market_capitalization 백필. 실측 커버리지 26/544(층화 모집단 49<240) → mcap 3분위 층화 불가. FMP quote/profile로 peer 유니버스 mcap 백필 필요. | @backend | FMP 소비 게이트 | 🆕 등재(L2-X 블록 해소용) |
+| L2-SOURCE-DECISION | L2-X → L2 소스 결정(교체/하이브리드/현행유지). **판정 방식 개정(D-L2X-AUTO-ADJUDICATION): 전건 사람검수 폐기 → 결정론 자동판정 + 감사**. 재료 = `--judge` 병합 CSV + `--aggregate` v2 구간별 지표 + 감사 표본. | 설계 | **★다음 세션 재개점** | ⏳ **감사 완료·사전 보강 1회전 완료(main 7b5743de)**. 인간 16/18 BETTER·1 WRONG(CRM↔MTCH, 판정기 grounded 0.0 포착). 하·상이 접지 0.718최저·과신 0.40최고(소형주 위험=상대적O·절대적 낮음). **과신 플래그 저정밀(58건 중 ~10%만 진짜)**. **★다음 결정: ⑴ 과신 임계 gr_q1(0.667)→0.2 강화 후 재집계(무비용) vs ⑵ 현 상태로 L2 소스 결정(하이브리드/현행 유력).** dict_gap=필러뿐(2회전 불필요). |
+| L2X-SWEEP-EN-CLAIM | 차기 sweep부터 **claim 영어 출력**(프롬프트 개정) — 교차언어(한 claim ↔ 영 desc) 매칭 문제 원천 제거. grounding이 SEC β `ground_evidence` 동일언어 substring 직접 재사용 가능해짐(동의어 사전 불요). | @backend/rag | 차기 L2-X sweep(있을 시) | 🆕 등재(원천 해소) |
+| INGEST-FUNNEL-COUNTERS | 관계 유입 퍼널 카운터(발견→기계검증→게이트→auto/pending→검수) 계측 — L1 자동화 사후분석 2순위. gate_audit(D-GATE-AUDIT-TRAIL) 연계 단계별 드랍 집계. 신규 SEC 유입 재개돼야 의미(현재 0). | @backend | **AV 복원 트랙 합류**(유입 재개) | 🆕 등재(2순위, AV 게이트) |
+| L3-NEWS-SUBGROUP | L3 마인드맵 뉴스 하위그룹(기사 태그별) 본격 가동 — 현재 단일 가지. | @backend/rag | **AV 복원** | 🆕 등재(AV 게이트) |
+| FMP-INDUSTRY-GAP | ego 서빙 심볼 industry 결측 33/555(94.1% 커버)·Stock 부재 19 — 필요 시 FMP profile 백필. 현재 커버리지 충분(게이트 통과)이라 낮은 우선순위. | @backend | - | 💤 등재만(우선순위 낮음) |
+
+## ⑳-3 REVIEW-P2 후속 (2026-08-01)
+
+> 근거 DECISIONS `[2026-08-01] D-REVIEW-VERDICT-VOCAB`. 브랜치 `monorepo/sess-review-p2`. 본 세션 IN 스코프 밖(등록만).
+
+| ID | Task | 분류 | Depends On | Status |
+|----|------|------|-----------|--------|
+| REVIEW-TOOL-V6-IMPROVE | 검수 도구 v6 개선 묶음 — ⑴ localStorage CSV-우선 함정 해소(새 CSV 로드 시 캐시 무효화, common-bugs #81), ⑵ verdict 입력 UI 정식화(결정 E: **수요 반복 확인 후** 착수), ⑶ CHANGE/CHANGE_REV 방향·타입 입력 보조. `tools/review/domain_review.html`·`classify_verdicts.py`. | @frontend/tool | 검수 수요 반복 확인 | 🆕 등재(수요 게이트) |
+| RC-SELFLOOP-CONSTRAINT | RelationConfidence **a≠b DB CheckConstraint 승격** — 현재 앱 레벨 save() 가드(Part Q, SelfLoopError). **⚠ 마이그레이션 동반**(AddConstraint) → 배포 게이트. 선행: 기존 self-loop 13건(RelationConfidence)·330건(RelationPairSnapshot) 처분 방침 확정(soft-drop 준용 or 정리). **다음 소형 세션 후보(승격)** — 소급 self-loop 4건(OK verdict: DLR/EXR DEPENDS_ON·HCA/MTB PARTNER, REVIEW-P2 A안으로 approved 존치)은 **언앵커 40건(REVIEW-UNANCHORED-40)과 묶어 처리**. | @backend | self-loop 레거시 처분 결정 + 배포 게이트 | 🆕 등재(마이그 동반, 승인 필요) |
+| REVIEW-UNANCHORED-40 | 언앵커 40건 배치 설계·실행 — 검수 대상 중 anchor 부재(basis에 타깃 미실존 등) 40건 처리. **목적=conf 임계 0.75 기준점 확보**(현재 동결 임계의 캘리브레이션 재료). 배치 규모·LLM 재추출 여부·게이트 설계 필요. | @backend/rag | D-REVIEW-VERDICT-VOCAB 반영 완료 | 🆕 등재(설계 선행) |
+
 ## P2 커버리지 표면 (P2-COVERAGE / 2026-07-22)
 
 > 근거 DECISIONS `[2026-07-22] MGMT-BATCH-13` (D-P2-COVERAGE-SURFACE=선택지 C 하이브리드 · D-P2-COVERAGE-API=read-time @ apps/platform). 재료 = STEP0-P2-DESIGN-PREP 실측(발급 110 / 노출 8 / 율 7.3%). 구획 분리로 C-1을 API/FE 순차 발급.
@@ -13,9 +38,10 @@
 |----|------|------|-----------|--------|
 | P2-COVERAGE-C1-API | (platform) 커버리지 조회 API build — `GET /api/v1/telemetry/coverage` 계열. platform→shared 읽기 조인만(#43 안전, IssuanceLog/ImpressionLog 무변경). 발급 grain 대비 dashboard_eod 노출 매칭 = 발급 N/노출 M/율% + 미노출 리스트. | @backend (platform 구획) | 없음 | 🆕 등재(착수가능) |
 | P2-COVERAGE-C1-FE | (dashboard) 상단 커버리지 스트립(발급/노출/율 + 미노출 N건 링크) + `/dashboard/coverage` 상세의 미노출 리스트. 상세 페이지 내 노출은 `surface='coverage_detail'`로 분리 기록(유기 지표 오염 격리). | @frontend (dashboard 구획) | P2-COVERAGE-C1-API | ✅ **build 완료·push (`58e18c7d`, 2026-07-27, 미머지)** — vitest 12·tsc 0. **관문 판정=경로 B**: ingest surface 화이트리스트(views.py:29·41)가 `coverage_detail` 거부 → 상세 impression **추적 미연결**(발신 0=오염 0, C-1 취지 충족). surface 등재는 shared 구획 → 아래 COVERAGE-DETAIL-SURFACE로 이관. **LAND는 MGMT-BATCH-14 착지 후 재개**(72h FAIL 선행 해소) |
-| COVERAGE-DETAIL-SURFACE | (shared) `ImpressionLog.SURFACE_CHOICES`에 **`coverage_detail` 추가** — 상세 페이지 impression 추적 연결의 **선행 조건**(C1-FE 경로 B 해소). ⚠ **choices 추가 = no-op 마이그(0011 AlterField) 발생**(Django 5.2 choices migration state 추적). D-C2-DETAIL-MIG 입증 3조건(dry-run 원문·sqlmigrate DDL 공집합·본 결정 참조) 하에 수용. 근거: C1-FE STEP 0 관문(views.py:29·41 화이트리스트가 coverage_detail 거부 → 추적 미연결). | @backend (shared 구획) | **게이트 분리 완료**(D-C2-DETAIL-PULL B) | 🔴 **HALT(no-op 마이그) → D-C2-DETAIL-MIG로 경로 확정(경로 A), build 재개 대기** (07-31: dry-run이 0011_alter_impressionlog_surface 생성 예고→HALT·원복. 재개 = 입증 3조건 + 0011 동반, migrate 적용은 Gate 4) |
-| P2-COVERAGE-C2 | 4단 퍼널(발급→표시→노출→클릭) 추이·표시 층 분해. "표시" 층 = 베이크 산출 JSON 읽기 파생(#43 무변경). | 상세(dashboard/platform) | **트리거 = impression 데이터 2~3주 숙성**(상수 튜닝 재료 확보) | 💤 보류(숙성 게이트) |
-| C2-DESIGN-JOIN-MISSES | (C-2 설계 안건, 8/6 사이클) `join_misses`(창밖 발급 노출 — MEASURE-C2-PRE 실측 w7=**12**) 처리 정책 정식 안건화. **미노출 판정 기간 상수와 직결**(발급 signal_date 창을 벗어난 노출을 exposed에 셀지·창 길이를 어떻게 잡을지). 재료 = coverage w7/w90 join_misses 추이 + COVERAGE-DETAIL-SURFACE build 후 상세 노출 데이터. | 설계(dashboard/platform) | **8/6 C-2 설계 사이클** | 🆕 등재(설계 안건) |
+| COVERAGE-DETAIL-SURFACE | (shared) `ImpressionLog.SURFACE_CHOICES`에 **`coverage_detail` 추가** — 상세 페이지 impression 추적 연결의 **선행 조건**(C1-FE 경로 B 해소). D-C2-DETAIL-MIG 경로 A(no-op 마이그 입증 3조건). | @backend (shared 구획) | 게이트 분리(D-C2-DETAIL-PULL B) | ✅ **완료·종결 (2026-08-01)** — surface 등재(`0a0714de`)·migrate 0011 Gate4 적용·FE 훅 연결(`d484b9cb`)·web 재빌드·**실데이터 15건 발생+오염 격리 실증**(coverage_detail 15 / 유기 exposed 16 불변). 경로 A no-op sqlmigrate `-- (no-op)` 결정적. **COVERAGE-DETAIL 슬라이스 종결** |
+| P2-COVERAGE-C2 | 4단 퍼널(발급→표시→노출→**클릭**) 추이·표시 층 분해. "표시" 층 = 베이크 산출 JSON 읽기 파생(#43 무변경). **★상세 노출 층 편입 검토**(coverage_detail 수집 개시 08-01 → "어떤 종목이 상세에서 재확인됐나"를 퍼널 5번째 신호로 편입할지). | 상세(dashboard/platform) | **트리거 = impression 2~3주 숙성**(coverage_detail 포함 축적) | 💤 보류(숙성 게이트) |
+| C2-DESIGN-JOIN-MISSES | (C-2 설계 안건, 8/6 사이클) `join_misses`(창밖 발급 노출 — w7=**12** 실측, 08-01 재확인 불변) 처리 정책 정식 안건화. **미노출 판정 기간 상수와 직결**. 재료 = coverage w7/w90 join_misses 추이 + **coverage_detail 상세 노출 데이터(08-01 수집 개시, 15건)**. | 설계(dashboard/platform) | **8/6 C-2 설계 사이클** | 🆕 등재(설계 안건·재료 축적 중) |
+| COVERAGE-SURFACE-CONST-UNIFY | (소형) FE surface 상수 단일화 검토 — `dashboard_eod`/`news_chip`은 `hooks/impressionTelemetry.ts`, `coverage_detail`은 `CoverageDetailView.tsx` 로컬(구획 규율상 분리). 향후 공용 surface 레지스트리로 통합할지(백엔드 SURFACE_CHOICES와 계약 정합 축). 저우선. | @frontend (저우선) | 없음 | 🆕 등재(저우선·소형) |
 | STRIP-REHOME | (dashboard FE) 커버리지 스트립 표면 통일 배선 — ⑴ `CoverageStrip`을 `app/page.tsx` 상단(L1.5=DataFreshnessBadge 아래·MarketSummaryBar 위)으로 이동 + `app/dashboard/page.tsx`에서 제거, ⑵ `/dashboard`→`/` redirect 1줄(가역), ⑶ `/dashboard/coverage` 라우트 **생존 테스트**(redirect 무영향 확인), ⑷ 기존 vitest 스트립 테스트 경로 정합. 근거=D-DASH-SURFACE-UNIFY(D-1·D-2). `app/page.tsx`는 D-OWN-HOME으로 dashboard 트랙 소유. | @frontend (dashboard 구획) | D-DASH-SURFACE-UNIFY 등재(완료) | 🆕 **등재(즉시 실행 가능)** |
 
 ### 하네스 위생 후속 (MGMT-BATCH-14 적립)
@@ -132,7 +158,7 @@
 |----|------|-------|------------|--------|-----------------|
 | TH-RUNTIME-DEPLOY | TH 트랙(sess-cs-theme-heat) 정식 머지 → worker_sync + 재기동 → TH beat 3종 재활성화(C8 EstimateSnapshot 포함) | @infra (TH 소유 세션) | TH 트랙 클린 체크포인트 머지 | **✅ done 2026-07-29** | 마이그 renumber 0016~24→0019~27(`995f8846`)·역병합·push origin/main `f7f3f63d`·DB name UPDATE 9행(showmigrations 0014~27 선형·migrate --check clean)·worker_sync 3트리 f7f3f63d·theme_heat 3종 registered 게이트 통과 |
 | TH-BEAT-REENABLE | UNREGISTERED 3 beat(collect-theme-filings·theme-heat-daily·snapshot-analyst-estimates) 재활성화 | @infra | TH-RUNTIME-DEPLOY | **✅ done 2026-07-29** | `PeriodicTask enabled=True` 3행(트랜잭션) + `PeriodicTasks.update_changed()`(DatabaseScheduler Schedule changed 확인). 다음 발화: theme-heat-daily 18:00 ET·filings 17:30 ET·estimates 금 16:30 ET. **익일 산출물 행 확인 대기** |
-| TH-RESUME-CORPUS-UNFREEZE | TH 트랙 재개 — corpus unfreeze + TNV 백필 세션 1 | @infra (TH 소유 세션) | **트리거: SEC β 종결** | **대기(트리거)** | G2 앵커(92/19/0/0, ≤07-11 스코프)는 **백필 후 비교 대상 아님** 조항 승계(corpus 확장 시 앵커 무효). SEC β 종결 전 착수 금지 |
+| TH-RESUME-CORPUS-UNFREEZE | TH 트랙 재개 — ~~corpus unfreeze~~ + TNV 집계 백필 세션 1 (정정: corpus 무동결, 실동결=TNV 집계) | @infra (TH 소유 세션) | **트리거: SEC β 종결(충족)** | **▶ 실행중 (TH-SESSION-1, TNV만·override 배제)** | G2 앵커(92/19/0/0, ≤07-11 스코프)는 **백필 후 비교 대상 아님** 조항 승계(corpus 확장 시 앵커 무효). override 재산출=TH-OVR-RECUT 분리. cf. D-TH-TRIGGER-CORRECT |
 
 > **오늘 조치(완료)**: UNREGISTERED 3 beat `enabled=False`(에러 플러드 + 깨진 C8 발화 차단). 정상 배포 beat(heat-score-daily·seed-snapshot-cleanup) 무접촉. **C8 첫 EstimateSnapshot(금 16:30 ET) 1주+ 연기** — 시한 때문에 미머지 26커밋 강행 머지 금지(최악). 재개는 TH 트랙 소유자/디렉터가 클린 머지 후.
 
@@ -430,7 +456,7 @@
 | MP2-ANALOG C-L3 | LLM cached 맥락 생성(그라운딩=C-N 백필, 톤가드·동결) → 이웃 why 채움. 대량 생성 dry-run+수동 유보. ★그라운딩 쿼리 is_archived **무필터**(D-CL3-ARCHIVE-BLIND) | @rag-llm+@backend | ✅ **구현·검증 완료·배포 대기 (`monorepo/sess-C-L3-context`, base `b9ddf41a`)** — 신규 `AnalogDayContext`(mig 0007 additive·dev 적용)·`grounding.py`(결정론 선별 abs(sent)→entity→cap3, importance_score 0% 실측→제외)·`tone_guard.py`·`context_generator.py`·`generate_analog_context` 커맨드(멱등·동결·dry-run 기본)·cards payload why/provenance/version 배선·FE per-neighbor "왜?" 펼침. **LLM=market_pulse `generate_with_circuit` 재사용**(원지시서 "shared complete()"는 실측 정정: BOUNDARY-LLM 종결·경계 통과). 신규 35 green·446 marketpulse·vitest 10·tsc0·경계0·health❌0. 소량 8일 실생성(톤가드 전통과). **배포(07-24~25)**: push→main `96fd17bc`·mig 0007 적용(단일 DB stock_vis)·491일 --commit 진행. ★683 중 **154일 null=상류 C-N 백필 공백**(→`C-N-REPAIR`, C-L3 결함 아님). 실화면 캡처=병진 잔여 | ✅ **배포·491 생성 완료 → 154일은 C-N-REPAIR 후 재생성** |
 | C-N-REPAIR | C-N 백필 창 뒷날 누락 보강 — `D-CN-COMPLETE` 폐기 후속. 대상=null 192일(구간내 154 창뒷날 누락 + 뒷단 38 미수집공백). 방식=`backfill_broad_news --dates`(1일 독립 창, 창논리 우회). D-CN-REPAIR-*(#72)·AUTO-*(자동화) | @backend(news)+@infra | ✅ **랜딩 완료 (origin/main `68aeea28`) + 무인 자동화 빌드 완료 (`monorepo/sess-CN-repair`)** — `--dates` 표적모드·계획서 10배치. **AUTOMATION(07-29)**: `scripts/cn_repair_nightly.sh`(체크포인트 순번·1배치/밤·이상치 밴드·완료 자동unload)+`cn_repair_status.py`+launchd plist(22:10 KST)+런북(`automation_runbook.md`). 순번=체크포인트(캘린더 산술 기각=batch1 스킵)·실행트리=sv-worker-runtime. 검증: 신규 pytest 9+backfill 11·dry-run 매핑·완료경로·경계GREEN. D-CN-REPAIR-AUTO-*. **★활성화(launchctl load·kickstart)=prod쓰기+AV소비 게이트** · **✅ CN-AUTO-REVIEW(07-29): 관문 6종 전부 PASS**(G1 쿼터캡·G3 범위한정·G4 멱등순번·G5 경계보안·G6 테스트, **G2 미달→보강**: `status.py check` 리포터+아침루틴, 테스트 9→14). D-CN-REPAIR-AUTO-ADOPT=수동 게이트 공식 대체. **STEP0: status.json 없음=배치 0회, 잔여 10/10(192일)**. **✅ 자동화 랜딩(origin/main `efa927b3`, 07-30)+#73→#74 renumber(`1b46e0df`)**. **✅ 활성화 완료(07-30, 병진 승인)**: worker_sync 3트리 동기화·plist `~/Library/LaunchAgents/` load·launchctl 등록 확인·22:10 KST 예약(runs=0)·kickstart 미실행(첫 발화=22:10 자연). ground truth 재확인(read·AV0): 192일 전부 공백=배치 0회 확정. | 🟢 **야간 자동 진행 중 (22:10 KST·하루 1배치·10일)** — 아침 확인 `cn_repair_status.py check`(OK/STALE/NEVER/DONE). 10/10 시 자동 unload → 일단위 존재검증 → C-L3-REGEN-V2. 끄기=`launchctl bootout gui/$(id -u)/com.stockvis.cn_repair.nightly`+plist rm |
 | BOUNDARY-LLM-ALIAS-CHECK | `apps/market_pulse/llm/client.py`가 `from google import genai as genai_module` 후 `genai_module.Client(...)` — 경계 테스트 AST(`genai.Client`만 매칭)의 **사각지대**로 우회 중. BOUNDARY-LLM 종결(FROZEN_COUNT=0) 선언과 정합성: 의도 동결(허용)인지 vs 미이관 잔재(경계 강화 대상)인지 확인 필요 | @qa+@infra | 🕒 대기 — 의도 판정 | 종결 선언 정합성 점검 |
-| C-L3-SELECT-V2 | C-L3 그라운딩 선별 품질 개선 — 거시 사건일 맥락 빈약(스팟체크 2024-08-05 급락·2023-10-19 국채·2024-05-15 CPI 전부 "개별 기업 소식"). 원인=broad 피드 거시뉴스 희소(08-05 220건 중 급락 4건)+선별 abs(sent)/entity가 개별기업 상위(D-CL3-QUALITY-LIMIT). 개선안=index/거시 entity 우선·거시 키워드 가중·소스 다양성 재조정 → `--regenerate --prompt-version cl3_v2`. ★근본 한계=broad 거시 절대량 부족→부분 개선만. C-N-REPAIR(창 뒷날 복구)와 시너지 | @rag-llm+@backend | 🕒 대기 — 개선 설계(부분개선 기대치 관리) | C-L3 v2 재생성 |
+| C-L3-SELECT-V2 | C-L3 그라운딩 선별 품질 개선 — 거시 사건일 맥락 빈약(스팟체크 2024-08-05 급락·2023-10-19 국채·2024-05-15 CPI 전부 "개별 기업 소식"). 원인=broad 피드 거시뉴스 희소(08-05 220건 중 급락 4건)+선별 abs(sent)/entity가 개별기업 상위(D-CL3-QUALITY-LIMIT). 개선안=index/거시 entity 우선·거시 키워드 가중·소스 다양성 재조정 → `--regenerate --prompt-version cl3_v2`. ★근본 한계=broad 거시 절대량 부족→부분 개선만. C-N-REPAIR(창 뒷날 복구)와 시너지 | @rag-llm+@backend | ✅ **선별 모듈 v2 구현·검증 완료 (`monorepo/sess-select-v2`)** — 결정 **D-SELECT-V2-RULE=(나) 어휘·규칙**(가중합 8.55 vs 하이브리드 7.78 vs 메타우선 4.15; (가) 실격=AV topics 미저장·category 재수집 전부 company·sentiment 51/100 불균일). 신설 `apps/market_pulse/regime/grounding_v2.py`(v1 무접촉·additive): 계층 macro 어휘(STRONG/MID)+티커노이즈 가드(×0.3)+소스가중+near-dup 접기+**품질 하한(빈 결과=why=null)**+버전태그 `select_v2.0`. 반환=v1 호환키+score/hits/rank. **결정론**(sentiment/entity는 tie-break만=v1 편향 회피). 초안 N=6·min_score=1.2. 단위 13+regime 회귀 98 green·경계0·LLM0·외부API0·마이그0·야간자동화 무접촉. 스팟 12일 v1대비 압도(macro-rich일 "PCE Inflation/Fed holds/ECB rate"; 저볼륨일 v2 빈결과 vs v1 개별주 억지). broad 희소일은 부분개선(한계 유효). | **REGEN-V2 진입조건 = 재수집 DONE(~8/8) + SELECT-V2 랜딩**. 다음=랜딩 승인 → REGEN-V2 |
 | MP2-ANALOG C-core 실화면 게이트(이연) | 첫 non-alert 날(analog 이웃 ≥1)에 market-pulse-v2 카드 실화면 캡처 → **이웃 태그 렌더 확인** 후 게이트 닫기. 오늘 카드 alert(이웃 0)라 이웃 태그 off-surface → 실화면 검증 이연(폐기 아님, D-ANALOG-L2 실화면 3택 중 2번) | 병진(아침 루틴) | 🕒 **열림** — non-alert 날 대기 | 증빙=스크린샷, 확인 후 close |
 | MP2-ALERTS | 능동 알림. 알림 코어 = `packages/shared/alerting` 신설(D-ALERTS-BOUNDARY-R1), 3단 파이프라인(D-ALERTS-ARCH), 이메일(D-ALERTS-CHANNEL). **승계 게이트 해소 = D-ALERTS-GATE**(serverless 무접촉 격리). S0·S1 land | **#2** | @infra+@backend | ✅ **S0 마감 + S1 done(미머지)** | 다음 슬라이스 후보 = 채널 추가(슬랙 등, delivery port 구현체만) / 트리거 확장(anomaly·dashboard) |
 | MP2-ALERTS-S1 | Slice 1(D-ALERTS-RENDER) = regime 알림 본문 **풀 리포트화**(전환 요약·델타·anomaly 활성·섹터 상위/하위). **단일 경로**=판단 화면과 동일 `overview._build_payload()` 소비(재계산 0). **폴백**=풀 렌더 실패 시 디스패처가 S0 최소 본문으로 대체(발송 무실패, `AlertDispatchLog.error` RENDER_FALLBACK 접두로 식별, status=SENT). registry에 fallback 슬롯 additive. 제목 불변·LLM 0·shared→apps 0·마이그레이션 0 | @backend | ✅ **done + 실메일 검증 완료 (2026-07-08 장부 마감)** — pytest 신규7/alerting8·경계3·api80 green·mig0. FE 0. **풀 리포트 실수신 확인**(status=sent·폴백 아님, jinie545@gmail.com) | 검증 완료 → 잔여 없음 |
@@ -633,7 +659,7 @@
 | CS-LAZY | `apps/chain_sight`→`services.{validation,news,serverless}` lazy import 정리 방향(교차 트랙 결합) | 결정 안건(경계) | 동일(전 트랙 STEP 0 후 일괄) | 🆕 보류 |
 | CS-CHOICES | ~~`RELATION_TYPE_CHOICES` ↔ DB drift — `PARTNER_WITH`·`DEPENDS_ON` 미정의~~ **✅ PARTNER_WITH·DEPENDS_ON 추가(⑰ S1-a, mig 0017 no-op)**. 잔여=`HAS_THEME`·`HELD_BY_SAME_FUND` **0행 choices 제거 후보**(파괴적, 아래 GRAPH-CHOICES-0ROW로 분리) | chain_sight | ⑰ S1-a | 🟡 부분해소 |
 | GRAPH-EGO-NEO4J-REEVAL | Neo4j 거취 재평가 — **동결 중**(D-GRAPH-EGO-BACKEND). **트리거**: 멀티홉(2+hop)·커뮤니티탐지(GDS)·대규모 순회가 제품 요구로 발생 시 Neo4j 재가동+dirty 270 재동기 재평가. 그 전엔 PG 네이티브 ego로 충분 | @backend/@infra | 트리거 충족 시 | 💤 동결 |
-| GRAPH-TRUTHSCORE-NORM | truth_score 정규화(0~85 미정규화 → 0~1 또는 0~100). **ego 화면이 소비자가 됨**(truth_score를 굵기/불투명도로 렌더) → 우선순위 상향 후보. 별도 트랙(ego API·기존 소비처 동시 영향, 행위보존 회귀 필요) | @backend | ego 화면 land 후 | 🆕 후보(상향) |
+| GRAPH-TRUTHSCORE-NORM | truth_score 정규화(0~85 미정규화 → 0~1 또는 0~100). **ego 화면이 소비자가 됨**(truth_score를 굵기/불투명도로 렌더) → 우선순위 상향 후보. 별도 트랙(ego API·기존 소비처 동시 영향, 행위보존 회귀 필요). **★요구사항 추가(S3-LAND, 3순위 사후분석): 재산출 시 산식 버전 + 입력 스냅샷을 기록**(gate_audit·rationale와 동형 감사추적 — "왜 이 점수" 재현 가능하게). | @backend | ego 화면 land 후 | 🆕 후보(상향) |
 | GRAPH-CHOICES-0ROW | 0행 choices(`HAS_THEME`·`HELD_BY_SAME_FUND`) 제거 — **파괴적**(choices 제거 시 기존 데이터 유입 경로 확인 필요, migration DDL 가능성). 보고만, 착수 전 영향분석 | @backend | 영향분석 후 | 🆕 후보(보류) |
 | GRAPH-NEO4J-SYNC-DEACTIVATE | neo4j sync 태스크 3종(`chainsight-neo4j-dirty-sync`·`sync-profiles-neo4j`·`sync-relations-neo4j`) 전부 enabled이나 Neo4j DOWN → dirty 270 재동기 실패 반복(무효 가동). **비활성 후보**(에러 누적 차단). beat 변경=병진 수동. Neo4j 재가동 결정(GRAPH-EGO-NEO4J-REEVAL)과 연동 | @infra | 병진 결정 | 🆕 후보(보고만) |
 | CS-TEST | EventBoard/Ranking 테스트 5건 404(`theme_tags` 플래그 OFF ↔ EventGroup 보드 기대, 라우트는 등록됨) | chain_sight 트랙 직접 | 동일(chain_sight 실작업 슬라이스) | 🆕 보류 |
@@ -1105,3 +1131,66 @@
 - 관찰: 나이틀리 전/후 total_krw 시계열 비교 불가 — (1) PortfolioSnapshot이 동일 ET-date `update_or_create`라 이전 값 덮어씀(1 row/date), (2) AdvisoryRun.output에 total_krw 저장 필드 없음(`{}`).
 - 함의: run 시점별 자산 추이·권유 근거 스냅을 사후 재구성 못 함. 판정은 count/run_at으로 우회했으나 값 비교엔 축 부재.
 - 후속 후보: run별 total/gap 스냅 저장(AdvisoryRun 확장 또는 별도 원장). SIGNAL-FORWARD-INFRA 설계 사이클에 합류 검토(전방 신호 인프라와 원장 스키마 공통 설계).
+## SECB-REGRESSION-WATCH — 13건(attention6+leadership7) 재발 감시 (2026-07-31, F5) [testing][sec-beta]
+- 트리거: `tests/chainsight/test_attention.py`·`test_leadership_api.py` 29건 중 **재실패 발생 시 즉시 HALT + full traceback 캡처**(직전 시대 결손 증거 = `--reuse-db` 오염 재현 자료). **라벨만 기록 금지**(D-SECB-MISLABEL 재발 방지).
+- 근거: R1 결과 D — 재사용 테스트 DB 오염이 원인(D-SECB-MISLABEL). 재발 시 fresh DB(`--create-db`)로 격리 확인. cf. common-bugs #79.
+
+## SECB-V-B-STANDBY — V-B 부분도입 트리거 대기 (2026-07-31, G1.6 §5) [sec-beta]
+- 트리거: **잔여 순수 not_found율 >15% 재발 시**에만 재스코프. 범위 = **합성/재서술 클러스터**(G1.6 잔여 nf 유니크 19 ≈ G1.5 합성8+재서술5). **선제 도입 금지**(V-B=2콜, V-A 결정론 계약 위배).
+- 현 상태: G1.6 재분류 후 잔여 명목 1.54%/유니크 2.03% ≤15% → **미발동**.
+
+## SECB-PROMPT-V2 — tail 발산 방지 프롬프트 (2026-07-31, G1.6 §5) [sec-beta] ✅ **소비 완료 (G-e, 2026-08-03)**
+- 범위: **Gate 2 존치**(이 세션 밖). 표적 = tail 발산 방지 문구(G1.5 부수② 초안, "verbatim exact sentence·리스트 절단 금지"). partial_match 410건이 verbatim tail 규율 대상.
+- 근거: G1.6 §3 샘플 = 경쟁사 리스트 접두 verbatim + tail 회사명 발산(원문 실재, 조작 아님) → prompt v2로 verbatim 강제.
+- **✅ G-e 측정 완료 (SECB-GE-EXEC-1, 2026-08-03)**: R1~R5 verbatim 규율(`SECB-GE-R1R5-SPEC.md`) 삽입 v2 프롬프트로 표본 5 filings 재추출·paired 측정. **tail율 71.07%→0.72%**(v1 121/86 → v2 139/1). DB 쓰기 0(물리 격리 b·`var/secb_ge_v2_sample/`). 결과 `docs/features/chain-sight/sec_beta_ge_v2_result.md`. ⚠️ caveat=v2 evidence 300자 상시 초과(R2>R3). **전량 롤아웃=별도 결정 사이클**(본 측정 세션 밖).
+
+## SECB-GE-OBS-17ROW — v1 1768 vs marker 1751 — 17행 관찰 (2026-08-03, G-e STEP0) [sec-beta]
+- 관찰: SupplyChainEvidence total **1768** / prompt_version='v1' **1768** / grounding_method='deterministic_v1' marker **1751** → **17행이 grounded 미표기**(백필 대상 밖·이후 신규 유입 추정). G-e paired 측정은 marker 1751 기준(무영향). 노출/재백필 필요성은 SECB-EXPOSURE·후속에서 판단(현 저우선·등재만).
+
+## SECB-V2-ROLLOUT — v2 프롬프트 전량 적용 결정 (2026-08-03, G-e 후속) [sec-beta]
+- **성격**: G-e 표본 측정(tail 71.07%→0.72%)을 근거로 한 **전량 배포·substrate 통합 결정 사이클**. 측정 세션이 pass/fail·배포를 하지 않음(D-SECB-GATE-E). **전제 4건 해소 전 착수 금지**:
+  - ⑴ **`evidence_text` DB 컬럼 실제 max_length 실측** — 300 초과 저장 시 절단/오류 거동 포함(현 모델은 TextField=무제한이나 실 DDL·다운스트림 `[:100]` basis 등 확인).
+  - ⑵ **길이 정책 재설계** — R2(완전 문장) vs 300캡 우선순위 확정: 프롬프트를 고칠지(캡 상향/명문화) or 스키마를 고칠지(evidence 길이 정책).
+  - ⑶ **인용 집합 변동 취급** — v2 재추출이 인용 수 변경(COR 28→46): 기존 v1 행 **대체**냐 v2 **병존**이냐 결정.
+  - ⑷ **1751건 전량 재추출 비용 추정** — 표본 실측 $0.047/5 filings = **$0.0094/filing** 외삽 → deterministic_v1 = **351 distinct filings** × $0.0094 ≈ **$3.3**(LLM 351콜). **오차 명기**: 표본은 인용 풍부 filing(평균 24 cites)이라 substrate 평균(5.0 cites/filing)보다 출력 비용 상향 편향 = **과대추정 방향**(실제 ≤ $3.3 추정). 재시도·quota 미포함.
+- 근거: G-e 결과 `docs/features/chain-sight/sec_beta_ge_v2_result.md` + caveat(300자 초과). cf. SECB-PROMPT-V2(소비 완료), D-SECB-GATE-E.
+
+## TH-TRIGGER-FIRED — TH Session 1 트리거 발화 (2026-08-03, SEC β 종결 선행 충족) [theme-heat] ✅ **소비 완료 (TH-SESSION-1, 2026-08-03)**
+- **발화 조건 충족**: SEC β 트랙 종결 선언 확정(`sec_beta_closure_declaration.md`) → TH Session 1 선행 조건 해소.
+- **~~Session 1 범위(원안)~~**: ~~Theme Heat corpus unfreeze + ThemeTermOverride 재산출(TNV) 백필 개시(대상 창 = 2026-07-12 → 현재, 50일+)~~ → **정정(TH-RECON-1 실측)**: corpus(DailyNewsKeyword)는 **동결된 적 없음**(08-03 최신). 실동결 = **TNV 집계**(ThemeNewsVolume, beat 부재→수동 의존, 07-25 정지). **정정 스코프 = TNV 집계 백필 07-26→08-03(9일·DB 집계·외부 API 0) + stale heat 재산출**(07-26→08-03 멱등 upsert). '07-12'는 override G2 스코프(≤07-11)의 오전이. cf. D-TH-TRIGGER-CORRECT.
+- ⚠️ ThemeTermOverride 215(ovr_v1) **재적재 금지**(기존 override 트랙 계약) — 본 세션 무접촉(사전/사후 스냅샷 입증). override 재산출은 TH-OVR-RECUT(보류)로 분리.
+- **결정 후보(등재만·미실행)**: TNV 집계 beat 승격(자동화) 여부 — 이 세션 등록 금지(#28 beat drift·stale dict가 DB 덮어씀, origin/main 정렬 런타임 트리에서만 등록). 별도 결정.
+
+## TH-OVR-RECUT — 확장 corpus 기반 override 재판정 (보류, 2026-08-03) [theme-heat]
+- **성격**: 확장된 corpus(07-12 이후분 포함)를 근거로 ThemeTermOverride(현 215 ovr_v1)를 **재판정**하는 별도 결정 사이클. **트리거 = 사전 품질 저하 관측 시**(현 미발동).
+- **선행 설계**: G2 앵커(92/19/0/0, ≤07-11 스코프)의 **이관 설계 포함** — 재판정 시 앵커 무효화되므로 신 앵커 정의·비교 기준 재수립 필요. ovr_v2 generation 신설 여부 포함.
+- 근거: TH-RESUME-CORPUS-UNFREEZE 조항(corpus 확장 시 G2 앵커 무효). 배제 결정(TH-SESSION-1 판정②, override 재산출 배제·TNV만).
+
+## CORPUS-SUNMON-EMPTYKW — DailyNewsKeyword 일·월요일 빈 키워드 반복 (관찰, 2026-08-03) [theme-heat][news]
+- **관찰**: DailyNewsKeyword 행은 존재하나 `keywords=[]`(빈 추출)가 **일·월요일 반복** — TH-SESSION-1 백필 창서 07-26(Sun)·07-27(Mon)·08-02(Sun)·08-03(Mon) 확정. **토요일(08-01)은 정상**(3 테마 크레딧). → 해당일 TNV 0행, **당일(특히 월) heat가 뉴스 성분(C3) 0/저값으로 계산**되는 영향.
+- **영향 범위**: heat C3=`c3_narrative_from_db`가 롤링 창 참조라 단일 공백일 영향은 완충되나, 일·월 연속 공백은 초반 뉴스 성분 저평가 가능. 6/11 not_computed 전환과는 무관(그 5테마는 C3 외 결측 ≥3).
+- **조치**: 원인 규명(키워드 추출 beat의 주말 스케줄/소스 공백)·조치는 **별도 세션**. 이 세션 조치 금지(관찰 등재만).
+
+## SECB-EXPOSURE — grounding_status 노출 설계 결정 사이클 (2026-08-01, Gate2 개정 B-2) [sec-beta][ux]
+- **성격**: 디렉터 세션·**목업 필수** 결정 사이클(소비자 UX 결정). **소비자 결정 전 구축 금지**(γ 사변 구축 금지, D-SECB-GATE2-AMEND-1).
+- **미결 3**: ⑴ attach 지점(후보 `FilingDataView`/`filing/<symbol>/`·IsAdminUser, per-symbol=1-filing 자연 정합) ⑵ 스코핑(글로벌 `SEC_GROUNDING_ENABLED` flag + 1 filing 스모크 vs per-filing allowlist) ⑶ flag 정의 위치(settings) 포함.
+- **입력 확보**: grounding 데이터 prod 기록 완료(G-c, 1751·4분포 1273/41/410/27·marker deterministic_v1). partial_match 121 filings/410 rows = 노출 시 신설 등급 표시 대상.
+- 근거: G-d(flag-on 1 filing)가 노출 경로 부재로 Gate2 배치서 제거·이관. cf. common-bugs #82.
+## F2-VISUAL-CHECK — 온보딩 카드 브라우저 육안 검증 1회 (등재, 2026-08-01)
+- 상태: **등재·대기**(트리거 = 다음 라이브 기회에). read-only 육안 확인, 코드 변경 없음.
+- 내용: f2 온보딩 카드가 :3000 라이브에서 의도대로 렌더되는지 브라우저 육안 1회 확인(스크린샷 증적). UI 슬라이스 마감 = 라이브 렌더 스크린샷 필수 규율([[feedback_ui_slice_live_screenshot]]) 소급 이행.
+- 주의: :3000 web-runtime = prod 빌드 → f2 온보딩 카드 변경분이 라이브 반영됐는지 먼저 확인(미반영 시 rebuild 선행). 판정 = 육안 통과/미통과만, 수정은 별도 슬라이스.
+- 출처: SIGNAL-FORWARD-INFRA 프리플라이트 지시서 Part A-3.
+
+## FORWARD-PE-DEFER — forward_pe 유령필드 미러 I-1 제외 (2026-08-01, SFI-I1 Part A-7) [portfolio][coach]
+- 상태: **defer(I-2/I-3로 이월)**. I-1 범위 제외 확정.
+- 근거: `Stock.forward_pe` 미러 = price ÷ **forward EPS** 의존. forward EPS = analyst-estimates 소관인데 B2 확정으로 SFI는 estimates 무접촉(chain_sight.EstimateSnapshot 단일 정본, D-I1-4). → I-1의 유령필드 미러는 `analyst_target_price + analyst_rating_*×5`만, forward_pe 제외.
+- 후속: I-2/I-3에서 chain_sight estimates 정본(eps_avg)을 재사용해 forward_pe 산출·미러(이중 수집 없이). 소비 사이클 소관.
+
+## SFI-I1-BUGNUM — common-bugs 채번 후보 3건 (✅ done, BATCH-20 부여 2026-08-01) [harness]
+- 규칙: D-NUMBERING-MGMT-ONLY(채번=mgmt 전용, build 세션은 채번 후보만). SFI-I1이 자가채번 #80/#81/#82 → origin/main 선점(MGMT-BATCH-18 `fa3e20de`)과 충돌 발견 → **채번 회수**(headings "채번 후보"로 정정).
+- ✅ **BATCH-20 부여 완료**(push-직전 재grep, 실측+1 from #82):
+  ⓐ get_rating `/stable/rating` 404 오경로 → ratings-snapshot = **#83** (backend/stocks)
+  ⓑ analyst-estimates `period` 필수(누락=400, 6월 audit http-400 오진) = **#84** (backend/stocks)
+  ⓒ RECON-STALE-BASE — 측정 세션 stale base false-missing → fresh origin/main + base HEAD 명기 = **#85** (process/harness/git)
+- 부수: SFI-I1 채번 회수의 botched orphan(`get_rating (#80,...)` 본문 없는 중복 헤딩)도 BATCH-20이 제거(bare #80=0 복원).
