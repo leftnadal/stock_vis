@@ -1307,3 +1307,19 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 대형 DB 연산(compute_theme_heat 루프 등)이 2분 초과. `!`/foreground 경로는 harness 타임아웃 대상. 멱등 연산(update_or_create)이라 이번엔 무해했으나, **비멱등 연산이면 부분 실행 사고**(절반 쓰고 kill).
 
 **규칙**: ⑴ 지시서의 병진 커맨드 안내에 **"별도 터미널(Terminal.app)에서 실행" 명기 필수** — CC `!` 프롬프트 경유 금지(2분 한계 + 첫글자 탈락 #, 이중 함정). ⑵ truncate 발생 시 **재실행 前 반드시 읽기 assess**로 부분 상태 규명(어느 date/row까지 기록됐나·진행 프로세스 잔존 여부) → **멱등 확인 후에만 완결 재실행**(blind 재시도 금지). cf. lesson_background_task_reaping.
+## 상태 어휘의 트랙 간 의미 충돌 — 'rejected'가 ego 서빙서 엣지 은닉 (#86, 2026-08-04) `[data][process]`
+
+**증상**: L2-ADOPT 거부권(veto) 발동 PEER를 `domain_review_status='rejected'`로 기록하면, 마인드맵/카드에서
+관계 자체가 **사라짐**(태그만 빠지는 게 아니라 엣지 통째 은닉).
+
+**원인**: `domain_review_status` 어휘가 **두 트랙에서 다른 의미**로 쓰임 —
+- ⑳-3 REVIEW/S3(SEC 검수 트랙): `'rejected'` = **soft-drop**(나쁜 관계 은닉). `ego_views` 메인 쿼리가
+  `.exclude(domain_review_status='rejected')`로 은닉.
+- L2-ADOPT(거부권 트랙): 거부권 = "LLM **태그** 기각 → 업종 버킷 폴백"이지 "**관계** 은닉"이 아님.
+
+같은 필드·같은 값이 트랙마다 의미가 달라, L2에서 무심코 'rejected'를 쓰면 SEC 트랙의 은닉 로직에
+걸림. (A3 발견 — P4 라이브서 재확인: 거부권 쌍 엣지 미은닉·버킷 폴백 정상.)
+
+**해결/규칙**: 거부권 미채택은 **`'pending'`**(엣지 유지·서빙서 버킷 폴백), **`'rejected'`는 은닉 의미로만
+예약**. 상태 CharField를 트랙 간 공유할 때는 ⑴ 각 값의 **서빙 측 부수효과**(exclude 등)를 먼저 확인하고
+⑵ 새 트랙이 기존 값을 재사용하기 전 그 값에 걸린 필터를 grep(`domain_review_status=`)해 의미 충돌을 점검한다.

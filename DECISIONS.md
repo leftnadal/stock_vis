@@ -26,6 +26,48 @@
 - Slice 2 (`cb6bf97d`): 필터 6지점 전량 제거 + 테스트 동기화 (revert = 6지점 완전 원복 롤백 단위).
 
 **검증**: Slice 1.5 라이브 프로브 **14/14 HTTP 200·402 0**(estimates/quote/profile/ratios/key-metrics/insider/EOD, BRK-B·BF-B) · 전체 스위트 **4488 passed/0 fail/53 skip**(사전 4460 대비 신규 테스트 +28, 기존 fail 0) · `makemigrations --dry-run` 0(스키마 무접촉) · `live_universe_symbols()` **503**(BRK.B·BF.B 포함) · estimates dry-run 저장 예정 symbol=**dot 원형**(prod 쓰기 0). Bug #23(FMP 402)은 변환 계층이 해소. 최종 게이트 = 08-07(목) 정규 cron 5회차(별도 PROBE-EST-5TH).
+## [2026-08-04] D-L2-FULL-SWEEP — L2 전량 태깅 실행 결과 (유료·실단가·최종 분포) [chainsight]
+
+> 트랙: ⑳-3 L2-FULL-SWEEP B단계. 브랜치 `monorepo/sess-l2-adopt`. 병진 승인(2026-08-03, 규칙 A).
+
+**결정**: D-L2-SOURCE 결정 2를 **전량 실행**. 유료 티어 Gemini 2.5 Flash 단일 세션, `--apply` prod 기록.
+distinct 9,365쌍 전량 태깅 완료(json_fail 0·circuit_fail 0).
+
+**실단가·비용**: 콜당 **$0.00050515**(in ~289tok·out ~167tok) → 배치 8,876콜 $4.4837 + 선행 ~$0.26 =
+**총 ≈ $4.74**(추정 $4.4 근접, 게이트 2×$8.8 이내). P2 마이크로배치 실측이 게이트 통과 근거.
+
+**최종 분포(9,365)**: 채택 5,928(63.3%) / 거부권 68(0.73%: low_grounding 67·no_claim 1) /
+빈 태그→버킷 폴백 3,389(36.2%, 대부분 타산업) / 추정 라벨 2,511(26.8%, 기대 2,498 정합) /
+status auto 9,297·pending 68 / 채택 태그종 3,063.
+
+**Why(거부권 분포)**: 거부권은 **industry 결측 쌍 + 제네릭 태그 메가캡**(AMZN↔MSFT gr 0.167, AMD↔AVGO
+"반도체" gr 0.042)에 집중. A1이 우려한 하·상이(소형·타산업)는 예측대로 ~0%(7/2,511=0.3%). "생성은
+풍부하게, 필터는 거부권" 원칙대로 억지·제네릭 태그를 grounded≤0.2가 정상 필터.
+
+**검증(P4)**: ego 서빙 라이브 — 채택 쌍 peer_domain=llm_tag 노출·estimate 플래그 작동, 거부권 쌍은
+엣지 미은닉+peer_domain=null(버킷 폴백)+status=pending(soft-drop 회피 실증). 리포트
+`docs/chain_sight/L2_ADOPT_A_STAGE_REPORT.md` B단계 섹션.
+
+**교훈**: A4 견적의 "1-2h"는 thinking 지연 미반영 과낙관 — 실 ~11h(견적 교훈, common-bugs 아님).
+
+## [2026-08-04] D-L2-THINKING-BUDGET — LLM thinking_budget=512 채택 (생성 풍부·거부권 필터) [chainsight][llm]
+
+> 트랙: L2-FULL-SWEEP P2. 병진 승인(2026-08-03).
+
+**결정**: Peer 도메인 태깅 LLM 호출에 `thinking_budget=512`를 채택한다. 공유 래퍼
+`generate_content/with_circuit`에 **optional thinking_budget**(기본 None=기존 호출부 불변) 추가, peer
+배치·훅만 512 전달.
+
+**Why(3안 실측 A/B)**: 2.5 Flash 기본(thinking ON 무제한)은 지연 ~8.8s(전량 ~23h). thinking OFF(0)은
+~1.8s이나 타산업(79%) 쌍 대부분 빈 태그(정보량↓). **budget=512는 지연 ~4.2s(~11h)에 타산업 태그
+방출을 ON 이상 보존**(AMD↔PLTR "데이터센터·고성능컴퓨팅" — ON은 누락). 비용 3안 동일($0.0005/콜).
+억지 태그는 거부권(grounded≤0.2)이 사후 필터하므로 **"생성은 풍부하게, 필터는 거부권"** 원칙에 부합.
+
+**How to apply**: `generate_content(..., thinking_budget=None)` — 명시 전달 시만 config에 thinking_config
+추가(다른 호출부 IDENTICAL). peer 경로(`tag_peer_domains` 배치·`tag_peer_domain_task` 훅)=512.
+가드: 본배치 1,000콜 체크포인트(거부권률·빈태그율·추정률 vs A1/A3), 거부권>5% or 빈태그 급변 시 정지.
+실측 체크포인트(n=1,039): 거부권 0.96%·빈태그 36.2%·추정 22% → PASS(자동 계속).
+
 ## [2026-08-03] D-L2-SOURCE — L2 Peer 소스 결정 2: LLM 태그 채택 + 판정기 거부권 [chainsight]
 
 > 트랙: ⑳-3 L2-ADOPT. 브랜치 `monorepo/sess-l2-adopt`(base origin/main `34a171dd`). 선행 D-L2X-AUTO-ADJUDICATION.

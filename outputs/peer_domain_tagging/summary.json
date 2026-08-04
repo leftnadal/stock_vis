@@ -1,0 +1,213 @@
+{
+  "total": 8876,
+  "json_fail": 0,
+  "circuit_fail": 0,
+  "review_status": {
+    "auto": 8813,
+    "pending": 63
+  },
+  "adopted": 5617,
+  "veto": 63,
+  "veto_rate": 0.0071,
+  "veto_list": [
+    "DOCU↔NVDA(·?)",
+    "ALAB↔AMZN(상·?)",
+    "AXTI↔MSFT(·?)",
+    "BXP↔CCI(하·상이)",
+    "AMD↔TSM(상·동일)",
+    "COIN↔NVDA(상·상이)",
+    "CMG↔NCLH(하·상이)",
+    "INVH↔SBAC(중·상이)",
+    "BF.B↔WMT(·?)",
+    "MSFT↔TSM(상·상이)",
+    "NNBR↔NVDA(·?)",
+    "AMD↔AMZN(상·상이)",
+    "AMZN↔MSFT(상·상이)",
+    "BMY↔ELV(상·상이)",
+    "ALAB↔AVGO(상·?)",
+    "AMD↔NNBR(·?)",
+    "DAL↔ODFL(상·상이)",
+    "QCOM↔TSM(상·동일)",
+    "META↔MSFT(상·상이)",
+    "MDLZ↔PM(상·상이)",
+    "DLR↔PSA(상·상이)",
+    "AVGO↔MSFT(상·?)",
+    "BF.B↔MSFT(·?)",
+    "BRK.B↔MSFT(·?)",
+    "AMD↔BF.B(·?)",
+    "LLY↔WMT(상·?)",
+    "CCI↔FRT(하·상이)",
+    "LLY↔MSFT(상·?)",
+    "AMZN↔LLY(상·?)",
+    "BRK.B↔META(·?)",
+    "ABNB↔KMX(하·상이)",
+    "ALLE↔DAL(하·상이)",
+    "META↔WMT(상·?)",
+    "LLY↔META(상·?)",
+    "AVGO↔META(상·?)",
+    "AVGO↔LLY(상·?)",
+    "AVB↔EXR(중·상이)",
+    "AMZN↔BF.B(·?)",
+    "ABNB↔SBUX(상·상이)",
+    "EXR↔INVH(중·상이)",
+    "INTC↔TSM(상·동일)",
+    "MCD↔NCLH(하·상이)",
+    "ABBV↔BF.B(·?)",
+    "AMD↔BRK.B(·?)",
+    "AMZN↔AVGO(상·?)",
+    "BF.B↔META(·?)",
+    "AVGO↔BRK.B(·?)",
+    "K↔MO(중·상이)",
+    "AMD↔AVGO(상·?)",
+    "BF.B↔LLY(·?)",
+    "PLTR↔WMT(상·?)",
+    "AMZN↔WMT(상·?)",
+    "AVGO↔BF.B(·?)",
+    "AMZN↔BRK.B(·?)",
+    "BRK.B↔LLY(·?)",
+    "AVGO↔WMT(상·?)",
+    "PSA↔SBAC(중·상이)",
+    "EL↔STZ(중·상이)",
+    "META↔MTCH(하·상이)",
+    "MLM↔NEM(중·상이)",
+    "CMG↔RCL(상·상이)",
+    "MSFT↔WMT(상·?)",
+    "BRK.B↔WMT(·?)"
+  ],
+  "is_estimate": 2400,
+  "estimate_rate": 0.2704,
+  "distinct_adopted_tags": 2919,
+  "tag_frequency_top": [
+    [
+      "전력 유틸리티",
+      157
+    ],
+    [
+      "금융 서비스",
+      144
+    ],
+    [
+      "부동산 투자 신탁",
+      79
+    ],
+    [
+      "부동산 투자",
+      78
+    ],
+    [
+      "전력·가스 유틸리티",
+      52
+    ],
+    [
+      "소비재",
+      52
+    ],
+    [
+      "의료기기",
+      49
+    ],
+    [
+      "규제 전력 유틸리티",
+      42
+    ],
+    [
+      "제약·바이오",
+      40
+    ],
+    [
+      "자산운용",
+      38
+    ],
+    [
+      "자산 관리",
+      36
+    ],
+    [
+      "석유·가스 산업",
+      35
+    ],
+    [
+      "전력 생산 및 공급",
+      33
+    ],
+    [
+      "석유·가스 탐사 및 생산",
+      31
+    ],
+    [
+      "보험 서비스",
+      31
+    ],
+    [
+      "반도체",
+      31
+    ],
+    [
+      "손해보험",
+      30
+    ],
+    [
+      "보험",
+      29
+    ],
+    [
+      "에너지 유틸리티",
+      29
+    ],
+    [
+      "규제 유틸리티",
+      26
+    ],
+    [
+      "의료·헬스케어",
+      22
+    ],
+    [
+      "소비재 유통",
+      22
+    ],
+    [
+      "운송·물류",
+      21
+    ],
+    [
+      "자산 운용",
+      20
+    ],
+    [
+      "반도체 장비",
+      18
+    ],
+    [
+      "보험 산업",
+      17
+    ],
+    [
+      "상업용 부동산",
+      16
+    ],
+    [
+      "데이터센터 인프라",
+      16
+    ],
+    [
+      "부동산 투자 및 관리",
+      16
+    ],
+    [
+      "기업용 소프트웨어",
+      15
+    ]
+  ],
+  "usage": {
+    "calls": 8876,
+    "prompt_tokens": 2568341,
+    "completion_tokens": 1485293,
+    "avg_prompt_per_call": 289.4,
+    "avg_completion_per_call": 167.3,
+    "avg_latency_ms": 3974.5,
+    "total_cost_usd": 4.483735,
+    "cost_per_call_usd": 0.00050515,
+    "price_basis": "in $0.3/1M · out $2.5/1M (Gemini 2.5 Flash paid)"
+  }
+}
