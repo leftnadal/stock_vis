@@ -18,14 +18,23 @@ logger = logging.getLogger(__name__)
 
 
 def _coach_universe() -> list[str]:
-    """수집 대상 유니버스 = WalletHolding ∪ WatchlistItem 실심볼 (SFI-I1 Part 3)."""
+    """수집 대상 유니버스 = **UserGoal 보유 유저**의 WalletHolding ∪ WatchlistItem 실심볼.
+
+    스코프 = nightly advisory·snapshot 태스크와 동일 좌표(`portfolio_goal__isnull=False`).
+    글로벌 무필터(SFI-I1 원안)는 타 유저 데이터 유입 결함이었음(D-I1b-1 / common-bugs
+    GLOBAL-SCOPE-TASK). 목표 유저 0명이면 빈 리스트(안전 종료).
+    """
+    from django.contrib.auth import get_user_model
+
     from apps.portfolio.models import WalletHolding
     from packages.shared.users.models import WatchlistItem
 
-    wh = WalletHolding.objects.select_related("stock").values_list(
+    User = get_user_model()
+    goal_users = User.objects.filter(portfolio_goal__isnull=False)
+    wh = WalletHolding.objects.filter(wallet__user__in=goal_users).values_list(
         "stock__symbol", flat=True
     )
-    wl = WatchlistItem.objects.select_related("stock").values_list(
+    wl = WatchlistItem.objects.filter(watchlist__user__in=goal_users).values_list(
         "stock__symbol", flat=True
     )
     return sorted({s.upper() for s in list(wh) + list(wl) if s})
