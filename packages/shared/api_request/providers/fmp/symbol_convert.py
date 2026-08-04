@@ -50,3 +50,21 @@ def to_fmp_symbols_param(value: Optional[str]) -> Optional[str]:
     if not value:
         return value
     return ",".join(to_fmp_symbol(s) for s in str(value).split(","))
+
+
+def restore_symbols_in_response(data):
+    """
+    FMP 응답의 최상위 "symbol" 필드를 내부 정본(dot)으로 역변환 (응답 경계 단일 지점).
+
+    Slice 1.5 프로브 실측: FMP 는 class-share 를 hyphen(BRK-B) 으로 회신 →
+    응답 symbol 을 신뢰-저장하는 소비처가 dot 정본을 받도록 여기서 복원.
+    - list[dict] / dict 모두 처리. "symbol" 없는 응답·비-class-share 심볼은 무변경(passthrough).
+    - 원본 객체를 in-place 로 갱신하고 그대로 반환(_make_request 반환 경로 단일 삽입용).
+    """
+    if isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict) and item.get("symbol"):
+                item["symbol"] = from_fmp_symbol(item["symbol"])
+    elif isinstance(data, dict) and data.get("symbol"):
+        data["symbol"] = from_fmp_symbol(data["symbol"])
+    return data

@@ -8,6 +8,7 @@ import pytest
 
 from packages.shared.api_request.providers.fmp.symbol_convert import (
     from_fmp_symbol,
+    restore_symbols_in_response,
     to_fmp_symbol,
     to_fmp_symbols_param,
 )
@@ -69,6 +70,31 @@ class TestSymbolsParam:
     def test_none_and_empty(self):
         assert to_fmp_symbols_param(None) is None
         assert to_fmp_symbols_param("") == ""
+
+
+class TestRestoreSymbolsInResponse:
+    """응답 경계 역변환 (Slice 1-3): FMP hyphen → 내부 정본 dot."""
+
+    def test_list_of_dicts(self):
+        data = [{"symbol": "BRK-B", "eps": 1}, {"symbol": "AAPL", "eps": 2}]
+        out = restore_symbols_in_response(data)
+        assert out[0]["symbol"] == "BRK.B"  # 복원
+        assert out[1]["symbol"] == "AAPL"   # passthrough
+
+    def test_single_dict(self):
+        data = {"symbol": "BF-B", "price": 10}
+        assert restore_symbols_in_response(data)["symbol"] == "BF.B"
+
+    def test_no_symbol_field_untouched(self):
+        data = {"price": 10, "date": "2026-07-31"}
+        out = restore_symbols_in_response(data)
+        assert out == {"price": 10, "date": "2026-07-31"}  # date 등 무접촉
+
+    def test_empty_and_non_dict_items(self):
+        assert restore_symbols_in_response([]) == []
+        assert restore_symbols_in_response({}) == {}
+        # 비-dict 항목 섞여도 안전
+        assert restore_symbols_in_response([{"symbol": "BRK-B"}, "x"])[0]["symbol"] == "BRK.B"
 
 
 class TestMakeRequestBoundaryIdentical:

@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 
 from packages.shared.api_request.providers.fmp.symbol_convert import (
+    restore_symbols_in_response,
     to_fmp_symbols_param,
 )
 
@@ -162,7 +163,9 @@ class FMPClient:
                         raise FMPAuthError(error_msg)
                     raise FMPClientError(error_msg)
 
-                return data
+                # DOTSYM 응답 경계 역변환: FMP hyphen(BRK-B) → 내부 정본 dot(BRK.B).
+                # 앱 계층은 항상 dot 원형을 받는다(완전 격리). cf. symbol_convert.py
+                return restore_symbols_in_response(data)
 
             except (FMPPremiumError, FMPAuthError, FMPRateLimitError):
                 raise  # 재시도 불필요한 에러는 즉시 전파
