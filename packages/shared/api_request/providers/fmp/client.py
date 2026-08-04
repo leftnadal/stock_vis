@@ -15,6 +15,10 @@ from typing import Any, Dict, List, Optional, Union
 
 import requests
 
+from packages.shared.api_request.providers.fmp.symbol_convert import (
+    to_fmp_symbols_param,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -99,6 +103,13 @@ class FMPClient:
         if params is None:
             params = {}
         params["apikey"] = self.api_key
+
+        # DOTSYM 경계 변환 (옵션 1): 내부 정본(dot) → FMP API 표기(hyphen).
+        # 요청 조립 단일 경로에서만 변환 — 앱 계층은 dot 원형만 다룬다.
+        # dot 없는 심볼은 passthrough(행위보존). cf. symbol_convert.py
+        for _sym_key in ("symbol", "symbols"):
+            if params.get(_sym_key):
+                params[_sym_key] = to_fmp_symbols_param(params[_sym_key])
 
         # Rate limiting
         current_time = time.time()
