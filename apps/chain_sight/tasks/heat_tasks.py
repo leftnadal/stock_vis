@@ -35,6 +35,24 @@ def compute_theme_heat_task(self):
 
     as_of = timezone.now().date()
 
+    # TNV 집계 체이닝 (재동결 방지, D-TH-TNV-CHAIN) — heat C3 재료를 당일 TNV로 선(先)갱신.
+    # 실패 정책: 예외는 전파(태스크 실패) — 빈 재료로 조용히 heat 계산 금지. written=0(정상 공백)은 실패 아님(예외≠0건).
+    from apps.chain_sight.services.c3_narrative_service import (
+        aggregate_theme_news_volume,
+    )
+
+    try:
+        tnv_res = aggregate_theme_news_volume(target_date=as_of)
+    except Exception as exc:  # noqa: BLE001 — TNV 실패 시 heat 중단(재동결 방지 계약)
+        logger.error("TNV_CHAIN 실패 — heat 중단: %s", exc)
+        raise
+    logger.info(
+        "TNV_CHAIN date=%s written=%s zeroed=%s",
+        as_of,
+        tnv_res.get("written"),
+        tnv_res.get("zeroed"),
+    )
+
     # E2 내부자 증분 (best-effort — 실패해도 heat 계산은 진행)
     try:
         from apps.chain_sight.services.insider_service import collect_latest
