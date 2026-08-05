@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { stockService, StockQuote, StockOverview } from '@/services/stock';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import StockChart from '@/components/stock/StockChart';
+import AnalystConsensusPanel from '@/components/stock/AnalystConsensusPanel';
 import {
   Building2,
   TrendingUp,
@@ -422,7 +423,7 @@ function StockDetailContent() {
           <div className="p-6">
             {activeTab === 'overview' && (
               stockOverview ? (
-                <OverviewTab overview={stockOverview} />
+                <OverviewTab overview={stockOverview} symbol={symbol} currentPrice={stockQuote?.real_time_price ?? null} />
               ) : (
                 <EmptyOverviewData />
               )
@@ -475,7 +476,7 @@ export default function StockDetailPage() {
 }
 
 // Overview Tab Component - Default로 표시
-function OverviewTab({ overview }: { overview: StockOverview }) {
+function OverviewTab({ overview, symbol, currentPrice }: { overview: StockOverview; symbol: string; currentPrice: number | null }) {
   const formatLargeNumber = (num: number | undefined) => {
     if (!num) return '-';
     if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
@@ -580,6 +581,9 @@ function OverviewTab({ overview }: { overview: StockOverview }) {
           <MetricItem label="200일 이평선" value={overview.day_200_moving_average ? `$${overview.day_200_moving_average.toFixed(2)}` : '-'} />
         </div>
       </div>
+
+      {/* SFI-I-2: 애널리스트 컨센서스 패널 (미수집 심볼은 자체 폴백/미표기) */}
+      <AnalystConsensusPanel symbol={symbol} currentPrice={currentPrice} />
     </div>
   );
 }

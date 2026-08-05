@@ -125,6 +125,41 @@ export interface FinancialStatement {
   [key: string]: any; // Other financial metrics
 }
 
+// SFI-I-2 — 애널리스트 시그널 스냅샷 (조회 API 계약)
+export interface AnalystTarget {
+  consensus: string | null;
+  high: string | null;
+  low: string | null;
+  median: string | null;
+}
+export interface AnalystGrades {
+  strong_buy: number | null;
+  buy: number | null;
+  hold: number | null;
+  sell: number | null;
+  strong_sell: number | null;
+  consensus: string;
+}
+export interface GradesHistoryPoint {
+  date: string;
+  analystRatingsStrongBuy?: number;
+  analystRatingsBuy?: number;
+  analystRatingsHold?: number;
+  analystRatingsSell?: number;
+  analystRatingsStrongSell?: number;
+}
+export interface AnalystSignalData {
+  available: boolean;
+  symbol: string;
+  captured_at?: string;
+  source?: string;
+  target?: AnalystTarget;
+  grades?: AnalystGrades;
+  grades_historical?: GradesHistoryPoint[];
+  rating?: string;
+  overall_score?: number | null;
+}
+
 export const stockService = {
   // Get stock quote (basic info) - using overview API which contains quote data
   async getStockQuote(symbol: string): Promise<StockQuote> {
@@ -158,6 +193,17 @@ export const stockService = {
       week_52_low: parseFloat(data.week_52_low) || 0,
       last_updated: data.last_updated,
     };
+  },
+
+  // SFI-I-2 — 최신 애널리스트 시그널 스냅샷. 미수집=available:false(null 계약).
+  async getAnalystSignals(symbol: string): Promise<AnalystSignalData> {
+    const response = await fetch(`${API_URL}/stocks/api/analyst-signals/${symbol}/`, {
+      headers: authHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch analyst signals');
+    }
+    return response.json();
   },
 
   // Get stock overview (detailed info)
