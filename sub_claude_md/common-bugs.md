@@ -1308,6 +1308,9 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **규칙**: ⑴ 지시서의 병진 커맨드 안내에 **"별도 터미널(Terminal.app)에서 실행" 명기 필수** — CC `!` 프롬프트 경유 금지(2분 한계 + 첫글자 탈락 #, 이중 함정). ⑵ truncate 발생 시 **재실행 前 반드시 읽기 assess**로 부분 상태 규명(어느 date/row까지 기록됐나·진행 프로세스 잔존 여부) → **멱등 확인 후에만 완결 재실행**(blind 재시도 금지). cf. lesson_background_task_reaping.
 ## 상태 어휘의 트랙 간 의미 충돌 — 'rejected'가 ego 서빙서 엣지 은닉 (#86, 2026-08-04) `[data][process]`
+## 상태 어휘의 트랙 간 의미 충돌 — 'rejected'가 ego 서빙서 엣지 은닉 (채번 후보, L2-FULL-SWEEP 2026-08-04) `[data][process]`
+
+> ⚠ 채번 각주(PRE-DEPLOY-FIX 2026-08-05): 본 항목 추가 커밋(`86961ec4`, L2-FULL-SWEEP P3~P6) 메시지엔 **#86**으로 언급됨 — 처방 A(2026-08-03, 비mgmt 자가채번 금지) 인지 전 채번. **번호는 mgmt 채번 시 확정**.
 
 **증상**: L2-ADOPT 거부권(veto) 발동 PEER를 `domain_review_status='rejected'`로 기록하면, 마인드맵/카드에서
 관계 자체가 **사라짐**(태그만 빠지는 게 아니라 엣지 통째 은닉).
@@ -1323,3 +1326,18 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **해결/규칙**: 거부권 미채택은 **`'pending'`**(엣지 유지·서빙서 버킷 폴백), **`'rejected'`는 은닉 의미로만
 예약**. 상태 CharField를 트랙 간 공유할 때는 ⑴ 각 값의 **서빙 측 부수효과**(exclude 등)를 먼저 확인하고
 ⑵ 새 트랙이 기존 값을 재사용하기 전 그 값에 걸린 필터를 grep(`domain_review_status=`)해 의미 충돌을 점검한다.
+
+## rebase 후 원장 내 커밋 해시 앵커 무효화 — dangling 참조 (채번 후보, PRE-DEPLOY-FIX 2026-08-05) `[git][process]`
+
+**증상**: 세션 중 원장(DECISIONS·TASKQUEUE·리포트)에 커밋 해시(슬라이스별 커밋·머지 hash)를 앵커로 기록한 뒤,
+머지 전 origin/main 전진으로 rebase하면 **그 커밋들이 새 해시로 재작성** → 원장 텍스트의 해시가
+존재하지 않는 커밋을 가리키는 **dangling 참조**가 됨. 다음 세션이 `git show <해시>`·grep하면 미발견 →
+추적성(커밋↔task ID) 파손·혼선.
+
+**원인**: 하네스 규율(#79)이 "실측+HEAD 해시 앵커"를 요구해 원장에 해시를 적게 되는데, rebase는
+해시를 바꾼다. 앵커를 **rebase 전에** 적으면 무효화. (line 756은 merge-base 검증 실패 — 별건. #79는
+앵커를 처방하나 rebase 무효화는 미언급 — 본 항목이 그 caveat.)
+
+**규칙**: ⑴ 커밋 해시 앵커는 **최종 rebase 이후에 확정 기록**(rebase 예정이면 잠정 표시). ⑵ 부득이
+rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교체**(커밋 메시지는 불변, 히스토리 재작성 금지).
+⑶ 교체 후 `git grep <구해시들>` = 0 확인(dangling 잔존 점검). 앵커 후보 = 슬라이스별 커밋·머지 hash.
