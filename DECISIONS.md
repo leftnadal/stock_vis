@@ -137,6 +137,7 @@
 **결정(규약)**: **common-bugs 번호 부여는 mgmt 세션 전용**. build/측정 세션은 버그 패턴 발견 시 **"채번 후보"로만 보고**하고 번호를 쓰지 않는다. mgmt가 **push 직전 재grep 후 일괄 채번**(#40 재fetch와 동일 시점).
 - **Why**: 채번 직전 재grep 규율(D-NUMBERING-DUP 재발 방지 1차안)은 **병렬 세션 동시 진행의 착지 순서 충돌을 구조적으로 못 막는다** — 두 세션이 같은 순간 재grep하면 둘 다 같은 최댓값+1을 봄. #70 충돌 후 재grep 규율을 넣었으나 **#71·#72가 재발**(2026-07-28)로 실증. 채번 주체를 mgmt 단일 세션류로 좁혀 동시성 자체를 제거.
 - **운용**: build/측정 세션 보고에 "채번 후보: <내용>" 명시 → 차기 mgmt 배치가 실측+1로 부여. 관련=[[lesson_origin_main_advance_union_rebase]].
+- **2026-08-03 처방**: #80·#81 충돌(비mgmt 세션 REVIEW-P2의 규칙 시행 후 채번 = 규칙 위반 분류, BATCH-20 ⓑ 조사)에 대해 **A(전파 보강) 채택** — 가중합 A 4.10 / B(훅 강제) 3.85 / C(안내) 3.00, 마진 0.25 타이브레이커 = 단계적 방어·1인 비용(B는 hardening(c) 공사 동반). **B 조건부 트리거 등재: 처방 A 착지 이후 비mgmt 채번 위반이 1회라도 재발하면 hardening(c)(훅 scripts/hooks 이전 + core.hooksPath)와 결합해 pre-commit 검사 'common-bugs 신규 #NN 헤딩은 mgmt 브랜치만 허용'을 즉시 집행한다.**
 
 ## [2026-07-31] D-C2-DETAIL-MIG — coverage_detail surface 등재 = no-op 마이그 조건부 수용 (경로 A) + IssuanceLog/ImpressionLog 경계 정본화 [platform] [shared]
 

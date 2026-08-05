@@ -19,6 +19,7 @@
 - 외부 API 세션: `integrations/iron_trading` → worktree `../stock_vis_api` · 브랜치 `iron-trading-api`(기존 재사용)
 - 공유 존(`packages/shared`·`config/*`·`packages/web`) 편집 필요 시 **STOP → 사용자 보고 → 단독 확인 후**
 - **상속된 인계 메모/타 트랙의 'pending/대기' 주장은 행동 전 그 트랙 현재 장부로 재측정**(추정 전파 금지 — 2026-07 D2 phantom 교훈: 이미 해소된 결정이 구 pending 블록 미갱신으로 stale 잔존).
+- **비mgmt 세션은 common-bugs 채번 금지**(번호 부여는 mgmt 전용 — build/측정 세션은 "채번 후보"만 보고) — 1차 소스 `DECISIONS.md` D-NUMBERING-MGMT-ONLY 참조.
 
 1차 소스: [`docs/harness/SESSION_CONTRACT.md`](./SESSION_CONTRACT.md) §A 불변 규칙 / §B 소유권 매핑 / §C 헤더 양식 / §E 머지 흐름 / §H 배포 대행(D-DEPLOY-DELEGATE) / §I H1 자가해소(D-H1-SELFRESOLVE)
 
