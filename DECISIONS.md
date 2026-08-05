@@ -5830,3 +5830,13 @@ FIX-1 코드의 불변식 주석은 "is_eod_fresh 가드가 비거래일을 차�
 - **가중합 4.15, 마진 1.30 → B 확정**. **근거**: ⑴ **#28 회피** — 신규 beat 등록은 config dict vs DB drift·stale 트리 재기동 시 덮어쓰기 리스크(3회 재발). B는 beat 0 신설로 이 함정을 원천 회피(회피 자체가 B의 채택 근거). ⑵ **순서 구조 보장** — heat의 C3 성분이 TNV를 소비하므로 "TNV→heat" 인접 실행이 데이터 정합을 보장(독립 beat는 발화 순서·시각 어긋남 위험). ⑶ 최소 침습 — 기존 태스크 내부 수정만, 산식 무변경.
 - **실패 정책**: TNV 예외 → **실패 전파(태스크 실패)**. 빈 재료로 조용히 heat 계산한 것이 재동결 사태의 본질 → 소리 내고 멈춤. 단 keywords=[] 정상 공백(written=0)은 실패 아님(예외≠0건 구분). 로그 `TNV_CHAIN date=… written=N zeroed=M`로 관측성 확보(B안 단점 보완).
 - **미래 재개점**: TNV·heat 주기 분화가 필요해지면 A안(독립 beat)로 승격 = TASKQUEUE TH-TNV-BEAT-SPLIT(보류). cf. common-bugs #28.
+
+---
+
+## D-I2-0 · D-I2-1 · D-I2-2 (2026-08-04~05, SFI-I-2 애널리스트 시그널 패널)
+
+**D-I2-0 — C안 확정(병진 08-04)**: I-2 = **컨텍스트 + 의견 추세 패널**. 종목 화면에 목표주가·업사이드%·high/low 범위·의견 분포(strong_buy~strong_sell)·월별 추세 미니차트. AnalystSignalSnapshot(I-1 수집분)을 read-only로 표면화. **advisory 화면·엔진·기대수익 무접촉**(신호를 기대수익 프록시로 쓰지 않는다 = advisory_engine.py:10 금지벽 유지). 뉴스 MarketDataBadge·chain_sight narrative 슬롯 = **이월**(I2-NEWS-BADGE-DEFER).
+
+**D-I2-1 — 조회 API는 I-3 공용 설계**: 스냅샷 GET 엔드포인트는 I-2(패널)뿐 아니라 I-3(자체 시계열·다소비처)도 재사용. 위치 = `packages/shared/stocks`(shared 모델이므로 stocks 계열이 자연 — 실측 근거: `/api/v1/stocks/*` prefix·APIView+IsAuthenticated 기존 관례). 계약 = 최신 1건 + 4신호 + grades_historical + captured_at. 미수집 = **null 계약(available:false, 200)** — advisory read 관례(LatestAdvisoryContract.available) 정합·FE "미설정" 폴백 친화(404 아님). Decimal=문자열 직렬화(advisory_contract 관례).
+
+**D-I2-2 — 추세 소스 = grades_historical(FMP 제공 12개월)**: 월별 의견 추세 차트는 스냅샷의 `grades_historical`(수집 시점 FMP가 준 12개월 이력)을 변환. **자체 축적 시계열**(nightly 스냅샷을 우리가 쌓아 만드는 추세)은 **I-3**(데이터 성숙 후, I3-OWN-TIMESERIES). 근거: 아직 자동발화 3회분(08-03·04·05)이라 자체 시계열은 표본 부족 — FMP 제공 이력이 즉시 가치.

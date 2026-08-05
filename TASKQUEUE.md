@@ -1199,3 +1199,13 @@
   ⓑ analyst-estimates `period` 필수(누락=400, 6월 audit http-400 오진) = **#84** (backend/stocks)
   ⓒ RECON-STALE-BASE — 측정 세션 stale base false-missing → fresh origin/main + base HEAD 명기 = **#85** (process/harness/git)
 - 부수: SFI-I1 채번 회수의 botched orphan(`get_rating (#80,...)` 본문 없는 중복 헤딩)도 BATCH-20이 제거(bare #80=0 복원).
+
+## I2-NEWS-BADGE-DEFER — 뉴스/chain_sight 애널리스트 슬롯 배선 이월 (2026-08-05, SFI-I-2 Part A) [portfolio][news][chainsight]
+- 상태: **defer**. I-2 범위 제외(종목 화면 패널만).
+- 내용: `components/news/MarketDataBadge.tsx`의 `AnalystRatingsSection`(market_data.analyst_ratings)·chain_sight `CompanyNarrativeTag.analyst_consensus/target_vs_price/revision_trend` 유령 슬롯을 AnalystSignalSnapshot으로 배선.
+- 트리거: I-2 패널 안정화 후. 뉴스 insight market_data 계약·chain_sight narrative 생성 경로 접점 설계 필요(별개 소비처).
+
+## I3-OWN-TIMESERIES — 자체 스냅샷 축적 추세 차트 (2026-08-05, SFI-I-2 Part A) [portfolio]
+- 상태: **defer**(데이터 성숙 후). I-2는 FMP 제공 grades_historical(12개월) 사용(D-I2-2).
+- 내용: nightly AnalystSignalSnapshot append 축적분으로 우리 자체 시계열 추세(목표가 변화·의견 이동) 구성. 자동발화 표본 충분(수십일+) 시 착수.
+- 접점: I-2 조회 API(D-I2-1 공용 설계)를 시계열 조회로 확장(latest 1건 → 기간 N건).
