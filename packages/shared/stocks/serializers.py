@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import (
+    AnalystSignalSnapshot,
     BalanceSheet,
     CashFlowStatement,
     DailyPrice,
@@ -496,3 +497,47 @@ class StockDetailPageSerializer(serializers.Serializer):
     balance_sheets = BalanceSheetTabSerializer(many=True)
     income_statements = IncomeStatementTabSerializer(many=True)
     cash_flows = CashFlowTabSerializer(many=True)
+
+
+def _dec_str(value):
+    """Decimal → 문자열(정밀도 손실 방지, advisory_contract 관례). None 유지."""
+    return str(value) if value is not None else None
+
+
+class AnalystSignalSnapshotSerializer(serializers.ModelSerializer):
+    """SFI-I-2 — 최신 애널리스트 시그널 스냅샷(패널 + I-3 공용, D-I2-1).
+
+    target·grades는 중첩 dict, Decimal은 문자열. 미수집은 뷰에서 available:false 계약.
+    """
+
+    available = serializers.SerializerMethodField()
+    target = serializers.SerializerMethodField()
+    grades = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AnalystSignalSnapshot
+        fields = [
+            "available", "symbol", "captured_at", "source",
+            "target", "grades", "grades_historical", "rating", "overall_score",
+        ]
+
+    def get_available(self, obj) -> bool:
+        return True
+
+    def get_target(self, obj) -> dict:
+        return {
+            "consensus": _dec_str(obj.target_consensus),
+            "high": _dec_str(obj.target_high),
+            "low": _dec_str(obj.target_low),
+            "median": _dec_str(obj.target_median),
+        }
+
+    def get_grades(self, obj) -> dict:
+        return {
+            "strong_buy": obj.grade_strong_buy,
+            "buy": obj.grade_buy,
+            "hold": obj.grade_hold,
+            "sell": obj.grade_sell,
+            "strong_sell": obj.grade_strong_sell,
+            "consensus": obj.grade_consensus,
+        }

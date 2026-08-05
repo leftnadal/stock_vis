@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import (
     views,
+    views_analyst_signals,  # SFI-I-2 애널리스트 시그널 스냅샷 조회 API
     views_eod,  # EOD Dashboard 뷰 추가
     views_exchange,  # Exchange Quotes 뷰 추가
     views_fundamentals,  # Fundamentals 뷰 추가
@@ -218,6 +219,13 @@ urlpatterns = [
         "api/quotes/sector-performance/",
         views_exchange.SectorPerformanceView.as_view(),
         name="sector_performance",
+    ),
+    ## 애널리스트 시그널 스냅샷 API (SFI-I-2, read-only)
+    # 최신 애널리스트 시그널 1건(목표가·의견 분포·grades_historical)
+    path(
+        "api/analyst-signals/<str:symbol>/",
+        views_analyst_signals.AnalystSignalSnapshotView.as_view(),
+        name="analyst_signals",
     ),
     ## EOD Dashboard API (admin/debug)
     # 대시보드 스냅샷 조회
