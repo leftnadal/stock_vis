@@ -1299,3 +1299,11 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **맥락**: cherry-pick으로 내용을 착지시킨 브랜치(예: sess-th-recon, 원본 커밋 6f8c6c7d → 새 해시 915494c1)는 `git branch -d`가 **커밋 미도달로 거부**(patch 등가성 미인식). `-D`가 필요하나 파괴적.
 
 **규칙**: CC의 `-D`는 **⑴ 병진의 건별 명시 지시 + ⑵ 손실 0 사전 입증(삭제 대상 브랜치의 고유 커밋 `git log origin/main..<br>`이 내용상 origin/main에 존재 = `git cat-file -e origin/main:<path>` 또는 파일 diff 공집합) 둘 다 충족 시에만**. 일괄·재량 -D 불허. ⚠️ `git diff origin/main <br>`(2-dot 전체 트리)의 삽입/삭제는 **브랜치가 뒤처져서** 생기는 아티팩트일 수 있음(#78 변종) → 손실 판정은 `origin/main..<br>` 고유 커밋 기준으로만. `git branch -d` 거부는 안전망 = 기본 존중, 뚫기 전 위 2조건 재확인.
+
+## 병진 수동 prod 커맨드는 별도 터미널 전용 — CC `!` 경유 시 harness 2분 truncate (#88, TH-TNV-CHAIN-1 2026-08-04) [process][harness][ops]
+
+**증상**: CC가 병진에게 준 prod 백필 커맨드를 CC 프롬프트 `!` 경유(또는 CC 안내대로 foreground)로 실행 시, **harness 2분 foreground 한계에 걸려 커맨드가 truncate**됨. 실측 2회: TH-SESSION-1 ②(heat 재산출, "moved to background" 후 완료) · TH-TNV-CHAIN-1 §C ②(heat 재산출, "timed out after 2m" — 08-04 heat 6행 중 5행만 기록되고 kill, 출력 3줄 미표시).
+
+**원인**: 대형 DB 연산(compute_theme_heat 루프 등)이 2분 초과. `!`/foreground 경로는 harness 타임아웃 대상. 멱등 연산(update_or_create)이라 이번엔 무해했으나, **비멱등 연산이면 부분 실행 사고**(절반 쓰고 kill).
+
+**규칙**: ⑴ 지시서의 병진 커맨드 안내에 **"별도 터미널(Terminal.app)에서 실행" 명기 필수** — CC `!` 프롬프트 경유 금지(2분 한계 + 첫글자 탈락 #, 이중 함정). ⑵ truncate 발생 시 **재실행 前 반드시 읽기 assess**로 부분 상태 규명(어느 date/row까지 기록됐나·진행 프로세스 잔존 여부) → **멱등 확인 후에만 완결 재실행**(blind 재시도 금지). cf. lesson_background_task_reaping.
