@@ -8,6 +8,16 @@
 
 ---
 
+## [2026-08-04] D-MONITOR-HORIZON-ADVISOR — monitor 3층 증축(horizon·LLM Advisor·T계열 테마) [monitor] [llm] [chainsight]
+
+> 상태: **확정**(사용자 승인 2026-08-04). 상위 계보: **D-MONITOR-TIMING-PIVOT** — 그 위의 3층 증축이며 피벗 불변식(§3.1 EOD·§3.2 가치 축·§3.3 경계·§3.4 행위보존) 전부 계승. 관련: D-MONITOR-REBUILD·D-EOD-FRESH(+FIX-1).
+
+**결정**: monitor 위에 ⑴ **HORIZON**(swing/position/core 수동 선언 → 지표 가중 프리셋·채점 창·기한 기본값·비서 문맥 일괄 결정) ⑵ **ADVISOR**(LLM 투자 비서 = 단일 코어 + 3 트리거 표면 L-A 해설자/L-B 상담역/L-C 파수꾼, 설계는 첫날 완결·점등은 승격 게이트 순차, 전 권고 AdvisorNote 전수 기록·시장/마감 2축 채점) ⑶ **T계열**(Chain Sight 테마 그래프를 EOD 스칼라 신호로 승격, 통로=스키마 선행+수동 시드 T-B)를 전부 **additive**로 증축.
+
+**Why**: 시간축 혼재(스윙 후보와 코어 보유가 동일 문법)·해석 부재(결과값만 남고 서사 없음)·고립 종목 관측 한계(테마 순풍 vs 고유 악재 미구분)·도그푸딩 목적("LLM이 매매 판단 보조에 유용한가" 본인 데이터 검증, 게이트 불통과=답).
+
+**How to apply**: 전문·불변식 7개(I-1 단방향~I-7 규제 예약)·가중 프리셋·채점 수식·승격 게이트 수치·스테이징(HA-P0 RECON→P1~P6→G1→BRIDGE→G2)은 **standalone ADR** [`D-MONITOR-HORIZON-ADVISOR.md`](D-MONITOR-HORIZON-ADVISOR.md) 참조(상세 단일 소스). 다음 착수 = HA-P0 RECON(읽기 전용 통합 실측). 코드 0·본 커밋은 문서 등재 전용.
+
 ## [2026-08-01] D-DOTSYM — dot 심볼 복원 (옵션 1: 정본 dot 저장 + FMP 래퍼 경계 변환) [chainsight] [shared]
 
 **결정**: SP500 class-share 심볼(BRK.B·BF.B)을 유니버스에 복원. **DB·전 내부 계층의 정본 = dot 원형**, 하이픈 변환(BRK-B)은 **FMPClient 요청/응답 경계 단일 지점에서만** 발생(앱 계층은 변환의 존재를 모름 — 외부 API 표기법을 외부 접점에 봉인).
