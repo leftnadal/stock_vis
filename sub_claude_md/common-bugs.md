@@ -1312,6 +1312,15 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 대형 DB 연산(compute_theme_heat 루프 등)이 2분 초과. `!`/foreground 경로는 harness 타임아웃 대상. 멱등 연산(update_or_create)이라 이번엔 무해했으나, **비멱등 연산이면 부분 실행 사고**(절반 쓰고 kill).
 
 **규칙**: ⑴ 지시서의 병진 커맨드 안내에 **"별도 터미널(Terminal.app)에서 실행" 명기 필수** — CC `!` 프롬프트 경유 금지(2분 한계 + 첫글자 탈락 #, 이중 함정). ⑵ truncate 발생 시 **재실행 前 반드시 읽기 assess**로 부분 상태 규명(어느 date/row까지 기록됐나·진행 프로세스 잔존 여부) → **멱등 확인 후에만 완결 재실행**(blind 재시도 금지). cf. lesson_background_task_reaping.
+
+## health_check는 worktree-local — 정체 트리에서 PROGRESS 신선도 거짓 FAIL (#89, MGMT-BATCH-24 / LAND-C2-S1-B1 2026-08-06) `[process][harness][git]`
+
+**증상**: LAND 세션에서 `health_check.py`를 **현재 앉아있는 세션 브랜치 워크트리**(예: `sess-signal-fwd-recon` @ 0790c8f, PROGRESS.md 07-21 정체)에서 실행하면 `origin/main 해시`·`PROGRESS 갱신 stale` **FAIL 2건**이 뜸(실측 11 OK/2 WARN/2 FAIL). 착지 대상 트리(`main`=origin/main, PROGRESS 08-06 신선)에서 재측정하면 **14/1/0**으로 정상 → 앞의 2 FAIL은 거짓이었음.
+
+**원인**: health_check는 **PROGRESS.md 신선도·origin/main 해시를 현재 워크트리 기준으로** 읽음(tree-position-sensitive). 세션 브랜치가 오래된 PROGRESS.md를 물고 있으면 그 브랜치 기준으로 정체가 측정됨. #47(`실행 트리 정합` WARN)이 같은 뿌리의 신호이나, #47은 WARN이고 본 함정은 **FAIL 오탐**이라 문언상 "FAIL=HALT"에 걸려 정상 착지를 막을 수 있음. (부수: health_check가 내부 `git fetch`를 하는 듯 — 실행 중 origin/main이 전진할 수 있으니 게이트 재fetch #40 필수. LAND-C2-S1-B1에서 실측: health 실행 중 origin/main `e76237a8→0b0621e8` 전진.)
+
+**규칙**: ⑴ 게이트 health는 **착지 대상 트리(main 체크아웃 = origin/main) 또는 origin/main 기준 신규 worktree에서 측정** — 정체 세션 브랜치서 재지 말 것. ⑵ `실행 트리 정합` WARN(#47)이 보이면 트리 위치 재확인. ⑶ **실행자 로컬 메모(auto-memory 등)는 비정본** — 교훈 정본화는 장부(common-bugs/DECISIONS) 등재로만. cf. DECISIONS `D-LANDING-ONE-SESSION-PER-APPROVAL` 보강(게이트 health 측정 트리).
+
 ## 상태 어휘의 트랙 간 의미 충돌 — 'rejected'가 ego 서빙서 엣지 은닉 (#86b, 2026-08-04) `[data][process]`
 *(채번 충돌 구분자, D-NUMBERING-DUP 참조. b=후착지 86961ec4 author 2026-08-04 20:51, L2-FULL-SWEEP 비mgmt 세션 채번 = 규칙 위반. B 트리거 미해당 — 세션 시작(첫 커밋 88850fce author 08-03 18:24) < A 착지(05211a02 08-05 10:16), pre-A 시작. REVIEW-P2·S3-MINDMAP에 이은 3번째 위반)*
 ## 상태 어휘의 트랙 간 의미 충돌 — 'rejected'가 ego 서빙서 엣지 은닉 (채번 후보, L2-FULL-SWEEP 2026-08-04) `[data][process]`
