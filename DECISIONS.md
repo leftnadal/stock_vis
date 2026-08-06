@@ -8,6 +8,22 @@
 
 ---
 
+## [2026-08-06] D-MON-TRACK-ORDER-20260806 — HA-P0 RECON 기반 트랙 순서 판정 3건 [monitor]
+
+> 출처: 지시서 MON-DETAIL-P1 §0(편승 등재). 근거: HA-P0 RECON 실측(4fcc768d). 상위 D-MONITOR-HORIZON-ADVISOR §8.
+
+**결정**: ⑴ **P1(MON-DETAIL) 선행** — H1 실측(→T3)에서 희석이 실재하면 P2a(재정규화 계약 확장) 미니 트랙을 P1 직후 삽입한 뒤 P2(HORIZON). ⑵ **P4(ADVISOR L-A) → P5(THEME) 순서** — 승격 게이트 표본 시계(n≥40) 조기 가동 + 단방향 불변식(I-1)으로 THEME 후착지 비용 0. ⑶ **NEWS-P1 착수 보류** — 전제조건 **NEWS-P0**(수집 유니버스·market_cap 수리) 신설, RECON은 별도 지시서(RECON-NEWS-P0).
+
+**Why**: RECON R7(AnthropicProvider 완비→P4 조기 가동 저비용)·R2(재정규화 계약 확장 선행 필요)·R5(TLN 뉴스 0건·market_cap None→수집 축 결함이 NEWS 전제)가 순서를 규정. **How to apply**: P1 구현 후 T3 결과로 P2a 삽입 여부 확정(계획 세션 판정 — 이 지시서는 측정만).
+
+## [2026-08-06] D-MON-DETAIL-LAYOUT-B — 상세 화면 배치 B안 확정 (슬림 스트립 + 일지 지배) [monitor] [frontend]
+
+> 출처: 지시서 MON-DETAIL-P1 §0. 목업 2안 비교·가중 판정(B 0.850 vs A 0.690) 후 사용자 확정 2026-08-06.
+
+**결정**: 상세 화면 = **슬림 6토큰 스트립**(상태·존·점수+Δ·손절여유·D-day·danger) + **일지 지배 영역** + **일지 kind 레지스트리**(JournalEntry={kind,asof,payload}). P1 구현 kind 3종(snapshot·transition·open) + 예약 3종(advisor·theme·memo — 타입 슬롯만, 레지스트리 미등록 → 안전 무시). **메모 기능은 P1.5로 분리**(스코프 아웃).
+
+**Why**: 시간축 서사 부재 해소(일지가 "무엇이 달라졌나"를 지배 표면화) + kind 레지스트리로 P4(advisor)/P5(theme)/P1.5(memo)가 렌더러만 추가하면 점등되는 전방 호환 확보. **How to apply**: 스트립·일지 모두 BE 단일 소스 소비(FE 재계산 금지). 손절여유 위험 강조는 기존 신호(danger_streak·close_suggested·이탈 존)만 게이팅 — 신규 임계 창설 금지.
+
 ## [2026-08-06] D-DEPLOY-NONFF — origin churn 하 배포는 non-FF 머지 채택 (FF 포기) [process] [git]
 
 > 트랙: L2-FULL-SWEEP 배포(POST-DEPLOY-VERIFY 사후 등재). 착지 = origin/main `4fcc768d`.

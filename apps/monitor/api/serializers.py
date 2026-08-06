@@ -70,6 +70,13 @@ def build_zone_display(claim, anchor, close):
 
     zone = resolve_zone(close, anchor, claim.target_price, claim.stop_price)
     marker_fraction = _fraction(close, stop, target)
+    # 손절여유(%) — 현재가 대비 손절 도달까지 낙폭 = (close-stop)/close*100 (MON-DETAIL-P1 T1a).
+    # 스트립 손절여유 토큰의 단일 소스(FE 재계산 금지). close 없으면 null(marker·pnl과 동일 폴백).
+    stop_distance_pct = (
+        round((close - stop) / close * 100.0, 4)
+        if (close is not None and close != 0)
+        else None
+    )
 
     common = {
         "zone": zone,
@@ -77,6 +84,7 @@ def build_zone_display(claim, anchor, close):
         "mode": claim.scenario_type,
         "mode_label": _SCENARIO_LABEL.get(claim.scenario_type),
         "marker_fraction": marker_fraction,
+        "stop_distance_pct": stop_distance_pct,
     }
 
     if not is_hold:

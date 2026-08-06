@@ -225,6 +225,17 @@ class TestHoldZoneDisplay:
         assert any(r["label"] == "익절 접근" for r in d["rows"])
         assert len(d["bands"]) == 4
 
+    def test_stop_distance_pct(self, make_claim):
+        # 손절여유(%) = 현재가 대비 손절 도달까지 낙폭 = (close-stop)/close*100 (MON-DETAIL-P1 T1a).
+        # hold: stop=90, close=110 → (110-90)/110*100 = 18.1818…
+        assert self._display(make_claim, 110.0)["stop_distance_pct"] == pytest.approx(
+            (110.0 - 90.0) / 110.0 * 100.0, abs=1e-2
+        )
+        # close < stop(이탈) → 음수
+        assert self._display(make_claim, 85.0)["stop_distance_pct"] < 0
+        # close None → None (마커·pnl과 동일 폴백)
+        assert self._display(make_claim, None)["stop_distance_pct"] is None
+
     def test_new_entry_display_unchanged(self, make_claim):
         from apps.monitor.api.serializers import build_zone_display
 
@@ -239,6 +250,8 @@ class TestHoldZoneDisplay:
         assert len(d["bands"]) == 5
         assert any(t["label"] == "진입" for t in d["ticks"])
         assert d["boundaries"]["approach_ceiling"] == pytest.approx(103.0)
+        # 손절여유(%)는 new_entry에도 존재 (T1a): stop=90, close=95 → (95-90)/95*100
+        assert d["stop_distance_pct"] == pytest.approx((95.0 - 90.0) / 95.0 * 100.0, abs=1e-2)
 
 
 # ── suggest hold (수익/손실 손절 분기 + 본전 회복 N주 검산) ────────────────────

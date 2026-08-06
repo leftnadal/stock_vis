@@ -85,6 +85,7 @@ const useMonitorClaimsMock = vi.fn()
 vi.mock('@/hooks/useMonitor', () => ({
   useMonitor: (id: string) => useMonitorMock(id),
   useMonitorClaims: (id: string) => useMonitorClaimsMock(id),
+  useMonitorAlerts: () => ({ data: [] }),
   useIndicators: () => ({ data: [{ id: 'i1', name: 'EOD 종합', latest_value: null }] }),
   useClosePreview: () => ({ data: undefined }),
   useSparkline: () => ({ data: null }),
@@ -142,6 +143,28 @@ describe('MonitorDetailPage', () => {
     fireEvent.click(screen.getByTestId('claim-close-button'))
 
     expect(screen.getByTestId('close-modal-stub')).toHaveAttribute('data-claim-id', 'c-target')
+  })
+
+  it('B안: 슬림 스트립 6토큰 + 일지 영역이 렌더된다', async () => {
+    useMonitorMock.mockReturnValue({ data: monitor, isLoading: false, isError: false, error: null })
+    useMonitorClaimsMock.mockReturnValue({ data: [makeClaim()] })
+    await renderDetail()
+
+    await waitFor(() => expect(screen.getByTestId('slim-strip')).toBeInTheDocument())
+    // 6토큰 전부
+    for (const t of [
+      'token-state',
+      'token-zone',
+      'token-score',
+      'token-stop-distance',
+      'token-dday',
+      'token-danger',
+    ]) {
+      expect(screen.getByTestId(t)).toBeInTheDocument()
+    }
+    // 일지 영역 + open 항목(첫 claim 사전 커밋)
+    expect(screen.getByTestId('detail-journal')).toBeInTheDocument()
+    expect(screen.getByTestId('journal-entry-open')).toBeInTheDocument()
   })
 
   it('로딩 중에는 로딩 표시를, 404 에러 시 안내 문구를 보여준다', async () => {

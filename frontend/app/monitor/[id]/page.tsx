@@ -1,6 +1,7 @@
 'use client'
 
-// Monitor 상세 (MON-CLOSE-UI Phase 2 §0.5) — 리스트 카드가 이미 링크하던 dangling 대상 신설.
+// Monitor 상세 — B안(슬림 스트립 + 일지 지배), MON-DETAIL-P1 / D-MON-DETAIL-LAYOUT-B.
+// 스트립(6토큰+펼침 패널) → 일지(지배 영역) → 매수 시나리오(마감 루프 보존).
 import { use, useState } from 'react'
 
 import Link from 'next/link'
@@ -8,50 +9,25 @@ import { ArrowLeft } from 'lucide-react'
 
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { CloseModal } from '@/components/monitor/CloseModal'
-import { MoonPhase } from '@/components/monitor/MoonPhase'
-import { PriceLadder } from '@/components/monitor/PriceLadder'
-import { StateBandSparkline } from '@/components/monitor/StateBandSparkline'
+import { SlimStrip } from '@/components/monitor/SlimStrip'
 import { VerdictBadge } from '@/components/monitor/VerdictBadge'
+import { JournalFeed } from '@/components/monitor/journal/JournalFeed'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   useClosePreview,
   useIndicators,
   useMonitor,
+  useMonitorAlerts,
   useMonitorClaims,
   useSparkline,
 } from '@/hooks/useMonitor'
+import { buildJournal } from '@/lib/monitor/journal'
 import { outcomeToVerdict } from '@/lib/monitor/closure'
-import { STATE_TONE_CLASS, ddayLabel, stateMeta } from '@/lib/monitor/display'
-import type { Claim, Monitor } from '@/types/monitor'
-
-const SCOPE_LABEL: Record<Monitor['scope'], string> = {
-  market: '시장',
-  sector: '섹터',
-  theme: '테마',
-  fund: '펀드',
-  stock: '종목',
-}
+import type { Claim } from '@/types/monitor'
 
 function formatDate(iso: string | null): string {
   if (!iso) return ''
   return iso.slice(0, 10)
-}
-
-function IndicatorRow({
-  name,
-  latestValue,
-}: {
-  name: string
-  latestValue: number | null | undefined
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2 border-b border-gray-100 py-2 text-sm last:border-0 dark:border-gray-800">
-      <span className="min-w-0 flex-1 truncate text-gray-600 dark:text-gray-300">{name}</span>
-      <span className="flex-shrink-0 text-gray-400">
-        {typeof latestValue === 'number' ? latestValue.toFixed(3) : '—'}
-      </span>
-    </div>
-  )
 }
 
 function ClaimRow({
@@ -70,7 +46,6 @@ function ClaimRow({
       data-testid="claim-row"
     >
       <div className="min-w-0 flex-1">
-        {/* 보유 관리 모드 칩 + 손익 (HOLD-P1) */}
         {claim.scenario_type === 'hold' && (
           <div className="mb-1 flex items-center gap-1.5">
             <span
@@ -133,6 +108,7 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
   const { data: monitor, isLoading, isError, error } = useMonitor(monitorId)
   const { data: claims } = useMonitorClaims(monitorId)
   const { data: indicators } = useIndicators(monitorId)
+  const { data: alerts } = useMonitorAlerts(monitorId)
   const { user } = useAuth()
 
   const score = monitor?.latest_score ?? null
@@ -163,79 +139,46 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
     )
   }
 
-  const meta = stateMeta(monitor.current_state)
-  const dday = ddayLabel(monitor.next_deadline)
-  // 가격축(TIMING-P2): 활성 Claim 중 zone_display 있는 첫 건 → 수직 사다리.
+  // 가격축: 활성 Claim 중 zone_display 있는 첫 건 → 스트립 존/손절여유 + 가격 사다리 패널.
   const zoneClaim = (claims ?? []).find((c) => c.status === 'active' && c.zone_display?.zone)
+
+  // 전일 Δ = 스파크라인 최근 두 점 차(스트립 점수 토큰).
+  const series = spark?.series ?? []
+  const scoreDelta =
+    series.length >= 2
+      ? Math.round((series[series.length - 1].score - series[series.length - 2].score) * 100) / 100
+      : null
+
+  const journal = buildJournal({ sparkline: spark, alerts, monitor, claims })
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-4 flex items-center gap-3">
-        <Link href="/monitor" className="text-gray-500 hover:text-gray-800" aria-label="목록으로">
-          <ArrowLeft size={20} />
-        </Link>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-              {SCOPE_LABEL[monitor.scope]}
-            </span>
-            <h1 className="truncate font-semibold text-gray-900 dark:text-gray-100">
-              {monitor.name}
-            </h1>
-          </div>
-          {monitor.resolved_label && (
-            <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-              {monitor.resolved_label}
-            </p>
-          )}
+      <Link
+        href="/monitor"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
+        aria-label="목록으로"
+      >
+        <ArrowLeft size={16} /> 목록
+      </Link>
+
+      {/* T1 — 슬림 스트립 헤더 (6토큰 + 펼침 패널) */}
+      <SlimStrip
+        monitor={monitor}
+        zoneClaim={zoneClaim}
+        scoreDelta={scoreDelta}
+        indicators={indicators ?? []}
+        latestValueById={latestValueById}
+      />
+
+      {/* T2 — 일지 (지배 영역) */}
+      <section className="mb-6" data-testid="detail-journal">
+        <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">일지</h2>
+        <div className="rounded-xl border border-gray-100 px-4 dark:border-gray-800">
+          <JournalFeed entries={journal} />
         </div>
-        <span className={`rounded px-2 py-1 text-xs font-medium ${STATE_TONE_CLASS[meta.tone]}`}>
-          {meta.label}
-        </span>
-        {dday && <span className="text-xs font-medium text-gray-500">{dday}</span>}
-      </div>
-
-      <div className="mb-6 flex items-center gap-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
-        <MoonPhase score={score} label={monitor.display?.phase_label} size="lg" showLabel />
-        {spark && (
-          <div className="flex-1">
-            <StateBandSparkline
-              series={spark.series}
-              bands={spark.bands}
-              transitions={spark.transitions}
-              width={220}
-              height={48}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* 가격 구간 사다리 (TIMING-P2 §5) — 가격 시나리오 있을 때만. 신호축과 별개. */}
-      {zoneClaim?.zone_display && (
-        <section className="mb-6" data-testid="detail-price-ladder">
-          <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-            가격 구간
-          </h2>
-          <div className="rounded-xl border border-gray-100 p-4 dark:border-gray-800">
-            <PriceLadder zoneDisplay={zoneClaim.zone_display} />
-            <p className="mt-3 text-[11px] text-gray-400">일봉 기준 · 스윙 타이밍</p>
-          </div>
-        </section>
-      )}
-
-      <section className="mb-6">
-        <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">지표</h2>
-        {(indicators ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">등록된 지표가 없어요.</p>
-        ) : (
-          <div className="rounded-xl border border-gray-100 px-3 dark:border-gray-800">
-            {(indicators ?? []).map((ind) => (
-              <IndicatorRow key={ind.id} name={ind.name} latestValue={latestValueById.get(ind.id)} />
-            ))}
-          </div>
-        )}
       </section>
 
+      {/* 매수 시나리오 (마감 루프 보존) */}
       <section>
         <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
           매수 시나리오

@@ -193,10 +193,18 @@ class AlertEventViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # 억제 알림은 개별 행에서 제외(배지·목록 숨김, 결정 1-C 쿨다운)
-        qs = AlertEvent.objects.filter(
-            monitor__user=self.request.user, is_suppressed=False
-        ).select_related("monitor")
+        # MON-DETAIL-P1 T2: ?monitor=<id> = 상세 일지(journal)용 전이 전체 타임라인.
+        # 지정 시 해당 모니터로 스코프 + 억제 전이도 포함(일지는 완결 타임라인 — 억제 표기).
+        # 미지정(전역 배지·목록) = 기존 의미론 불변: 억제 제외(결정 1-C 쿨다운, 행위보존).
+        monitor_id = self.request.query_params.get("monitor")
+        if monitor_id:
+            qs = AlertEvent.objects.filter(
+                monitor__user=self.request.user, monitor_id=monitor_id
+            ).select_related("monitor")
+        else:
+            qs = AlertEvent.objects.filter(
+                monitor__user=self.request.user, is_suppressed=False
+            ).select_related("monitor")
         if self.request.query_params.get("unread") == "true":
             qs = qs.filter(read=False)
         if self.request.query_params.get("deterioration") == "true":

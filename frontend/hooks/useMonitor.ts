@@ -14,7 +14,7 @@ export const monitorKeys = {
   indicators: (id: string) => [...monitorKeys.all, 'indicators', id] as const,
   closePreview: (claimId: string) => [...monitorKeys.all, 'closePreview', claimId] as const,
   alerts: () => [...monitorKeys.all, 'alerts'] as const,
-  alertsList: (params?: { unread?: boolean; deterioration?: boolean }) =>
+  alertsList: (params?: { unread?: boolean; deterioration?: boolean; monitor?: string }) =>
     [...monitorKeys.alerts(), 'list', params ?? {}] as const,
   alertSummary: () => [...monitorKeys.alerts(), 'summary'] as const,
   sparkline: (id: string, window: number) =>
@@ -114,6 +114,15 @@ export function useAlerts(params?: { unread?: boolean; deterioration?: boolean }
   return useQuery({
     queryKey: monitorKeys.alertsList(params),
     queryFn: () => monitorService.listAlerts(params),
+  })
+}
+
+// 상세 일지용 — 특정 모니터의 전이 전체 타임라인(억제 포함, MON-DETAIL-P1 T2).
+export function useMonitorAlerts(monitorId: string) {
+  return useQuery({
+    queryKey: monitorKeys.alertsList({ monitor: monitorId }),
+    queryFn: () => monitorService.listAlerts({ monitor: monitorId }),
+    enabled: !!monitorId,
   })
 }
 

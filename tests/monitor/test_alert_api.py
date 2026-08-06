@@ -63,6 +63,22 @@ class TestAlertAPI:
         assert all(a["is_suppressed"] is False for a in data)
         assert len(data) == 1
 
+    def test_monitor_filter_scopes_and_includes_suppressed(self, client_alice, alice_monitor, alice):
+        # MON-DETAIL-P1 T2: ?monitor=<id> = 상세 일지용 전이 전체 타임라인.
+        # 지정 모니터로 스코프 + 억제 전이도 포함(표기용). 다른 모니터는 제외.
+        other = Monitor.objects.create(
+            user=alice, scope="stock", target_ref="MSFT", name="엠에스", current_state="active"
+        )
+        _alert(alice_monitor, asof=date(2026, 7, 8))
+        _alert(alice_monitor, to="critical", asof=date(2026, 7, 9), suppressed=True)
+        _alert(other, asof=date(2026, 7, 8))
+        resp = client_alice.get(f"/api/v1/monitor/alerts/?monitor={alice_monitor.id}")
+        assert resp.status_code == 200
+        data = resp.data["results"] if isinstance(resp.data, dict) and "results" in resp.data else resp.data
+        assert all(str(a["monitor"]) == str(alice_monitor.id) for a in data)  # 스코프
+        assert len(data) == 2  # 억제 포함
+        assert any(a["is_suppressed"] is True for a in data)  # 억제 전이 표기 가능
+
     def test_summary_counts_unread_deterioration_only(self, client_alice, alice_monitor):
         _alert(alice_monitor, det=True, read=False, asof=date(2026, 7, 9))
         _alert(alice_monitor, to="strengthening", det=False, read=False, asof=date(2026, 7, 8))

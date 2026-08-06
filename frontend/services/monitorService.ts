@@ -128,13 +128,16 @@ export const monitorService = {
   },
 
   // ── 전이 알림 (MON-P3-ALERT) ──
+  // monitor 지정 시 상세 일지용 = 그 모니터 전이 전체 타임라인(억제 포함, MON-DETAIL-P1 T2).
   listAlerts: async (params?: {
     unread?: boolean
     deterioration?: boolean
+    monitor?: string
   }): Promise<AlertEvent[]> => {
     const query: Record<string, string> = {}
     if (params?.unread) query.unread = 'true'
     if (params?.deterioration) query.deterioration = 'true'
+    if (params?.monitor) query.monitor = params.monitor
     const { data } = await authAxios.get('/monitor/alerts/', { params: query })
     return unwrapList<AlertEvent>(data)
   },

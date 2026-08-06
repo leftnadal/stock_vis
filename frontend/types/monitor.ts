@@ -67,6 +67,7 @@ export interface ZoneDisplay {
   mode?: ScenarioType
   mode_label?: string | null
   pnl_pct?: number | null // hold: (close/purchase−1)×100
+  stop_distance_pct?: number | null // 손절여유(%): (close−stop)/close×100 (MON-DETAIL-P1 T1a). close 없으면 null
   marker_fraction?: number | null // 현재가 위치 0~1
   anchor_fraction?: number | null // hold 매입가 마커 0~1 (new_entry는 null)
   bands?: ZoneBand[] // 색 밴드(new_entry 5·hold 4)
