@@ -5914,3 +5914,13 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **D-I2-1 — 조회 API는 I-3 공용 설계**: 스냅샷 GET 엔드포인트는 I-2(패널)뿐 아니라 I-3(자체 시계열·다소비처)도 재사용. 위치 = `packages/shared/stocks`(shared 모델이므로 stocks 계열이 자연 — 실측 근거: `/api/v1/stocks/*` prefix·APIView+IsAuthenticated 기존 관례). 계약 = 최신 1건 + 4신호 + grades_historical + captured_at. 미수집 = **null 계약(available:false, 200)** — advisory read 관례(LatestAdvisoryContract.available) 정합·FE "미설정" 폴백 친화(404 아님). Decimal=문자열 직렬화(advisory_contract 관례).
 
 **D-I2-2 — 추세 소스 = grades_historical(FMP 제공 12개월)**: 월별 의견 추세 차트는 스냅샷의 `grades_historical`(수집 시점 FMP가 준 12개월 이력)을 변환. **자체 축적 시계열**(nightly 스냅샷을 우리가 쌓아 만드는 추세)은 **I-3**(데이터 성숙 후, I3-OWN-TIMESERIES). 근거: 아직 자동발화 3회분(08-03·04·05)이라 자체 시계열은 표본 부족 — FMP 제공 이력이 즉시 가치.
+
+## D-I3-1 · D-I3-1b · D-I3-2 · D-I3-3 (2026-08-06, SFI-I-3 애널리스트 신호 채점 계층)
+
+**D-I3-1 — 채점 = 파생 계산 계층(신규 채점 테이블 없음)**: 채점은 ORM 읽기 → 순수 함수 계산 계층으로 구현한다(ScoredPrediction 등 채점 원장 신설 안 함). 근거: 현재 표본 미성숙(자동발화 소수, 대부분 만기 미도달)이라 물성화 이득 없음·조기 스키마 고정 위험. 물성화는 **I3-MATERIALIZE-TRIGGER**(채점 로직 v2 분기 또는 코치 런타임 참조 개시) 도래 시로 예약.
+
+**D-I3-1b — spot_at_capture 동봉(a안), STEP 0 분기 = 경로 Y**: 채점 방향/진행률의 기준가(spot)를 AnalystSignalSnapshot insert 시 동봉한다. STEP 0 실측 분기 = **#1 ASS에 spot성 필드 부재 → 경로 Y**(additive nullable 컬럼 `spot_at_capture` 1개 추가). **#2 FMP 페이로드(price-target-consensus·ratings-snapshot·grades)에 priceWhenPosted류 부재 → 발화 시 경량 조회**(최신 DailyPrice.close ≤ 발화일, 실패 시 null 허용 — 발화 자체를 막지 않음). append 불변식 유지(insert 동봉만·UPDATE 경로 없음). 기존 pre-pinning 코호트(spot null)는 **backfill 금지**(D-I1b-3 정신) — 리포트에서 파생 spot + 캐비앗으로 분리 산출.
+
+**D-I3-2 — 채점 배터리 = C안(병진 override)**: 5과목 2계층. **Tier 1(판정 과목)** = ① 방향 적중률(sign(target−spot), h∈{21,63}거래일, 이항검정) · ② 목표가 진행률(실현폭/예측폭 중앙값·IQR, h∈{63,126,252}) · ③ 횡단면 IC(주간 코호트 upside% 순위 vs 실현수익 순위 Spearman, h∈{21,63}). **Tier 2(관측 과목)** = ④ 개정 추적(target consensus 일간 delta·grades 분포 변화) · ⑤ advisory 사후분석 v0(run 수·트리거·knobs 변동, #5 보유·수량 확인 → h=21d 근사 NAV). B 추천 대비 −0.80 수용(병진 override, 재론 금지).
+
+**D-I3-3 — advisory 금지벽 유지 + 승격 트리거**: `advisory_engine.py:10-11` 금지벽(신호를 기대수익 프록시로 쓰지 않음)을 이 슬라이스에서 **절대 건드리지 않는다**(벽·advisory 로직 무접촉). 채점은 관측 계층일 뿐 자동 승격 아님 — Tier 1 통계 유의 도달 시 **I3-PROMOTION-TRIGGER**로 승격 결정 사이클을 소집한다(자동 해제 금지).
