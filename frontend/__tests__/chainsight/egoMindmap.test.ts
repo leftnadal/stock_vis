@@ -130,3 +130,42 @@ describe('egoToMindmap', () => {
     expect(mm.branches[0].subgroups[0].label).toBe('미분류 산업');
   });
 });
+
+// L2-ADOPT: llm_tag(peer_domain) 우선 · industry_bucket 폴백 개정
+describe('egoToMindmap — L2-ADOPT llm_tag 우선·버킷 폴백', () => {
+  function peerEgo(peerEdge: Partial<EgoEdge>): EgoGraphResponse {
+    return {
+      center: { symbol: 'X', name: 'X' },
+      nodes: [
+        { symbol: 'X', name: 'X', sector: '', industry_bucket: '반도체·메모리' },
+        { symbol: 'Y', name: 'Y', sector: '', industry_bucket: '반도체·메모리' },
+      ],
+      edges: [
+        edge({ source: 'X', target: 'Y', relation_type: 'PEER_OF', has_peer_source: true, truth_score: 50, ...peerEdge }),
+      ],
+      meta: { total_edges: 1, returned: 1, filtered_by: { min_score: 0, types: null, limit: 200, trend_window: 30 } },
+    };
+  }
+
+  it('채택된 peer_domain이 있으면 llm_tag로 하위그룹 (버킷 아님)', () => {
+    // 노드 버킷은 "반도체·메모리"지만, 채택 태그는 "GPU·가속기" → llm_tag 우선.
+    const mm = egoToMindmap(peerEgo({ peer_domain: 'GPU·가속기' }));
+    const peer = mm.branches.find((b) => b.kind === 'peer');
+    expect(peer?.subgroups[0].label).toBe('GPU·가속기');
+    expect(peer?.subgroups[0].leaves[0].peer_domain).toBe('GPU·가속기');
+  });
+
+  it('peer_domain 없으면(거부권/미태깅) industry_bucket 폴백', () => {
+    // peer_domain 미지정 → 기존 동작(버킷) 보존.
+    const mm = egoToMindmap(peerEgo({}));
+    const peer = mm.branches.find((b) => b.kind === 'peer');
+    expect(peer?.subgroups[0].label).toBe('반도체·메모리');
+    expect(peer?.subgroups[0].leaves[0].peer_domain).toBeNull();
+  });
+
+  it('peer_domain_estimate → leaf.is_estimate("추정" 라벨)', () => {
+    const mm = egoToMindmap(peerEgo({ peer_domain: '메모리·HBM', peer_domain_estimate: true }));
+    const peer = mm.branches.find((b) => b.kind === 'peer');
+    expect(peer?.subgroups[0].leaves[0].is_estimate).toBe(true);
+  });
+});

@@ -48,15 +48,23 @@ def build_client():
 
 
 def generate_content(
-    *, system_instruction: str, contents: list, model: str = DEFAULT_MODEL
+    *, system_instruction: str, contents: list, model: str = DEFAULT_MODEL,
+    thinking_budget: int | None = None,
 ) -> LLMRawResponse:
-    """동기 generate_content 호출 + usage/latency 추출. 프롬프트는 호출부가 조립."""
+    """동기 generate_content 호출 + usage/latency 추출. 프롬프트는 호출부가 조립.
+
+    thinking_budget: None이면 모델 기본(2.5 Flash=thinking ON). 0이면 thinking 비활성
+    (단순 분류·추출 태스크의 지연·비용 절감용). 명시 전달 시에만 config에 추가 → 기존 호출부 불변.
+    """
     client = build_client()
+    config = {"system_instruction": system_instruction}
+    if thinking_budget is not None:
+        config["thinking_config"] = {"thinking_budget": thinking_budget}
     started = time.time()
     response = client.models.generate_content(
         model=model,
         contents=contents,
-        config={"system_instruction": system_instruction},
+        config=config,
     )
     latency_ms = int((time.time() - started) * 1000)
     text = getattr(response, "text", "") or ""
@@ -67,13 +75,18 @@ def generate_content(
 
 
 def generate_with_circuit(
-    *, system_instruction: str, contents: list, model: str = DEFAULT_MODEL
+    *, system_instruction: str, contents: list, model: str = DEFAULT_MODEL,
+    thinking_budget: int | None = None,
 ) -> LLMRawResponse:
-    """circuit breaker(`gemini`)로 감싼 동기 호출. retry/backoff/open 처리는 CB가 담당."""
+    """circuit breaker(`gemini`)로 감싼 동기 호출. retry/backoff/open 처리는 CB가 담당.
+
+    thinking_budget 명시 시에만 하위로 전달(기본 None=기존 호출부 불변).
+    """
     cb = get_circuit("gemini")
     return cb.call(
         generate_content,
         system_instruction=system_instruction,
         contents=contents,
         model=model,
+        thinking_budget=thinking_budget,
     )

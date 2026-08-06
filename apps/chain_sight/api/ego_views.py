@@ -169,6 +169,10 @@ class EgoGraphView(APIView):
                 "evidence_sources",
                 # ⑳-3 S3-MINDMAP S3: L1 도메인 태그(승인본) additive — 동일 쿼리 컬럼 추가.
                 "relation_domain",
+                # L2-ADOPT: PEER L2 도메인 태그(초안·상태·판정) additive — 동일 쿼리 컬럼 추가.
+                "relation_domain_draft",
+                "domain_review_status",
+                "domain_machine_check",
             )[:limit]
         )
 
@@ -267,6 +271,18 @@ class EgoGraphView(APIView):
             )
             basis = (e.get("relation_basis_summary") or "")[:BASIS_SUMMARY_MAX_LEN]
             last_obs_iso = last_obs.date().isoformat() if last_obs else None
+            # L2-ADOPT: PEER L2 도메인 태그 노출 — 채택분(source=L2-ADOPT ∧ status='auto')만.
+            # 거부권(pending)·미태깅은 peer_domain=null → 서빙에서 industry_bucket 폴백.
+            peer_domain = None
+            peer_domain_estimate = False
+            _mc = e.get("domain_machine_check")
+            if (
+                isinstance(_mc, dict)
+                and _mc.get("source") == "L2-ADOPT"
+                and e.get("domain_review_status") == "auto"
+            ):
+                peer_domain = e.get("relation_domain_draft")
+                peer_domain_estimate = bool(_mc.get("is_estimate"))
             edges.append({
                 "source": symbol,
                 "target": other,
@@ -296,6 +312,9 @@ class EgoGraphView(APIView):
                 ),
                 # ⑳-3 S3-MINDMAP S3: L1 도메인 태그(승인본) 실값 노출. 미태깅은 null → 유형 수납 폴백.
                 "relation_domain": e.get("relation_domain"),
+                # L2-ADOPT: PEER L2 태그(채택분만). null이면 FE가 industry_bucket 폴백.
+                "peer_domain": peer_domain,
+                "peer_domain_estimate": peer_domain_estimate,
             })
 
         payload = {

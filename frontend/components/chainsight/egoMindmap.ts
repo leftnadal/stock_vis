@@ -28,6 +28,10 @@ export interface MindmapLeaf {
   truth_score: number;
   grade: string;
   industry_bucket: string | null;
+  /** L2-ADOPT: 채택된 PEER L2 태그(llm_tag). 없으면 null → industry_bucket 폴백 */
+  peer_domain: string | null;
+  /** L2-ADOPT: 하·상이 "추정" 라벨 */
+  is_estimate: boolean;
 }
 
 export interface MindmapSubgroup {
@@ -104,15 +108,19 @@ export function egoToMindmap(ego: EgoGraphResponse): MindmapData {
       truth_score: edge.truth_score,
       grade: edge.grade,
       industry_bucket: nodeBucket.get(neighbor) ?? null,
+      // L2-ADOPT: 채택된 llm_tag(거부권/미태깅은 null → 버킷 폴백).
+      peer_domain: edge.peer_domain ?? null,
+      is_estimate: !!edge.peer_domain_estimate,
     };
   }
 
   function addToSubgroup(a: Acc, leaf: MindmapLeaf): void {
-    const bucket = leaf.industry_bucket || UNCLASSIFIED_INDUSTRY;
-    let sg = a.subMap.get(bucket);
+    // L2-ADOPT 개정: llm_tag(peer_domain) 우선 → 없으면 industry_bucket 폴백 → 미분류.
+    const groupKey = leaf.peer_domain || leaf.industry_bucket || UNCLASSIFIED_INDUSTRY;
+    let sg = a.subMap.get(groupKey);
     if (!sg) {
-      sg = { key: bucket, label: bucket, count: 0, leaves: [] };
-      a.subMap.set(bucket, sg);
+      sg = { key: groupKey, label: groupKey, count: 0, leaves: [] };
+      a.subMap.set(groupKey, sg);
     }
     sg.leaves.push(leaf);
     sg.count += 1;

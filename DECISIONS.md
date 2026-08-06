@@ -36,6 +36,92 @@
 - Slice 2 (`cb6bf97d`): 필터 6지점 전량 제거 + 테스트 동기화 (revert = 6지점 완전 원복 롤백 단위).
 
 **검증**: Slice 1.5 라이브 프로브 **14/14 HTTP 200·402 0**(estimates/quote/profile/ratios/key-metrics/insider/EOD, BRK-B·BF-B) · 전체 스위트 **4488 passed/0 fail/53 skip**(사전 4460 대비 신규 테스트 +28, 기존 fail 0) · `makemigrations --dry-run` 0(스키마 무접촉) · `live_universe_symbols()` **503**(BRK.B·BF.B 포함) · estimates dry-run 저장 예정 symbol=**dot 원형**(prod 쓰기 0). Bug #23(FMP 402)은 변환 계층이 해소. 최종 게이트 = 08-07(목) 정규 cron 5회차(별도 PROBE-EST-5TH).
+## [2026-08-04] D-L2-FULL-SWEEP — L2 전량 태깅 실행 결과 (유료·실단가·최종 분포) [chainsight]
+
+> 트랙: ⑳-3 L2-FULL-SWEEP B단계. 브랜치 `monorepo/sess-l2-adopt`. 병진 승인(2026-08-03, 규칙 A).
+
+**결정**: D-L2-SOURCE 결정 2를 **전량 실행**. 유료 티어 Gemini 2.5 Flash 단일 세션, `--apply` prod 기록.
+distinct 9,365쌍 전량 태깅 완료(json_fail 0·circuit_fail 0).
+
+**실단가·비용**: 콜당 **$0.00050515**(in ~289tok·out ~167tok) → 배치 8,876콜 $4.4837 + 선행 ~$0.26 =
+**총 ≈ $4.74**(추정 $4.4 근접, 게이트 2×$8.8 이내). P2 마이크로배치 실측이 게이트 통과 근거.
+
+**최종 분포(9,365)**: 채택 5,928(63.3%) / 거부권 68(0.73%: low_grounding 67·no_claim 1) /
+빈 태그(draft無)→버킷 폴백 3,389(대부분 타산업) / 추정 라벨 2,511(26.8%, 기대 2,498 정합) /
+status auto 9,297·pending 68 / 채택 태그종 3,063.
+
+**대사(reconciliation) — DB가 정본, summary.json은 세그먼트 evidence** (PRE-DEPLOY-FIX 2026-08-05):
+- **상호배타 파티션 등식**: 채택(draft有·비veto) 5,928 + 거부권(veto) 68 + 빈태그·미거부권(draft無·비veto) 3,369 = **9,365 = distinct**.
+  기보고 "빈 태그 3,389"는 draft無 **전체**(거부권 발동 중 draft無 20건 포함) → 거부권과 20건 겹침(비배타). ∴버킷 폴백 총 = 68 + 3,369 = **3,437**.
+- **세그먼트 대사 등식**: DB 전수 9,365 = summary.json 세그먼트(최종 invocation) 8,876 + 선행 세그먼트 489(마이크로배치 20 + 파일럿 청크 469).
+- **이중처리 무**: raw 태깅 행 9,365 = distinct 9,365(차이 0), 2+ 방향행 이중기록 0 → 각 쌍 정확히 1회 처리·과금.
+
+**Why(거부권 분포)**: 거부권은 **industry 결측 쌍 + 제네릭 태그 메가캡**(AMZN↔MSFT gr 0.167, AMD↔AVGO
+"반도체" gr 0.042)에 집중. A1이 우려한 하·상이(소형·타산업)는 예측대로 ~0%(7/2,511=0.3%). "생성은
+풍부하게, 필터는 거부권" 원칙대로 억지·제네릭 태그를 grounded≤0.2가 정상 필터.
+
+**검증(P4)**: ego 서빙 라이브 — 채택 쌍 peer_domain=llm_tag 노출·estimate 플래그 작동, 거부권 쌍은
+엣지 미은닉+peer_domain=null(버킷 폴백)+status=pending(soft-drop 회피 실증). 리포트
+`docs/chain_sight/L2_ADOPT_A_STAGE_REPORT.md` B단계 섹션.
+
+**교훈**: A4 견적의 "1-2h"는 thinking 지연 미반영 과낙관 — 실 ~11h(견적 교훈, common-bugs 아님).
+
+## [2026-08-04] D-L2-THINKING-BUDGET — LLM thinking_budget=512 채택 (생성 풍부·거부권 필터) [chainsight][llm]
+
+> 트랙: L2-FULL-SWEEP P2. 병진 승인(2026-08-03).
+
+**결정**: Peer 도메인 태깅 LLM 호출에 `thinking_budget=512`를 채택한다. 공유 래퍼
+`generate_content/with_circuit`에 **optional thinking_budget**(기본 None=기존 호출부 불변) 추가, peer
+배치·훅만 512 전달.
+
+**Why(3안 실측 A/B)**: 2.5 Flash 기본(thinking ON 무제한)은 지연 ~8.8s(전량 ~23h). thinking OFF(0)은
+~1.8s이나 타산업(79%) 쌍 대부분 빈 태그(정보량↓). **budget=512는 지연 ~4.2s(~11h)에 타산업 태그
+방출을 ON 이상 보존**(AMD↔PLTR "데이터센터·고성능컴퓨팅" — ON은 누락). 비용 3안 동일($0.0005/콜).
+억지 태그는 거부권(grounded≤0.2)이 사후 필터하므로 **"생성은 풍부하게, 필터는 거부권"** 원칙에 부합.
+
+**How to apply**: `generate_content(..., thinking_budget=None)` — 명시 전달 시만 config에 thinking_config
+추가(다른 호출부 IDENTICAL). peer 경로(`tag_peer_domains` 배치·`tag_peer_domain_task` 훅)=512.
+가드: 본배치 1,000콜 체크포인트(거부권률·빈태그율·추정률 vs A1/A3), 거부권>5% or 빈태그 급변 시 정지.
+실측 체크포인트(n=1,039): 거부권 0.96%·빈태그 36.2%·추정 22% → PASS(자동 계속).
+
+## [2026-08-03] D-L2-SOURCE — L2 Peer 소스 결정 2: LLM 태그 채택 + 판정기 거부권 [chainsight]
+
+> 트랙: ⑳-3 L2-ADOPT. 브랜치 `monorepo/sess-l2-adopt`(base origin/main `34a171dd`). 선행 D-L2X-AUTO-ADJUDICATION.
+> L2-SOURCE-DECISION(교체/하이브리드/현행) 재개점의 **결정 2** 확정.
+
+**결정**: PEER_OF L2 도메인 소스를 **LLM 태그 기본 채택**으로 한다(교체안). 단 결정론 **판정기 거부권**을
+둔다 — `grounded_ratio ≤ 0.2`(고정 임계) 발동 시 태그 기각 → **업종 버킷(industry_bucket) 폴백**.
+- 프롬프트 ㉯(심볼+회사명+industry), **claim 영어 출력**(L2X-SWEEP-EN-CLAIM 흡수 — 영어 desc 동일언어 접지).
+- **하·상이 구획(저시총·타산업) "추정"(is_estimate) 라벨** — 실험상 최저 접지·최고 과신.
+- 거부권 status = **'pending'**(미채택→버킷 폴백). **'rejected' 금지**(ego 서빙이 soft-drop=관계 은닉 → 거부권은
+  "태그 기각"이지 "관계 은닉"이 아니므로). relation_domain(승인본)은 **절대 미기록**(L1 하드 룰 계승).
+
+**Why**: 사람이 LLM rationale를 반증하기 어렵다는 D-L2X 소견 + 실험(240쌍 자동판정)에서 인간 16/18 BETTER·
+1 WRONG(CRM↔MTCH). 판정기가 그 1 WRONG을 grounded 0.0으로 정확 포착 → **결정론 거부권이 명백한 오류만
+고정밀 차단**(과신 플래그 gr_q1=0.667은 저정밀). LLM 태그는 industry_bucket보다 세분·구체 → 마인드맵 L2 정보량↑.
+거부권+버킷 폴백으로 안전망 확보(태그 실패 시 항상 버킷 존재).
+
+**스코어·실험 근거**: A1 재집계(240쌍·LLM 0) 거부권 0.2 발동 **1/240(0.4%)** = CRM↔MTCH(하·동일, grounded 0.0,
+"구독형 SaaS" 표면 공통점 vs B2B CRM/B2C 데이팅). A3 파일럿(㉯ 120쌍·LLM 0) 채택 119·거부권 1·추정라벨 20.
+B단계 예상 폴백 ~241쌍(2.6%: 거부권 ~37 + 결측 204), 채택 ~95%+.
+
+**How to apply**: 코어 `services/peer_domain_tagging.py`(커맨드·훅 공유): `tag_peer_one`(초안→`ground_claim`→
+`veto`→machine_check), `is_estimate_cell`, source='L2-ADOPT'. 판정기 `peer_adjudicator.veto`(고정 0.2·None 보수적
+기각). 배치 `tag_peer_domains`(--dry-run/--apply 게이트/--pilot-csv/idempotent·재개·rate 4.2s). 훅
+`tasks/domain_tasks.tag_peer_domain_task`(단건, L1 휴면 패턴 — 활성화=배포 게이트). 서빙: ego API `peer_domain`
+(채택분 source=L2-ADOPT ∧ status=auto)·`peer_domain_estimate` additive → FE `egoMindmap` L2 하위그룹 llm_tag
+우선·버킷 폴백. **마이그레이션 0**(기존 필드 재사용, STEP 0 스키마 게이트 PASS: relation_domain choices=None).
+
+**STEP 0 측정**: PEER distinct 무방향 쌍 9,365(raw=distinct·중복 1.000x), 태깅 가능 9,161(97.8%)·결측 204,
+industry_same 동일1,790/상이7,402/미상173, "추정"(하·상이) 2,498. SEC verdict 270 타입 분리 무접촉.
+
+**검증**: pytest 신규 16(veto 경계 4 + L2 e2e 12) + 회귀 domain 43·experiment 11·ego 38 GREEN. 마인드맵 vitest
+12(신규 3). makemigrations 무변경. tsc 0. **A단계 무비용(신규 LLM 0)**. 아티팩트 `outputs/peer_experiment/`(240쌍
+실험)·`outputs/peer_domain_tagging/`(파일럿). 리포트 `docs/chain_sight/L2_ADOPT_A_STAGE_REPORT.md`.
+
+**게이트(미승인)**: B단계 전량 태깅(비용 발생)·`--apply`(prod 태그 기록)·머지·배포 = 병진님 승인. 견적(A4):
+Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직후 마이크로배치 5-10콜로 실단가 확정 권장.
+
 ## [2026-08-03] D-L2X-AUTO-ADJUDICATION — L2-X 사람 전건검수 → 결정론 자동판정 + 감사 [chainsight]
 
 > 트랙: ⑳-3 L2-X 자동판정 전환. 배경: 대조자료 제공에도 사람이 LLM 주장 반박 구조적 곤란(15건 실검수 소견).
