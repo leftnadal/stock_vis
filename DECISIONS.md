@@ -8,6 +8,16 @@
 
 ---
 
+## [2026-08-06] D-DEPLOY-NONFF — origin churn 하 배포는 non-FF 머지 채택 (FF 포기) [process] [git]
+
+> 트랙: L2-FULL-SWEEP 배포(POST-DEPLOY-VERIFY 사후 등재). 착지 = origin/main `4fcc768d`.
+
+**결정**: 활성 origin/main churn(세션 간극마다 3~5커밋 전진) 환경에서 세션 브랜치 배포는 **non-FF 머지**를 채택한다(FF push 포기). `git merge --no-ff <session-branch>` → push.
+
+**Why**: L2-FULL-SWEEP 배포 시 FF push가 **물리적으로 도달 불가**했음(rebase→FF-check 사이에 origin이 재전진, behind 3→5→1 반복 재발 → 무한 rebase 루프). non-FF 머지는 ⑴ **rebase 불요**(세션 커밋 해시 보존 → 원장 해시 앵커 유효, 해시 앵커 무효화 함정 회피) ⑵ **churn 강건**(behind여도 merge가 reconcile) ⑶ 머지 커밋이 트랙 경계를 히스토리에 명시. 실측 검증(POST-DEPLOY-VERIFY): 세션 9커밋(88850fce…3b9730ce) 전부 origin/main 조상, 원장 참조 해시 전부 valid(dangling 0), 병합 조합 스위트 GREEN(makemig 0·pytest 724·vitest 12·tsc 0).
+
+**유효 범위**: 본 결정은 **active-churn 배포의 실절차**로 확립. 전체 배포의 **기본 머지 방식으로 승격할지는 mgmt 판단에 위임**(FF는 저churn 트랙에서 선형 히스토리 이점 잔존). 진입점 = `sv sync`(D-SYNC-ENTRYPOINT, stale 사본 차단) → worker_sync 3트리 재기동 → web rebuild.
+
 ## [2026-08-04] D-MONITOR-HORIZON-ADVISOR — monitor 3층 증축(horizon·LLM Advisor·T계열 테마) [monitor] [llm] [chainsight]
 
 > 상태: **확정**(사용자 승인 2026-08-04). 상위 계보: **D-MONITOR-TIMING-PIVOT** — 그 위의 3층 증축이며 피벗 불변식(§3.1 EOD·§3.2 가치 축·§3.3 경계·§3.4 행위보존) 전부 계승. 관련: D-MONITOR-REBUILD·D-EOD-FRESH(+FIX-1).
