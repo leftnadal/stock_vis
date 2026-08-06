@@ -221,13 +221,21 @@ def close_claim(claim, *, final_verdict, factor_tags=None, retro_memo="",
 
 def close_preview(claim):
     """마감 모달 프리필 (읽기 전용, 상태 변경 없음)."""
+    from apps.monitor.services.technical import score_indicator_dispatch
+
     monitor = claim.monitor
     score = current_overall_score(monitor)
     return {
         "proposed_verdict": propose_verdict(score),
         "overall_score": score,
+        # MON-P2A T3: 지표별 is_sufficient 추가(상세 신호 패널 sufficient 배지 소스, additive).
         "indicators": [
-            {"id": str(i.id), "name": i.name, "latest_value": _latest_indicator_value(i)}
+            {
+                "id": str(i.id),
+                "name": i.name,
+                "latest_value": _latest_indicator_value(i),
+                "is_sufficient": bool(score_indicator_dispatch(i).get("is_sufficient")),
+            }
             for i in monitor.indicators.filter(is_active=True)
         ],
     }

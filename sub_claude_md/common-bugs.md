@@ -1347,3 +1347,19 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **규칙**: ⑴ 커밋 해시 앵커는 **최종 rebase 이후에 확정 기록**(rebase 예정이면 잠정 표시). ⑵ 부득이
 rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교체**(커밋 메시지는 불변, 히스토리 재작성 금지).
 ⑶ 교체 후 `git grep <구해시들>` = 0 확인(dangling 잔존 점검). 앵커 후보 = 슬라이스별 커밋·머지 hash.
+
+## 비트 태스크의 FieldError 무음 전량 실패 — collect_press_releases_fmp (#미채번 mgmt 배치 대기, NEWS-P0-FIX 2026-08-06) `[news][process]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지, 번호는 mgmt 채번 시 확정)*
+
+**증상**: `collect_press_releases_fmp` beat(45 7 ET, enabled)가 **매 실행 FieldError로 전량 실패**하나
+로그 외 관측 신호 없음 → 보도자료 수집 0건이 조용히 지속(무음 실패 클래스).
+
+**원인**: `services/news/tasks.py`의 `SP500Constituent.objects.filter(is_active=True).order_by("-market_cap")` —
+`SP500Constituent`에 **`market_cap` 필드·컬럼 자체가 없음**(RECON-NEWS-P0 N1). `.order_by`가 존재하지 않는
+필드를 참조 → 쿼리 즉시 `FieldError: Cannot resolve keyword 'market_cap'`. (HA-P0 R5의 "전건 None"은
+부정확 — None이 아니라 필드 부재.) market_cap을 채우는 write 경로도 부재(FMP 402 #23과 무관).
+
+**교훈**: ⑴ **비트 태스크는 무음 실패한다** — 스케줄만 enabled면 "돌고 있다"는 착시. 실효 검증은
+`last_run`이 아니라 **산출물 행 증가**(NewsEntity 등)로. ⑵ ORM `.order_by/filter`의 필드 참조는
+**모델 `_meta` 실측**으로 검증(문서·기억 아님). ⑶ 수리 = NEWS-P0-FIX(Stock.market_capitalization
+조인 정렬 대체) + 비트 경로 통합 테스트(FieldError 재발 시 red).

@@ -20,6 +20,19 @@ class TestScoreIndicatorPure:
         assert r["is_sufficient"] is False
         assert r["score"] == 0.0
 
+    def test_min_n_gate_insufficient(self):
+        # MON-P2A T1: n < min_n이면 계산 안 하고 불충분(부분 윈도우 무언 계산 금지).
+        vals = [float(i) for i in range(30)]  # n=30, min_n=252 → 불충분
+        r = score_indicator(vals, self._dates(30), "positive", min_n=252)
+        assert r["is_sufficient"] is False
+        assert r["score"] == 0.0
+
+    def test_min_n_gate_sufficient(self):
+        vals = [float(i) for i in range(30)]  # n=30 >= min_n=21 → 충분
+        r = score_indicator(vals, self._dates(30), "positive", min_n=21)
+        assert r["is_sufficient"] is True
+        assert r["score"] != 0.0
+
     def test_constant_readings_neutral_mad(self):
         vals = [5.0] * 10
         r = score_indicator(vals, self._dates(10), "positive")

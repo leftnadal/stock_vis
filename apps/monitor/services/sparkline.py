@@ -36,12 +36,21 @@ def _trading_asofs(monitor):
 
 
 def _overall_at(monitor, indicators, as_of):
-    """as_of 시점 overall_score(읽기 전용). evaluate의 스코어 단계만 재현."""
-    scores = {
-        str(ind.id): score_indicator_from_model(ind, as_of_date=as_of)["score"]
-        for ind in indicators
-    }
-    return aggregate_monitor(monitor, scores)["overall_score"]
+    """as_of 시점 overall_score(읽기 전용). evaluate의 스코어 단계만 재현.
+
+    MON-P2A T2: aggregator가 재정규화하도록 {score, is_sufficient} 계약으로 전달
+    (strip 점수와 동일 로직 — 무데이터/부분윈도우 제외). 유효 0 구간은 트렌드
+    연속성을 위해 0.0으로 표기(overall None → 0.0).
+    """
+    scores = {}
+    for ind in indicators:
+        r = score_indicator_from_model(ind, as_of_date=as_of)
+        scores[str(ind.id)] = {
+            'score': r['score'],
+            'is_sufficient': r.get('is_sufficient', True),
+        }
+    ov = aggregate_monitor(monitor, scores)["overall_score"]
+    return ov if ov is not None else 0.0
 
 
 def score_series(monitor, window=WINDOW_DEFAULT):

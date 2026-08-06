@@ -300,13 +300,15 @@ class MonitorSerializer(serializers.ModelSerializer):
     has_claim = serializers.SerializerMethodField()
     # 파생 표시값(각도·색·라벨·달위상) — BE 엔진이 단일 소스, FE는 렌더 전용
     display = serializers.SerializerMethodField()
+    # MON-P2A T3: 점수 커버리지 {sufficient, total} — 스트립 점수 토큰 접미 표기(예 6/9).
+    indicator_coverage = serializers.SerializerMethodField()
 
     class Meta:
         model = Monitor
         fields = [
             "id", "scope", "target_ref", "name", "status", "current_state",
             "target_date_end", "resolved_label", "latest_score", "display",
-            "indicator_count", "next_deadline", "has_claim",
+            "indicator_count", "indicator_coverage", "next_deadline", "has_claim",
             "close_suggested", "danger_streak", "created_at", "updated_at",
         ]
         # current_state·마감제안은 파이프라인(엔진) 소유 — 사용자 입력 불가
@@ -326,6 +328,15 @@ class MonitorSerializer(serializers.ModelSerializer):
 
     def get_indicator_count(self, obj):
         return getattr(obj, "indicator_count", None)
+
+    def get_indicator_coverage(self, obj):
+        # MON-P2A T3: {sufficient, total}. total=활성·비일시정지 지표 수(coverage 분모),
+        # sufficient=최신 스냅샷 data_coverage×total(정수 복원). 스냅샷/annotation 없으면 None.
+        cov = getattr(obj, "latest_coverage", None)
+        total = getattr(obj, "active_unpaused", None)
+        if cov is None or total is None:
+            return None
+        return {"sufficient": round(cov * total), "total": total}
 
     def get_next_deadline(self, obj):
         d = getattr(obj, "next_deadline", None)

@@ -149,6 +149,8 @@ export interface Monitor {
   latest_score: number | null
   display: MonitorDisplay | null
   indicator_count: number | null
+  // MON-P2A T3: 점수 커버리지 {유효, 전체}(예 6/9). 스냅샷/annotation 없으면 null.
+  indicator_coverage: { sufficient: number; total: number } | null
   next_deadline: string | null
   has_claim: boolean
   // 파이프라인(엔진) 소유 파생값 — 사용자 입력 불가 (MON-P3-ALERT)
@@ -221,6 +223,7 @@ export interface ClosePreviewIndicator {
   id: string
   name: string
   latest_value: number | null
+  is_sufficient?: boolean // MON-P2A T3: 신호 패널 sufficient 배지 소스
 }
 
 export interface ClosePreview {

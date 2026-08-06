@@ -25,47 +25,62 @@ BIAS_MIN_INDICATORS = 5
 BIAS_RATIO = 0.6
 
 
+def _parse_entry(v):
+    """indicator_scores 값 정규화 → (score, is_sufficient).
+
+    MON-P2A T2 계약: 값은 {'score', 'is_sufficient'}(신규) 또는 float/None(레거시).
+    레거시 float은 sufficient=True로 취급 → sparkline 등 구 호출부 행위보존.
+    """
+    if isinstance(v, dict):
+        return v.get('score'), bool(v.get('is_sufficient'))
+    # 레거시: None→불충분, float→충분(구 의미론 유지)
+    return v, (v is not None)
+
+
 def aggregate_monitor(monitor, indicator_scores):
     """
-    Monitor 종합 점수를 지표 점수 가중평균으로 집계.
+    Monitor 종합 점수를 **유효(충분) 지표만** 가중평균으로 집계 (MON-P2A T2).
 
     Args:
         monitor: Monitor 인스턴스
-        indicator_scores: dict {indicator_id(str): score_or_None}
+        indicator_scores: dict {indicator_id(str): {'score','is_sufficient'} | float | None}
 
     Returns:
-        dict with overall_score, weakest_link, divergence, bias_warning,
-              category_overlap
+        dict with overall_score(유효 0이면 None), weakest_link, divergence,
+              bias_warning, category_overlap
     """
     indicators = list(monitor.indicators.filter(is_active=True, is_paused=False))
 
-    scores = []
-    weights = []
+    # 유효(is_sufficient) 지표만 수집 — 무데이터/부분윈도우는 분모에서 제거(재정규화).
+    eff = []  # (indicator, score, weight)
     for ind in indicators:
-        s = indicator_scores.get(str(ind.id))
-        # None -> 0.0 (수학 모델 12.1 확정)
-        scores.append(s if s is not None else 0.0)
-        weights.append(ind.weight)
+        score, sufficient = _parse_entry(indicator_scores.get(str(ind.id)))
+        if sufficient and score is not None:
+            eff.append((ind, float(score), ind.weight))
 
-    if not scores:
+    if not eff:
+        # 유효 지표 0 → overall_score=None. 상태기는 data_coverage<0.6로 현상 유지
+        # (기존 warming_up 의미론 소비 — 신규 상태 창설 없음).
         return {
-            'overall_score': 0.0,
+            'overall_score': None,
             'weakest_link': None,
             'divergence': False,
-            'bias_warning': None,
-            'category_overlap': None,
+            'bias_warning': _check_indicator_bias(indicators),
+            'category_overlap': _check_category_overlap(indicators),
         }
 
-    # 가중평균: T = sum(w_i * s_i) / sum(w_i)
-    total_weight = sum(weights)
+    # 가중평균(유효 지표 재정규화): T = Σ(w_i·s_i) / Σ(w_i), i ∈ 유효
+    total_weight = sum(w for _, _, w in eff)
     if total_weight == 0:
         overall_score = 0.0
     else:
-        overall_score = sum(s * w for s, w in zip(scores, weights)) / total_weight
+        overall_score = sum(s * w for _, s, w in eff) / total_weight
 
-    # 최약고리: score < -0.5인 지표 중 최저
+    scores = [s for _, s, _ in eff]
+
+    # 최약고리: score < -0.5인 유효 지표 중 최저
     weakest = None
-    for ind, s in zip(indicators, scores):
+    for ind, s, _ in eff:
         if s < WEAKEST_LINK_THRESHOLD and (weakest is None or s < weakest['score']):
             weakest = {
                 'indicator_id': str(ind.id),
@@ -73,7 +88,7 @@ def aggregate_monitor(monitor, indicator_scores):
                 'score': s,
             }
 
-    # 불일치: 양수/음수 혼재 소수 비율 >= 0.3
+    # 불일치: 유효 지표 중 양수/음수 혼재 소수 비율 >= 0.3
     positive_count = sum(1 for s in scores if s > 0)
     negative_count = sum(1 for s in scores if s < 0)
     total = len(scores)

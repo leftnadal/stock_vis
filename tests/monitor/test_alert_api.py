@@ -108,6 +108,34 @@ class TestAlertAPI:
         assert resp.status_code == 404  # user 스코프 격리(IDOR 방지)
 
 
+@pytest.mark.django_db
+class TestIndicatorCoverage:
+    def test_coverage_from_snapshot_and_indicators(self, client_alice, alice):
+        # MON-P2A T3: indicator_coverage {sufficient, total} — 스냅샷 data_coverage×total.
+        from datetime import date
+
+        from apps.monitor.models import MonitorSnapshot
+
+        m = Monitor.objects.create(
+            user=alice, scope="stock", target_ref="AAPL", name="애플", current_state="active"
+        )
+        for i in range(3):  # 활성·비일시정지 3개 → total=3
+            MonitorIndicator.objects.create(
+                monitor=m, name=f"i{i}", indicator_type="technical", source_key=f"k{i}"
+            )
+        MonitorSnapshot.objects.create(
+            monitor=m, asof_date=date(2026, 8, 5), overall_score=0.1,
+            state="active", data_coverage=0.6667,  # 2/3 유효
+        )
+        resp = client_alice.get(f"/api/v1/monitor/monitors/{m.id}/")
+        assert resp.status_code == 200
+        assert resp.data["indicator_coverage"] == {"sufficient": 2, "total": 3}
+
+    def test_coverage_none_without_snapshot(self, client_alice, alice_monitor):
+        resp = client_alice.get(f"/api/v1/monitor/monitors/{alice_monitor.id}/")
+        assert resp.data["indicator_coverage"] is None  # 스냅샷 없음
+
+
 # ── 스파크라인 (§7-5: 실 AAPL 시계열 렌더 데이터) ──────────────────────────
 
 

@@ -214,7 +214,11 @@ def score_indicator_dispatch(indicator, as_of_date=None):
     if not entry or entry.get("scoring_mode") != "bounded":
         return score_indicator_from_model(indicator, as_of_date=as_of_date)
 
-    # bounded: 최신 판독값을 선형 매핑
+    # bounded: 최신 판독값을 선형 매핑.
+    # MON-P2A T1 주의: bounded는 **최신 1값의 범위 내 위치**만 점수화(이력 윈도우 미사용)
+    # → reading-count 기반 min_n 게이트를 적용하지 않는다(범주 부적합). bounded의 진짜
+    # 충분성(예: 52주 고가를 만들 DailyPrice 이력)은 compute 계층(ingest_technical) 소관
+    # (T4 좌표 — 계획 세션). 여기선 최신 판독 존재 여부만으로 충분성 판정(원 동작 유지).
     qs = indicator.readings.filter(
         validation_status__in=["ok", "extreme_jump_allowed"]
     )
@@ -225,6 +229,7 @@ def score_indicator_dispatch(indicator, as_of_date=None):
         return {
             "score": 0.0, "raw_z": 0.0, "is_extreme_vol": False,
             "effective_window": 0, "is_neutral_mad": False, "is_sufficient": False,
+            "scoring_mode": "bounded",
         }
     score = bounded_linear_score(
         float(latest), entry["compute_key"], indicator.support_direction
