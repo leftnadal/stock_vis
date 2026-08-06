@@ -1235,3 +1235,13 @@
 - 상태: **backlog**(소액, 관측성). 현재 `ingest_analyst_signals` SUMMARY는 `logger.info`뿐 → stocks.log에 미포착(Celery stdout/로테이션), 발화 증거는 DB append 행에만 의존.
 - 내용: 발화별 SUMMARY(captured/skipped/failed/universe·as_of)를 영속 싱크(전용 로그 파일 또는 경량 실행이력 행)에 기록 → 발화 관측을 DB 행 카운트 외 독립 증거로 확보.
 - 근거: SFI-I-2 종결 검증에서 SUMMARY 로그 원문 부재 확인(DB 행으로 우회).
+
+## I3-SPOT-DAY-CONVENTION — pinned spot 기준일(T vs T−1) 실측·문서화 (2026-08-06, SFI-I-3 Part A) [portfolio][stocks]
+- 상태: **감시**. writer `_spot_price`는 발화 시점 최신 DailyPrice.close(≤오늘)를 spot으로 박제.
+- 관찰: 발화(18:30 ET)가 EOD 적재보다 앞/뒤인지에 따라 spot이 당일(T) 종가인지 전일(T−1) 종가인지 갈릴 수 있음 — 채점 방향/진행률의 기준가 정의에 직접 영향.
+- 트리거: migrate 후 **첫 자동 발화**의 spot_at_capture 값을 당일/전일 DailyPrice.close와 대조 실측 → 규약 문서화(D-I3-1b 보강). 필요 시 발화·EOD 순서 조정.
+
+## I3-SPLIT-GUARD — 지평 내 액면분할·기업행위 감지 시 unscoreable (2026-08-06, SFI-I-3 Part A) [stocks][portfolio]
+- 상태: **backlog**(W2 잔존). DailyPrice=raw close·비조정(STEP0 #4) → 채점 지평(h≤252d) 내 분할·대규모 배당 시 실현폭 왜곡.
+- 내용: 채점 시 예측~만기 구간에 액면분할/기업행위 감지되면 해당 예측을 **unscoreable(reason=corporate_action)**로 반환(무리한 채점 금지, 규칙 5 정신). 감지원=split 이벤트 소스 또는 인접 bar 급변(threshold) 휴리스틱.
+- 근거: 현 유니버스(9종)는 표본 미도달이라 즉시 위험 낮으나 h=252d 도달 전 배선 필요. adjClose 도입은 별개 트랙.
