@@ -12,6 +12,12 @@ export default function CoverageDetailPage() {
   const { loading, isAuthenticated } = useAuth()
   const router = useRouter()
   const { data, isLoading, isError } = useCoverage()
+  // 창밖 노출 라벨(D-C2-S1-JOINMISS-LABEL)용 w90 기준값 — 90일 미매칭(M)·교차창 imp_uniq.
+  const w90 = useCoverage(90)
+  const w90JoinMisses = w90.data?.meta.join_misses
+  const w90ImpUniq = w90.data
+    ? w90.data.summary.exposed + w90.data.meta.join_misses
+    : undefined
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -49,7 +55,13 @@ export default function CoverageDetailPage() {
           </p>
         )}
 
-        {!isLoading && !isError && data && <CoverageDetailView data={data} />}
+        {!isLoading && !isError && data && (
+          <CoverageDetailView
+            data={data}
+            w90JoinMisses={w90JoinMisses}
+            w90ImpUniq={w90ImpUniq}
+          />
+        )}
       </main>
     </div>
   )
