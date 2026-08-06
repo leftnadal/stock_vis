@@ -302,6 +302,7 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 
 **스테이지 2 (08-13 재게이트)** — TASKQUEUE `C2-S2-REGATE`: 퍼널 상수 튜닝 · coverage_detail 층 편입 · **+ news_chip 재설계(D-C2-S1-NEWSCHIP 포인터, 방문 트리거 무관)**.
 - **트리거(방문일 기준, 달력 아님)**: "08-06 이후 신규 방문일 ≥3, 그중 coverage_detail 방문 ≥2일 → 개시. 미달 시 자동 연장(재게이트만 반복, 재결정 불요). 재게이트 측정 = MEASURE-C2-GATE 5축 재사용." (news_chip 재설계는 이 트리거와 무관 — 트리거 미달·자동 연장 중에도 논의 가능.)
+- **S2 추가 안건(2026-08-06, MGMT-BATCH-24)**: **Strip 경보 배지** — S1-B1 상세 라벨(창밖 노출)의 **루트 표면(`CoverageStrip`) 확장 여부**. 포인터만(설계는 S2, 문언은 D-C2-S1-JOINMISS-LABEL 참조).
 
 **근거 요약**: 08-02~05 방문 0 실측 → 데이터 병목 = **방문일 수**(달력 아님). 스테이지 1은 방문일 무관 증거 확보분(join_misses 창 정책·news_chip 병행·상수 부채), 스테이지 2는 방문일 축적 대기분(퍼널 상수·coverage_detail 층).
 
@@ -312,6 +313,7 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 **결정**: 커버리지 표면에 창밖 노출을 상시 라벨로 표기 — **"창밖 노출 N · 90일 내 전량 매칭"**. 항등식 **imp_uniq = (창 내)노출 + 창밖**을 화면에서 상시 검증한다. 가중합 **4.55, 마진 1.05 → 자동 결정**.
 - **근거**: w90 join_misses=**0** 실측(진성 미스 없음) → "수리"가 아니라 **표기 정책** 문제로 재정의. w7 join_misses는 창 슬라이드 효과(≤07-29 시그널 impression이 창 밖)일 뿐 데이터 손상 아님 — 라벨로 정직 표기.
 - **범위 제한**: 창 선택기(w7/w30/w90 토글)는 **S2 상수 결정 시 재론** — 본 결정에서 선점 금지.
+- 📎 **백-어노테이션 — 항등식 검증 구현 = 교차창 (2026-08-06, MGMT-BATCH-24, S1-B1 착지 `b9e80655` 후속, 사후 디렉터 승인)**: 상시 검증 항등식(`imp_uniq = 창내노출 + 창밖`)의 **검증 구현은 교차창(w7 `imp_uniq` ≟ w90 `imp_uniq` 일치)으로 확정**. 사유: N(창밖)=`join_misses`는 **API 파생값**(정의상 `N = imp_uniq − 창내노출`로 성립)이라 **단일 창 항등식은 항진식**(tautology = 사문 검증, 자기 자신을 대조 → 결함 미포착). 진성 검증 = 창을 달리한 `imp_uniq` 불변성. 원 결정 문언·범위 불변, **검증 방법만 명확화**.
 
 ## [2026-08-06] D-C2-S1-NEWSCHIP — news_chip 커버리지 편입 = S2 강등 (ⓑ-3) [dashboard] [platform]
 
@@ -2562,6 +2564,7 @@ thesis/      — ✅ 제거됨 (D-MONITOR-REBUILD, apps/monitor 편입, 2026-07-
   - 📎 **2026-07-04 DASH-FE-GLOB 해소**(sess-carousel SURVEY 실측 @ 47c36b4): `frontend/app/dashboard/` 디렉토리 자체가 **origin/main에 실재하지 않음**(레거시 page.tsx 포함 0건). → 실 dashboard FE 진입 = **`app/page.tsx` + `types/eod.ts`**(위 편입 확정), 캐러셀 신설 위치 = **`components/eod/**`**. 글롭 `app/dashboard/**`는 **실체 없는 표기**이므로 소유 대상에서 실질 제외(DASH-LEGACY도 대상 파일 부재로 자연 소멸). 유지: `components/eod/**`·`services/eodService*`·`hooks/useEODDashboard*`.
   - 📎 **2026-07-06 AMEND**(CAROUSEL-BUILD 후속, 디렉터 비준): dashboard FE 테스트 구획 = **`frontend/__tests__/eod/**`** 명시 추가(캐러셀 vitest 등재처, 슬라이스 취지 부합 — 문언 공백 해소). eod 컴포넌트/타입의 테스트는 이 경로 단일.
   - 📎 **2026-07-27 AMEND**(MGMT-BATCH-14 백-어노테이션, P2-COVERAGE-C1-FE `58e18c7d` 사후 등재): 커버리지 표면(D-P2-COVERAGE-SURFACE 선택지 C) 신설로 dashboard 트랙에 다음 경로군 **명시 추가** — `app/dashboard/coverage/**`(상세 라우트) · `components/dashboard/**`(CoverageStrip·CoverageDetailView) · `hooks/useCoverage*` · `services/coverageService*` · `types/coverage*` · `frontend/__tests__/dashboard/**`. **취지**: C1-FE에서 "트랙 전용 파일" 취지 해석으로 통과한 경로들의 사후 문언 등재(해석 반복 방지). **2026-07-04(위)와의 정합**: "`app/dashboard/**`는 실체 없는 표기"였으나 C1-FE가 `app/dashboard/page.tsx`(스트립 배선 1줄) 수정 + `app/dashboard/coverage/page.tsx` 신설로 디렉토리를 **재물질화** — 이제 `app/dashboard/**`는 실체 있는 소유 경로. 단 기존 `app/page.tsx`(루트 EOD 본체)·`components/eod/**` 소유는 불변(dashboard 표면의 두 진입: 루트 `/` EOD 본체 + `/dashboard` 계정·커버리지). 컴포넌트 구획은 eod=`components/eod/**`, 커버리지 등 dashboard 일반=`components/dashboard/**`로 병존.
+  - 📎 **2026-08-06 AMEND**(MGMT-BATCH-24, C2-S1-B1 착지 `b9e80655` 후속): 위 2026-07-27 coverage 경로군은 **불변**(재등재 아님) — 본 부기는 **글롭 형태 실측 확정 + provenance**. STEP 0.3 실측: `components/dashboard/` = **`CoverageStrip.tsx`·`CoverageDetailView.tsx` 2파일뿐, 둘 다 P2-COVERAGE-C1-FE(`963a5213`) 트랙 산**(git log --follow 첫 커밋) → 혼재 없음 = **디렉터리 글롭 `components/dashboard/**` 형태 유지 확정**(Coverage* 프리픽스 글롭 불요). 근거 = S1-B1 후보 #71 계열(글롭↔실주소 불일치 방지) — C1-FE 이래 생성된 coverage 표면(strip/detail/`hooks/useCoverage`/`services/coverageService`/`__tests__/dashboard`)이 전부 dashboard 트랙 소유임을 실측으로 재확인.
 
 **[활성·성숙] chain_sight 트랙** (STEP 0 확정 2026-06-29): `apps/chain_sight/**`, `tests/chainsight/**`, `docs/chain_sight/**`, FE: `app/chainsight/**`, `components/chainsight/**`, `services/{chainsightService,pathWatchlistService}`, `hooks/{useChainsight,usePathWatchlist}`, `__tests__/chainsight/**` + **Neo4j 자산(확정, apps 내부)**: `management/commands/load_*_to_neo4j`(5)·`services/neo4j_{loader,sync}`·`tasks/neo4j_dirty_sync_tasks`.
   - 📎 **STEP 0 실측**(sess-cs-step0 @ b457bbf): 백엔드 85파일·모델 20개·**RelationConfidence 13,695행 prod**(CoMentionEdge 1,361·PriceCoMovement 8,859)·**M2 v1.1 Phase 1 go-live(2026-06-27)**, daily beat 가동·neo4j_dirty=0(동기화 완료). 기존 `[골격]`·`추정` 표기는 성숙도 과소표현이라 격상.
@@ -5678,6 +5681,8 @@ S2-C gate는 타입 자동변경을 하지 않으므로(하드룰) **자동 재�
   근거: 07-29 STRIP-REHOME-LAND에서 지시서가 "1 WARN(TH)"만 기대해 #47을 누락 → 문언상 "TH 외 WARN → HALT"에 걸려 사용자 판단을 재차 물음(불필요한 왕복). #47은 매 미머지 LAND의 표준 transient이므로 **상수로 못박아** 재발 방지. cf. DECISIONS 326 백-어노테이션(승격 후 첫 실측에서 동일 2종 WARN 확인). post-merge 기대값 = **14 OK / 1 WARN(TH) / 0 FAIL**(#47은 머지로 해소).
 
 **보강 — mgmt 배치 자가 머지 허용 (2026-08-01, MGMT-BATCH-20)**: **mgmt 배치의 origin/main 착지는 자가 머지 허용** — 조건: 메타 4종 한정 diff 전수 확인 + D-LANDING 허용 조합(위 2종 WARN) + push 직전 재fetch(#40). **Gate 4(파괴적 작업 승인)는 삭제·마이그 적용·배포에 적용되며 메타 문서 머지에는 불요.** 근거: BATCH-19 착지 시 자가 머지 가부를 승인 턴으로 회부했으나, 메타 4종 한정 diff는 파괴적 작업이 아니므로 매 배치 승인 왕복이 불필요 — 해석을 규약으로 못박아 재발 방지.
+
+**보강 — 게이트 health 측정 트리 = 착지 대상 트리 (2026-08-06, MGMT-BATCH-24)**: LAND/mgmt 세션 `health_check` 게이트는 **착지 대상 트리(main=origin/main) 또는 origin/main 기준 신규 worktree**에서 측정한다. 앉아있는 세션 브랜치(정체 PROGRESS.md를 문 워크트리)에서 재면 `PROGRESS 신선도`·`origin/main 해시`가 **거짓 FAIL**(health_check는 worktree-local 측정 — LAND-C2-S1-B1 실측: 정체 트리 11/2/2 ↔ 착지 트리 14/1/0). 위 ② #47 transient(WARN)와 구분 — 본 함정은 **FAIL 오탐**. 처방 상세 = common-bugs #89.
 ---
 
 ## [2026-07-30] D-EOD-FRESH — beat 자가 신선도 보장(B안)
