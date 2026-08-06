@@ -1290,7 +1290,8 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **규칙**: 태스크·커맨드에서 유저 소유 모델(Watchlist·Wallet·Portfolio 등)을 ORM 직접 조회할 때 **user 스코프를 명시**하라(어느 유저 집합인지 코드+docstring에 못박음). 멀티테넌트 유니버스는 소유자 정의(전 유저? 특정 유저 집합?)를 먼저 확정. 참조 좌표 = 같은 도메인의 nightly 태스크 필터(예: advisory `portfolio_goal__isnull=False`).
 
 **재발 점검**: 태스크에서 `<UserOwnedModel>.objects.all()`/무필터 `.filter()` 발견 → user 스코프 있나? → 없으면 소유자 정의 확인 후 명시.
-## 단일 공유 test DB에 pytest suite 동시 실행 시 가짜 에러 (#86, TH-SESSION-1 2026-08-03) [testing][process]
+## 단일 공유 test DB에 pytest suite 동시 실행 시 가짜 에러 (#86a, TH-SESSION-1 2026-08-03) [testing][process]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. 기존 '#86' 단독 인용은 문맥상 해당 내용 쪽. a=선착지 6beb7b43 author 2026-08-04 10:33, mgmt형 meta-only 채번 = 병렬 충돌·위반 아님)*
 
 **증상**: 세션 종료 앵커 suite가 갑자기 다수 에러 — reuse-db 경로는 `psycopg2.errors.DuplicateColumn: column "…" already exists`, `--create-db` 경로는 `database "test_stock_vis" is being accessed by other users` → `SystemExit: 2` → **전 테스트 setup error, 8초대 조기 종료**(collected N items 직후 EE…).
 
@@ -1311,7 +1312,8 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 대형 DB 연산(compute_theme_heat 루프 등)이 2분 초과. `!`/foreground 경로는 harness 타임아웃 대상. 멱등 연산(update_or_create)이라 이번엔 무해했으나, **비멱등 연산이면 부분 실행 사고**(절반 쓰고 kill).
 
 **규칙**: ⑴ 지시서의 병진 커맨드 안내에 **"별도 터미널(Terminal.app)에서 실행" 명기 필수** — CC `!` 프롬프트 경유 금지(2분 한계 + 첫글자 탈락 #, 이중 함정). ⑵ truncate 발생 시 **재실행 前 반드시 읽기 assess**로 부분 상태 규명(어느 date/row까지 기록됐나·진행 프로세스 잔존 여부) → **멱등 확인 후에만 완결 재실행**(blind 재시도 금지). cf. lesson_background_task_reaping.
-## 상태 어휘의 트랙 간 의미 충돌 — 'rejected'가 ego 서빙서 엣지 은닉 (#86, 2026-08-04) `[data][process]`
+## 상태 어휘의 트랙 간 의미 충돌 — 'rejected'가 ego 서빙서 엣지 은닉 (#86b, 2026-08-04) `[data][process]`
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. b=후착지 86961ec4 author 2026-08-04 20:51, L2-FULL-SWEEP 비mgmt 세션 채번 = 규칙 위반. B 트리거 미해당 — 세션 시작(첫 커밋 88850fce author 08-03 18:24) < A 착지(05211a02 08-05 10:16), pre-A 시작. REVIEW-P2·S3-MINDMAP에 이은 3번째 위반)*
 ## 상태 어휘의 트랙 간 의미 충돌 — 'rejected'가 ego 서빙서 엣지 은닉 (채번 후보, L2-FULL-SWEEP 2026-08-04) `[data][process]`
 
 > ⚠ 채번 각주(PRE-DEPLOY-FIX 2026-08-05): 본 항목 추가 커밋(`86961ec4`, L2-FULL-SWEEP P3~P6) 메시지엔 **#86**으로 언급됨 — 처방 A(2026-08-03, 비mgmt 자가채번 금지) 인지 전 채번. **번호는 mgmt 채번 시 확정**.

@@ -238,6 +238,7 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 - **적용 이력**: #78 3중복(규칙 시행 전 발생분)에 a/b/c 확장 적용 (BATCH-19) — a=20b-f2 GOAL-CREATE-UI(`3ba4cf00` 11:04)·b=SEAL-PUSH-1b heat 로그(`9540993a` 11:38)·c=SEC β R2 2-dot diff(`663b17e5` 12:54), 착지 시간순.
 - **적용 이력**: #80·#81 각 2중복에 a/b 확장 적용 (BATCH-20) — #80: a=COVERAGE-DETAIL migrate(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 LLM 모순(`6d610d67` 13:40) / #81: a=실행환경 절대경로(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 localStorage 캐시(`6d610d67` 13:40), 착지 시간순. ⚠b(REVIEW-P2)는 규칙 시행(07-31) 후 비mgmt 세션 채번 = 규칙 위반 경위(ⓑ 조사, 처방 디렉터 회부).
 - **적용 이력**: #83·#84 각 2중복에 a/b 확장 적용 (BATCH-22) — a=SFI-I1(`9363cac9` 08-03 09:37, BATCH-20 mgmt 채번)·b=S3-MINDMAP(`2daa386f` 08-03 09:53, 비mgmt 세션), 착지 시간순. ⚠b(S3-MINDMAP)는 처방 A 착지(`05211a02`) 이전 시작 세션의 08-03 지연 착지분 = B 트리거 미해당(아래 D-NUMBERING-MGMT-ONLY 처방 정밀화 참조).
+- **적용 이력**: #86 2중복에 a/b 확장 적용 (BATCH-23) — a=TH-SESSION-1(`6beb7b43` author 08-04 10:33, docs(harness) meta-only = mgmt형 병렬 채번·위반 아님)·b=L2-FULL-SWEEP 상태 어휘(`86961ec4` author 08-04 20:51, 비mgmt 채번 = 규칙 위반). 동일 머지(`4fcc768d`) 착지 = 착지 시간 동률 → **타이브레이커 author date 순**. ⚠b는 세션 시작(첫 커밋 `88850fce` author 08-03 18:24) < A 착지(08-05 10:16) = pre-A 시작 → B 트리거 미해당(REVIEW-P2·S3-MINDMAP 이은 3번째 위반). landed merge-base가 A를 조상으로 보인 것은 #40 rebase 아티팩트(아래 판정 절차 보강 참조).
 
 ## [2026-07-31] D-NUMBERING-MGMT-ONLY — common-bugs 채번은 mgmt 세션 전용 (재발 방지) [harness]
 
@@ -246,6 +247,7 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 - **운용**: build/측정 세션 보고에 "채번 후보: <내용>" 명시 → 차기 mgmt 배치가 실측+1로 부여. 관련=[[lesson_origin_main_advance_union_rebase]].
 - **2026-08-03 처방**: #80·#81 충돌(비mgmt 세션 REVIEW-P2의 규칙 시행 후 채번 = 규칙 위반 분류, BATCH-20 ⓑ 조사)에 대해 **A(전파 보강) 채택** — 가중합 A 4.10 / B(훅 강제) 3.85 / C(안내) 3.00, 마진 0.25 타이브레이커 = 단계적 방어·1인 비용(B는 hardening(c) 공사 동반). **B 조건부 트리거(확정 문안, 2026-08-06 정밀화 — BATCH-22): 처방 A 착지(`05211a02`) 이후에 시작된 세션의 비mgmt 채번 위반 1회 = B 즉시 집행. A 이전 시작 세션의 지연 착지분은 트리거로 오인하지 않는다.** (B = hardening(c): 훅 `scripts/hooks` 이전 + `core.hooksPath` + pre-commit 검사 'common-bugs 신규 #NN 헤딩은 mgmt 브랜치만 허용'.)
   - **부기**: S3-MINDMAP #83/#84 08-03 위반은 **A 이전 시작 세션의 지연 착지분** → 트리거 미해당(BATCH-22 판정).
+- **판정 절차 보강(확정, 2026-08-06 — BATCH-23)**: **B 트리거의 "세션 시작" = 해당 세션 커밋들의 최소 author date.** landed 계보(merge-base)는 **#40 rebase 아티팩트**이므로 판정 프록시로 **영구 사용 금지**(rebase가 pre-A 작업을 A 위로 재배치 → landed에선 A가 조상으로 오탐). **동일 머지 착지 중복의 구분자 순서 = author date 순**(착지 시간 동률 타이브레이커). 이력: BATCH-23 #86 사례 — landed(A 조상=A 이후) vs author(08-04<08-05=A 이전) 상충 → **author 기준으로 미해당 확정**.
 
 ## [2026-07-31] D-C2-DETAIL-MIG — coverage_detail surface 등재 = no-op 마이그 조건부 수용 (경로 A) + IssuanceLog/ImpressionLog 경계 정본화 [platform] [shared]
 
@@ -282,10 +284,30 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 - ⓑ **news_chip 커버리지 편입**: 근거 = ~32행(산술 도출: 총 imp 83 − dashboard_eod 36 − coverage_detail 15), dashboard_eod와 병행 축적. **단 설계 지시서 서두에 read-only 검증(news_chip 일자별 행수) 선행 — 미확인 시 스테이지 2로 강등.**
 - ⓒ **COVERAGE-SURFACE-CONST-UNIFY**: 데이터 무관 부채성 소형(FE surface 상수 단일화).
 
-**스테이지 2 (08-13 재게이트)** — TASKQUEUE `C2-S2-REGATE`: 퍼널 상수 튜닝 · coverage_detail 층 편입.
-- **트리거(방문일 기준, 달력 아님)**: "08-06 이후 신규 방문일 ≥3, 그중 coverage_detail 방문 ≥2일 → 개시. 미달 시 자동 연장(재게이트만 반복, 재결정 불요). 재게이트 측정 = MEASURE-C2-GATE 5축 재사용."
+**스테이지 2 (08-13 재게이트)** — TASKQUEUE `C2-S2-REGATE`: 퍼널 상수 튜닝 · coverage_detail 층 편입 · **+ news_chip 재설계(D-C2-S1-NEWSCHIP 포인터, 방문 트리거 무관)**.
+- **트리거(방문일 기준, 달력 아님)**: "08-06 이후 신규 방문일 ≥3, 그중 coverage_detail 방문 ≥2일 → 개시. 미달 시 자동 연장(재게이트만 반복, 재결정 불요). 재게이트 측정 = MEASURE-C2-GATE 5축 재사용." (news_chip 재설계는 이 트리거와 무관 — 트리거 미달·자동 연장 중에도 논의 가능.)
 
 **근거 요약**: 08-02~05 방문 0 실측 → 데이터 병목 = **방문일 수**(달력 아님). 스테이지 1은 방문일 무관 증거 확보분(join_misses 창 정책·news_chip 병행·상수 부채), 스테이지 2는 방문일 축적 대기분(퍼널 상수·coverage_detail 층).
+
+---
+
+## [2026-08-06] D-C2-S1-JOINMISS-LABEL — 커버리지 창밖 노출 상시 라벨 (ⓐ-1) [dashboard] [platform]
+
+**결정**: 커버리지 표면에 창밖 노출을 상시 라벨로 표기 — **"창밖 노출 N · 90일 내 전량 매칭"**. 항등식 **imp_uniq = (창 내)노출 + 창밖**을 화면에서 상시 검증한다. 가중합 **4.55, 마진 1.05 → 자동 결정**.
+- **근거**: w90 join_misses=**0** 실측(진성 미스 없음) → "수리"가 아니라 **표기 정책** 문제로 재정의. w7 join_misses는 창 슬라이드 효과(≤07-29 시그널 impression이 창 밖)일 뿐 데이터 손상 아님 — 라벨로 정직 표기.
+- **범위 제한**: 창 선택기(w7/w30/w90 토글)는 **S2 상수 결정 시 재론** — 본 결정에서 선점 금지.
+
+## [2026-08-06] D-C2-S1-NEWSCHIP — news_chip 커버리지 편입 = S2 강등 (ⓑ-3) [dashboard] [platform]
+
+**결정**: news_chip 커버리지 편입은 **S2 강등**(BATCH-23 STEP 1 검증 결과). 3축 원문: **행수 32**(일자별 4/일, 07-16~08-01) · **발급형식(`stock_id:signal_date:signal_tag`) 매칭 0/32** · **전부 뉴스 URL**(yahoo/finnhub `https://...`) · **w90 조인율 0.0%**(0/32 ∩ IssuanceLog 240).
+- **성격 재정의**: **조인 구조적 불가(키스페이스 직교)** — 데이터 숙성 문제가 아니다. news_chip object_ref = 뉴스 기사 URL, IssuanceLog grain(종목·시그널)과 직교.
+- **S2 안건**: ref 매핑 계층 신설 / 별도 지표화 / 커버리지 제외 **중 설계 결정**. **방문일 트리거와 무관**(D-C2-GATE-SPLIT S2 트리거 미달·자동 연장 중에도 논의 가능).
+- **표시 형태 참고(구속력 없음)**: 향후 편입 성립 시 ⓑ-3(surfaces_included 합산 헤드라인 + 표면별 분해 + 교집합)이 검토 우선안.
+
+## [2026-08-06] D-C2-S1-CONST-UNIFY — FE surfaces 상수 단일화 + 가드 테스트 (ⓒ-3) [dashboard] [platform]
+
+**결정**: FE surface 리터럴을 **단일 상수 모듈로 통합** + **가드 테스트**(모듈 밖 표면 리터럴 grep=0 강제, 백엔드 `SURFACE_CHOICES`와 계약 정합). 가중합 **4.75, 마진 0.65 → 사용자 확인**.
+- **모듈 위치**: build STEP 0 실측으로 확정. **소유 구획 밖(공용 frontend 인프라) 판명 시 shared 트랙 위임 분기** 명기(dashboard 구획 단독 소유 아닐 수 있음).
 
 ---
 
