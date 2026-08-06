@@ -10,9 +10,23 @@ import logging
 from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable, Optional
 
-from packages.shared.stocks.models import AnalystSignalSnapshot, Stock
+from packages.shared.stocks.models import AnalystSignalSnapshot, DailyPrice, Stock
 
 logger = logging.getLogger(__name__)
+
+
+def _spot_price(symbol: str) -> Optional[Decimal]:
+    """발화 시점 spot = 최신 DailyPrice.close (SFI-I3, D-I3-1b).
+
+    FMP 페이로드에 spot성 값이 없어(STEP0 #2) DB 로컬 최신 종가로 경량 조회한다.
+    부재 시 None — 발화 자체를 막지 않는다(append 비차단). insert 시 1회 동봉만.
+    """
+    return (
+        DailyPrice.objects.filter(stock__symbol=symbol.upper())
+        .order_by("-date")
+        .values_list("close_price", flat=True)
+        .first()
+    )
 
 
 def _dec(value: Any) -> Optional[Decimal]:
@@ -86,6 +100,7 @@ def capture_symbol(client, symbol: str, mirror: bool = True) -> dict:
         grades_historical=sig["hist"] or [],
         rating=ratings.get("rating") or "",
         overall_score=_int(ratings.get("overallScore")),
+        spot_at_capture=_spot_price(symbol),
     )
     mirrored = _mirror_stock(symbol, snap) if mirror else False
     return {"symbol": symbol, "created": 1, "mirrored": mirrored}

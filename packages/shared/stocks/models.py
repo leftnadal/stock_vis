@@ -1356,6 +1356,13 @@ class AnalystSignalSnapshot(models.Model):
     rating = models.CharField(max_length=4, blank=True, default="")
     overall_score = models.IntegerField(null=True, blank=True)
 
+    # 채점 기준가 (SFI-I3, D-I3-1b) — 발화 시점 spot(최신 DailyPrice.close ≤ 발화일).
+    # append 시 insert-only 동봉(UPDATE 경로 없음). 조회 실패 시 null 허용(발화 비차단).
+    # 기존 pre-pinning 코호트는 null 유지(backfill 금지, D-I1b-3) — 채점 시 파생 spot로 분리.
+    spot_at_capture = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True
+    )
+
     class Meta:
         db_table = "stocks_analyst_signal_snapshot"
         ordering = ["symbol", "-captured_at"]
