@@ -291,3 +291,12 @@ DB 전수 9,365 = summary.json(최종 invocation) 8,876 + 선행 세그먼트 48
 
 **⑶ 이중처리 무**: raw 태깅 행 9,365 = distinct 쌍 9,365(차이 0), 2+ 방향행 이중기록 0 → 각 쌍 정확히 1회 처리·과금.
 추정 라벨 2,511은 파티션과 독립인 additive 플래그.
+
+## 배포 착지 (2026-08-06, non-FF 머지)
+
+**착지 해시**: origin/main **`4fcc768d`** (non-FF 머지 — 세션 9커밋 `88850fce`…`3b9730ce` + 전진분 `a472f405` 병합).
+
+- **배포 방식**: FF push가 origin churn(behind 3→5→1 재발)으로 물리적 불가 → **non-FF 머지** 채택(D-DEPLOY-NONFF).
+  `sv sync`(D-SYNC-ENTRYPOINT) → worker/beat/daphne 재기동 → web rebuild(:3000).
+- **라이브 검증(P5)**: ego API `peer_domain` 실서빙 — MRK ego 43엣지 중 **28 llm_tag 노출**(`제약·바이오`·`항암제 개발 및 판매` 등) + 버킷 폴백(null) 공존. daphne `4fcc768d` 신코드 서빙 확인. :3000 HTTP 200.
+- **사후 검증(POST-DEPLOY-VERIFY, 2026-08-06)**: 원장 해시 앵커 무결(88850fce-gen 전부 origin/main 조상, dangling 참조 0 — remap-last 정상 적용, 함정 3차 발생 아님). 병합 조합 스위트 GREEN: makemig 0 · pytest 724 · vitest 12 · tsc 0.
