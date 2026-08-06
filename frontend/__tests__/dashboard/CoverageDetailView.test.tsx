@@ -60,16 +60,42 @@ describe('CoverageDetailView', () => {
     expect(items[1]).toHaveTextContent('AAPL')
   })
 
-  it('join_misses > 0 이면 각주 표시', () => {
+  it('join_misses > 0 · w90 미공급이면 N 만 표기(90일 판정 보류)', () => {
     render(<CoverageDetailView data={base} />)
     expect(screen.getByTestId('coverage-join-misses')).toHaveTextContent(
-      '창밖 발급 노출 8건 제외'
+      '창밖 노출 8'
     )
   })
 
-  it('join_misses = 0 이면 각주 숨김', () => {
+  it('join_misses = 0 이면 라벨 숨김', () => {
     render(
       <CoverageDetailView data={{ ...base, meta: { ...base.meta, join_misses: 0 } }} />
+    )
+    expect(screen.queryByTestId('coverage-join-misses')).toBeNull()
+  })
+
+  // D-C2-S1-JOINMISS-LABEL (S1-B1) — 창밖 노출 라벨 3상태
+  // base: exposed 4 + join_misses 8 = imp_uniq 12 (교차창 정합 기준값)
+  it('상태 1 (w90 미매칭=0): 90일 내 전량 매칭 ✓', () => {
+    render(<CoverageDetailView data={base} w90JoinMisses={0} w90ImpUniq={12} />)
+    expect(screen.getByTestId('coverage-join-misses')).toHaveTextContent(
+      '창밖 노출 8 · 90일 내 전량 매칭 ✓'
+    )
+    expect(screen.queryByTestId('coverage-join-misses-error')).toBeNull()
+  })
+
+  it('상태 2 (w90 미매칭>0): 90일 밖 M 표기', () => {
+    render(<CoverageDetailView data={base} w90JoinMisses={3} w90ImpUniq={12} />)
+    expect(screen.getByTestId('coverage-join-misses')).toHaveTextContent(
+      '창밖 노출 8 · 90일 밖 3'
+    )
+  })
+
+  it('항등식 위배(교차창 imp_uniq 불일치) → 라벨 대신 오류 표기', () => {
+    // w90ImpUniq 99 ≠ (exposed 4 + join_misses 8 = 12)
+    render(<CoverageDetailView data={base} w90JoinMisses={0} w90ImpUniq={99} />)
+    expect(screen.getByTestId('coverage-join-misses-error')).toHaveTextContent(
+      '노출 집계 정합 오류'
     )
     expect(screen.queryByTestId('coverage-join-misses')).toBeNull()
   })
