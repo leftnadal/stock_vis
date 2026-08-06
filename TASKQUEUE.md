@@ -1140,6 +1140,7 @@
 - 관찰: 나이틀리 전/후 total_krw 시계열 비교 불가 — (1) PortfolioSnapshot이 동일 ET-date `update_or_create`라 이전 값 덮어씀(1 row/date), (2) AdvisoryRun.output에 total_krw 저장 필드 없음(`{}`).
 - 함의: run 시점별 자산 추이·권유 근거 스냅을 사후 재구성 못 함. 판정은 count/run_at으로 우회했으나 값 비교엔 축 부재.
 - 후속 후보: run별 total/gap 스냅 저장(AdvisoryRun 확장 또는 별도 원장). SIGNAL-FORWARD-INFRA 설계 사이클에 합류 검토(전방 신호 인프라와 원장 스키마 공통 설계).
+- **STEP 0 #5 실측(SFI-I-3, 2026-08-06)**: AdvisoryRun.snapshot(FK PortfolioSnapshot)은 non-null·`holdings_detail=[{symbol,shares,price,fx_rate,value_krw}]`+`total_krw` 보유 → NAV 궤적은 **PortfolioSnapshot 시계열에서 근사 재구성 가능**(단 date-unique update_or_create라 run 시점 값은 여전히 미박제). ⑤ v0는 근사 NAV만 제공하고 "총액 박제 유보" 캐비앗 의무. 본결정(run별 total 영속화)은 표본 성장 후 사이클로 유보.
 ## SECB-REGRESSION-WATCH — 13건(attention6+leadership7) 재발 감시 (2026-07-31, F5) [testing][sec-beta]
 - 트리거: `tests/chainsight/test_attention.py`·`test_leadership_api.py` 29건 중 **재실패 발생 시 즉시 HALT + full traceback 캡처**(직전 시대 결손 증거 = `--reuse-db` 오염 재현 자료). **라벨만 기록 금지**(D-SECB-MISLABEL 재발 방지).
 - 근거: R1 결과 D — 재사용 테스트 DB 오염이 원인(D-SECB-MISLABEL). 재발 시 fresh DB(`--create-db`)로 격리 확인. cf. common-bugs #79.
@@ -1219,3 +1220,28 @@
 - 현상: y축 눈금·범위 라벨 부재 → 평평한 추세선이 정보로 읽히지 않음(척도 없는 선).
 - 내용: grades_historical(월별) 미니차트에 y축 min/max 또는 눈금 라벨 추가 — 값 대비 변화가 판독되게. 산식·데이터 무변경, 표현만.
 - 접점: `AnalystConsensusPanel`(commit 8c5b72bd, SFI-I-2 Part 2).
+
+## I3-PROMOTION-TRIGGER — 신호→기대수익 승격 결정 사이클 소집 기준 (2026-08-06, SFI-I-3 Part A) [portfolio][coach]
+- 상태: **감시(자동 해제 아님)**. advisory_engine.py:10-11 금지벽 유지(D-I3-3).
+- 기준: **Tier 1 h=63거래일 방향 적중 표본 ≥60 이고 (이항검정 p<0.05 상방 또는 IC 평균 양수 유의)** → 승격 결정 사이클 소집. 도달해도 자동 승격 금지 — 사람 판정으로 벽 해제 여부 결정.
+- 근거: 현 표본 미성숙(대부분 만기 미도달). 통계 유의 없이 신호를 기대수익 프록시로 쓰면 STEP0_SIGNAL_INVENTORY의 유령/후행 반복.
+
+## I3-MATERIALIZE-TRIGGER — 채점 원장 물성화(ScoredPrediction) 승격 (2026-08-06, SFI-I-3 Part A) [portfolio]
+- 상태: **예약**. 현재 채점 = 파생 계산 계층(D-I3-1, 신규 테이블 없음).
+- 트리거: **채점 로직 v2 분기** 또는 **코치 런타임이 채점 결과 참조 개시** 중 선도래 시 → ScoredPrediction append 원장으로 승격.
+- 근거: 조기 스키마 고정 위험 회피. 재계산 가능(순수 함수·as_of 재현)하므로 물성화 이득이 참조·버전분기 전엔 없음.
+
+## I2-SUMMARY-LOG-SINK — analyst signals 태스크 SUMMARY 영속 로그 싱크 (2026-08-06, SFI-I-3 Part A) [portfolio][infra][observability]
+- 상태: **backlog**(소액, 관측성). 현재 `ingest_analyst_signals` SUMMARY는 `logger.info`뿐 → stocks.log에 미포착(Celery stdout/로테이션), 발화 증거는 DB append 행에만 의존.
+- 내용: 발화별 SUMMARY(captured/skipped/failed/universe·as_of)를 영속 싱크(전용 로그 파일 또는 경량 실행이력 행)에 기록 → 발화 관측을 DB 행 카운트 외 독립 증거로 확보.
+- 근거: SFI-I-2 종결 검증에서 SUMMARY 로그 원문 부재 확인(DB 행으로 우회).
+
+## I3-SPOT-DAY-CONVENTION — pinned spot 기준일(T vs T−1) 실측·문서화 (2026-08-06, SFI-I-3 Part A) [portfolio][stocks]
+- 상태: **감시**. writer `_spot_price`는 발화 시점 최신 DailyPrice.close(≤오늘)를 spot으로 박제.
+- 관찰: 발화(18:30 ET)가 EOD 적재보다 앞/뒤인지에 따라 spot이 당일(T) 종가인지 전일(T−1) 종가인지 갈릴 수 있음 — 채점 방향/진행률의 기준가 정의에 직접 영향.
+- 트리거: migrate 후 **첫 자동 발화**의 spot_at_capture 값을 당일/전일 DailyPrice.close와 대조 실측 → 규약 문서화(D-I3-1b 보강). 필요 시 발화·EOD 순서 조정.
+
+## I3-SPLIT-GUARD — 지평 내 액면분할·기업행위 감지 시 unscoreable (2026-08-06, SFI-I-3 Part A) [stocks][portfolio]
+- 상태: **backlog**(W2 잔존). DailyPrice=raw close·비조정(STEP0 #4) → 채점 지평(h≤252d) 내 분할·대규모 배당 시 실현폭 왜곡.
+- 내용: 채점 시 예측~만기 구간에 액면분할/기업행위 감지되면 해당 예측을 **unscoreable(reason=corporate_action)**로 반환(무리한 채점 금지, 규칙 5 정신). 감지원=split 이벤트 소스 또는 인접 bar 급변(threshold) 휴리스틱.
+- 근거: 현 유니버스(9종)는 표본 미도달이라 즉시 위험 낮으나 h=252d 도달 전 배선 필요. adjClose 도입은 별개 트랙.
