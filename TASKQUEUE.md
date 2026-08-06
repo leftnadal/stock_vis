@@ -1212,3 +1212,9 @@
 - 상태: **defer**(데이터 성숙 후). I-2는 FMP 제공 grades_historical(12개월) 사용(D-I2-2).
 - 내용: nightly AnalystSignalSnapshot append 축적분으로 우리 자체 시계열 추세(목표가 변화·의견 이동) 구성. 자동발화 표본 충분(수십일+) 시 착수.
 - 접점: I-2 조회 API(D-I2-1 공용 설계)를 시계열 조회로 확장(latest 1건 → 기간 N건).
+
+## I2-TREND-YAXIS — 애널리스트 추세 미니차트 y축 눈금/범위 라벨 (2026-08-06, SFI-I-2 Part A) [portfolio][frontend]
+- 상태: **backlog**(소액 UX). I-2 `AnalystConsensusPanel` 의견 추세 미니차트.
+- 현상: y축 눈금·범위 라벨 부재 → 평평한 추세선이 정보로 읽히지 않음(척도 없는 선).
+- 내용: grades_historical(월별) 미니차트에 y축 min/max 또는 눈금 라벨 추가 — 값 대비 변화가 판독되게. 산식·데이터 무변경, 표현만.
+- 접점: `AnalystConsensusPanel`(commit 8c5b72bd, SFI-I-2 Part 2).
