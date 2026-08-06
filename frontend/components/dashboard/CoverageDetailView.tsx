@@ -22,7 +22,17 @@ function formatRate(rate: number): string {
  * impression 추적: 각 미노출 행 단위로 surface='coverage_detail' 발신(COVERAGE-DETAIL-FE,
  * surface 등재·migrate 0011 완료). C-2가 "어떤 종목이 상세에서 노출됐나"를 쓸 수 있게 행 그레인 유지.
  */
-export function CoverageDetailView({ data }: { data: CoverageResponse }) {
+export function CoverageDetailView({
+  data,
+  w90JoinMisses,
+  w90ImpUniq,
+}: {
+  data: CoverageResponse
+  /** w90(90일 창) 미매칭 수 = 90일 밖 M. useCoverage(90) 응답의 meta.join_misses. 미확정(로딩/에러) 시 undefined. */
+  w90JoinMisses?: number
+  /** w90 기준 imp_uniq(= exposed + join_misses). 교차창 정합(항등식) 검증용. */
+  w90ImpUniq?: number
+}) {
   const { window, summary, unexposed, meta } = data
 
   return (
@@ -51,12 +61,69 @@ export function CoverageDetailView({ data }: { data: CoverageResponse }) {
         </ul>
       )}
 
-      {meta.join_misses > 0 && (
-        <p data-testid="coverage-join-misses" className="mt-3 text-xs text-gray-400">
-          창밖 발급 노출 {meta.join_misses}건 제외
-        </p>
-      )}
+      <OutOfWindowLabel
+        outOfWindow={meta.join_misses}
+        impUniqCurrent={summary.exposed + meta.join_misses}
+        w90JoinMisses={w90JoinMisses}
+        w90ImpUniq={w90ImpUniq}
+      />
     </div>
+  )
+}
+
+/**
+ * 창밖 노출 라벨 (D-C2-S1-JOINMISS-LABEL, S1-B1).
+ * N = 창밖 노출(= imp_uniq − 창 내 노출 = 현재 창 join_misses). M = w90 미매칭.
+ * 상태 1(M=0): "창밖 노출 N · 90일 내 전량 매칭 ✓" / 상태 2(M>0): "창밖 노출 N · 90일 밖 M".
+ * "전량 매칭"은 하드코드가 아니라 w90 실계산(M)으로 분기한다.
+ * 항등식 imp_uniq = 노출 + N 은 단일 창에선 정의상 성립하나, 교차창(w90) imp_uniq 가
+ * 어긋나면(수집 레이스·집계 버그) 라벨 대신 오류 표기 — 정합 검증이 이 라벨의 존재 이유.
+ * NOTE: 표면 문자열 리터럴 정리는 S1-B2(D-C2-S1-CONST-UNIFY 상수 모듈+가드 테스트) 몫.
+ */
+export function OutOfWindowLabel({
+  outOfWindow,
+  impUniqCurrent,
+  w90JoinMisses,
+  w90ImpUniq,
+}: {
+  outOfWindow: number
+  impUniqCurrent: number
+  w90JoinMisses?: number
+  w90ImpUniq?: number
+}) {
+  const identityViolated =
+    w90ImpUniq !== undefined && w90ImpUniq !== impUniqCurrent
+  if (identityViolated) {
+    return (
+      <p
+        data-testid="coverage-join-misses-error"
+        className="mt-3 text-xs font-medium text-red-600"
+      >
+        노출 집계 정합 오류 — imp_uniq {impUniqCurrent} ≠ 90일 기준 {w90ImpUniq}
+      </p>
+    )
+  }
+  if (outOfWindow <= 0) {
+    return null
+  }
+  // M(90일 미매칭) 미확정(w90 로딩/에러) → N 만 표기(90일 판정 보류)
+  if (w90JoinMisses === undefined) {
+    return (
+      <p data-testid="coverage-join-misses" className="mt-3 text-xs text-gray-400">
+        창밖 노출 {outOfWindow}
+      </p>
+    )
+  }
+  const allMatched = w90JoinMisses === 0
+  return (
+    <p
+      data-testid="coverage-join-misses"
+      className={`mt-3 text-xs ${allMatched ? 'text-gray-400' : 'text-amber-600'}`}
+    >
+      {allMatched
+        ? `창밖 노출 ${outOfWindow} · 90일 내 전량 매칭 ✓`
+        : `창밖 노출 ${outOfWindow} · 90일 밖 ${w90JoinMisses}`}
+    </p>
   )
 }
 
