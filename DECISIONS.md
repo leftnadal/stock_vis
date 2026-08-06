@@ -5842,6 +5842,14 @@ FIX-1 코드의 불변식 주석은 "is_eod_fresh 가드가 비거래일을 차�
 
 **정본**: **stock watchlist 정본 = `users.WatchlistItem` 단일**. 소비처 = 화면(`/users/watchlist/*` per-user)·dashboard strip(per-user)·advisory(per-user)·SFI ingest(D-I1b-1로 per-user 교정). chain_sight watchlist = 별개 도메인(SavedPath). legacy 분기 아님(단일 정본 + 이름 충돌).
 
+## D-I1b-3 (2026-08-06, SFI-I-1b — 스코프 교정 이전 admin 신호 행 소급 삭제 안 함)
+
+**결정**: `_coach_universe()` 스코프 교정(D-I1b-1) **이전**에 수집된 admin 전용 심볼의 AnalystSignalSnapshot 과거 행(실측: SMR·XE 각 2행, captured_at ≤ 2026-08-03)은 **소급 삭제하지 않는다**. 교정은 다음 발화부터 적용(신규 행만 스코프 9종), 기존 행은 무접촉.
+
+**Why**: ⑴ AnalystSignalSnapshot은 append 전용 시계열 정본(D-I1-2) — 원장에서 과거 행을 지우는 것은 append 불변식 위반. ⑵ 사후분석 표본 가치 — 교정 전/후 유니버스 변화(글로벌 14→스코프 9) 자체가 관측 대상(스코프 결함이 언제·무엇을 유입시켰는지의 증거). ⑶ 무해 — 조회 API(D-I2-1)는 유저 관심 심볼만 질의하므로 admin 잔여 행은 화면·advisory에 도달 불가. 코드/DB 변경 0(등재만, 판정 확정 사안).
+
+cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
+
 ## D-PROBE-PRODWRITE-RULE (2026-08-04, D-PROBE-PRODWRITE-EXCEPTION 승격 — 예외→규칙)
 
 **승격**: 기존 `D-PROBE-PRODWRITE-EXCEPTION`(2026-08-01, DECISIONS:5626)의 "1회 예외"를 **일반 규칙**으로 승격한다. **게이트 증거 + 세션 내 병진 명시 승인**이 갖춰지면 prod-write(migrate·beat 등록·수동 태스크 실행)를 **집행 허용**한다. 자율(승인 없는) prod-write는 여전히 금지.
