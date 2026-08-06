@@ -23,6 +23,7 @@ function makeMonitor(o: Partial<Monitor> = {}): Monitor {
     latest_score: 0.42,
     display: null,
     indicator_count: 1,
+    indicator_coverage: null,
     next_deadline: '2026-09-01',
     has_claim: true,
     close_suggested: false,
@@ -138,5 +139,36 @@ describe('SlimStrip', () => {
     )
     expect(screen.queryByTestId('panel-toggle-price')).not.toBeInTheDocument()
     expect(within(screen.getByTestId('token-zone')).getByText('—')).toBeInTheDocument()
+  })
+
+  it('MON-P2A T3: 점수 커버리지 접미(6/9) + 부분데이터 경고톤', () => {
+    render(
+      <SlimStrip
+        monitor={makeMonitor({ indicator_coverage: { sufficient: 6, total: 9 } })}
+        zoneClaim={makeClaim(zoneDisplay)}
+        scoreDelta={null}
+        indicators={indicators}
+        latestValueById={new Map()}
+      />
+    )
+    const c = screen.getByTestId('token-score-coverage')
+    expect(c).toHaveTextContent('6/9')
+    expect(c.className).toContain('text-amber-600') // sufficient<total → 경고톤
+  })
+
+  it('MON-P2A T3: 신호 패널에 부족 배지(sufficientById=false)', () => {
+    render(
+      <SlimStrip
+        monitor={makeMonitor()}
+        zoneClaim={makeClaim(zoneDisplay)}
+        scoreDelta={null}
+        indicators={indicators}
+        latestValueById={new Map()}
+        sufficientById={new Map([['i1', true], ['i2', false]])}
+      />
+    )
+    fireEvent.click(screen.getByTestId('panel-toggle-signals'))
+    // i2만 부족 배지 1개
+    expect(screen.getAllByTestId('signal-insufficient-badge')).toHaveLength(1)
   })
 })

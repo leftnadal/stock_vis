@@ -33,7 +33,7 @@ def get_scoring_params(indicator):
 
 
 def score_indicator(readings, dates, support_direction,
-                    epsilon=0.01, window=20, decay=0.95):
+                    epsilon=0.01, window=20, decay=0.95, min_n=None):
     """
     지표 원시값 -> Robust Z -> 점수(-1~1) + 메타데이터.
 
@@ -44,13 +44,20 @@ def score_indicator(readings, dates, support_direction,
         epsilon: Robust Z 분모 보호
         window: 히스토리 윈도우 (일)
         decay: 지수 감쇠 lambda
+        min_n: 충분성 최소 관측 수(카탈로그 초안, MON-P2A T1). n(=readings 행수)이
+               이보다 작으면 is_sufficient=False로 반환하고 **부분 윈도우로 점수를
+               계산하지 않는다**(무언 계산 금지). None이면 기존 하드 플로어(5)만 적용.
 
     Returns:
-        dict with score, raw_z, is_extreme_vol, effective_window, is_neutral_mad
+        dict with score, raw_z, is_extreme_vol, effective_window, is_neutral_mad, is_sufficient
     """
-    effective_window = min(window, len(readings))
+    n = len(readings)
+    effective_window = min(window, n)
 
-    if effective_window < 5:
+    # MON-P2A T1: 충분성 게이트. n = readings 행수(zscore 지표의 관측 수).
+    # n < max(5, min_n)이면 계산하지 않고 불충분 반환 → aggregator가 재정규화로 제외.
+    floor = max(5, min_n or 0)
+    if n < floor:
         return {
             'score': 0.0,
             'raw_z': 0.0,
@@ -173,11 +180,18 @@ def score_indicator_from_model(indicator, as_of_date=None):
             'is_sufficient': False,
         }
 
+    # MON-P2A T1: 카탈로그 min_n(초안) 주입 — source_key로 조회(상수 참조, DB 무접촉).
+    from apps.monitor.catalog import catalog_entry
+
+    entry = catalog_entry("stock", indicator.source_key) if indicator.source_key else None
+    min_n = entry.get("min_n") if entry else None
+
     return score_indicator(
         values, dates, indicator.support_direction,
         epsilon=params['epsilon'],
         window=params['window'],
         decay=params['decay'],
+        min_n=min_n,
     )
 
 

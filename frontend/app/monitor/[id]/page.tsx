@@ -118,6 +118,12 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
   const firstClaimId = claims?.[0]?.id ?? ''
   const { data: preview } = useClosePreview(firstClaimId, !!firstClaimId)
   const latestValueById = new Map((preview?.indicators ?? []).map((i) => [i.id, i.latest_value]))
+  // MON-P2A T3: 지표별 충분성(신호 패널 배지). is_sufficient 미제공 시 표기 안 함.
+  const sufficientById = new Map(
+    (preview?.indicators ?? [])
+      .filter((i) => i.is_sufficient !== undefined)
+      .map((i) => [i.id, i.is_sufficient as boolean])
+  )
 
   const [closingClaim, setClosingClaim] = useState<Claim | null>(null)
 
@@ -168,6 +174,7 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
         scoreDelta={scoreDelta}
         indicators={indicators ?? []}
         latestValueById={latestValueById}
+        sufficientById={sufficientById}
       />
 
       {/* T2 — 일지 (지배 영역) */}

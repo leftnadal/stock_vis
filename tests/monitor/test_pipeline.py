@@ -24,10 +24,13 @@ class TestEvaluateMonitor:
         assert result["data_coverage"] == 1.0
 
     def test_no_indicators_zero_score(self, monitor):
+        # MON-P2A T2: 유효 지표 0 → overall_score=None(구 0.0). data_coverage=0 →
+        # 상태기 현상 유지. 스냅샷은 non-nullable이라 0.0 플레이스홀더 저장(무해).
         result = evaluate_monitor(monitor)
-        assert result["overall_score"] == 0.0
+        assert result["overall_score"] is None
         assert result["data_coverage"] == 0.0
         assert MonitorSnapshot.objects.filter(monitor=monitor).count() == 1
+        assert MonitorSnapshot.objects.get(monitor=monitor).overall_score == 0.0
 
     def test_idempotent_upsert_same_day(self, make_indicator, add_readings):
         ind = make_indicator(window=10)

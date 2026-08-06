@@ -132,6 +132,12 @@ class MonitorViewSet(viewsets.ModelViewSet):
             .order_by("-asof_date")
             .values("overall_score")[:1]
         )
+        # MON-P2A T3: 커버리지 표출용 — 최신 스냅샷 data_coverage(유효 비율).
+        latest_cov = (
+            MonitorSnapshot.objects.filter(monitor=OuterRef("pk"))
+            .order_by("-asof_date")
+            .values("data_coverage")[:1]
+        )
         qs = (
             Monitor.objects.filter(user=self.request.user)
             .annotate(
@@ -139,9 +145,16 @@ class MonitorViewSet(viewsets.ModelViewSet):
                     *_SEVERITY_WHENS, default=Value(3), output_field=IntegerField()
                 ),
                 latest_score=Subquery(latest_snap),
+                latest_coverage=Subquery(latest_cov),
                 indicator_count=Count(
                     "indicators",
                     filter=Q(indicators__is_active=True),
+                    distinct=True,
+                ),
+                # 커버리지 분모 = 활성·비일시정지 지표 수(coverage 산정 기준과 일치).
+                active_unpaused=Count(
+                    "indicators",
+                    filter=Q(indicators__is_active=True, indicators__is_paused=False),
                     distinct=True,
                 ),
                 next_deadline=Min(

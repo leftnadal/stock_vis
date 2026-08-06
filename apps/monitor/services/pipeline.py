@@ -36,14 +36,17 @@ def evaluate_monitor(monitor, as_of_date=None):
     for ind in indicators:
         # dispatch: bounded 지표만 선형 매핑 우회, 그 외는 기존 score_indicator_from_model 통과(행위보존).
         res = score_indicator_dispatch(ind, as_of_date=as_of)
-        indicator_scores[str(ind.id)] = res['score']
+        sufficient = bool(res.get('is_sufficient')) and not res.get('is_paused')
+        # MON-P2A T2: aggregator 입력 계약 확장 — score만이 아니라 sufficiency도 전달
+        # (재정규화가 무데이터/부분윈도우 지표를 분모에서 제외할 수 있도록).
+        indicator_scores[str(ind.id)] = {'score': res['score'], 'is_sufficient': sufficient}
         if not ind.is_paused:
             scored += 1
-            if res.get('is_sufficient') and not res.get('is_paused'):
+            if sufficient:
                 covered += 1
 
     agg = aggregate_monitor(monitor, indicator_scores)
-    overall_score = agg['overall_score']
+    overall_score = agg['overall_score']  # 유효 지표 0이면 None(MON-P2A T2)
 
     data_coverage = (covered / scored) if scored else 0.0
 
@@ -63,11 +66,15 @@ def evaluate_monitor(monitor, as_of_date=None):
     )
     new_state = state_res['state']
 
+    # MON-P2A T2: 유효 지표 0 → overall_score=None. MonitorSnapshot.overall_score는
+    # non-nullable(마이그레이션 0 제약) → 저장은 0.0 플레이스홀더. 이 경우 data_coverage=0
+    # → determine_state가 현상 유지(전이 없음)라 점수값 자체는 판정에 미사용(무해).
+    snapshot_score = overall_score if overall_score is not None else 0.0
     snapshot, _created = MonitorSnapshot.objects.update_or_create(
         monitor=monitor,
         asof_date=as_of,
         defaults={
-            'overall_score': overall_score,
+            'overall_score': snapshot_score,
             'state': new_state,
             'data_coverage': round(data_coverage, 4),
         },

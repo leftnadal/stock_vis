@@ -51,6 +51,7 @@ function makeMonitor(overrides: Partial<Monitor> = {}): Monitor {
       phase_icon: '🌗',
     },
     indicator_count: 2,
+    indicator_coverage: null,
     next_deadline: null,
     has_claim: true,
     close_suggested: false,
