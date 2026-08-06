@@ -1,0 +1,614 @@
+{
+ "buckets": {
+  "유틸리티": [
+   {
+    "name_ko": "재생에너지",
+    "evidence": [
+     "renewable energy",
+     "battery storage"
+    ],
+    "article_count": 335
+   },
+   {
+    "name_ko": "원자력 발전",
+    "evidence": [
+     "nuclear energy",
+     "nuclear power",
+     "power plant",
+     "power plants"
+    ],
+    "article_count": 364
+   },
+   {
+    "name_ko": "전력 수요",
+    "evidence": [
+     "electricity demand",
+     "power demand",
+     "energy demands",
+     "meet growing"
+    ],
+    "article_count": 359
+   },
+   {
+    "name_ko": "인프라 투자",
+    "evidence": [
+     "capital expenditure",
+     "significant capital",
+     "capital investment",
+     "infrastructure investments"
+    ],
+    "article_count": 127
+   }
+  ],
+  "소매·소비재": [
+   {
+    "name_ko": "소비재 및 소매",
+    "evidence": [
+     "consumer spending",
+     "consumer demand",
+     "consumer staples",
+     "home improvement",
+     "store sales",
+     "comparable sales"
+    ],
+    "article_count": 507
+   },
+   {
+    "name_ko": "판매 및 성장",
+    "evidence": [
+     "sales growth",
+     "pricing power",
+     "drive growth",
+     "intense competition",
+     "product development",
+     "launching new"
+    ],
+    "article_count": 253
+   },
+   {
+    "name_ko": "기업 실적 및 재무",
+    "evidence": [
+     "fiscal 2026",
+     "fiscal 2025",
+     "full guidance",
+     "reported better",
+     "fiscal earnings",
+     "quarterly earnings revenue"
+    ],
+    "article_count": 121
+   },
+   {
+    "name_ko": "배당 및 주주환원",
+    "evidence": [
+     "dividend increase",
+     "dividend increases",
+     "market gains",
+     "blue chip"
+    ],
+    "article_count": 64
+   }
+  ],
+  "소재·화학": [
+   {
+    "name_ko": "금속 및 광업",
+    "evidence": [
+     "gold prices"
+    ],
+    "article_count": 127
+   },
+   {
+    "name_ko": "글로벌 공급망",
+    "evidence": [
+     "supply chains",
+     "global supply"
+    ],
+    "article_count": 34
+   }
+  ],
+  "금융·결제·거래소": [
+   {
+    "name_ko": "자산 및 투자 관리",
+    "evidence": [
+     "investment management",
+     "wealth management",
+     "assets management",
+     "actively managed"
+    ],
+    "article_count": 516
+   },
+   {
+    "name_ko": "시장 분석 및 투자 등급",
+    "evidence": [
+     "average price target",
+     "hold rating",
+     "moderate buy consensus",
+     "raised price target",
+     "consensus rating",
+     "rating analysts"
+    ],
+    "article_count": 534
+   },
+   {
+    "name_ko": "상장 및 주식 발행",
+    "evidence": [
+     "public offering"
+    ],
+    "article_count": 285
+   },
+   {
+    "name_ko": "중앙은행 및 통화정책",
+    "evidence": [
+     "federal reserve"
+    ],
+    "article_count": 226
+   },
+   {
+    "name_ko": "시장 지수 및 거래 상품",
+    "evidence": [
+     "exchange traded"
+    ],
+    "article_count": 28
+   }
+  ],
+  "자동차·부품·산업재": [
+   {
+    "name_ko": "전기차 및 자율주행",
+    "evidence": [
+     "electric vehicle",
+     "self driving",
+     "electric vehicles",
+     "full self driving",
+     "electric vehicle maker"
+    ],
+    "article_count": 390
+   },
+   {
+    "name_ko": "항공우주 및 방위산업",
+    "evidence": [
+     "aerospace defense",
+     "air force",
+     "space exploration",
+     "defense spending"
+    ],
+    "article_count": 228
+   },
+   {
+    "name_ko": "농업 및 중장비",
+    "evidence": [
+     "john deere"
+    ],
+    "article_count": 190
+   },
+   {
+    "name_ko": "항공기 제조",
+    "evidence": [
+     "737 max",
+     "boeing 737",
+     "boeing 737 max",
+     "pratt whitney"
+    ],
+    "article_count": 213
+   }
+  ],
+  "여행·숙박·크루즈": [
+   {
+    "name_ko": "여행 수요",
+    "evidence": [
+     "travel demand",
+     "online travel"
+    ],
+    "article_count": 131
+   },
+   {
+    "name_ko": "관광지",
+    "evidence": [
+     "san francisco",
+     "economic impact"
+    ],
+    "article_count": 36
+   }
+  ],
+  "부동산·REIT": [
+   {
+    "name_ko": "부동산 투자",
+    "evidence": [
+     "estate investment",
+     "real estate investment",
+     "strategic investment"
+    ],
+    "article_count": 130
+   },
+   {
+    "name_ko": "부동산 유형",
+    "evidence": [
+     "self storage",
+     "data center market",
+     "square feet"
+    ],
+    "article_count": 91
+   },
+   {
+    "name_ko": "시장 수요",
+    "evidence": [
+     "high demand",
+     "robust demand"
+    ],
+    "article_count": 28
+   },
+   {
+    "name_ko": "자산 관리",
+    "evidence": [
+     "capital management llc",
+     "diversified portfolio"
+    ],
+    "article_count": 26
+   }
+  ],
+  "통신·네트워크": [
+   {
+    "name_ko": "네트워크 장비",
+    "evidence": [
+     "juniper networks",
+     "aim provide",
+     "aiming provide"
+    ],
+    "article_count": 72
+   },
+   {
+    "name_ko": "통신 서비스",
+    "evidence": [
+     "service providers",
+     "high speed",
+     "public safety"
+    ],
+    "article_count": 110
+   },
+   {
+    "name_ko": "기술 협력",
+    "evidence": [
+     "announced partnership",
+     "collaboration aims provide",
+     "global technology"
+    ],
+    "article_count": 28
+   },
+   {
+    "name_ko": "구조조정",
+    "evidence": [
+     "job cuts",
+     "000 jobs",
+     "strategic pivot"
+    ],
+    "article_count": 51
+   }
+  ],
+  "에너지·유전·수처리": [
+   {
+    "name_ko": "원유 및 가스",
+    "evidence": [
+     "oil prices",
+     "oil gas",
+     "crude oil",
+     "oil price",
+     "crude oil prices"
+    ],
+    "article_count": 387
+   },
+   {
+    "name_ko": "지정학 및 에너지 공급망",
+    "evidence": [
+     "middle east",
+     "iran war",
+     "strait hormuz"
+    ],
+    "article_count": 158
+   },
+   {
+    "name_ko": "에너지 탐사 및 생산",
+    "evidence": [
+     "permian basin",
+     "natural resources",
+     "gas production"
+    ],
+    "article_count": 265
+   },
+   {
+    "name_ko": "정유 및 마진",
+    "evidence": [
+     "refining margins"
+    ],
+    "article_count": 92
+   }
+  ],
+  "헬스케어·의료기기·제약": [
+   {
+    "name_ko": "생명 과학",
+    "evidence": [
+     "life sciences",
+     "technological advancements",
+     "research development"
+    ],
+    "article_count": 221
+   },
+   {
+    "name_ko": "신약 개발",
+    "evidence": [
+     "drug discovery",
+     "drug development",
+     "cancer drug"
+    ],
+    "article_count": 310
+   },
+   {
+    "name_ko": "임상 시험",
+    "evidence": [
+     "clinical trial",
+     "clinical trials",
+     "phase trial",
+     "late stage",
+     "early stage",
+     "clinical stage"
+    ],
+    "article_count": 352
+   },
+   {
+    "name_ko": "의료 및 제약 규제",
+    "evidence": [
+     "fda approval",
+     "medicare advantage"
+    ],
+    "article_count": 308
+   },
+   {
+    "name_ko": "체중 감량 의약품",
+    "evidence": [
+     "weight loss",
+     "novo nordisk"
+    ],
+    "article_count": 131
+   }
+  ],
+  "반도체·메모리": [
+   {
+    "name_ko": "반도체 산업",
+    "evidence": [
+     "semiconductor industry",
+     "semiconductor sector",
+     "semiconductor etf"
+    ],
+    "article_count": 550
+   },
+   {
+    "name_ko": "메모리 반도체",
+    "evidence": [
+     "memory chip",
+     "memory chips",
+     "memory storage"
+    ],
+    "article_count": 389
+   },
+   {
+    "name_ko": "반도체 제조",
+    "evidence": [
+     "chip manufacturing",
+     "chip maker",
+     "advanced packaging",
+     "semiconductor equipment"
+    ],
+    "article_count": 555
+   }
+  ],
+  "미디어·스트리밍·검색": [
+   {
+    "name_ko": "소셜 미디어",
+    "evidence": [
+     "social media",
+     "mark zuckerberg"
+    ],
+    "article_count": 223
+   },
+   {
+    "name_ko": "스트리밍 서비스",
+    "evidence": [
+     "revenue streams",
+     "streaming giant"
+    ],
+    "article_count": 120
+   }
+  ],
+  "클라우드·엔터프라이즈SW": [
+   {
+    "name_ko": "클라우드 인프라",
+    "evidence": [
+     "google cloud",
+     "cloud infrastructure",
+     "amazon web services",
+     "microsoft azure",
+     "oracle cloud"
+    ],
+    "article_count": 901
+   },
+   {
+    "name_ko": "엔터프라이즈 소프트웨어",
+    "evidence": [
+     "enterprise software",
+     "microsoft 365",
+     "software giant"
+    ],
+    "article_count": 387
+   },
+   {
+    "name_ko": "클라우드 서비스 성장",
+    "evidence": [
+     "cloud growth",
+     "cloud revenue"
+    ],
+    "article_count": 285
+   }
+  ]
+ },
+ "themes": [
+  {
+   "name": "데이터 센터",
+   "evidence": [
+    "data center",
+    "data centers"
+   ],
+   "buckets": [
+    [
+     "부동산·REIT",
+     0.352
+    ],
+    [
+     "유틸리티",
+     0.307
+    ],
+    [
+     "반도체·메모리",
+     0.125
+    ]
+   ],
+   "hhi": 0.194,
+   "total": 5233,
+   "article_count": 2594
+  },
+  {
+   "name": "인공지능",
+   "evidence": [
+    "artificial intelligence"
+   ],
+   "buckets": [
+    [
+     "클라우드·엔터프라이즈SW",
+     0.24
+    ],
+    [
+     "반도체·메모리",
+     0.233
+    ],
+    [
+     "미디어·스트리밍·검색",
+     0.156
+    ]
+   ],
+   "hhi": 0.155,
+   "total": 2900,
+   "article_count": 2326
+  },
+  {
+   "name": "공급망",
+   "evidence": [
+    "supply chain"
+   ],
+   "buckets": [
+    [
+     "자동차·부품·산업재",
+     0.162
+    ],
+    [
+     "소매·소비재",
+     0.154
+    ],
+    [
+     "반도체·메모리",
+     0.121
+    ]
+   ],
+   "hhi": 0.104,
+   "total": 1245,
+   "article_count": 811
+  },
+  {
+   "name": "천연가스",
+   "evidence": [
+    "natural gas"
+   ],
+   "buckets": [
+    [
+     "에너지·유전·수처리",
+     0.461
+    ],
+    [
+     "유틸리티",
+     0.416
+    ],
+    [
+     "소재·화학",
+     0.032
+    ]
+   ],
+   "hhi": 0.388,
+   "total": 1047,
+   "article_count": 842
+  },
+  {
+   "name": "청정 에너지",
+   "evidence": [
+    "clean energy"
+   ],
+   "buckets": [
+    [
+     "유틸리티",
+     0.588
+    ],
+    [
+     "소재·화학",
+     0.152
+    ],
+    [
+     "에너지·유전·수처리",
+     0.104
+    ]
+   ],
+   "hhi": 0.383,
+   "total": 584,
+   "article_count": 374
+  },
+  {
+   "name": "양자 컴퓨팅",
+   "evidence": [
+    "quantum computing"
+   ],
+   "buckets": [
+    [
+     "클라우드·엔터프라이즈SW",
+     0.318
+    ],
+    [
+     "통신·네트워크",
+     0.257
+    ],
+    [
+     "반도체·메모리",
+     0.205
+    ]
+   ],
+   "hhi": 0.219,
+   "total": 469,
+   "article_count": 409
+  },
+  {
+   "name": "클라우드 컴퓨팅",
+   "evidence": [
+    "cloud computing"
+   ],
+   "buckets": [
+    [
+     "클라우드·엔터프라이즈SW",
+     0.343
+    ],
+    [
+     "미디어·스트리밍·검색",
+     0.175
+    ],
+    [
+     "부동산·REIT",
+     0.154
+    ]
+   ],
+   "hhi": 0.2,
+   "total": 467,
+   "article_count": 275
+  }
+ ]
+}

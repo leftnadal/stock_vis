@@ -1430,3 +1430,11 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **원인·판정**: Alpha Vantage NEWS_SENTIMENT가 일부 정형 기사(MarketBeat instant-alerts·13F/insider 신고류)를 **`summary=null`로 제공** → `news_articles.summary` not-null 제약이 저장 시점에 정당 거부. **이상 아님**(관문 승리): ⑴ 해당일(2025-10-08·10-15·11-04)은 드롭과 무관하게 **≥3 커버 유지**(드롭 6유니크 기사가 그날 유일 기사가 아님), ⑵ exit0·status=ok·**시스템 ALERT 무**가 설계상 정상(정당 드롭은 무알림). CN-B7-PROBE로 원인 (A) AV 응답 결함 확정(우리 파싱 결함 (B) 아님 — Failing row가 AV 원본 summary=null임을 직접 노출).
 
 **교훈**: ⑴ **`skipped` 카운터 = save 실패(드롭) 건수** — 재시도분 포함(6유니크가 8회 시도로 계상). 별도 fetch-레벨 skip(url-too-long)은 이 카운터에 미포함. ⑵ 정당 드롭(외부 제공자 결함)과 코드 결함(우리 파싱)의 구분은 **로그 Failing row 원문**으로(요약 아님). ⑶ 커버 완전성(≥1) + 정당 드롭은 **모순 아님** — 커버는 대상일 기사 존재로 판정, 드롭은 개별 기사 품질 문제. 복구 불요(저가치 정형기사·해당일 커버 유지). 근본 수리는 별도 트랙(모델 `summary` default="" or provider 보정).
+
+## 정상 어휘가 티커 필터에 오소거 — 단일토큰 회사명 매칭 (채번 후보, NEWS-VOCAB-BUILD Rev.1→2 2026-08-06) `[data][process]`
+
+**증상**: 뉴스 n-gram에서 종목명·티커를 기계 제거할 때, 회사 `stock_name`의 **단일 토큰**(energy·data·center 등 흔한 도메인어)까지 필터 재료로 넣으면 정상 카테고리 어휘가 오소거됨. Rev.1에서 `data center`·`renewable energy`·`clean energy`·`real estate`가 "회사명 토큰 포함"으로 탈락 → 핵심 교차 테마가 어휘에서 소실.
+
+**원인**: `stock_name`에 흔한 명사(Energy, Data …)가 다수 포함 → 단일 토큰을 회사명 시그널로 쓰면 도메인 일반어와 충돌. 티커도 짧은 것(AI·MU)은 도메인어와 겹침(단, 토큰 길이>2 필터로 대부분 회피).
+
+**규칙**: 티커/회사명 제거는 **풀네임 n-gram 매칭 + 티커 토큰(길이>2) + 거래소어(nasdaq/nyse)만**. **회사명 단일 토큰 매칭 금지**. Rev.2에서 교정 = `data center` 등 부활 확인.
