@@ -237,13 +237,15 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 **How to apply**: common-bugs 3쌍 헤딩을 `#70a/#70b`·`#71a/#71b`·`#72a/#72b`로 개정 + 각 하단 한 줄 주석. 본문 무수정. 재발 방지 = D-NUMBERING-MGMT-ONLY(아래).
 - **적용 이력**: #78 3중복(규칙 시행 전 발생분)에 a/b/c 확장 적용 (BATCH-19) — a=20b-f2 GOAL-CREATE-UI(`3ba4cf00` 11:04)·b=SEAL-PUSH-1b heat 로그(`9540993a` 11:38)·c=SEC β R2 2-dot diff(`663b17e5` 12:54), 착지 시간순.
 - **적용 이력**: #80·#81 각 2중복에 a/b 확장 적용 (BATCH-20) — #80: a=COVERAGE-DETAIL migrate(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 LLM 모순(`6d610d67` 13:40) / #81: a=실행환경 절대경로(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 localStorage 캐시(`6d610d67` 13:40), 착지 시간순. ⚠b(REVIEW-P2)는 규칙 시행(07-31) 후 비mgmt 세션 채번 = 규칙 위반 경위(ⓑ 조사, 처방 디렉터 회부).
+- **적용 이력**: #83·#84 각 2중복에 a/b 확장 적용 (BATCH-22) — a=SFI-I1(`9363cac9` 08-03 09:37, BATCH-20 mgmt 채번)·b=S3-MINDMAP(`2daa386f` 08-03 09:53, 비mgmt 세션), 착지 시간순. ⚠b(S3-MINDMAP)는 처방 A 착지(`05211a02`) 이전 시작 세션의 08-03 지연 착지분 = B 트리거 미해당(아래 D-NUMBERING-MGMT-ONLY 처방 정밀화 참조).
 
 ## [2026-07-31] D-NUMBERING-MGMT-ONLY — common-bugs 채번은 mgmt 세션 전용 (재발 방지) [harness]
 
 **결정(규약)**: **common-bugs 번호 부여는 mgmt 세션 전용**. build/측정 세션은 버그 패턴 발견 시 **"채번 후보"로만 보고**하고 번호를 쓰지 않는다. mgmt가 **push 직전 재grep 후 일괄 채번**(#40 재fetch와 동일 시점).
 - **Why**: 채번 직전 재grep 규율(D-NUMBERING-DUP 재발 방지 1차안)은 **병렬 세션 동시 진행의 착지 순서 충돌을 구조적으로 못 막는다** — 두 세션이 같은 순간 재grep하면 둘 다 같은 최댓값+1을 봄. #70 충돌 후 재grep 규율을 넣었으나 **#71·#72가 재발**(2026-07-28)로 실증. 채번 주체를 mgmt 단일 세션류로 좁혀 동시성 자체를 제거.
 - **운용**: build/측정 세션 보고에 "채번 후보: <내용>" 명시 → 차기 mgmt 배치가 실측+1로 부여. 관련=[[lesson_origin_main_advance_union_rebase]].
-- **2026-08-03 처방**: #80·#81 충돌(비mgmt 세션 REVIEW-P2의 규칙 시행 후 채번 = 규칙 위반 분류, BATCH-20 ⓑ 조사)에 대해 **A(전파 보강) 채택** — 가중합 A 4.10 / B(훅 강제) 3.85 / C(안내) 3.00, 마진 0.25 타이브레이커 = 단계적 방어·1인 비용(B는 hardening(c) 공사 동반). **B 조건부 트리거 등재: 처방 A 착지 이후 비mgmt 채번 위반이 1회라도 재발하면 hardening(c)(훅 scripts/hooks 이전 + core.hooksPath)와 결합해 pre-commit 검사 'common-bugs 신규 #NN 헤딩은 mgmt 브랜치만 허용'을 즉시 집행한다.**
+- **2026-08-03 처방**: #80·#81 충돌(비mgmt 세션 REVIEW-P2의 규칙 시행 후 채번 = 규칙 위반 분류, BATCH-20 ⓑ 조사)에 대해 **A(전파 보강) 채택** — 가중합 A 4.10 / B(훅 강제) 3.85 / C(안내) 3.00, 마진 0.25 타이브레이커 = 단계적 방어·1인 비용(B는 hardening(c) 공사 동반). **B 조건부 트리거(확정 문안, 2026-08-06 정밀화 — BATCH-22): 처방 A 착지(`05211a02`) 이후에 시작된 세션의 비mgmt 채번 위반 1회 = B 즉시 집행. A 이전 시작 세션의 지연 착지분은 트리거로 오인하지 않는다.** (B = hardening(c): 훅 `scripts/hooks` 이전 + `core.hooksPath` + pre-commit 검사 'common-bugs 신규 #NN 헤딩은 mgmt 브랜치만 허용'.)
+  - **부기**: S3-MINDMAP #83/#84 08-03 위반은 **A 이전 시작 세션의 지연 착지분** → 트리거 미해당(BATCH-22 판정).
 
 ## [2026-07-31] D-C2-DETAIL-MIG — coverage_detail surface 등재 = no-op 마이그 조건부 수용 (경로 A) + IssuanceLog/ImpressionLog 경계 정본화 [platform] [shared]
 
@@ -268,6 +270,22 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 **관계**: C-2 퍼널 분석(P2-COVERAGE-C2) 자체는 여전히 8월 초 숙성 게이트 유지 — 본 결정은 **surface 등재분만** 앞당긴다(데이터 수집 착수 ≠ 분석 착수). STRIP-REHOME(D-DASH-SURFACE-UNIFY)으로 스트립이 실 표면 `/`에 자리했으므로, 지금 등재하면 이후 축적분이 통일구간 데이터로 깨끗하게 쌓인다.
 
 **How to apply**: TASKQUEUE `COVERAGE-DETAIL-SURFACE`를 게이트 보류 → **build 대기(등재됨)**로 전환. 구현은 shared 구획 위임, `makemigrations --dry-run` 무마이그 확인 의무(마이그 발생 시 HALT). 본 결정은 등재만(prod 쓰기 0).
+
+---
+
+## [2026-08-06] D-C2-GATE-SPLIT — C-2 게이트 = 분할 개시 (C안) [dashboard] [platform]
+
+**결정**: 2026-08-06 C-2 게이트 = **분할 개시(C안)**. 가중합 **C 4.25 > B 3.55 > A 3.15, 마진 0.70(0.40~1.00 구간) → 사용자 확인으로 확정**. 안건별 증거 상태가 갈려(⑵⑷⑸ 확보 / ⑴⑶ 부족) 증거선 그대로 분할한다.
+
+**스테이지 1 (즉시 설계 개시)** — TASKQUEUE `C2-S1-DESIGN`:
+- ⓐ **C2-DESIGN-JOIN-MISSES**: 근거 = w90 join_misses=0 실측(진성 미스 없음) → "수리"가 아니라 **창 경계 라벨링/표기 정책** 문제로 재정의. (w7 join_misses=28은 ≤07-29 시그널 impression의 창 경계 효과.)
+- ⓑ **news_chip 커버리지 편입**: 근거 = ~32행(산술 도출: 총 imp 83 − dashboard_eod 36 − coverage_detail 15), dashboard_eod와 병행 축적. **단 설계 지시서 서두에 read-only 검증(news_chip 일자별 행수) 선행 — 미확인 시 스테이지 2로 강등.**
+- ⓒ **COVERAGE-SURFACE-CONST-UNIFY**: 데이터 무관 부채성 소형(FE surface 상수 단일화).
+
+**스테이지 2 (08-13 재게이트)** — TASKQUEUE `C2-S2-REGATE`: 퍼널 상수 튜닝 · coverage_detail 층 편입.
+- **트리거(방문일 기준, 달력 아님)**: "08-06 이후 신규 방문일 ≥3, 그중 coverage_detail 방문 ≥2일 → 개시. 미달 시 자동 연장(재게이트만 반복, 재결정 불요). 재게이트 측정 = MEASURE-C2-GATE 5축 재사용."
+
+**근거 요약**: 08-02~05 방문 0 실측 → 데이터 병목 = **방문일 수**(달력 아님). 스테이지 1은 방문일 무관 증거 확보분(join_misses 창 정책·news_chip 병행·상수 부채), 스테이지 2는 방문일 축적 대기분(퍼널 상수·coverage_detail 층).
 
 ---
 

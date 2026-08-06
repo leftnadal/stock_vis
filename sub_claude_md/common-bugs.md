@@ -1230,7 +1230,8 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **해결·점검**: 지시서·요청서의 **각 실행 단계는 착수 前 전제 코드 경로를 grep/실측 확증** 후 비준. 부재 시 → 그 단계는 "구축 필요"로 재분류·별도 트랙 이관(사변 구축 금지). SEC β 사례 = D-SECB-GATE2-AMEND-1(G-d 제거→SECB-EXPOSURE 이관). cf. #79.
 
-## [chainsight] 파이프라인 배포 ≠ 데이터 적재 — 코드 착지가 DB 반영을 뜻하지 않음 (#83, 2026-08-03 S3-MINDMAP) [chainsight][process]
+## [chainsight] 파이프라인 배포 ≠ 데이터 적재 — 코드 착지가 DB 반영을 뜻하지 않음 (#83b, 2026-08-03 S3-MINDMAP) [chainsight][process]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. b=후착지 2daa386f 2026-08-03 09:53, S3-MINDMAP 비mgmt 세션)*
 
 **증상**: D-DOMAIN-AUTOMATION(도메인 태깅 파이프라인)이 배포·원장상 "완료"로 기록됐으나, S3-MINDMAP 착수 시 실측(S3-R)하니 `relation_domain`·`relation_domain_draft`·`domain_machine_check` **DB 전건 0**. 마인드맵 카테고리 재료가 전무 → 착수조건("relation_domain 승인본 반영")이 미충족인데 충족으로 오인될 뻔함.
 
@@ -1238,7 +1239,8 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **해결·점검**: ⑴ "파이프라인 배포"와 "데이터 적재"를 **원장에서 분리 기록**(배포=코드 착지, 적재=`--apply` 실행+행수 실측). ⑵ 다운스트림(마인드맵 등) 착수조건은 **DB 행수 실측으로 확증**(`.exclude(field__isnull=True).count()`), 원장 "완료" 라벨 신뢰 금지. ⑶ 본 건 복구 = S0 `backfill_review_domains`(검수 CSV→DB 133건). cf. #79·[[lesson_dev_prod_shared_db]].
 
-## [chainsight] 2단계 apply에서 키 변형 후 재실행 매칭 실패 — already-applied 감지 필요 (#84, 2026-08-03 REVIEW-P2 회고) [chainsight]
+## [chainsight] 2단계 apply에서 키 변형 후 재실행 매칭 실패 — already-applied 감지 필요 (#84b, 2026-08-03 REVIEW-P2 회고) [chainsight]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. b=후착지 2daa386f 2026-08-03 09:53, S3-MINDMAP 비mgmt 세션)*
 
 **증상**: REVIEW-P2 실반영에서 `apply_review_verdicts --apply`(CHANGE 타입 교체) 후 `--apply-change-rev`가 build_plan을 재실행할 때, CHANGE 행의 원 키(PARTNER_WITH)가 이미 COMPETES_WITH로 바뀌어 forward-exact 매칭=0 → H-C(부분반영 금지) 오발·HALT. DB는 안전했으나(무변경 HALT) 2단계 진행이 막힘.
 
@@ -1247,7 +1249,8 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **해결·점검**: 키가 변형되는 반영은 **결과 키로 '이미 반영됨'을 감지**(already_applied: 결과 키+approved 확인)해 unmatched 대신 흡수 → 전체 재실행 idempotent. CHANGE·CHANGE_REV 대칭 처리. 교훈: 다단계 apply에서 매칭 키가 변형되면 각 단계의 재매칭이 앞 단계 결과를 삼킬 수 있음 — 멱등 감지를 모든 변형 유형에 대칭 적용.
 <!-- 아래 3건 = SFI-I1(build 세션) 발견·채번 회수분(자가채번 #80~82 → origin/main 선점 충돌로 회수). BATCH-20 push-직전 재grep으로 #83~#85 부여(실측+1, SFI-I1-BUGNUM 완료). -->
 
-## FMPFundamentals.get_rating이 `/stable/rating`(404 오경로) 호출 — 올바른 경로 `/stable/ratings-snapshot` (#83, SFI-I1 Part A 2026-08-01) [backend][stocks]
+## FMPFundamentals.get_rating이 `/stable/rating`(404 오경로) 호출 — 올바른 경로 `/stable/ratings-snapshot` (#83a, SFI-I1 Part A 2026-08-01) [backend][stocks]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. 기존 '#83' 단독 인용은 문맥상 해당 내용 쪽. a=선착지 9363cac9 2026-08-03 09:37, BATCH-20 mgmt 채번)*
 
 **증상**: `FMPFundamentals.get_rating(symbol)`이 항상 None 반환(로그 `FMP API HTTP 오류 (rating/X): 404`). 종합 투자등급이 화면·엔진 어디에도 채워지지 않음.
 
@@ -1255,7 +1258,8 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **규칙**: SFI-I1에서 `get_rating`을 `/stable/ratings-snapshot`로 교정. **항상 None이었으므로 회귀 없음 — 행위 변화는 "None→값"뿐**(테스트로 명시). 신규 래퍼 메서드 `get_ratings_snapshot`가 정본 경로, `get_rating`은 이를 위임.
 
-## `/stable/analyst-estimates`는 `period` 파라미터 필수 — 누락 시 HTTP 400, 6월 audit "http-400"은 오진 (#84, SFI-I1 Part A 2026-08-01) [backend][stocks]
+## `/stable/analyst-estimates`는 `period` 파라미터 필수 — 누락 시 HTTP 400, 6월 audit "http-400"은 오진 (#84a, SFI-I1 Part A 2026-08-01) [backend][stocks]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. 기존 '#84' 단독 인용은 문맥상 해당 내용 쪽. a=선착지 9363cac9 2026-08-03 09:37, BATCH-20 mgmt 채번)*
 
 **증상**: `/stable/analyst-estimates?symbol=X` → 400 `Query Error: Invalid or missing query parameter - period`. 6월 `fmp_api_audit/report.md`(라인 157)가 이를 `http-400`으로 기록 → "이 엔드포인트는 못 씀(플랜 차단)"으로 오해될 소지.
 
