@@ -1356,3 +1356,20 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **규칙**: ⑴ 커밋 해시 앵커는 **최종 rebase 이후에 확정 기록**(rebase 예정이면 잠정 표시). ⑵ 부득이
 rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교체**(커밋 메시지는 불변, 히스토리 재작성 금지).
 ⑶ 교체 후 `git grep <구해시들>` = 0 확인(dangling 잔존 점검). 앵커 후보 = 슬라이스별 커밋·머지 hash.
+**★변종 (#88b, TH-TNV-CHAIN-1F 2026-08-06)**: 긴 1줄 명령을 프롬프트에 붙여넣으면 **터미널 소프트랩이 실제 개행을 삽입**해 `source`/경로/인자가 쪼개짐(실측: `source ... activate`→arg 분리, 긴 scratchpad 경로→`scratch`/`pad/…` 분리, `bash`→첫글자 탈락 `ash`, `checkout --detach\n origin/main`→인자 유실). **해결 = 모든 긴 병진 명령을 짧은 셸 스크립트 파일로 만들고**(홈 디렉터리·긴 경로 내부화) 병진은 `bash ~/짧은.sh` 한 줄만 실행. 스크립트는 CC가 쓰고(파일 쓰기=DB/launchctl 아님) 병진이 트리거(레일 유지).
+
+## 세션 대화의 날짜·시각 가정 금지 — 발화/배포 선후는 machine clock·last_run 실측 전용 (#89, TH-TNV-CHAIN-1F 2026-08-06) [process][harness][ops]
+
+**증상**: G-fire 판정에서 "18:00 ET 08-05 발화 = 검증 대상"으로 가정했으나, 실측하니 그 발화(last_run ET 18:00 08-05 = KST 07:00 08-06)가 **배포(KST 11:50 08-06)보다 먼저** → 구 코드 발화 = 체인 로그 부재가 정상. 감독의 날짜 지정조차 실측이 재교정.
+
+**원인**: KST-ET **13h 시차**(EDT 기준)로 "오늘/어제/발화일" 대화 감각이 자주 틀림. 세션이 며칠 걸치면 date-change 알림도 KST 기준이라 ET 날짜와 어긋남.
+
+**규칙**: 발화/배포/롤오버의 **선후·날짜 판정은 반드시 machine clock·`PeriodicTask.last_run_at`·row `created_at` 실측으로만**. 대화 속 날짜 문장(감독 포함)은 가정 금지·실측으로 검증. 로그/DB의 UTC를 `astimezone`으로 ET·KST 병기해 대조. cf. #88b.
+
+## LOGGING 로거 미라우팅 갭 — logger.info 호출 ≠ 파일 기록 ("활성화≠배포"의 로깅판) (#90, TH-TNV-CHAIN-1F 2026-08-06) [logging][observability]
+
+**증상**: heat_tasks가 `logger.info("TNV_CHAIN …")`로 관측성 로그를 남기도록 구현(§B.1)했으나, 실전 발화 후 celery-worker.log·stocks.log 어디에도 없음. 체인은 DB로 실행 입증됐는데 **로그만 부재**.
+
+**원인**: `config/settings.py` LOGGING이 `packages.shared.stocks`·`celery.error_monitor` 로거만 파일 핸들러에 연결. `apps.chain_sight.tasks.heat_tasks`(=`getLogger(__name__)`)는 미등록 → INFO가 root last-resort(WARNING 임계)로 빠져 **드롭**. `logger.info` 호출이 있다고 파일 기록이 되는 게 아님.
+
+**규칙**: ⑴ 관측성 로그를 **설계 근거(게이트 증거)로 쓸 때는 로거 라우팅(파일 핸들러 도달)까지 실측 확인** — "코드가 log 호출함" ≠ "파일에 남음". ⑵ 신규 앱 로거는 LOGGING `loggers`에 등재(또는 상위 `apps` 로거로 포괄). ⑶ ⚠️ **`propagate: False` 주의** — root 전파 차단 시 pytest `caplog`(root 레벨 캡처)가 빈 상태가 돼 **caplog 기반 로그 검증 테스트가 붕괴**(실측: apps 로거 propagate=False로 5 테스트 실패). 파일 핸들러 + caplog 병존하려면 `propagate=True`. cf. #28(beat 활성화≠배포).
