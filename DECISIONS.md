@@ -5959,3 +5959,9 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **D-I3-2 — 채점 배터리 = C안(병진 override)**: 5과목 2계층. **Tier 1(판정 과목)** = ① 방향 적중률(sign(target−spot), h∈{21,63}거래일, 이항검정) · ② 목표가 진행률(실현폭/예측폭 중앙값·IQR, h∈{63,126,252}) · ③ 횡단면 IC(주간 코호트 upside% 순위 vs 실현수익 순위 Spearman, h∈{21,63}). **Tier 2(관측 과목)** = ④ 개정 추적(target consensus 일간 delta·grades 분포 변화) · ⑤ advisory 사후분석 v0(run 수·트리거·knobs 변동, #5 보유·수량 확인 → h=21d 근사 NAV). B 추천 대비 −0.80 수용(병진 override, 재론 금지).
 
 **D-I3-3 — advisory 금지벽 유지 + 승격 트리거**: `advisory_engine.py:10-11` 금지벽(신호를 기대수익 프록시로 쓰지 않음)을 이 슬라이스에서 **절대 건드리지 않는다**(벽·advisory 로직 무접촉). 채점은 관측 계층일 뿐 자동 승격 아님 — Tier 1 통계 유의 도달 시 **I3-PROMOTION-TRIGGER**로 승격 결정 사이클을 소집한다(자동 해제 금지).
+
+## D-I3-4 · D-I3-5 (2026-08-07, SFI-I-3 SPOT-DAY-CONVENTION 수리)
+
+**D-I3-4 — pinned spot 관례 = T(당일) 종가, beat 18:30→19:30 ET 이동으로 보장**: writer의 spot=최신 DailyPrice.close 로직은 무변경(값 선택 쿼리 불변). 대신 발화 시각을 **19:30 ET(dow1-5)**로 이동해 발화 시점 T 종가가 항상 적재 완료돼 있게 한다. **선후 실측 근거**: T EOD 적재 = S&P500분 18:00 ET(→22:0x Z 완료) + 비S&P500 모니터분 `monitor-refresh-daily` 18:45 ET(`ensure_price_freshness` 온디맨드, 정상 22:45:0xZ 완료). 18:30 발화는 비S&P500 적재(18:45) 앞이라 3종(IONQ·IREN·TLN) spot이 T−1로 박제됐다(08-06 발화 9행 중 6=T, 3=T−1 실측). **마진 타이브레이커(0.10급)**: monitor-refresh 완료 상한 = 정상 22:45Z(마진 45분) / 최악 재시도(RETRY 1200s×2) 23:25Z(마진 5분) / EOD 장애 시 monitor는 late-완료가 아니라 **skip**(적재 안 함) → 19:30 ET(23:30Z)는 구조적으로 적재 후행. 하류 무의존(snapshot 19:00·advisory 19:15는 ASS 미독)이라 발화가 이들 뒤로 가도 파손 없음.
+
+**D-I3-5 — 수리 전 pinned 행 = 혼합 관례 코호트, 소급 미수정 + epoch 태깅**: SPOT-DAY 수리 착지(CONVENTION_EPOCH=2026-08-07) **이전**에 박제된 pinned 행(08-06 발화 9행: 6×T·3×T−1 혼합)은 **소급 수정·삭제하지 않는다**(append 불변식·D-I1b-3 정신). 대신 리포트가 pinned 코호트를 epoch 전(=혼합 관례, 캐비앗)/후(=T 관례)로 분리 표기한다. **SCORING_VERSION은 1 유지**(채점 수식 무변경 — epoch은 코호트 축이지 버전 축이 아님).
