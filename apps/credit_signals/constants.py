@@ -7,6 +7,7 @@ credit_signals Phase 1 상수 (PR credit_signals Phase 1 §2).
 동일 재비준 절차 없이 금지.
 """
 from datetime import time
+from decimal import Decimal
 
 # FRED 수집 대상 시리즈 (8종 = 6 raw Phase1 + BB·A P2-0 재비준, DECISIONS E)
 FRED_SERIES = {
@@ -69,7 +70,20 @@ ETF_NAV_MAX_LAG_DAYS = 1
 # known-edge: 미국 조기마감일(13:00 ET, 연 ~3일)엔 정당한 당일 nav도 16:00 기준
 # 오탐 skip될 수 있으나, 후속 touch(마감 후 재갱신)로 자연 회수된다(연기≠유실).
 # 코드 대응 불요. DST는 America/New_York로 EDT/EST 자동 처리.
+# ⚠️ P2a-1c(C″)에서 ETF_MARKET_CLOSE_ET·ETF_NAV_MAX_LAG_DAYS 기반 C′ 게이트는
+#    폐기됨(FMP 채권 ETF nav = 전일 종가 오전/저녁 게시로 마감시각 무의미). 상수는
+#    회귀 참조용으로만 존치. 현 게이트 = ETF_NAV_STALE_TRADING_DAYS(피드 정체 감지).
 ETF_MARKET_CLOSE_ET = time(16, 0)
+
+# C″ 전일(T-1) 귀속 (P2a-1c): FMP 채권 ETF etf/info nav = 전일 종가 NAV를 익일
+# 오전(~11:3x ET) 또는 당일 저녁(~17:1x ET) 게시(iShares 역산 2/2 확정). 따라서
+# nav_trade_date = updatedAt(ET) 날짜의 직전 미국 거래일(D-1). price(시장가)는 EOD
+# 이력(/stable/historical-price-eod/full)의 D-1 종가로 페어링(주 소스 ⓑ), quote
+# previousClose는 교차검증 보조(ⓐ). 마감시각 게이트 대신 피드 정체 게이트 적용:
+# updatedAt 날짜가 오늘(ET) 기준 이 거래일 수 이상 과거면 skip(nav_stale).
+ETF_NAV_STALE_TRADING_DAYS = 2
+# ⓐⓑ 종가 교차검증 허용 오차(달러). 초과 시 행 생성하되 mismatch 플래그 로그(ⓑ 우선).
+ETF_PRICE_MISMATCH_TOL = Decimal("0.05")
 
 Z_WINDOW_DAYS = 756          # 3년 거래일 근사 (3년 롤링 z-score)
 MAD_FLOOR = 1e-6             # Robust Z(MAD) 분모 과폭발 방지 floor (Thesis Control 규약과 동형)

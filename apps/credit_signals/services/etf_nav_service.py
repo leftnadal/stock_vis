@@ -1,25 +1,37 @@
 """
-ETF NAV·시장가 수집 서비스 (P2a-1).
+ETF NAV·시장가 수집 서비스 (P2a-1 → P2a-1c C″).
 
-FMP 단일 provider: nav ← /stable/etf/info, price ← /stable/quote.
-정본 거래일 = quote timestamp의 ET 거래일. resolve는 두 게이트를 병존 적용한다:
-(1) 날짜 lag — nav updatedAt이 정본 거래일과 ETF_NAV_MAX_LAG_DAYS 영업일 초과 괴리 시 skip.
-(2) C′ 마감시각 — nav updatedAt(ET)이 정본 거래일 16:00 ET '이전'이면 당일 strike가
-아니라 직전 거래일 strike의 재기록이므로 skip. 둘 다 자가 보정 금지(보고 후 대기).
+FMP 채권 ETF etf/info nav = 전일(T-1) 종가 NAV를 익일 오전(~11:3x ET) 또는 당일
+저녁(~17:1x ET)에 게시(iShares 역산 2/2 확정). 따라서 quote 정본거래일에 nav를
+묶으면 항상 1일 밀린 혼합이 된다. C″ 귀속 규칙:
+  - nav_trade_date = updatedAt(ET) 날짜의 직전 미국 거래일(D-1, 휴장·주말 자동 skip)
+  - price = EOD 이력(/stable/historical-price-eod/full)의 D-1 종가 (주 소스 ⓑ)
+    · quote.previousClose 확보 시 교차검증(ⓐ), 불일치는 행 생성 + mismatch 플래그(ⓑ 우선)
+  - 게이트: 마감시각(C′) 폐기 → 피드 정체 게이트. updatedAt 날짜가 오늘(ET) 기준
+    ETF_NAV_STALE_TRADING_DAYS 거래일 이상 과거면 skip(nav_stale).
 
-upsert 규약 = MacroSeriesHistory와 동형(insert-only + revise-on-change).
-삭제 없음(§10 영구 누적). 디스카운트 신호값은 여기 미적재(compute-on-read).
+upsert 규약 = MacroSeriesHistory와 동형(insert-only + revise-on-change). nav_updated_at
+감사 추적 불변. 삭제 없음(§10). 디스카운트는 compute-on-read(원장 미적재).
 """
 import logging
-from datetime import date, datetime, timezone as dt_timezone
+from datetime import date, datetime, timedelta, timezone as dt_timezone
 from decimal import Decimal, InvalidOperation
 from zoneinfo import ZoneInfo
 
 import numpy as np
 from django.utils import timezone
 
-from ..constants import ETF_MARKET_CLOSE_ET, ETF_NAV_MAX_LAG_DAYS, ETF_SYMBOLS
+from ..constants import (
+    ETF_NAV_STALE_TRADING_DAYS,
+    ETF_PRICE_MISMATCH_TOL,
+    ETF_SYMBOLS,
+)
 from ..models import EtfNavHistory
+from ..trading_calendar import (
+    next_trading_day,
+    previous_trading_day,
+    warn_if_coverage_expiring,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -95,74 +107,111 @@ def upsert_etf_nav(
     return "skipped"
 
 
-def resolve_and_upsert_one(client, symbol: str) -> dict:
-    """단일 ETF: quote+etf/info 조회 → 정본 거래일 resolve → 정합 시 upsert."""
+def _eod_close(client, symbol: str, target: date) -> Decimal | None:
+    """EOD 이력(/stable/historical-price-eod/full)의 target 거래일 종가(close). 주 소스 ⓑ."""
+    frm = (target - timedelta(days=10)).isoformat()
+    to = (target + timedelta(days=2)).isoformat()
+    try:
+        rows = client.get_historical_price(symbol, from_date=frm, to_date=to)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("etf_nav EOD 조회 실패 symbol=%s target=%s: %s", symbol, target, exc)
+        return None
+    if not isinstance(rows, list):
+        return None
+    tgt = target.isoformat()
+    for r in rows:
+        if isinstance(r, dict) and r.get("date") == tgt:
+            return _to_decimal(r.get("close"))
+    return None
+
+
+def _trading_days_between(a: date, b: date) -> int:
+    """(a, b] 사이 거래일 수 (a < b 가정). 피드 정체 감지용."""
+    n, c = 0, a
+    while c < b:
+        c = next_trading_day(c)
+        n += 1
+    return n
+
+
+def resolve_and_upsert_one(client, symbol: str, today_et: date | None = None) -> dict:
+    """
+    단일 ETF C″ 귀속: etf/info nav(=전일 종가) → updatedAt D-1 거래일에 귀속,
+    price는 EOD 이력의 D-1 종가로 페어링. quote.previousClose로 교차검증.
+    """
     quote = client.get_quote(symbol)
     info = client.get_etf_info(symbol)
 
-    trading_day = _canonical_trading_day(quote)
-    price = _to_decimal(quote.get("price"))
     nav = _to_decimal(info.get("nav"))
     nav_dt = _nav_updated_dt(info)  # ET tz-aware datetime | None
 
-    if trading_day is None or price is None or nav is None or price <= 0 or nav <= 0:
-        logger.warning(
-            "etf_nav skip(결측/이상): symbol=%s trading_day=%s price=%s nav=%s",
-            symbol, trading_day, price, nav,
-        )
+    if nav is None or nav <= 0:
+        logger.warning("etf_nav skip(nav 결측/이상): symbol=%s nav=%s", symbol, nav)
         return {"symbol": symbol, "result": "skipped", "reason": "missing_or_invalid"}
-
     if nav_dt is None:
         logger.warning("etf_nav skip(nav updatedAt 파싱 실패): symbol=%s", symbol)
         return {"symbol": symbol, "result": "skipped", "reason": "nav_date_unparseable"}
 
-    nav_date = nav_dt.date()
-    # 게이트 1 — 날짜 lag: nav updatedAt이 정본 거래일과 N영업일 초과 괴리 시 skip.
-    lag = _business_day_lag(trading_day, nav_date)
-    if lag > ETF_NAV_MAX_LAG_DAYS:
+    if today_et is None:
+        today_et = datetime.now(_ET).date()
+    warn_if_coverage_expiring(today_et)
+
+    nav_pub_date = nav_dt.date()  # updatedAt(ET)의 게시 날짜 D
+    # 게이트 — 피드 정체: 게시 날짜가 오늘 기준 N거래일 이상 과거면 skip(nav_stale).
+    if nav_pub_date < today_et:
+        gap = _trading_days_between(nav_pub_date, today_et)
+        if gap >= ETF_NAV_STALE_TRADING_DAYS:
+            logger.warning(
+                "etf_nav skip(피드 정체 %d거래일 ≥ %d): symbol=%s nav_updated=%s 오늘=%s "
+                "— 새 strike 미게시, 자가 보정 없이 skip",
+                gap, ETF_NAV_STALE_TRADING_DAYS, symbol, nav_pub_date, today_et,
+            )
+            return {
+                "symbol": symbol, "result": "skipped", "reason": "nav_stale",
+                "nav_updated_at": nav_dt.isoformat(), "today_et": today_et.isoformat(),
+            }
+
+    # C″ 귀속: nav_trade_date = 게시 날짜 D의 직전 거래일 (전일 종가 NAV).
+    nav_trade_date = previous_trading_day(nav_pub_date)
+
+    # price = EOD 이력의 nav_trade_date 종가 (주 소스 ⓑ).
+    price = _eod_close(client, symbol, nav_trade_date)
+    if price is None or price <= 0:
         logger.warning(
-            "etf_nav skip(거래일 괴리 %d영업일 > %d): symbol=%s 정본거래일=%s "
-            "nav_updated=%s — 자가 보정 없이 skip(상신 대상)",
-            lag, ETF_NAV_MAX_LAG_DAYS, symbol, trading_day, nav_date,
+            "etf_nav skip(EOD 종가 미확보): symbol=%s nav_trade_date=%s — price 페어링 불가",
+            symbol, nav_trade_date,
         )
         return {
-            "symbol": symbol, "result": "skipped", "reason": f"nav_lag_{lag}bd",
-            "trading_day": trading_day.isoformat(), "nav_date": nav_date.isoformat(),
+            "symbol": symbol, "result": "skipped", "reason": "price_unavailable",
+            "nav_trade_date": nav_trade_date.isoformat(),
         }
 
-    # 게이트 2 (C′) — 마감시각: NAV strike는 장마감 후 산출되므로, nav updatedAt이
-    # 정본 거래일 16:00 ET '이전'이면 당일 strike가 아니라 직전 거래일 strike의
-    # 재기록 → skip(구형 혼입 차단). 자가 보정 없이 skip, 후속 touch로 자연 회수.
-    # known-edge: 조기마감일(13:00 ET)엔 정당한 당일 nav도 오탐 skip될 수 있으나
-    # 마감 후 재갱신 touch로 회수됨(연기≠유실) — 코드 대응 불요.
-    close_dt = datetime.combine(trading_day, ETF_MARKET_CLOSE_ET, tzinfo=_ET)
-    if nav_dt <= close_dt:
+    # ⓐ 교차검증: quote.previousClose(전일 시장 종가)와 EOD 종가 비교.
+    prev_close = _to_decimal(quote.get("previousClose")) if isinstance(quote, dict) else None
+    mismatch = False
+    if prev_close is not None and abs(prev_close - price) > ETF_PRICE_MISMATCH_TOL:
+        mismatch = True
         logger.warning(
-            "etf_nav skip(마감 전 갱신 = 구형 strike): symbol=%s 정본거래일=%s "
-            "nav_updated=%s ≤ 마감 %s — 당일 strike 아님, 자가 보정 없이 skip",
-            symbol, trading_day, nav_dt.isoformat(), close_dt.isoformat(),
+            "etf_nav price mismatch(ⓑ 우선): symbol=%s nav_trade_date=%s "
+            "ⓑ_eod_close=%s vs ⓐ_prev_close=%s (tol %s)",
+            symbol, nav_trade_date, price, prev_close, ETF_PRICE_MISMATCH_TOL,
         )
-        return {
-            "symbol": symbol, "result": "skipped", "reason": "nav_pre_close",
-            "trading_day": trading_day.isoformat(),
-            "nav_updated_at": nav_dt.isoformat(),
-        }
 
-    result = upsert_etf_nav(symbol, trading_day, nav, price, nav_updated_at=nav_dt)
+    result = upsert_etf_nav(symbol, nav_trade_date, nav, price, nav_updated_at=nav_dt)
     return {
-        "symbol": symbol, "result": result, "trading_day": trading_day.isoformat(),
+        "symbol": symbol, "result": result, "trade_date": nav_trade_date.isoformat(),
         "nav": float(nav), "price": float(price),
-        "nav_updated_at": nav_dt.isoformat(),
+        "nav_updated_at": nav_dt.isoformat(), "price_mismatch": mismatch,
     }
 
 
-def collect_etf_nav(client, symbols=None) -> dict:
+def collect_etf_nav(client, symbols=None, today_et: date | None = None) -> dict:
     """ETF_SYMBOLS 전체 수집(일 1회 폴링 진입점). 한 심볼 실패가 나머지를 막지 않음."""
     symbols = symbols or ETF_SYMBOLS
     summary = {}
     for sym in symbols:
         try:
-            summary[sym] = resolve_and_upsert_one(client, sym)
+            summary[sym] = resolve_and_upsert_one(client, sym, today_et=today_et)
         except Exception as exc:  # noqa: BLE001
             logger.warning("etf_nav 수집 실패 symbol=%s: %s", sym, exc)
             summary[sym] = {"symbol": sym, "result": "error", "error": str(exc)}
