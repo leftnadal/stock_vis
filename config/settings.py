@@ -481,6 +481,11 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': False,
         },
+        'apps': {  # apps.* INFO → 파일 (heat_tasks TNV_CHAIN 등 관측성 로그 라우팅, G-fire §G 후속·additive)
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,  # root 전파 유지 — caplog(테스트) 캡처 보존 (propagate=False면 caplog 빈 상태로 apps.* 로그 테스트 붕괴)
+        },
     },
 }
 
