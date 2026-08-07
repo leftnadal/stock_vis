@@ -131,6 +131,13 @@ class Command(BaseCommand):
 
         # ── 코호트·예외 ──
         L.append("## 코호트·예외")
+        es = pinned.get("epoch_split")
+        if es:
+            L.append(
+                f"- pinned epoch 태깅(D-I3-5, CONVENTION_EPOCH={es['convention_epoch']}): "
+                f"epoch 前 {es['pre_mixed']}건(**혼합 관례** — T/T−1 혼재, spot-day 수리 前 캐비앗) · "
+                f"epoch 後 {es['post_t']}건(T 관례)"
+            )
         L.append(f"- pre-pinning 행수(파생 spot 별도 산출): {derived['prediction_count']}")
         unsc = []
         for h_ in (21, 63):
