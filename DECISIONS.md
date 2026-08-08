@@ -16,7 +16,7 @@
 
 **Why**: 값(latest_score 스냅샷)·델타(sparkline 최근 2점차)·일지(readings 실시간 재산출)가 3원 혼재 → 같은 지표가 화면마다 다른 값. 일지가 실시간 재산출이면 "그날 기록"이 로직 변경 시 소급 변형(기록 아닌 추정치). zone_display의 stop<purchase<target 고정 기하는 이익 보호 스탑(손절 상향, 예 GOOGL 매입 264.59 < 손절 291.38 < 종가 362.43 < 목표 408.61)에서 순서·마커가 파손.
 
-**How to apply**: **T1** — 일지 snapshot kind 소스 sparkline.score_series → MonitorSnapshot 행(asof_date·overall_score·직전 스냅샷 대비 Δ). 스트립 델타 소스 sparkline 최근 2점차 → 최신 스냅샷 − 직전 스냅샷(latest_score와 동일 원천). Δ 표시=산출 가능하면 항상(±0.00 포함, 반올림 0 무표시로 인한 은닉 제거), 직전 스냅샷 부재 시만 무표시. sparkline/score_series·목록 카드 곡선은 **무접촉**(추세 곡선=기록 아님, 재산출 수용). **T2** — build_zone_display 범위 = [존재하는 전 레벨의 min, max](stop·purchase·target·익절접근·fair band 전수), rows = 가격 내림차순, anchor_fraction 클램프 제거. **배포**: P2A와 단일 창(P2B 병합 후 빌드·재시작 1회) — 일지 과거가 재산출 로직으로 표시되는 창 0 보장. **검증 hash**: (T2 완료 후 기입).
+**How to apply**: **T1** — 일지 snapshot kind 소스 sparkline.score_series → MonitorSnapshot 행(asof_date·overall_score·직전 스냅샷 대비 Δ). 스트립 델타 소스 sparkline 최근 2점차 → 최신 스냅샷 − 직전 스냅샷(latest_score와 동일 원천). Δ 표시=산출 가능하면 항상(±0.00 포함, 반올림 0 무표시로 인한 은닉 제거), 직전 스냅샷 부재 시만 무표시. sparkline/score_series·목록 카드 곡선은 **무접촉**(추세 곡선=기록 아님, 재산출 수용). **T2** — build_zone_display 범위 = [존재하는 전 레벨의 min, max](stop·purchase·target·익절접근·fair band 전수), rows = 가격 내림차순, anchor_fraction 클램프 제거. **배포**: P2A와 단일 창(P2B 병합 후 빌드·재시작 1회) — 일지 과거가 재산출 로직으로 표시되는 창 0 보장. **검증**: monitor pytest 231(P2A 착지)→243(T1 snapshot_series +6 · T2 스탑상향 +1)·vitest monitor 98→100(+2)·tsc 0. FE PriceLadder는 rows 자체 재정렬 없음(BE 순서 그대로 렌더 — 수리 불요). 병합·배포 hash = P2A와 단일창(승인 후 기입).
 
 ## [2026-08-06] D-COLLECTION-UNIVERSE-PRINCIPLE — 수집 유니버스는 활성 monitor target을 자동 포함 [monitor] [news] [platform]
 

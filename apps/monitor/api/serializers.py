@@ -42,11 +42,17 @@ class IndicatorReadingSerializer(serializers.ModelSerializer):
 _SCENARIO_LABEL = dict(Claim.ScenarioType.choices)
 
 
-def _fraction(value, lo, hi):
-    """value를 [lo, hi] 스케일의 0~1 위치로. 밖이면 클램프. hi<=lo면 None."""
+def _fraction(value, lo, hi, clamp=True):
+    """value를 [lo, hi] 스케일의 0~1 위치로. hi<=lo면 None.
+
+    clamp=True면 [0,1] 밖을 클램프(화면 마커 안전 — close가 레벨 범위 밖일 수 있음).
+    clamp=False면 실제 위치 그대로(MON-P2B T2: 일반화 범위 = 전 레벨 [min,max]이므로
+    레벨 자체는 자연히 [0,1] 내 — anchor 클램프 불요·잘못된 0.0 바닥 붙음 제거).
+    """
     if value is None or hi <= lo:
         return None
-    return max(0.0, min(1.0, (float(value) - lo) / (hi - lo)))
+    f = (float(value) - lo) / (hi - lo)
+    return max(0.0, min(1.0, f)) if clamp else f
 
 
 def build_zone_display(claim, anchor, close):
@@ -69,7 +75,6 @@ def build_zone_display(claim, anchor, close):
     is_hold = claim.scenario_type == Claim.ScenarioType.HOLD
 
     zone = resolve_zone(close, anchor, claim.target_price, claim.stop_price)
-    marker_fraction = _fraction(close, stop, target)
     # 손절여유(%) — 현재가 대비 손절 도달까지 낙폭 = (close-stop)/close*100 (MON-DETAIL-P1 T1a).
     # 스트립 손절여유 토큰의 단일 소스(FE 재계산 금지). close 없으면 null(marker·pnl과 동일 폴백).
     stop_distance_pct = (
@@ -78,12 +83,13 @@ def build_zone_display(claim, anchor, close):
         else None
     )
 
+    # MON-P2B T2: marker_fraction은 각 분기에서 일반화 범위 [전 레벨 min,max]로 산출
+    # ([stop,target] 고정 전제 제거 — 이익 보호 스탑 상향 지원).
     common = {
         "zone": zone,
         "close": close,
         "mode": claim.scenario_type,
         "mode_label": _SCENARIO_LABEL.get(claim.scenario_type),
-        "marker_fraction": marker_fraction,
         "stop_distance_pct": stop_distance_pct,
     }
 
@@ -91,12 +97,23 @@ def build_zone_display(claim, anchor, close):
         # 신규/추가 매수 — 기존 5구간 표시 재현(하위호환).
         approach_ceiling = float(claim.entry_price * (Decimal("1") + APPROACH_BUFFER))
         label_map = dict(Claim.PriceZone.choices)
+        # MON-P2B T2: 기하 범위 = 존재하는 전 레벨의 [min, max]. 정상 배열(stop<진입<접근<목표)이면
+        # min=stop·max=목표로 기존과 동일 — 일반화만 추가(하위호환).
+        lo, hi = min(stop, anchor_f, approach_ceiling, target), max(stop, anchor_f, approach_ceiling, target)
+        rows = [
+            {"label": "목표", "value": target},
+            {"label": "접근 상한", "value": approach_ceiling},
+            {"label": "진입", "value": anchor_f},
+            {"label": "손절", "value": stop},
+        ]
+        rows.sort(key=lambda r: r["value"], reverse=True)  # 가격 내림차순(의미 라벨 유지)
         bands = [
             {"key": z, "tone": z, "active": z == zone}
             for z in ("exited", "entry", "approach", "waiting", "overheated")
         ]
         return {
             **common,
+            "marker_fraction": _fraction(close, lo, hi),
             "label": label_map.get(zone),
             "pnl_pct": None,
             "anchor_fraction": None,
@@ -112,12 +129,7 @@ def build_zone_display(claim, anchor, close):
                 {"label": "진입", "value": anchor_f},
                 {"label": "목표", "value": target},
             ],
-            "rows": [
-                {"label": "목표", "value": target},
-                {"label": "접근 상한", "value": approach_ceiling},
-                {"label": "진입", "value": anchor_f},
-                {"label": "손절", "value": stop},
-            ],
+            "rows": rows,
         }
 
     # 보유 관리 — 4표시구간 재구간화(저장 zone 무관 표시 전용).
@@ -138,11 +150,23 @@ def build_zone_display(claim, anchor, close):
         {"key": "reached", "tone": "overheated"},
     ]
     pnl_pct = ((close - anchor_f) / anchor_f * 100.0) if (close is not None and anchor_f) else None
+    # MON-P2B T2: 기하 범위 = 존재하는 전 레벨의 [min, max](stop·매입가·익절접근·목표 전수).
+    # 이익 보호 스탑(손절 상향, 예 매입 264.59 < 손절 291.38 < 목표 408.61)에서 [stop,target]
+    # 고정 전제가 파손 → 매입가가 stop 아래로 음수→0 바닥 붙음. 일반화로 정확 위치 복원.
+    lo, hi = min(stop, anchor_f, near_target, target), max(stop, anchor_f, near_target, target)
+    rows = [
+        {"label": "목표", "value": target},
+        {"label": "익절 접근", "value": near_target},
+        {"label": "매입가", "value": anchor_f},
+        {"label": "손절", "value": stop},
+    ]
+    rows.sort(key=lambda r: r["value"], reverse=True)  # 가격 내림차순(의미 라벨 유지)
     return {
         **common,
+        "marker_fraction": _fraction(close, lo, hi),
         "label": label,
         "pnl_pct": round(pnl_pct, 4) if pnl_pct is not None else None,
-        "anchor_fraction": _fraction(anchor_f, stop, target),  # 매입가 마커
+        "anchor_fraction": _fraction(anchor_f, lo, hi, clamp=False),  # 매입가 마커(클램프 제거)
         "boundaries": {
             "stop": stop,
             "entry": anchor_f,  # 앵커=매입가(하위호환 키)
@@ -155,12 +179,7 @@ def build_zone_display(claim, anchor, close):
             {"label": "매입가", "value": anchor_f},
             {"label": "목표", "value": target},
         ],
-        "rows": [
-            {"label": "목표", "value": target},
-            {"label": "익절 접근", "value": near_target},
-            {"label": "매입가", "value": anchor_f},
-            {"label": "손절", "value": stop},
-        ],
+        "rows": rows,
     }
 
 
