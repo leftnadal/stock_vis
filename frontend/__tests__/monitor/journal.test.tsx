@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { JournalFeed } from '@/components/monitor/journal/JournalFeed'
 import { buildJournal, type JournalEntry } from '@/lib/monitor/journal'
-import type { AlertEvent, Claim, Monitor, SparklineResponse } from '@/types/monitor'
+import type { AlertEvent, Claim, Monitor, SnapshotSeriesResponse } from '@/types/monitor'
 
 const monitor = {
   id: 'm1',
@@ -13,14 +13,11 @@ const monitor = {
   created_at: '2026-07-01T00:00:00Z',
 } as unknown as Monitor
 
-const spark: SparklineResponse = {
+const snapshots: SnapshotSeriesResponse = {
   series: [
-    { asof: '2026-08-01', score: 0.1 },
-    { asof: '2026-08-02', score: 0.25 },
+    { asof: '2026-08-01', score: 0.1, delta: null },
+    { asof: '2026-08-02', score: 0.25, delta: 0.15 },
   ],
-  bands: [],
-  transitions: [],
-  delta_5d: null,
   window: 30,
 }
 
@@ -56,22 +53,35 @@ const claim = {
 
 describe('buildJournal', () => {
   it('asof desc 정렬 · 동일 asof는 transition>snapshot · open 최하단', () => {
-    const j = buildJournal({ sparkline: spark, alerts, monitor, claims: [claim] })
+    const j = buildJournal({ snapshots, alerts, monitor, claims: [claim] })
     // 08-02 transition, 08-02 snapshot, 08-01 snapshot, open(07-01)
     expect(j.map((e) => e.kind)).toEqual(['transition', 'snapshot', 'snapshot', 'open'])
     expect(j[j.length - 1].kind).toBe('open') // open 항상 최하단
   })
 
-  it('snapshot delta = 직전 점 대비 (첫 점 null)', () => {
-    const j = buildJournal({ sparkline: spark, alerts: [], monitor, claims: [] })
+  it('snapshot delta = snapshots.series의 BE 계산값 그대로(재계산 금지, 첫 점 null)', () => {
+    const j = buildJournal({ snapshots, alerts: [], monitor, claims: [] })
     const snaps = j.filter((e) => e.kind === 'snapshot')
     // desc 정렬이라 [08-02(delta +0.15), 08-01(delta null)]
     expect((snaps[0].payload as { delta: number | null }).delta).toBeCloseTo(0.15, 4)
     expect((snaps[1].payload as { delta: number | null }).delta).toBeNull()
   })
 
+  it('delta=0(±0 변화)도 유효값으로 통과시킨다(무표시 금지)', () => {
+    const zeroDeltaSnapshots: SnapshotSeriesResponse = {
+      series: [
+        { asof: '2026-08-01', score: 0.1, delta: null },
+        { asof: '2026-08-02', score: 0.1, delta: 0 },
+      ],
+      window: 30,
+    }
+    const j = buildJournal({ snapshots: zeroDeltaSnapshots, alerts: [], monitor, claims: [] })
+    const latest = j.find((e) => e.kind === 'snapshot' && e.asof === '2026-08-02')!
+    expect((latest.payload as { delta: number | null }).delta).toBe(0)
+  })
+
   it('open payload는 첫 claim 사전 커밋 요약(hold=매입 앵커)', () => {
-    const j = buildJournal({ sparkline: null, alerts: [], monitor, claims: [claim] })
+    const j = buildJournal({ snapshots: null, alerts: [], monitor, claims: [claim] })
     const open = j.find((e) => e.kind === 'open')!
     expect((open.payload as { scenario_type: string }).scenario_type).toBe('hold')
     expect((open.payload as { purchase_price: string }).purchase_price).toBe('100')

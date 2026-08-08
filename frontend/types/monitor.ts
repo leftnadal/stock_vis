@@ -341,3 +341,17 @@ export interface SparklineResponse {
   delta_5d: number | null // 계산값만 통과 — 표시는 회전 맵 트랙 몫(이번 트랙은 미표시)
   window: number
 }
+
+// ── 점수 정본 시계열 (MON-P2B T1, GET /monitor/monitors/{id}/snapshots/) ──
+// MonitorSnapshot(동결 기록) 기반 — 스트립 델타·일지 스냅샷의 단일 원천.
+// sparkline(추세 곡선, 재산출)과 별개 소스 — 혼동 금지.
+export interface SnapshotSeriesPoint {
+  asof: string
+  score: number
+  delta: number | null // 직전 스냅샷 대비 Δ (전체 첫 점만 null, ±0도 유효값)
+}
+
+export interface SnapshotSeriesResponse {
+  series: SnapshotSeriesPoint[]
+  window: number
+}
