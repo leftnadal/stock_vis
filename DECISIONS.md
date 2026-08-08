@@ -356,8 +356,13 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 
 **결정**: FE surface 리터럴을 **단일 상수 모듈로 통합** + **가드 테스트**(모듈 밖 표면 리터럴 grep=0 강제, 백엔드 `SURFACE_CHOICES`와 계약 정합). 가중합 **4.75, 마진 0.65 → 사용자 확인**.
 - **모듈 위치**: build STEP 0 실측으로 확정. **소유 구획 밖(공용 frontend 인프라) 판명 시 shared 트랙 위임 분기** 명기(dashboard 구획 단독 소유 아닐 수 있음).
+- 📎 **백-어노테이션 — 모듈 위치 = 공용 frontend 인프라 확정 · 위임 분기 발동 (2026-08-07, MGMT-BATCH-25, BUILD-C2-S1-B2 STEP 0 실측)**: 자연 홈이 dashboard 구획 밖(공용 frontend 인프라)으로만 성립 → **위임 분기 발동**(디렉터 라우팅=shared 트랙 재차터). 근거 3종 원문: ⑴ surface 4종({`dashboard_eod`·`coverage_detail`·`news_chip`·`chain_sight`}) = 백엔드 `ImpressionLog.SURFACE_CHOICES` 미러 = **교차앱 텔레메트리 계약** ⑵ **de-facto 단일 소스가 이미 `hooks/impressionTelemetry.ts:24-25`**(`SURFACE_RECO_CARD='dashboard_eod'`·`SURFACE_NEWS_CHIP='news_chip'`, 구획 밖) ⑶ **구획 외 소비** `components/strip/NewsChip.tsx`(news_chip) + **구획 내 리터럴은 `CoverageDetailView.tsx:10` coverage_detail 1종뿐**. 모듈을 dashboard 구획에 두면 공용 infra·strip이 feature를 역방향 import = 의존 역전 + 구획 외 접촉(계약 위반). **명시**: ① **ⓒ-2 부활 아님 — ⓒ-3(상수 단일화+가드) 유지, 홈만 공용 인프라로 확정** ② 홈이 공용 인프라이면 **전 소비처 흡수 가능 → 가드 KNOWN_VIOLATIONS 동결 목록 불요 전망**. → S1-B2 = shared 트랙 위임 재분류(TASKQUEUE `S1-B2-SHARED`).
 
 ---
+
+## [2026-08-07] D-INSTR-NO-GLOB-COPY — 실행 지시서에 소유 글롭 사본 게재 금지 (규약 관찰) [process] [harness]
+
+**관찰(규약)**: 실행 지시서에는 **소유 글롭 사본을 게재하지 않는다** — 정본(DECISIONS 소유권 지도 v2) **포인터 + STEP 0 실측 인용**만 사용한다. **근거**: S1-B1 글롭↔실주소 불일치(#71 계열)의 원인 = 지시서 내 6월자 글롭 사본(정본에서 복제 → drift). 사본은 정본 갱신을 따라오지 못해 실주소와 벌어진다. BUILD-C2-S1-B2 지시서가 이 규약을 선반영(글롭 복제 금지·STEP 0 정본 직접 열람)해 드리프트 0 실증.
 
 ## [2026-07-29] D-DOMAIN-AUTOMATION — 관계 도메인 태깅 자동-C 파이프라인 [chainsight]
 
