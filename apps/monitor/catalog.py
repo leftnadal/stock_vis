@@ -28,7 +28,7 @@ STOCK_INDICATOR_CATALOG = [
         "source": "stocks.EODSignal.composite_score",
         "unit": "점수(-1~1)",
         "description": "장 마감 후 14개 시그널 합성 점수. 높을수록 강세.",
-        # MON-P2A T1: 충분성 최소 관측 수(초안 — DailyPrice 이력 기준, 값 확정=계획 세션)
+        # MON-P2A(확정 08-08): 충분성 최소 관측 수 = 계산 소스 행수 기준. 값=초안 유지. D-MON-P2A ADDENDUM
         "min_n": 1,
     },
     {
@@ -39,7 +39,7 @@ STOCK_INDICATOR_CATALOG = [
         "source": "stocks.EODSignal.change_percent",
         "unit": "%",
         "description": "전일 대비 종가 변동률.",
-        # MON-P2A T1: 충분성 최소 관측 수(초안 — DailyPrice 이력 기준, 값 확정=계획 세션)
+        # MON-P2A(확정 08-08): 충분성 최소 관측 수 = 계산 소스 행수 기준. 값=초안 유지. D-MON-P2A ADDENDUM
         "min_n": 1,
     },
     {
@@ -50,7 +50,7 @@ STOCK_INDICATOR_CATALOG = [
         "source": "stocks.EODSignal.dollar_volume",
         "unit": "USD",
         "description": "당일 달러 거래대금(수급 강도 프록시).",
-        # MON-P2A T1: 충분성 최소 관측 수(초안 — DailyPrice 이력 기준, 값 확정=계획 세션)
+        # MON-P2A(확정 08-08): 충분성 최소 관측 수 = 계산 소스 행수 기준. 값=초안 유지. D-MON-P2A ADDENDUM
         "min_n": 1,
     },
     # ── S계열 (타이밍 프리셋, DailyPrice 산출) ──────────────────────────────
@@ -62,7 +62,7 @@ STOCK_INDICATOR_CATALOG = [
         "source": "stocks.DailyPrice → TechnicalIndicators.calculate_sma(200)",
         "unit": "%",
         "description": "종가가 200일 이동평균 대비 얼마나 위/아래인지(추세 방향·강도). BLL 1992·Faber 2007.",
-        # MON-P2A T1: 충분성 최소 관측 수(초안 — DailyPrice 이력 기준, 값 확정=계획 세션)
+        # MON-P2A(확정 08-08): 충분성 최소 관측 수 = 계산 소스 행수 기준. 값=초안 유지. D-MON-P2A ADDENDUM
         "min_n": 200,
         "evidence_strength": "strong",
         "scoring_mode": "zscore",
@@ -77,7 +77,7 @@ STOCK_INDICATOR_CATALOG = [
         "source": "stocks.DailyPrice(252/21행)",
         "unit": "%",
         "description": "최근 1개월 제외 12개월 수익률(시계열 모멘텀). Moskowitz 2012.",
-        # MON-P2A T1: 충분성 최소 관측 수(초안 — DailyPrice 이력 기준, 값 확정=계획 세션)
+        # MON-P2A(확정 08-08): 충분성 최소 관측 수 = 계산 소스 행수 기준. 값=초안 유지. D-MON-P2A ADDENDUM
         "min_n": 252,
         "evidence_strength": "strong",
         "scoring_mode": "zscore",
@@ -92,7 +92,7 @@ STOCK_INDICATOR_CATALOG = [
         "source": "stocks.DailyPrice(252행 high)",
         "unit": "비율(0~1)",
         "description": "종가가 52주 최고가에 얼마나 가까운지(0=최저·1=신고가). George&Hwang 2004.",
-        # MON-P2A T1: 충분성 최소 관측 수(초안 — DailyPrice 이력 기준, 값 확정=계획 세션)
+        # MON-P2A(확정 08-08): 충분성 최소 관측 수 = 계산 소스 행수 기준. 값=초안 유지. D-MON-P2A ADDENDUM
         "min_n": 252,
         "evidence_strength": "medium",
         "scoring_mode": "bounded",
@@ -107,7 +107,7 @@ STOCK_INDICATOR_CATALOG = [
         "source": "stocks.DailyPrice(20행 volume)",
         "unit": "배수",
         "description": "당일 거래량 / 20일 평균 거래량(수급 확인용). Lo 2000.",
-        # MON-P2A T1: 충분성 최소 관측 수(초안 — DailyPrice 이력 기준, 값 확정=계획 세션)
+        # MON-P2A(확정 08-08): 충분성 최소 관측 수 = 계산 소스 행수 기준. 값=초안 유지. D-MON-P2A ADDENDUM
         "min_n": 21,
         "evidence_strength": "medium",
         "scoring_mode": "zscore",
@@ -122,7 +122,7 @@ STOCK_INDICATOR_CATALOG = [
         "source": "stocks.DailyPrice → TechnicalIndicators.calculate_macd",
         "unit": "값",
         "description": "MACD선과 시그널선 차이(모멘텀 전환). 근거 약 — 참고용.",
-        # MON-P2A T1: 충분성 최소 관측 수(초안 — DailyPrice 이력 기준, 값 확정=계획 세션)
+        # MON-P2A(확정 08-08): 충분성 최소 관측 수 = 계산 소스 행수 기준. 값=초안 유지. D-MON-P2A ADDENDUM
         "min_n": 35,
         "evidence_strength": "weak",
         "scoring_mode": "zscore",
@@ -137,7 +137,7 @@ STOCK_INDICATOR_CATALOG = [
         "source": "stocks.DailyPrice → TechnicalIndicators.calculate_rsi(14)",
         "unit": "0~100",
         "description": "14일 상대강도지수(과매도·과매수). 근거 약 — 참고용.",
-        # MON-P2A T1: 충분성 최소 관측 수(초안 — DailyPrice 이력 기준, 값 확정=계획 세션)
+        # MON-P2A(확정 08-08): 충분성 최소 관측 수 = 계산 소스 행수 기준. 값=초안 유지. D-MON-P2A ADDENDUM
         "min_n": 15,
         "evidence_strength": "weak",
         "scoring_mode": "bounded",

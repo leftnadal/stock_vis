@@ -24,6 +24,12 @@
 
 **Why**: 무데이터 지표를 0.0으로 희석하면 종합점수가 중립쪽으로 왜곡(IONQ/IREN/TLN before 6/9인데 3 무효 지표가 full weight로 참여). **★T4/T5 실측 경고(값 미확정)**: draft min_n(momentum=252·sma200=200·high_52w=252)은 **DailyPrice-이력 기준 수치**이나 scorer는 **reading-count**를 봄 → 전 6종에서 momentum/sma/high_52w(강·강·중 근거) **과잉 제외**(DailyPrice는 271~772행으로 momentum 산출 요건 충족 = 값 유효). **min_n 값·게이트 층위(scorer vs ingest)는 계획 세션 확정 — 배포 전 필수**. **P2A-CUT**: 신 로직 적용 asof(배포일)를 점수 시계열 단절점으로 기록(후속 캘리브레이션 구간 구분). **T5 before→after(읽기 전용 재산출, evaluate 미호출)**: GEV 0.0262→0.0969(7/9)·GOOGL 0.1084→0.2315(7/9)·IONQ -0.0375→0.0338(4/9)·IREN -0.0288→0.0374(4/9)·PLTR 0.1567→0.2261(7/9)·TLN 0.0015→0.0738(4/9). 전 6종 상향(재정규화가 0쪽 희석 지표 제외). **전 6종 공통 제외 = sma200_gap·momentum_12_1**(draft min_n 200/252 > reading-count 19~126, 단 DailyPrice는 271~772행으로 값 유효 = 과잉제외) + 비SP500 3종은 EODSignal 0인 eod_composite·change_percent·dollar_volume 추가 제외. **bounded(high_52w·rsi)는 scorer min_n 미적용**(점수=최신값 범위매핑, reading-count 게이트 범주 부적합 — 진짜 이력 부족은 compute 계층 소관, T4).
 
+**[2026-08-08] ADDENDUM — min_n 확정 (STEP0 착수조건 해소, MON-P2B 지시서 경로 1)**: 위 ★경고의 두 미결(min_n 값·게이트 층위)을 확정한다.
+- **n-기준 확정 = 계산 소스 행수(source_n)**. reading-count(IndicatorReading 행수)를 충분성 판정에서 **폐기**한다 — min_n은 '오늘의 지표값을 만들 원천 데이터(DailyPrice/EODSignal) 행수' 조건이므로 z 히스토리 길이(readings)와 **별개 범주**였다(P2A 범주 오류). `source_row_count(indicator, entry, as_of)`가 catalog `source`로 소스 모델(DailyPrice/EODSignal)을 판별해 `stock__symbol=monitor.target_ref` count를 반환, `source_n < min_n`이면 무언 계산 금지·불충분 반환.
+- **min_n 값 = 초안 유지**(변경 없음): eod_composite·change_percent·dollar_volume=1 / sma200_gap=200 / momentum_12_1·high_52w_proximity=252 / volume_ratio=21 / macd_histogram=35 / rsi14=15.
+- **게이트 층위 확정 = scorer 계층**(`score_indicator_from_model`·`score_indicator_dispatch`). 순수함수 `score_indicator`는 **z 계산 가능성**(robust median/MAD 최소 관측 5)만 게이트, min_n 정책은 상위로 격상. **bounded(high_52w·rsi14)도 source_n 게이트로 통일**(P2A의 "bounded min_n 미적용" 폐기 — DailyPrice 이력 유효성으로 판정, reading-count 아님).
+- **확정 행렬(교정 재산출)**: SP500형(EODSignal 존재) = **9/9** (GEV +0.0185·GOOGL +0.0918·PLTR +0.2294) / 비SP500형(EODSignal 0) = **6/9** (IONQ +0.0077·IREN +0.0076·TLN +0.0488, 불충분 = eod_composite·change_percent·dollar_volume). **P2A 원본 T5(7/9·4/9)는 reading-count 오게이트 산물 → 무효화**. 교정 overall이 P2A 원본보다 낮은 것은 momentum/sma(양수)를 과잉제외해 부풀렸던 것을 정직하게 포함시킨 결과(정직성 개선). **P2A-CUT asof는 교정 배포일**(P2B와 단일 배포창) 기준으로 확정. 검증: monitor pytest 231→236(신규 source_n 7·제거 순수 min_n 2)·전 236 green.
+
 ## [2026-08-06] D-NEWS-P0-REPAIR — 뉴스 수집 유니버스 수리 (S3 등재 + S1 defect + S2 자동 편입) [news]
 
 > 출처: 지시서 NEWS-P0-FIX(구현) + MON-P2A T0(결정 등재). 근거: RECON-NEWS-P0.

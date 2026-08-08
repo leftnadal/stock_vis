@@ -146,9 +146,19 @@ class TestScoreDispatch:
             support_direction=direction, source_key=source_key, **kw
         )
 
-    def test_bounded_routes_to_linear(self, aapl_monitor):
+    def test_bounded_routes_to_linear(self, aapl_monitor, stock_aapl):
         from apps.monitor.models import IndicatorReading
+        from packages.shared.stocks.models import DailyPrice
 
+        # MON-P2A(교정): bounded도 source_n(DailyPrice) >= min_n 게이트. high_52w_proximity
+        # min_n=252 충족시켜 라우팅·선형 매핑 검증 의도를 보존.
+        DailyPrice.objects.bulk_create([
+            DailyPrice(
+                stock=stock_aapl, date=date(2026, 1, 1) + timedelta(days=i),
+                open_price=1, high_price=1, low_price=1, close_price=1, volume=1,
+            )
+            for i in range(252)
+        ])
         ind = self._ind(aapl_monitor, "high_52w_proximity")
         IndicatorReading.objects.create(
             indicator=ind, value=1.0, asof=timezone.now(), validation_status="ok"
