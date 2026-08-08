@@ -8,7 +8,7 @@ from packages.shared.stocks.services import analyst_scoring as sc
 
 
 def test_convention_epoch_constant():
-    assert sc.CONVENTION_EPOCH == date(2026, 8, 7)
+    assert sc.CONVENTION_EPOCH == date(2026, 8, 10)
     assert sc.SCORING_VERSION == 1  # 수식 무변경 — epoch은 코호트 축
 
 
@@ -16,20 +16,20 @@ def test_convention_epoch_constant():
 def test_pinned_epoch_split_pre_and_post():
     from packages.shared.stocks.models import AnalystSignalSnapshot as A
 
-    # pre-epoch pinned (2026-08-06 발화, 혼합 관례)
+    # pre-epoch pinned (2026-08-07 구 18:30 ET 발화, 혼합 관례)
     a_pre = A.objects.create(symbol="EPC", target_consensus=Decimal("110"),
                              spot_at_capture=Decimal("100"))
     A.objects.filter(pk=a_pre.pk).update(
-        captured_at=datetime(2026, 8, 6, 22, 31, tzinfo=timezone.utc))
-    # post-epoch pinned (2026-08-07 발화, T 관례)
+        captured_at=datetime(2026, 8, 7, 22, 31, tzinfo=timezone.utc))
+    # post-epoch pinned (2026-08-10 신 19:30 ET 발화, T 관례)
     a_post = A.objects.create(symbol="EPC", target_consensus=Decimal("120"),
                               spot_at_capture=Decimal("105"))
     A.objects.filter(pk=a_post.pk).update(
-        captured_at=datetime(2026, 8, 7, 23, 30, tzinfo=timezone.utc))
+        captured_at=datetime(2026, 8, 10, 23, 30, tzinfo=timezone.utc))
 
     r = sc.score_tier1(date(2026, 8, 20))
     es = r["cohorts"]["pinned"]["epoch_split"]
-    assert es["convention_epoch"] == "2026-08-07"
+    assert es["convention_epoch"] == "2026-08-10"
     assert es["pre_mixed"] == 1
     assert es["post_t"] == 1
 

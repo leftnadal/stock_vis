@@ -27,9 +27,11 @@ SCORING_VERSION = 1
 W3_ALLOWANCE_TRADING_DAYS = 5
 # 거래일 → 달력일 근사 계수 (주 5거래일 / 7일).
 _CAL_PER_TD = 7 / 5
-# SPOT-DAY-CONVENTION 수리 착지일(D-I3-5). 이 날(포함) 이후 발화 pinned spot = T 종가 관례.
-# 이전 pinned 행(08-06 발화)은 혼합 관례(6×T·3×T−1) — 소급 미수정, epoch 코호트로 분리.
-CONVENTION_EPOCH = date(2026, 8, 7)
+# SPOT-DAY-CONVENTION 수리: 첫 T-관례(19:30 ET) 발화일(D-I3-5). 이 날(포함) 이후 pinned
+# spot = T 종가 관례. 실측: 구 18:30 ET 스케줄 발화 = 08-06·08-07 각 9행 = 총 18행 혼합
+# 코호트(T/T−1 혼재) — 소급 미수정, epoch 前으로 분리. 08-08~09 주말(dow1-5) 스킵 →
+# beat 19:30 이동 후 첫 발화 = 2026-08-10(월).
+CONVENTION_EPOCH = date(2026, 8, 10)
 
 
 # ============================================================
