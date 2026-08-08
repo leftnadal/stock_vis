@@ -46,11 +46,19 @@ def score_indicator(readings, dates, support_direction,
         decay: 지수 감쇠 lambda
 
     Returns:
-        dict with score, raw_z, is_extreme_vol, effective_window, is_neutral_mad
-    """
-    effective_window = min(window, len(readings))
+        dict with score, raw_z, is_extreme_vol, effective_window, is_neutral_mad, is_sufficient
 
-    if effective_window < 5:
+    Note (MON-P2A 교정): 이 순수 함수는 **z 계산 가능성**만 게이트한다(robust median/MAD에
+        필요한 최소 관측 5). 지표의 **충분성 정책**(min_n)은 여기서 판정하지 않는다 —
+        min_n은 '오늘의 지표값을 만들 계산 소스(DailyPrice/EODSignal) 행수' 조건이므로
+        readings(z 히스토리) 행수와 다른 범주다. 충분성은 source_n을 아는 상위 계층
+        (score_indicator_from_model / score_indicator_dispatch)에서 판정한다.
+    """
+    n = len(readings)
+    effective_window = min(window, n)
+
+    # z 계산 최소선: robust median/MAD가 무의미해지는 n<5는 계산하지 않고 불충분 반환.
+    if n < 5:
         return {
             'score': 0.0,
             'raw_z': 0.0,
@@ -105,6 +113,35 @@ def score_indicator(readings, dates, support_direction,
         'is_neutral_mad': False,
         'is_sufficient': True,
     }
+
+
+def source_row_count(indicator, entry, as_of_date=None):
+    """지표의 **계산 소스 행수**(source_n)를 조회 (MON-P2A 교정).
+
+    충분성 판정 기준 = '오늘의 지표값을 만들 원천 데이터가 min_n 이상인가'.
+    catalog entry의 source 문자열로 소스 모델을 판별한다:
+      - "stocks.DailyPrice ..." → DailyPrice 행수 (sma/momentum/w52/volume/macd/rsi)
+      - "stocks.EODSignal ..."  → EODSignal 행수 (composite/change/dollar)
+    종목 심볼 = indicator.monitor.target_ref (scope=stock 정규화). as_of_date가 있으면
+    그 날짜 이하로 제한(백테스트·회귀 asof 정합). 소스 판별 불가 시 None(게이트 미적용).
+    """
+    source = (entry or {}).get("source", "")
+    symbol = (getattr(indicator.monitor, "target_ref", "") or "").upper()
+    if not symbol:
+        return None
+    if "DailyPrice" in source:
+        from packages.shared.stocks.models import DailyPrice
+        qs = DailyPrice.objects.filter(stock__symbol=symbol)
+        if as_of_date:
+            qs = qs.filter(date__lte=as_of_date)
+        return qs.count()
+    if "EODSignal" in source:
+        from packages.shared.stocks.models import EODSignal
+        qs = EODSignal.objects.filter(stock__symbol=symbol)
+        if as_of_date:
+            qs = qs.filter(date__lte=as_of_date)
+        return qs.count()
+    return None
 
 
 def score_indicator_from_model(indicator, as_of_date=None):
@@ -172,6 +209,28 @@ def score_indicator_from_model(indicator, as_of_date=None):
             'is_neutral_mad': False,
             'is_sufficient': False,
         }
+
+    # MON-P2A(교정): 충분성 = 계산 소스 행수(source_n) >= min_n(카탈로그 초안).
+    # reading-count(IndicatorReading 행수)는 충분성 판정에 쓰지 않는다 — z 히스토리와
+    # 계산 소스 유효성은 별개 범주(P2A 범주 오류 교정). source_n < min_n이면 계산하지
+    # 않고 불충분 반환(무언 계산 금지) → aggregator가 재정규화로 제외.
+    from apps.monitor.catalog import catalog_entry
+
+    entry = catalog_entry("stock", indicator.source_key) if indicator.source_key else None
+    min_n = entry.get("min_n") if entry else None
+
+    if min_n is not None:
+        source_n = source_row_count(indicator, entry, as_of_date)
+        if source_n is not None and source_n < min_n:
+            return {
+                'score': 0.0,
+                'raw_z': 0.0,
+                'is_extreme_vol': False,
+                'effective_window': 0,
+                'is_neutral_mad': False,
+                'is_sufficient': False,
+                'source_n': source_n,
+            }
 
     return score_indicator(
         values, dates, indicator.support_direction,

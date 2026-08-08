@@ -95,12 +95,14 @@ export function SlimStrip({
   scoreDelta,
   indicators,
   latestValueById,
+  sufficientById,
 }: {
   monitor: Monitor
   zoneClaim?: Claim | null
   scoreDelta?: number | null
   indicators: MonitorIndicator[]
   latestValueById: Map<string, number | null>
+  sufficientById?: Map<string, boolean> // MON-P2A T3: 지표별 충분성(신호 배지)
 }) {
   const [priceOpen, togglePrice] = usePersistedToggle('monitor-detail:panel:price')
   const [signalsOpen, toggleSignals] = usePersistedToggle('monitor-detail:panel:signals')
@@ -108,6 +110,7 @@ export function SlimStrip({
   const meta = stateMeta(monitor.current_state)
   const zd = zoneClaim?.zone_display ?? null
   const score = monitor.latest_score
+  const cov = monitor.indicator_coverage // MON-P2A T3: {sufficient, total}
   const dday = ddayLabel(monitor.next_deadline)
 
   // 위험 강조 = 기존 신호만 소비(신규 임계 창설 금지, T1): danger_streak·close_suggested·이탈 존.
@@ -160,6 +163,15 @@ export function SlimStrip({
                 >
                   {scoreDelta > 0 ? '▲' : '▼'}
                   {Math.abs(scoreDelta).toFixed(2)}
+                </span>
+              )}
+              {/* MON-P2A T3: 커버리지 접미(유효/전체). 유효<전체면 경고톤(부분 데이터). */}
+              {cov && (
+                <span
+                  data-testid="token-score-coverage"
+                  className={`text-[10px] ${cov.sufficient < cov.total ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`}
+                >
+                  · {cov.sufficient}/{cov.total}
                 </span>
               )}
             </span>
@@ -233,13 +245,26 @@ export function SlimStrip({
               ) : (
                 indicators.map((ind) => {
                   const v = latestValueById.get(ind.id)
+                  // MON-P2A T3: 지표별 충분성 배지. false만 표기(부족 = 점수 제외됨).
+                  const suff = sufficientById?.get(ind.id)
                   return (
                     <div
                       key={ind.id}
                       className="flex items-center justify-between gap-2 border-b border-gray-100 py-2 text-sm last:border-0 dark:border-gray-800"
                     >
-                      <span className="min-w-0 flex-1 truncate text-gray-600 dark:text-gray-300">
-                        {ind.name}
+                      <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                        <span className="min-w-0 truncate text-gray-600 dark:text-gray-300">
+                          {ind.name}
+                        </span>
+                        {suff === false && (
+                          <span
+                            data-testid="signal-insufficient-badge"
+                            className="flex-shrink-0 rounded bg-gray-100 px-1 py-0.5 text-[10px] text-gray-400 dark:bg-gray-800"
+                            title="관측 이력 부족 — 점수 집계에서 제외됨"
+                          >
+                            부족
+                          </span>
+                        )}
                       </span>
                       <span className="flex-shrink-0 text-gray-400">
                         {typeof v === 'number' ? v.toFixed(3) : '—'}

@@ -8,6 +8,36 @@
 
 ---
 
+## [2026-08-06] D-COLLECTION-UNIVERSE-PRINCIPLE — 수집 유니버스는 활성 monitor target을 자동 포함 [monitor] [news] [platform]
+
+> 출처: 지시서 MON-P2A T0. 근거: RECON-NEWS-P0(TLN 등 비SP500 보유종목이 어떤 수집 유니버스에도 미포함=사각지대).
+
+**결정**: 모든 수집 유니버스(뉴스·EOD신호 등)는 **활성 monitor target(보유·관제 종목)을 자동 포함**한다. 사용자가 관제하는 종목이 데이터 수집 사각지대에 놓이지 않게 하는 전역 원칙. **1호 구현 = NEWS-P0-FIX**(뉴스측 monitor-target 자동 편입). EOD신호측(EODSignal SP500 한정 → 비SP500 EOD계열 지표 n=0) 확장은 T4 RECON 후 별도 결정 사이클.
+
+**Why**: 관제=의도의 커밋인데 그 종목이 수집 유니버스 밖이면 신호·뉴스가 영원히 비어 관제가 무의미(TLN 뉴스 0건·EODSignal 0). **How to apply**: 각 수집 경로의 유니버스 결정부에 monitor-target 합집합(경계=leaf 앱 역결합 금지, shared/느슨참조 경유). EOD측은 RECON 후.
+
+## [2026-08-06] D-MON-P2A — 점수 정직성 수리: H1 판정(희석 실재, 층위=scorer) + 스코프 C [monitor]
+
+> 출처: 지시서 MON-P2A. 근거: MON-DETAIL-P1 T3(H1) + 본 트랙 T4·T5 실측. 상위 D-MON-TRACK-ORDER-20260806 ⑴ 발동.
+
+**결정**: H1(점수 희석) **실재 확정** — 단 층위는 aggregator None-대입이 아니라 **⑴ EODSignal SP500 한정으로 비SP500 EOD계열 3지표 n=0**(IONQ/IREN/TLN, 가중 1/3 상시 0) + **⑵ 부분 reading-count로 momentum/sma가 무언 계산**. **스코프 C(수학 수리)** 채택: 충분성 계약(scorer `{score, is_sufficient}`) + aggregator **재정규화**(유효 지표만, 무데이터 분모 제외) + 커버리지 표출(`indicator_coverage {sufficient,total}`). 데이터 수리(EOD 유니버스 확장)는 T4 후 별도 결정.
+
+**Why**: 무데이터 지표를 0.0으로 희석하면 종합점수가 중립쪽으로 왜곡(IONQ/IREN/TLN before 6/9인데 3 무효 지표가 full weight로 참여). **★T4/T5 실측 경고(값 미확정)**: draft min_n(momentum=252·sma200=200·high_52w=252)은 **DailyPrice-이력 기준 수치**이나 scorer는 **reading-count**를 봄 → 전 6종에서 momentum/sma/high_52w(강·강·중 근거) **과잉 제외**(DailyPrice는 271~772행으로 momentum 산출 요건 충족 = 값 유효). **min_n 값·게이트 층위(scorer vs ingest)는 계획 세션 확정 — 배포 전 필수**. **P2A-CUT**: 신 로직 적용 asof(배포일)를 점수 시계열 단절점으로 기록(후속 캘리브레이션 구간 구분). **T5 before→after(읽기 전용 재산출, evaluate 미호출)**: GEV 0.0262→0.0969(7/9)·GOOGL 0.1084→0.2315(7/9)·IONQ -0.0375→0.0338(4/9)·IREN -0.0288→0.0374(4/9)·PLTR 0.1567→0.2261(7/9)·TLN 0.0015→0.0738(4/9). 전 6종 상향(재정규화가 0쪽 희석 지표 제외). **전 6종 공통 제외 = sma200_gap·momentum_12_1**(draft min_n 200/252 > reading-count 19~126, 단 DailyPrice는 271~772행으로 값 유효 = 과잉제외) + 비SP500 3종은 EODSignal 0인 eod_composite·change_percent·dollar_volume 추가 제외. **bounded(high_52w·rsi)는 scorer min_n 미적용**(점수=최신값 범위매핑, reading-count 게이트 범주 부적합 — 진짜 이력 부족은 compute 계층 소관, T4).
+
+**[2026-08-08] ADDENDUM — min_n 확정 (STEP0 착수조건 해소, MON-P2B 지시서 경로 1)**: 위 ★경고의 두 미결(min_n 값·게이트 층위)을 확정한다.
+- **n-기준 확정 = 계산 소스 행수(source_n)**. reading-count(IndicatorReading 행수)를 충분성 판정에서 **폐기**한다 — min_n은 '오늘의 지표값을 만들 원천 데이터(DailyPrice/EODSignal) 행수' 조건이므로 z 히스토리 길이(readings)와 **별개 범주**였다(P2A 범주 오류). `source_row_count(indicator, entry, as_of)`가 catalog `source`로 소스 모델(DailyPrice/EODSignal)을 판별해 `stock__symbol=monitor.target_ref` count를 반환, `source_n < min_n`이면 무언 계산 금지·불충분 반환.
+- **min_n 값 = 초안 유지**(변경 없음): eod_composite·change_percent·dollar_volume=1 / sma200_gap=200 / momentum_12_1·high_52w_proximity=252 / volume_ratio=21 / macd_histogram=35 / rsi14=15.
+- **게이트 층위 확정 = scorer 계층**(`score_indicator_from_model`·`score_indicator_dispatch`). 순수함수 `score_indicator`는 **z 계산 가능성**(robust median/MAD 최소 관측 5)만 게이트, min_n 정책은 상위로 격상. **bounded(high_52w·rsi14)도 source_n 게이트로 통일**(P2A의 "bounded min_n 미적용" 폐기 — DailyPrice 이력 유효성으로 판정, reading-count 아님).
+- **확정 행렬(교정 재산출)**: SP500형(EODSignal 존재) = **9/9** (GEV +0.0185·GOOGL +0.0918·PLTR +0.2294) / 비SP500형(EODSignal 0) = **6/9** (IONQ +0.0077·IREN +0.0076·TLN +0.0488, 불충분 = eod_composite·change_percent·dollar_volume). **P2A 원본 T5(7/9·4/9)는 reading-count 오게이트 산물 → 무효화**. 교정 overall이 P2A 원본보다 낮은 것은 momentum/sma(양수)를 과잉제외해 부풀렸던 것을 정직하게 포함시킨 결과(정직성 개선). **P2A-CUT asof는 교정 배포일**(P2B와 단일 배포창) 기준으로 확정. 검증: monitor pytest 231→236(신규 source_n 7·제거 순수 min_n 2)·전 236 green.
+
+## [2026-08-06] D-NEWS-P0-REPAIR — 뉴스 수집 유니버스 수리 (S3 등재 + S1 defect + S2 자동 편입) [news]
+
+> 출처: 지시서 NEWS-P0-FIX(구현) + MON-P2A T0(결정 등재). 근거: RECON-NEWS-P0.
+
+**결정**: ⑴ **S3** — 비SP500 보유 3종(IONQ·IREN·TLN)을 NewsCollectionCategory custom 멱등 등재(SP500 3종은 orchestrator 커버). ⑵ **S1** — `collect_press_releases_fmp` defect 수리(아래 각주). ⑶ **S2** — 활성 monitor target 자동 편입(`collect_daily_news` 합집합, D-COLLECTION-UNIVERSE 1호 구현, 경계=monitor 앱 direct import 금지·`apps.get_model` 느슨참조).
+
+**★HA-P0 R5 정정 각주**: R5의 "`SP500Constituent.market_cap` 조회분 전건 None"은 **부정확** — 실제로는 **필드·컬럼 자체가 부재**(`.order_by("-market_cap")` = FieldError). market_cap write 경로 없음(FMP 402 무관). **How to apply**: S1 분기 = Stock.market_capitalization 채움율 실측(98.83%≥80%) → Stock join 정렬. **★S2 결정 필요(실측 발견)**: monitor "활성" 필터를 `status=ACTIVE`(문자 그대로)로 하면 보유 6종 전부 `status=setting_up`이라 **no-op** → 목적(사각지대 해소) 미달. 처방=paused/archived만 제외(`status__in=[setting_up, active]`)로 조정(계획 세션 확인).
+
 ## [2026-08-06] D-MON-TRACK-ORDER-20260806 — HA-P0 RECON 기반 트랙 순서 판정 3건 [monitor]
 
 > 출처: 지시서 MON-DETAIL-P1 §0(편승 등재). 근거: HA-P0 RECON 실측(4fcc768d). 상위 D-MONITOR-HORIZON-ADVISOR §8.
