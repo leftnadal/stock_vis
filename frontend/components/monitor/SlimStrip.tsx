@@ -157,12 +157,19 @@ export function SlimStrip({
           value={
             <span className="inline-flex items-baseline gap-1">
               {score != null ? score.toFixed(2) : '—'}
-              {scoreDelta != null && scoreDelta !== 0 && (
+              {scoreDelta != null && (
                 <span
-                  className={`text-[10px] ${scoreDelta > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                  data-testid="token-score-delta"
+                  className={`text-[10px] ${
+                    scoreDelta > 0
+                      ? 'text-green-600 dark:text-green-400'
+                      : scoreDelta < 0
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-gray-400'
+                  }`}
                 >
-                  {scoreDelta > 0 ? '▲' : '▼'}
-                  {Math.abs(scoreDelta).toFixed(2)}
+                  {scoreDelta > 0 ? '▲' : scoreDelta < 0 ? '▼' : '·'}
+                  {scoreDelta === 0 ? '+0.00' : Math.abs(scoreDelta).toFixed(2)}
                 </span>
               )}
               {/* MON-P2A T3: 커버리지 접미(유효/전체). 유효<전체면 경고톤(부분 데이터). */}

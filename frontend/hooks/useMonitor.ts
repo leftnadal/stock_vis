@@ -19,6 +19,8 @@ export const monitorKeys = {
   alertSummary: () => [...monitorKeys.alerts(), 'summary'] as const,
   sparkline: (id: string, window: number) =>
     [...monitorKeys.all, 'sparkline', id, window] as const,
+  snapshots: (id: string, window: number) =>
+    [...monitorKeys.all, 'snapshots', id, window] as const,
 }
 
 export function useMonitors() {
@@ -191,6 +193,16 @@ export function useSparkline(monitorId: string, window = 30, enabled = true) {
   return useQuery({
     queryKey: monitorKeys.sparkline(monitorId, window),
     queryFn: () => monitorService.getSparkline(monitorId, window),
+    enabled: enabled && !!monitorId,
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+// ── 점수 정본 시계열 (MON-P2B T1) ── 스트립 델타·일지 스냅샷의 단일 원천(sparkline과 별개).
+export function useSnapshots(monitorId: string, window = 30, enabled = true) {
+  return useQuery({
+    queryKey: monitorKeys.snapshots(monitorId, window),
+    queryFn: () => monitorService.getSnapshots(monitorId, window),
     enabled: enabled && !!monitorId,
     staleTime: 1000 * 60 * 5,
   })

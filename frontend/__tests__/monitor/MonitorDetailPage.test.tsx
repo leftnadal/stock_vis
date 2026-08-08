@@ -90,6 +90,7 @@ vi.mock('@/hooks/useMonitor', () => ({
   useIndicators: () => ({ data: [{ id: 'i1', name: 'EOD 종합', latest_value: null }] }),
   useClosePreview: () => ({ data: undefined }),
   useSparkline: () => ({ data: null }),
+  useSnapshots: () => ({ data: null }),
 }))
 
 import MonitorDetailPage from '@/app/monitor/[id]/page'

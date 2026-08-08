@@ -1,8 +1,10 @@
 // Monitor 상세 일지(journal) 계약 (MON-DETAIL-P1 T2, D-MON-DETAIL-LAYOUT-B).
 // JournalEntry = { kind, asof, payload } + kind별 렌더러 레지스트리(components/monitor/journal).
 // P1 구현 kind 3종(snapshot·transition·open) + 예약 kind 3종(advisor·theme·memo — 타입 슬롯만).
-// 소스 = 기존 엔드포인트 조합(sparkline series·monitor-scoped alerts·monitor+claim). 신규 aggregate 엔드포인트 없음.
-import type { AlertEvent, Claim, Monitor, ScenarioType, SparklineResponse } from '@/types/monitor'
+// 소스 = monitor-scoped alerts·monitor+claim + 점수 정본 시계열(snapshots, MON-P2B T1).
+// snapshot entry는 MonitorSnapshot 정본(BE 계산 delta 그대로 소비) — sparkline(추세 곡선,
+// 재산출)은 여기서 더 이상 쓰지 않는다(무접촉 대상은 StateBandSparkline만).
+import type { AlertEvent, Claim, Monitor, ScenarioType, SnapshotSeriesResponse } from '@/types/monitor'
 
 // P1 구현 3종 + 예약 3종(레지스트리 미등록 → 안전 무시, 전방 호환).
 export type JournalKind = 'snapshot' | 'transition' | 'open' | 'advisor' | 'theme' | 'memo'
@@ -43,7 +45,7 @@ function dateOf(iso: string): string {
 }
 
 interface BuildInput {
-  sparkline?: SparklineResponse | null
+  snapshots?: SnapshotSeriesResponse | null
   alerts?: AlertEvent[] | null // monitor 스코프(억제 포함) 권장
   monitor: Monitor
   claims?: Claim[] | null
@@ -51,17 +53,16 @@ interface BuildInput {
 
 // 기존 엔드포인트 조합을 일지 항목으로 합성. 정렬: asof desc, 동일 asof는 transition>snapshot,
 // open(관제 개시)은 항상 최하단 고정.
-export function buildJournal({ sparkline, alerts, monitor, claims }: BuildInput): JournalEntry[] {
+export function buildJournal({ snapshots, alerts, monitor, claims }: BuildInput): JournalEntry[] {
   const entries: JournalEntry[] = []
 
-  // snapshot ← sparkline.series (asc). delta = 직전 점 대비.
-  const series = sparkline?.series ?? []
-  series.forEach((pt, i) => {
-    const delta = i > 0 ? Math.round((pt.score - series[i - 1].score) * 10000) / 10000 : null
+  // snapshot ← snapshots.series (asc, 정본). delta는 BE 계산값을 그대로 소비(재계산 금지).
+  const series = snapshots?.series ?? []
+  series.forEach((pt) => {
     entries.push({
       kind: 'snapshot',
       asof: dateOf(pt.asof),
-      payload: { score: pt.score, delta } satisfies SnapshotPayload,
+      payload: { score: pt.score, delta: pt.delta } satisfies SnapshotPayload,
     })
   })
 

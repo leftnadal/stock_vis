@@ -14,6 +14,7 @@ import type {
   MonitorInput,
   ScenarioSuggest,
   ScenarioType,
+  SnapshotSeriesResponse,
   SparklineResponse,
 } from '@/types/monitor'
 
@@ -157,6 +158,14 @@ export const monitorService = {
   // ── 상태밴드 스파크라인 (MON-P3-ALERT §6) ──
   getSparkline: async (monitorId: string, window = 30): Promise<SparklineResponse> => {
     const { data } = await authAxios.get(`/monitor/monitors/${monitorId}/sparkline/`, {
+      params: { window },
+    })
+    return data
+  },
+
+  // ── 점수 정본 시계열 (MON-P2B T1) ── 스트립 델타·일지 스냅샷의 단일 원천.
+  getSnapshots: async (monitorId: string, window = 30): Promise<SnapshotSeriesResponse> => {
+    const { data } = await authAxios.get(`/monitor/monitors/${monitorId}/snapshots/`, {
       params: { window },
     })
     return data

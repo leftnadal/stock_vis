@@ -43,6 +43,7 @@ from apps.monitor.models import (
 from apps.monitor.services import closure
 from apps.monitor.services.pipeline import evaluate_monitor
 from apps.monitor.services.sparkline import score_series
+from apps.monitor.services.snapshot_series import snapshot_series
 
 # 상태 심각도 랭크: 위험(0) → 약화(1) → 관찰(2) → 유지(3). 트리아지 정렬 1차 키.
 _SEVERITY_WHENS = [
@@ -197,6 +198,21 @@ class MonitorViewSet(viewsets.ModelViewSet):
             window = 30
         window = max(5, min(window, 120))
         return Response(score_series(monitor, window=window))
+
+    @action(detail=True, methods=["get"])
+    def snapshots(self, request, pk=None):
+        """점수 정본 시계열 — MonitorSnapshot(동결 기록) 기반 {asof, score, delta} (MON-P2B T1).
+
+        스트립 델타·일지 스냅샷의 단일 원천. sparkline(추세 곡선, 재산출)과 별개 —
+        여기는 '그날 실제로 기록한 값'만 담아 로직 변경에도 과거 불변.
+        """
+        monitor = self.get_object()  # user 스코프 자동 적용
+        try:
+            window = int(request.query_params.get("window", 30))
+        except (TypeError, ValueError):
+            window = 30
+        window = max(5, min(window, 120))
+        return Response(snapshot_series(monitor, window=window))
 
 
 class AlertEventViewSet(viewsets.ReadOnlyModelViewSet):
