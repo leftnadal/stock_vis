@@ -11,7 +11,8 @@ from apps.portfolio.management.commands import sync_analyst_signals_beat as cmd
 
 def test_schedule_constants():
     assert cmd.BEAT_TASK == "apps.portfolio.tasks.ingest_analyst_signals"
-    assert cmd.CRONTAB["hour"] == "18" and cmd.CRONTAB["minute"] == "30"
+    # SPOT-DAY-CONVENTION 수리(D-I3-4): 18:30 → 19:30 ET (T 종가 적재 후행 보장)
+    assert cmd.CRONTAB["hour"] == "19" and cmd.CRONTAB["minute"] == "30"
     assert cmd.CRONTAB["timezone"] == "America/New_York"
     assert cmd.CRONTAB["day_of_week"] == "1-5"
 
@@ -22,4 +23,4 @@ def test_dry_run_no_db_write():
     text = out.getvalue()
     assert "[dry-run]" in text
     assert "portfolio-analyst-signals-daily" in text
-    assert "18:30" in text
+    assert "19:30" in text

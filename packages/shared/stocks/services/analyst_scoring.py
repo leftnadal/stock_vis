@@ -27,6 +27,11 @@ SCORING_VERSION = 1
 W3_ALLOWANCE_TRADING_DAYS = 5
 # 거래일 → 달력일 근사 계수 (주 5거래일 / 7일).
 _CAL_PER_TD = 7 / 5
+# SPOT-DAY-CONVENTION 수리: 첫 T-관례(19:30 ET) 발화일(D-I3-5). 이 날(포함) 이후 pinned
+# spot = T 종가 관례. 실측: 구 18:30 ET 스케줄 발화 = 08-06·08-07 각 9행 = 총 18행 혼합
+# 코호트(T/T−1 혼재) — 소급 미수정, epoch 前으로 분리. 08-08~09 주말(dow1-5) 스킵 →
+# beat 19:30 이동 후 첫 발화 = 2026-08-10(월).
+CONVENTION_EPOCH = date(2026, 8, 10)
 
 
 # ============================================================
@@ -344,10 +349,18 @@ def score_tier1(as_of: date, symbols=None) -> dict:
     result = {"header": reproduction_header(as_of, counts), "cohorts": {}}
     for cohort in ("pinned", "derived"):
         preds_c = [p for p in predictions if p.cohort == cohort]
-        result["cohorts"][cohort] = {
+        entry = {
             "prediction_count": len(preds_c),
             "direction_hit_rate": direction_hit_rate(preds_c, bars, as_of),
             "target_progress": target_progress(preds_c, bars, as_of),
             "cross_sectional_ic": cross_sectional_ic(preds_c, bars, as_of),
         }
+        if cohort == "pinned":
+            # epoch 태깅(D-I3-5): 수리 前=혼합 관례(캐비앗) / 後=T 관례. 수식 무변경.
+            entry["epoch_split"] = {
+                "convention_epoch": CONVENTION_EPOCH.isoformat(),
+                "pre_mixed": sum(1 for p in preds_c if p.capture_date < CONVENTION_EPOCH),
+                "post_t": sum(1 for p in preds_c if p.capture_date >= CONVENTION_EPOCH),
+            }
+        result["cohorts"][cohort] = entry
     return result

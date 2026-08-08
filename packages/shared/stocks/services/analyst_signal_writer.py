@@ -20,13 +20,23 @@ def _spot_price(symbol: str) -> Optional[Decimal]:
 
     FMP 페이로드에 spot성 값이 없어(STEP0 #2) DB 로컬 최신 종가로 경량 조회한다.
     부재 시 None — 발화 자체를 막지 않는다(append 비차단). insert 시 1회 동봉만.
+
+    ★ 값 선택 로직 무변경(D-I3-4 규칙 1) — 집은 bar의 date만 관측 로그로 남긴다
+      (T/T−1 감사용). SPOT-DAY-CONVENTION 수리는 발화 시각 이동으로 보장, 값 로직 불변.
     """
-    return (
+    row = (
         DailyPrice.objects.filter(stock__symbol=symbol.upper())
         .order_by("-date")
-        .values_list("close_price", flat=True)
+        .values("date", "close_price")
         .first()
     )
+    if row is None:
+        return None
+    logger.info(
+        "spot pin: symbol=%s bar_date=%s close=%s",
+        symbol.upper(), row["date"], row["close_price"],
+    )
+    return row["close_price"]
 
 
 def _dec(value: Any) -> Optional[Decimal]:
