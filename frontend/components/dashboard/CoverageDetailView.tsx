@@ -1,13 +1,14 @@
 import { useImpressionTracker } from '@/hooks/useImpressionTracker'
 import type { CoverageResponse, CoverageUnexposedItem } from '@/types/coverage'
+import { SURFACES } from '@/constants/surfaces'
 
 /**
  * 상세 페이지 impression surface (COVERAGE-DETAIL-FE).
- * 백엔드 `ImpressionLog.SURFACE_COVERAGE_DETAIL`('coverage_detail', migrate 0011)과 정합.
- * 유기 노출(dashboard_eod)과 분리 기록 → 커버리지 계산에서 제외(D-P2-COVERAGE-SURFACE).
- * dashboard 구획 단일 출처(공용 hooks/impressionTelemetry.ts 미접촉).
+ * 백엔드 `ImpressionLog.SURFACE_COVERAGE_DETAIL`(migrate 0011)과 정합.
+ * 유기 노출(SURFACES.DASHBOARD_EOD)과 분리 기록 → 커버리지 계산에서 제외(D-P2-COVERAGE-SURFACE).
+ * 값 단일 출처 = SURFACES(constants/surfaces.ts, 공용 인프라 — D-C2-S1-CONST-UNIFY ⓒ-3).
  */
-const SURFACE_COVERAGE_DETAIL = 'coverage_detail'
+const SURFACE_COVERAGE_DETAIL = SURFACES.COVERAGE_DETAIL
 
 function formatRate(rate: number): string {
   return `${Math.round(rate * 100)}%`
