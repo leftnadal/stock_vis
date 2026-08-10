@@ -6,10 +6,12 @@
 dry-run 기본: 대상 일수·헤드라인 있는/없는 일수·예상 토큰·예상 비용 보고, 쓰기 0. 실쓰기는 --commit.
 
 사용:
-    python manage.py generate_analog_context                       # dry-run: 전체 모집단 산정
+    python manage.py generate_analog_context                       # dry-run: 전체 모집단 산정(v1)
     python manage.py generate_analog_context --commit --limit 10   # 소량 검증 생성(≤10일)
     python manage.py generate_analog_context --date 2024-05-06 --commit
     python manage.py generate_analog_context --regenerate --prompt-version cl3_v2 --commit
+    # REGEN-V2 전량(683=491 재생성+192 신규): macro 결정론 선별 v2로 균일 재생성
+    python manage.py generate_analog_context --select-version v2 --regenerate --commit
 """
 
 from __future__ import annotations
@@ -42,39 +44,52 @@ class Command(BaseCommand):
         parser.add_argument("--to", dest="to_date", help="종료일 YYYY-MM-DD(포함)")
         parser.add_argument("--regenerate", action="store_true", help="기존 생성분 덮어쓰기(+버전 증가)")
         parser.add_argument("--limit", type=int, help="처리 상한(소량 검증용)")
-        parser.add_argument("--prompt-version", default=PROMPT_VERSION, help="프롬프트 버전 태그")
+        parser.add_argument("--prompt-version", default=None, help="프롬프트 버전 태그(미지정=선별버전 기본)")
+        parser.add_argument(
+            "--select-version", choices=["v1", "v2"], default="v1",
+            help="그라운딩 선별기: v1(기본, 기존 경로)|v2(macro 결정론, REGEN-V2)",
+        )
 
     def handle(self, *args, **opt):
         commit = opt["commit"]
         regenerate = opt["regenerate"]
         limit = opt["limit"]
-        prompt_version = opt["prompt_version"]
+        select_version = opt["select_version"]
+        # 버전 태그: 미지정 시 선별버전에 커플링(v2→cl3_v2, v1→PROMPT_VERSION). 명시값 우선.
+        prompt_version = opt["prompt_version"] or ("cl3_v2" if select_version == "v2" else PROMPT_VERSION)
 
         targets = self._resolve_targets(opt)
         if not targets:
             self.stdout.write("대상 모집단일 0 — 종료.")
             return
 
-        existing = set(AnalogDayContext.objects.values_list("date", flat=True))
-        pending = targets if regenerate else [d for d in targets if d not in existing]
-        skipped_existing = 0 if regenerate else len(targets) - len(pending)
+        # 버전 인지 멱등(REGEN-V2): 비-regenerate는 날짜 기반 skip(v1 IDENTICAL, 조용한 덮어쓰기 0).
+        #   --regenerate는 목표 prompt_version과 다른 날만 pending(cl3_v1→cl3_v2 업그레이드 + 재실행 멱등).
+        existing = dict(AnalogDayContext.objects.values_list("date", "prompt_version"))
+        if regenerate:
+            pending = [d for d in targets if existing.get(d) != prompt_version]
+        else:
+            pending = [d for d in targets if d not in existing]
+        skipped_existing = len(targets) - len(pending)
         if limit is not None:
             pending = pending[:limit]
 
         self.stdout.write(
             f"[generate_analog_context] 모집단 {len(targets)}일 · 기존 {len(existing)} · "
             f"멱등 skip {skipped_existing} · 이번 대상 {len(pending)} · "
-            f"prompt={prompt_version} · {'COMMIT' if commit else 'DRY-RUN'}"
+            f"select={select_version} · prompt={prompt_version} · {'COMMIT' if commit else 'DRY-RUN'}"
         )
 
         if not commit:
-            self._dry_run_report(pending)
+            self._dry_run_report(pending, select_version)
             return
 
         created = updated = null_empty = null_tone = 0
         for d in pending:
-            grounding_present = bool(context_generator.select_grounding(d))
-            out = context_generator.generate_for_date(d, prompt_version=prompt_version)
+            grounding_present = bool(context_generator.select(d, select_version))
+            out = context_generator.generate_for_date(
+                d, prompt_version=prompt_version, select_version=select_version
+            )
             if out is None:
                 if grounding_present:
                     null_tone += 1  # 헤드라인은 있었으나 톤가드 재실패
@@ -116,34 +131,49 @@ class Command(BaseCommand):
 
     # ── dry-run 산정(쓰기 0) ──
 
-    def _dry_run_report(self, pending: list[datetime.date]) -> None:
-        from django.db.models import Count
-
-        from services.news.models import NewsArticle
-
-        # date별 헤드라인 수(1쿼리, is_archived 무필터 — 그라운딩과 동형).
-        counts = {
-            row["published_at__date"]: row["c"]
-            for row in NewsArticle.objects.filter(published_at__date__in=pending)
-            .values("published_at__date")
-            .annotate(c=Count("id"))
-        }
-        with_hl = [d for d in pending if counts.get(d, 0) > 0]
-        without_hl = len(pending) - len(with_hl)
-        # 토큰 근사: 헤드라인 있는 일수 × (프롬프트 + top-N 헤드라인 + 출력).
+    def _dry_run_report(self, pending: list[datetime.date], select_version: str = "v1") -> None:
         from apps.market_pulse.regime.grounding import GROUNDING_TOP_N
+        from apps.market_pulse.regime.grounding_v2 import SELECT_V2_TOP_N
 
-        per_day_headlines = min(GROUNDING_TOP_N, max((counts.get(d, 0) for d in with_hl), default=0))
-        in_tokens = len(with_hl) * (_APPROX_PROMPT_TOKENS + GROUNDING_TOP_N * _APPROX_TOKENS_PER_HEADLINE)
+        top_n = SELECT_V2_TOP_N if select_version == "v2" else GROUNDING_TOP_N
+
+        if select_version == "v2":
+            # v2 = macro 결정론 선별 → 실제 선별기를 태워 "비어있지 않은 날"을 실측(정확 LLM 호출수).
+            #   순수 DB(외부 API 0). macro 신호 없는 날은 [] → why=null(호출 없음).
+            sel_counts = {d: len(context_generator.select(d, "v2")) for d in pending}
+            with_hl = [d for d in pending if sel_counts[d] > 0]
+            per_day_headlines = max((sel_counts[d] for d in with_hl), default=0)
+        else:
+            from django.db.models import Count
+
+            from services.news.models import NewsArticle
+
+            # v1 = 그날 헤드라인 존재만으로 선별 성립 → date별 헤드라인 수(1쿼리)로 근사(기존 경로 IDENTICAL).
+            counts = {
+                row["published_at__date"]: row["c"]
+                for row in NewsArticle.objects.filter(published_at__date__in=pending)
+                .values("published_at__date")
+                .annotate(c=Count("id"))
+            }
+            with_hl = [d for d in pending if counts.get(d, 0) > 0]
+            per_day_headlines = min(top_n, max((counts.get(d, 0) for d in with_hl), default=0))
+
+        without_hl = len(pending) - len(with_hl)
+        # 토큰 근사: 호출 대상 일수 × (프롬프트 + top-N 헤드라인 + 출력).
+        in_tokens = len(with_hl) * (_APPROX_PROMPT_TOKENS + top_n * _APPROX_TOKENS_PER_HEADLINE)
         out_tokens = len(with_hl) * _APPROX_OUTPUT_TOKENS
         cost = in_tokens / 1_000_000 * _REF_INPUT_USD_PER_M + out_tokens / 1_000_000 * _REF_OUTPUT_USD_PER_M
 
+        empty_label = (
+            "macro 신호 없음 → why=null 유지, 호출 없음" if select_version == "v2"
+            else "why=null 유지, 호출 없음"
+        )
         self.stdout.write(
-            "── DRY-RUN 산정 (쓰기 0) ──\n"
+            f"── DRY-RUN 산정 (쓰기 0, select={select_version}) ──\n"
             f"  대상 일수         : {len(pending)}\n"
             f"  헤드라인 있는 일수 : {len(with_hl)} (LLM 호출 대상)\n"
-            f"  헤드라인 없는 일수 : {without_hl} (why=null 유지, 호출 없음)\n"
-            f"  예상 LLM 호출     : {len(with_hl)}회 (일당 top-{GROUNDING_TOP_N} 헤드라인, 최대 {per_day_headlines})\n"
+            f"  헤드라인 없는 일수 : {without_hl} ({empty_label})\n"
+            f"  예상 LLM 호출     : {len(with_hl)}회 (일당 top-{top_n} 헤드라인, 최대 {per_day_headlines})\n"
             f"  예상 입력 토큰(근사): ~{in_tokens:,}\n"
             f"  예상 출력 토큰(근사): ~{out_tokens:,}\n"
             f"  예상 비용(근사·참고단가): ~${cost:.3f} USD "

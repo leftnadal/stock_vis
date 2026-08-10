@@ -15,9 +15,23 @@ from typing import Any
 
 from apps.market_pulse.llm import analog_context_prompt as prompt_mod
 from apps.market_pulse.regime.grounding import select_grounding
+from apps.market_pulse.regime.grounding_v2 import select_grounding_v2
 from apps.market_pulse.regime.tone_guard import check_tone
 
 logger = logging.getLogger(__name__)
+
+# 그라운딩 선별기 디스패치(REGEN-V2). v1=기존 abs(sent)+entity, v2=macro 결정론 어휘·규칙.
+# v1 경로는 IDENTICAL 보존(기본값 "v1"), v2는 additive.
+_SELECTORS = {"v1": select_grounding, "v2": select_grounding_v2}
+
+
+def select(target_date: date_cls, select_version: str = "v1") -> list[dict[str, Any]]:
+    """버전별 그라운딩 선별. v1=select_grounding, v2=select_grounding_v2. 빈 리스트=신호 없음."""
+    try:
+        selector = _SELECTORS[select_version]
+    except KeyError as exc:
+        raise ValueError(f"알 수 없는 select_version: {select_version!r} (v1|v2)") from exc
+    return selector(target_date)
 
 
 def _invoke_llm(headlines: list[dict[str, Any]]) -> str:
@@ -35,12 +49,14 @@ def generate_for_date(
     target_date: date_cls,
     *,
     prompt_version: str = prompt_mod.PROMPT_VERSION,
+    select_version: str = "v1",
 ) -> dict[str, Any] | None:
     """T의 L3 맥락 생성. 성공 시 {why_text, provenance, prompt_version}, 실패/0건 시 None.
 
     provenance = 선별 헤드라인 [{id, url, title}] (근거 추적). 저장은 호출부(커맨드) 책임.
+    select_version: "v1"(기본, 기존 경로 IDENTICAL) | "v2"(macro 결정론 선별, REGEN-V2).
     """
-    grounding = select_grounding(target_date)
+    grounding = select(target_date, select_version)
     if not grounding:
         logger.info("C-L3 그라운딩 0건 date=%s → why=null 유지", target_date)
         return None

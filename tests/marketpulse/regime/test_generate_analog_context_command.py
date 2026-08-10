@@ -86,3 +86,68 @@ def test_empty_day_keeps_null(db, monkeypatch):
     monkeypatch.setattr(gen, "_invoke_llm", lambda h: "안 불림.")
     _run("--commit")
     assert AnalogDayContext.objects.count() == 0
+
+
+# ── REGEN-V2: --select-version v2 ──
+
+@pytest.fixture
+def _seeded_macro(db):
+    """모집단일 1 + 그날 macro 헤드라인 1건(v2 STRONG) + 개별기업 노이즈 1건."""
+    from services.news.models import NewsArticle
+
+    RegimeSnapshot.objects.create(
+        date=DAY, snapshot_time=datetime.datetime(2024, 5, 6, 20, 0, tzinfo=datetime.timezone.utc),
+        regime="TRANSITION", coverage=1.0, summary=BACKFILL_MARK,
+    )
+    ts = datetime.datetime(2024, 5, 6, 12, 0, tzinfo=datetime.timezone.utc)
+    NewsArticle.objects.create(url="https://ex.com/macro", title="Fed signals rate cut as inflation eases",
+                               source="Reuters", published_at=ts, sentiment_score=0.1)
+    NewsArticle.objects.create(url="https://ex.com/noise", title="Acme soars on blowout earnings",
+                               source="Yahoo Finance", published_at=ts, sentiment_score=0.95)
+
+
+def test_v2_commit_tags_cl3_v2(_seeded_macro, monkeypatch):
+    """--select-version v2 → prompt 자동 cl3_v2 태그 + macro provenance."""
+    monkeypatch.setattr(gen, "_invoke_llm", lambda h: "긴축 완화 기대가 부각된 국면.")
+    text = _run("--select-version", "v2", "--commit")
+    obj = AnalogDayContext.objects.get(date=DAY)
+    assert obj.prompt_version == "cl3_v2"
+    assert "select=v2" in text
+    assert any("Fed" in p["title"] for p in obj.provenance)      # macro 선별
+    assert all("Acme" not in p["title"] for p in obj.provenance)  # 노이즈 탈락
+
+
+def test_v2_regenerate_upgrades_v1_then_idempotent(_seeded_macro, monkeypatch):
+    """v1 생성분(cl3_v1) → v2 --regenerate 업그레이드(cl3_v2) → 재실행 멱등 skip."""
+    monkeypatch.setattr(gen, "_invoke_llm", lambda h: "구버전 문장.")
+    _run("--commit")  # v1 → cl3_v1
+    assert AnalogDayContext.objects.get(date=DAY).prompt_version == "cl3_v1"
+
+    monkeypatch.setattr(gen, "_invoke_llm", lambda h: "긴축 완화 기대가 부각된 국면.")
+    _run("--select-version", "v2", "--regenerate", "--commit")  # 업그레이드 → cl3_v2
+    obj = AnalogDayContext.objects.get(date=DAY)
+    assert obj.prompt_version == "cl3_v2"
+    assert AnalogDayContext.objects.count() == 1  # 덮어쓰기(신규 행 아님)
+
+    # 재실행(같은 v2) → 이미 cl3_v2 → skip(멱등)
+    calls = {"n": 0}
+    monkeypatch.setattr(gen, "_invoke_llm", lambda h: calls.__setitem__("n", calls["n"] + 1) or "다른 문장.")
+    text = _run("--select-version", "v2", "--regenerate", "--commit")
+    assert calls["n"] == 0
+    assert "이번 대상 0" in text
+
+
+def test_v2_empty_macro_signal_keeps_null(_seeded, monkeypatch):
+    """v2: 개별기업만(_seeded=h0/h1, macro 없음) → 빈 선별 → 행 미생성(why=null)."""
+    monkeypatch.setattr(gen, "_invoke_llm", lambda h: "안 불림.")
+    _run("--select-version", "v2", "--commit")
+    assert AnalogDayContext.objects.count() == 0
+
+
+def test_v2_dry_run_macro_signal_reported(_seeded_macro, monkeypatch):
+    """v2 dry-run: 실제 선별기로 macro 신호 있는 날 실측, 쓰기 0."""
+    monkeypatch.setattr(gen, "_invoke_llm", lambda h: "안 불림.")
+    text = _run("--select-version", "v2")
+    assert AnalogDayContext.objects.count() == 0
+    assert "select=v2" in text
+    assert "헤드라인 있는 일수 : 1" in text
