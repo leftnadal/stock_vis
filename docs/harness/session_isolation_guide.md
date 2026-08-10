@@ -8,7 +8,28 @@
 1. **세션 코드 작업 = 일회용 격리 worktree.** 상주 worktree 금지. 생성·작업·제거.
 2. **런타임 트리(sv-worker/web/api-runtime)는 자동화 단독 소유(R1).** 세션이 직접 조작·마커 생성 금지 — 헬퍼가 거부한다.
 3. **공유 트리(~/Desktop/stock_vis) 이탈 시 dirty를 전용 브랜치로 wip 커밋**(3차 사고 대책).
-4. **통합은 원격 전용 refspec / 격리 worktree merge**(공유 트리에서 main 직접 push 금지 — Phase 2 hook).
+4. **통합은 원격 전용 refspec / 격리 worktree merge**(공유 트리에서 main 직접 push 금지 — Phase 2 hook). 단, **D-PUSH-DELEG 조건 충족 시 CC 위임 push 가능**(전면 금지 아님 — 아래 §D-PUSH-DELEG).
+
+## D-PUSH-DELEG — CC push 조건부 위임 규칙 (2026-08-10 확정)
+
+> 정본. DECISIONS `D-PUSH-DELEG`·인시던트 `INCIDENTS.md` INC-001과 짝. SESSION_CONTRACT는 포인터만.
+
+**적용 범위**: 본 규칙은 **§H D-DEPLOY-DELEGATE(`SESSION_CONTRACT.md`)가 관할하는 "자기 세션 브랜치의 조건 충족 코드 배포 파이프라인"을 제외한 모든 origin/main push**에 적용된다(범위 구분 병존, D-PUSH-DELEG 2안). 단 아래 가드 (ii) **공통 하드 가드(behind>0 HALT)는 §H 경로를 포함한 전 push에 예외 없이 적용**된다.
+
+1. **CC는 병진의 세션 내 명시 지시가 있을 때에 한해 origin/main push를 실행할 수 있다.**
+   - "명시 지시" 정의(협의): **"push" 또는 "푸시" 단어를 포함한 직접 지시문만 유효.**
+     "마무리해줘"·"올려줘"·"끝내줘" 등은 승인 아님 → push 명령어 후보만 보고하고 대기.
+   - 승인은 **push 1회분에만 유효**(세션 단위 포괄 승인 불가).
+2. **push 실행 전 필수 가드 (순서 고정):**
+   - (i) `git fetch` 후 behind 재실측.
+   - (ii) **behind > 0 → 무조건 HALT.** rebase·merge 등 흡수 전략의 자가 판단·자가 실행 **절대 금지**.
+     전진분 커밋 목록 + 충돌 위험 파일 교집합을 실측 보고하고 병진의 흡수 전략 승인을 별도로 받는다.
+     - ※ **HALT는 자가 해제 불가** — 해제 권한은 병진 채팅 지시만.
+     - ※ **무충돌 실측(교집합 0)은 진행 근거가 아니라 보고 내용이다.**
+   - (iii) `force` / `force-with-lease` 계열 **전면 금지**(위임 대상 아님).
+   - (iv) push 후 착지 검증(`fetch` → ahead 0 확인 → origin/main 해시 보고).
+3. **대체 관계**: "CC push 전면 금지" 관례 문언 → 위 조건부 위임으로 갱신. worker 재시작·launchctl·
+   파괴적 브랜치 삭제 등 기타 병진 수동 집행 항목은 **전부 현행 유지**(위임 대상 아님).
 
 ## 세션 마커 `.session-marker`
 

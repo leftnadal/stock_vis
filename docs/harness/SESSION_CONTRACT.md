@@ -96,6 +96,9 @@ PR(원격) + CI(GitHub Actions: pytest·경계테스트) + CODEOWNERS 3개만 �
 
 **병진 수동 유지(승격 제외 — 변경 없음)**: prod DB migrate · 영구/강제 삭제 · 원격 브랜치 삭제 · LaunchAgent plist 변경 · **celery beat DB 엔트리의 등록·삭제·enabled 변경(#28 이력)**.
 
+**범위 밖 push (D-PUSH-DELEG, 2026-08-10)**: §H 범위 외 일반 origin/main push는 **`D-PUSH-DELEG`(정본 `session_isolation_guide.md` §D-PUSH-DELEG) 적용** — "push"/"푸시" 명시 지시 1회분에만.
+**공통 하드 가드 (§H 포함 전 push)**: 직전 `fetch`에서 **behind>0이면 무조건 HALT**, 흡수 전략(rebase·merge) 자가 판단·실행 금지, **해제는 병진 채팅 지시만**. (정본 = D-PUSH-DELEG 가드 (ii), 여기엔 요지+참조 — 복제 금지.)
+
 ## I. H1 저위험 갭 자가 해소 (D-H1-SELFRESOLVE)
 
 지시서 실행 중 실측이 지시서 전제와 불일치(스키마 갭 등)할 때, 아래 **3조건 전부** 충족 시 CC 자가 해소 허용:

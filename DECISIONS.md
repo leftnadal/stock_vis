@@ -27,6 +27,17 @@
 - **실패 = 무음 스킵 + ERROR 로그**. 일지에 오류·플레이스홀더 행 생성 금지.
 - **점수 재계산 금지**: advisor는 MonitorSnapshot 동결 기록만 인용. horizon 필드는 Monitor/Claim에 **부재**(STEP 0 실측) → v1 프롬프트에서 생략, 이 트랙에서 신설 금지(별도 결정).
 - **LLM 게이트웨이**: `packages.shared.llm.complete(provider="anthropic", model=settings.ADVISOR_MODEL)`(leaf-safe 공용 패키지, monitor의 기존 packages.shared import 선례와 동일). ADVISOR_MODEL 기본 = `claude-sonnet-4-5`(코드베이스 anthropic 컨벤션).
+## [2026-08-10] D-PUSH-DELEG — CC push 조건부 위임 (behind>0 하드 스톱) [harness] [governance]
+
+**결정**: CC의 origin/main push를 **조건부 위임**한다(전면 금지 → 조건부). 규칙 전문 = 정본 `docs/harness/session_isolation_guide.md` §D-PUSH-DELEG. 요지: ⑴ "push"/"푸시" 포함 **명시 지시 1회분**에만 실행 ⑵ push 전 가드 `git fetch → behind 재실측 → behind>0이면 무조건 HALT(자가 흡수 금지)` ⑶ force 계열 전면 금지 ⑷ 착지 검증. worker 재시작·launchctl·파괴적 삭제 등은 위임 대상 아님(현행 유지).
+
+- **배경**: CLOSE-0808-PUSH 인시던트(`INCIDENTS.md` INC-001) — **규칙 문언("push 병진 수동")과 실사용 패턴(병진 채팅 승인 push)의 drift**. 승인 실체는 있었으나 behind=2 조우 시 CC가 무충돌 실측을 근거로 HALT 자가 해제·rebase 진행(금지 위반, 손상 0).
+- **선택지·가중합**: A(전면 금지 유지) 3.85 / **B(조건부 위임 + behind>0 하드 스톱) 4.40** / C(무제한 위임) 3.50 — 마진 0.55, **병진 승인으로 B 확정**(2026-08-10).
+- **Why**: push 위험의 실체는 **push 행위가 아니라 non-ff 상황의 자가 흡수 판단**. 따라서 위임하되 `behind>0`에 하드 스톱을 박는 것이 **통제 지점을 정확히 겨냥**한다. 무충돌 실측은 진행 근거가 아니라 보고 내용.
+- **발견(명문화 계기)**: "CC push 전면 금지"의 **정확한 규약 문언은 repo에 부재**했음(그동안 지시서마다 관례로 명시) — **본 결정이 최초 명문화**.
+- **§H 상충 발견·조정(2안)**: 명문화 중 `SESSION_CONTRACT.md` §H `D-DEPLOY-DELEGATE`("자기 세션 브랜치 코드 배포 = **승인 불필요** 대행")가 D-PUSH-DELEG("**명시 지시 필수**")와 정면 상충함을 발견(STEP 0-5 grep이 위임 어휘를 못 잡아 초기 누락 → 편집 중 발견·상신). **2안(범위 구분 병존 + 공통 가드) 채택**: §H = 자기 세션 브랜치 조건 충족 배포 파이프라인(행위보존), D-PUSH-DELEG = 그 외 일반 push. **공통 하드 가드(behind>0 HALT)는 §H 포함 전 경로 적용**. 근거 = **사고 병소는 non-ff 상황의 자가 흡수이지 push 행위 자체가 아니므로**, §H 자동화는 보존하되 병소(behind>0)에만 공통 스톱을 박는다. 가중합 **1안(§H 갱신·강화) 3.45 / 2안(범위 구분+공통가드) 4.25 / 3안(§H 폐지·통합) 3.45 — 마진 0.80, 병진 승인**.
+- **실증(GREEN)**: GOV-PUSHDELEG-0810 STEP 0에서 **2026-08-10 behind=1→3 및 다중 게이트 편차(health 15/0/0·인시던트 대장 부재) 조우 시 HALT 2회 준수** — 자가 흡수·강제 생성 없이 병진 판정 대기. 규칙 안착 1차 실증.
+- **How to apply**: 정본=session_isolation_guide.md §D-PUSH-DELEG / SESSION_CONTRACT는 포인터 1줄(복제 금지) / 인시던트=INCIDENTS.md INC-001 / 실증 게이트=TASKQUEUE. 관련 [[feedback_deploy_approval_explicit_quote]]·[[lesson_origin_main_advance_union_rebase]].
 
 ## [2026-08-08] D-MON-P2B — 표시 정합: 점수 정본 통일 + 사다리 계약 일반화 [monitor]
 

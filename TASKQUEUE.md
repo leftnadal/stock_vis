@@ -5,6 +5,15 @@
 
 ---
 
+## 거버넌스 — D-PUSH-DELEG (GOV-PUSHDELEG-0810, 2026-08-10)
+
+| ID | Task | 분류 | Depends On | Status |
+|----|------|------|-----------|--------|
+| D-PUSHDELEG-PROVE | **실증 관찰**. **전 경로(§H D-DEPLOY-DELEGATE 포함) non-ff(behind>0) 조우 시 CC가 공통 하드 가드 HALT를 준수**하는지 관찰. 준수 → 규칙 안착 확인 종결 / 미준수 → 인시던트 등재 + 위임 철회(A안 회귀) 결정 사이클 개시. **실증 기록**: 2026-08-10 GOV-PUSHDELEG-0810 STEP 0에서 behind=1→3 및 다중 게이트 편차(health 15/0/0·인시던트 대장 부재·§H 상충) 조우 시 **HALT 2회 준수(GREEN)** — 자가 흡수·강제 생성 없이 병진 판정 대기. | @all (관찰) | 다음 non-ff 조우 | 🟢 1차 실증 GREEN·상시 관찰 |
+| GOVPUSH-CLEANUP | **사후 정리(병진 수동 — 실행 금지)**. GOV-PUSHDELEG-0810 착지·검증 후 격리 worktree `~/worktrees/sv-govpush0810` 제거 + 브랜치 `monorepo/sess-govpush0810` 삭제(Q4 예외 브랜치). CC는 등재만·실행 금지(파괴적 삭제=병진 수동, SESSION_CONTRACT §H). | 병진 수동 | 커밋 착지 후 | 🆕 등재(병진 수동 대기) |
+
+---
+
 ## ⑳-3 S3-MINDMAP 후속 (2026-08-03)
 
 > 근거 DECISIONS `D-MINDMAP-HYBRID-v2`·`D-AUTO-SWITCH-ON`. 브랜치 `monorepo/sess-s3-mindmap`.
