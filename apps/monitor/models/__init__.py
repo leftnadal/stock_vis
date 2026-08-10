@@ -1,3 +1,4 @@
+from apps.monitor.models.advisor import AdvisorNote
 from apps.monitor.models.alert import AlertEvent
 from apps.monitor.models.closure import ClaimIndicatorResult, ClosureSnapshot
 from apps.monitor.models.indicator import IndicatorReading, MonitorIndicator
@@ -13,4 +14,5 @@ __all__ = [
     "AlertEvent",
     "ClaimIndicatorResult",
     "ClosureSnapshot",
+    "AdvisorNote",
 ]
