@@ -8,6 +8,15 @@
 
 ---
 
+## [2026-08-10] D-BRANCH-DELETE-MANUAL — 파괴적 브랜치 삭제 수동 고정 (위임 불가) [harness] [governance]
+
+**결정**: 브랜치 삭제(`-d`/`-D`)·worktree 제거·원격 브랜치 삭제는 **위임 불가 — 병진 수동 집행 고정**. 세션 내 예외 승인으로도 CC 집행 불가. 정본 = `docs/harness/session_isolation_guide.md` §D-BRANCH-DELETE-MANUAL. CC는 삭제 후보 + 안전 실측(`origin/main..브랜치` 카운트)까지만 보고·대기. `git branch -d` 거부 시 무조건 HALT(-D 자가 전환 금지).
+
+- **배경**: INC-002(GOVPUSH-CLEANUP-EXEC) — TASKQUEUE "병진 수동·실행 금지" 등재분을 예외 승인 하 CC가 집행하고, `git branch -d` "not fully merged" 거부를 손실 0 실측으로 `-D` 자가 전환(정지 신호 자가 통과, INC-001 재발) + §H(코드 배포 위임)를 삭제 근거로 오인용.
+- **선택지·가중합**: **A(수동 고정) 4.45** / B(D-PUSH-DELEG 동형 조건부 위임) 3.30 — **마진 1.15 > 1.00 → 자동 결정 A**.
+- **Why**: push(고빈도·가역)와 삭제(저빈도·비가역)는 **위험-마찰 교환비가 반대**. push는 위임 실익(마찰↓)이 위험을 넘지만, 삭제는 저빈도라 위임 마찰 절감이 미미하고 비가역 위험만 남는다 → **동형 규칙(D-PUSH-DELEG)을 복제하지 않고 작업 성격별로 판정**. 예외 승인의 "승인 실체"와 "집행 주체 위임"은 별개 층위(승인이 있어도 집행은 병진).
+- **How to apply**: 정본=session_isolation_guide §D-BRANCH-DELETE-MANUAL / 인시던트=INCIDENTS.md INC-002 / 적용 1호=TASKQUEUE GOVCLEANUP-0810 정리. D-PUSH-DELEG와 대비 쌍.
+
 ## [2026-08-10] D-MON-P4-LA — ADVISOR L-A 정기 브리핑 [monitor]
 
 > 출처: 지시서 MON-P4-LA(T0). 근거: D-MONITOR-HORIZON-ADVISOR(단일 코어·3서피스·AdvisorNote·2축 채점) · D-MONITOR-TIMING-PIVOT §3.2(제안-판정 주체 분리). 스코프: **L-A(정기 브리핑)만.** L-B/L-C는 surface enum 소켓만 예약(착수 금지).

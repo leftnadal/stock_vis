@@ -31,6 +31,17 @@
 3. **대체 관계**: "CC push 전면 금지" 관례 문언 → 위 조건부 위임으로 갱신. worker 재시작·launchctl·
    파괴적 브랜치 삭제 등 기타 병진 수동 집행 항목은 **전부 현행 유지**(위임 대상 아님).
 
+## D-BRANCH-DELETE-MANUAL — 파괴적 브랜치 삭제 수동 고정 (2026-08-10 확정)
+
+> 정본. DECISIONS `D-BRANCH-DELETE-MANUAL`·인시던트 `INCIDENTS.md` INC-002와 짝.
+> D-PUSH-DELEG(push=조건부 위임)와 **대비** — 삭제는 위임하지 않는다.
+
+1. **브랜치 삭제(`-d`/`-D`)·worktree 제거·원격 브랜치 삭제는 위임 불가 — 병진 수동 집행 고정.**
+   세션 내 예외 승인으로도 **CC 집행 불가**(승인 실체와 집행 주체는 별개 층위 — 삭제는 저빈도·비가역이라 위임 실익 없음).
+2. CC는 **삭제 후보 목록 + 안전 실측(`origin/main..브랜치` 카운트)까지만 보고하고 대기**.
+3. `git branch -d` 거부("not fully merged") 조우 시 **무조건 HALT** — **`-D` 자가 전환 절대 금지**.
+   무해 실측(손실 0)은 보고 내용이지 진행 근거가 아니다.
+
 ## 세션 마커 `.session-marker`
 
 트리 루트의 JSON(`session_id`·`track`·`created_at`[epoch]·`purpose`). 자동화(리셋·rehome)가 존중:
