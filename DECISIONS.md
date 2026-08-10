@@ -295,6 +295,7 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 - **적용 이력**: #80·#81 각 2중복에 a/b 확장 적용 (BATCH-20) — #80: a=COVERAGE-DETAIL migrate(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 LLM 모순(`6d610d67` 13:40) / #81: a=실행환경 절대경로(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 localStorage 캐시(`6d610d67` 13:40), 착지 시간순. ⚠b(REVIEW-P2)는 규칙 시행(07-31) 후 비mgmt 세션 채번 = 규칙 위반 경위(ⓑ 조사, 처방 디렉터 회부).
 - **적용 이력**: #83·#84 각 2중복에 a/b 확장 적용 (BATCH-22) — a=SFI-I1(`9363cac9` 08-03 09:37, BATCH-20 mgmt 채번)·b=S3-MINDMAP(`2daa386f` 08-03 09:53, 비mgmt 세션), 착지 시간순. ⚠b(S3-MINDMAP)는 처방 A 착지(`05211a02`) 이전 시작 세션의 08-03 지연 착지분 = B 트리거 미해당(아래 D-NUMBERING-MGMT-ONLY 처방 정밀화 참조).
 - **적용 이력**: #86 2중복에 a/b 확장 적용 (BATCH-23) — a=TH-SESSION-1(`6beb7b43` author 08-04 10:33, docs(harness) meta-only = mgmt형 병렬 채번·위반 아님)·b=L2-FULL-SWEEP 상태 어휘(`86961ec4` author 08-04 20:51, 비mgmt 채번 = 규칙 위반). 동일 머지(`4fcc768d`) 착지 = 착지 시간 동률 → **타이브레이커 author date 순**. ⚠b는 세션 시작(첫 커밋 `88850fce` author 08-03 18:24) < A 착지(08-05 10:16) = pre-A 시작 → B 트리거 미해당(REVIEW-P2·S3-MINDMAP 이은 3번째 위반). landed merge-base가 A를 조상으로 보인 것은 #40 rebase 아티팩트(아래 판정 절차 보강 참조).
+- **적용 이력**: #89 2중복에 a/b 확장 적용 (BATCH-26) — a=health_check worktree-local(MGMT-BATCH-24 mgmt 채번, author 08-06)·b=TH-TNV-CHAIN-1F 세션날짜금지(비mgmt 채번, `8a41c842`가 common-bugs 실변경, author 08-07 11:09). author date 순. ⚠**b = post-A 위반 확정(첫 사례)** — 세션 최소 author date(landed 최소 `d6f6f9b5` 08-07 10:55, 헤딩 08-06) **> A 착지(`05211a02` 08-05 10:16) = post-A**. TH-TNV-CHAIN-1F는 동 세션에서 **#88b·#89b·#90** 3건을 비mgmt 자가 채번(누적 4번째 위반이자 **첫 post-A**). → **B 트리거 요건 충족**(아래 D-NUMBERING-MGMT-ONLY 처방 참조). 단 **집행은 본 배치 보류·사용자 승인 회부**.
 
 ## [2026-07-31] D-NUMBERING-MGMT-ONLY — common-bugs 채번은 mgmt 세션 전용 (재발 방지) [harness]
 
@@ -304,6 +305,7 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 - **2026-08-03 처방**: #80·#81 충돌(비mgmt 세션 REVIEW-P2의 규칙 시행 후 채번 = 규칙 위반 분류, BATCH-20 ⓑ 조사)에 대해 **A(전파 보강) 채택** — 가중합 A 4.10 / B(훅 강제) 3.85 / C(안내) 3.00, 마진 0.25 타이브레이커 = 단계적 방어·1인 비용(B는 hardening(c) 공사 동반). **B 조건부 트리거(확정 문안, 2026-08-06 정밀화 — BATCH-22): 처방 A 착지(`05211a02`) 이후에 시작된 세션의 비mgmt 채번 위반 1회 = B 즉시 집행. A 이전 시작 세션의 지연 착지분은 트리거로 오인하지 않는다.** (B = hardening(c): 훅 `scripts/hooks` 이전 + `core.hooksPath` + pre-commit 검사 'common-bugs 신규 #NN 헤딩은 mgmt 브랜치만 허용'.)
   - **부기**: S3-MINDMAP #83/#84 08-03 위반은 **A 이전 시작 세션의 지연 착지분** → 트리거 미해당(BATCH-22 판정).
 - **판정 절차 보강(확정, 2026-08-06 — BATCH-23)**: **B 트리거의 "세션 시작" = 해당 세션 커밋들의 최소 author date.** landed 계보(merge-base)는 **#40 rebase 아티팩트**이므로 판정 프록시로 **영구 사용 금지**(rebase가 pre-A 작업을 A 위로 재배치 → landed에선 A가 조상으로 오탐). **동일 머지 착지 중복의 구분자 순서 = author date 순**(착지 시간 동률 타이브레이커). 이력: BATCH-23 #86 사례 — landed(A 조상=A 이후) vs author(08-04<08-05=A 이전) 상충 → **author 기준으로 미해당 확정**.
+- **⚠ B 트리거 충족 — 최초 post-A 위반 (확정, 2026-08-10 — BATCH-26)**: TH-TNV-CHAIN-1F(비mgmt, theme-heat 트랙)가 **#88b·#89b·#90**를 자가 채번(`8a41c842` common-bugs 실변경). 세션 최소 author date 08-07(≥헤딩 08-06) **> A 착지(08-05 10:16) = post-A** → **B 즉시 집행 요건 충족**(REVIEW-P2·S3-MINDMAP·L2-FULL-SWEEP 이은 4번째 위반이자 첫 post-A). **단 집행(B = hardening(c): 훅 `scripts/hooks` 이전 + `core.hooksPath` + pre-commit "common-bugs 신규 #NN 헤딩=mgmt 브랜치만" 검사)은 파괴적 인프라 변경 동반 → 본 배치에서 집행하지 않고 사용자 승인 안건으로 회부**(hardening(c) 동반 이행 여부 포함). 승인 시 별도 infra 세션 집행.
 
 ## [2026-07-31] D-C2-DETAIL-MIG — coverage_detail surface 등재 = no-op 마이그 조건부 수용 (경로 A) + IssuanceLog/ImpressionLog 경계 정본화 [platform] [shared]
 
@@ -374,7 +376,9 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 
 **관찰(규약)**: 실행 지시서에는 **소유 글롭 사본을 게재하지 않는다** — 정본(DECISIONS 소유권 지도 v2) **포인터 + STEP 0 실측 인용**만 사용한다. **근거**: S1-B1 글롭↔실주소 불일치(#71 계열)의 원인 = 지시서 내 6월자 글롭 사본(정본에서 복제 → drift). 사본은 정본 갱신을 따라오지 못해 실주소와 벌어진다. BUILD-C2-S1-B2 지시서가 이 규약을 선반영(글롭 복제 금지·STEP 0 정본 직접 열람)해 드리프트 0 실증.
 
-## [2026-07-29] D-DOMAIN-AUTOMATION — 관계 도메인 태깅 자동-C 파이프라인 [chainsight]
+## [2026-08-10] D-INSTR-GUARD-BLOCK — 다단계 사용자 명령서의 가드는 중단력 확보 (규약 관찰) [process] [harness]
+
+**관찰(규약)**: 사용자에게 넘기는 **다단계 명령서에서 "값 검증 가드"(예: 목표 해시 대조)는 실패 시 실제 중단이 되도록** 구조화한다 — ⑴ 가드를 **별도 블록**으로 분리(사용자가 결과 확인 후 다음 단계 수동 진행) 또는 ⑵ `( set -e; … )` 서브셸로 묶어 가드 실패가 뒤 단계를 막게 한다. **근거**: DEPLOY-S1B1(08-08) step 2 "3c36ee07 아니면 중단" 가드가 origin/main 전진(→8a41c842)으로 **트립됐으나**, 단일 붙여넣기(주석 가드·`&&` 미결합)라 **중단 없이 step 3의 하드코딩 목표(3c36ee07)로 진행**됨. 결과는 무사(목표 핀 자체가 의도된 S1-B1 고정·FE diff 0)였으나, 비멱등 단계였다면 사고. 순수 주석 가드(`# 아니면 중단`)는 집행력이 없다.
 
 > 트랙: ⑳-3 S2-B. 브랜치 `monorepo/sess-20-3-s2b`.
 

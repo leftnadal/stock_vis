@@ -1313,7 +1313,8 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **규칙**: ⑴ 지시서의 병진 커맨드 안내에 **"별도 터미널(Terminal.app)에서 실행" 명기 필수** — CC `!` 프롬프트 경유 금지(2분 한계 + 첫글자 탈락 #, 이중 함정). ⑵ truncate 발생 시 **재실행 前 반드시 읽기 assess**로 부분 상태 규명(어느 date/row까지 기록됐나·진행 프로세스 잔존 여부) → **멱등 확인 후에만 완결 재실행**(blind 재시도 금지). cf. lesson_background_task_reaping.
 
-## health_check는 worktree-local — 정체 트리에서 PROGRESS 신선도 거짓 FAIL (#89, MGMT-BATCH-24 / LAND-C2-S1-B1 2026-08-06) `[process][harness][git]`
+## health_check는 worktree-local — 정체 트리에서 PROGRESS 신선도 거짓 FAIL (#89a, MGMT-BATCH-24 / LAND-C2-S1-B1 2026-08-06) `[process][harness][git]`
+*(채번 정정 #89 이중할당→a/b, D-NUMBERING-DUP, MGMT-BATCH-26: **a=선착**(BATCH-24 mgmt 채번, author 08-06)·b=TH-TNV-CHAIN-1F 세션날짜금지(L1362, 비mgmt 채번·post-A 위반, 아래). author date 순.)
 
 **증상**: LAND 세션에서 `health_check.py`를 **현재 앉아있는 세션 브랜치 워크트리**(예: `sess-signal-fwd-recon` @ 0790c8f, PROGRESS.md 07-21 정체)에서 실행하면 `origin/main 해시`·`PROGRESS 갱신 stale` **FAIL 2건**이 뜸(실측 11 OK/2 WARN/2 FAIL). 착지 대상 트리(`main`=origin/main, PROGRESS 08-06 신선)에서 재측정하면 **14/1/0**으로 정상 → 앞의 2 FAIL은 거짓이었음.
 
@@ -1358,7 +1359,8 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 ⑶ 교체 후 `git grep <구해시들>` = 0 확인(dangling 잔존 점검). 앵커 후보 = 슬라이스별 커밋·머지 hash.
 **★변종 (#88b, TH-TNV-CHAIN-1F 2026-08-06)**: 긴 1줄 명령을 프롬프트에 붙여넣으면 **터미널 소프트랩이 실제 개행을 삽입**해 `source`/경로/인자가 쪼개짐(실측: `source ... activate`→arg 분리, 긴 scratchpad 경로→`scratch`/`pad/…` 분리, `bash`→첫글자 탈락 `ash`, `checkout --detach\n origin/main`→인자 유실). **해결 = 모든 긴 병진 명령을 짧은 셸 스크립트 파일로 만들고**(홈 디렉터리·긴 경로 내부화) 병진은 `bash ~/짧은.sh` 한 줄만 실행. 스크립트는 CC가 쓰고(파일 쓰기=DB/launchctl 아님) 병진이 트리거(레일 유지).
 
-## 세션 대화의 날짜·시각 가정 금지 — 발화/배포 선후는 machine clock·last_run 실측 전용 (#89, TH-TNV-CHAIN-1F 2026-08-06) [process][harness][ops]
+## 세션 대화의 날짜·시각 가정 금지 — 발화/배포 선후는 machine clock·last_run 실측 전용 (#89b, TH-TNV-CHAIN-1F 2026-08-06) [process][harness][ops]
+*(채번 정정 #89 이중할당→a/b, D-NUMBERING-DUP, MGMT-BATCH-26: b=후착(TH-TNV-CHAIN-1F **비mgmt** 채번, `8a41c842`가 common-bugs 실변경). **처방 B 위반 확정** — 세션 최소 author date(landed 최소 `d6f6f9b5` 08-07 10:55) > A착지(`05211a02` 08-05 10:16) = **post-A**. 집행(훅 설치)은 사용자 승인 회부(DECISIONS D-NUMBERING-MGMT-ONLY 참조).)
 
 **증상**: G-fire 판정에서 "18:00 ET 08-05 발화 = 검증 대상"으로 가정했으나, 실측하니 그 발화(last_run ET 18:00 08-05 = KST 07:00 08-06)가 **배포(KST 11:50 08-06)보다 먼저** → 구 코드 발화 = 체인 로그 부재가 정상. 감독의 날짜 지정조차 실측이 재교정.
 
