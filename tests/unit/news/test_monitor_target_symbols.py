@@ -24,7 +24,7 @@ class TestGetMonitorTargetSymbols:
         return User.objects.create_user(username="mtsym-user", password="x")
 
     def test_returns_operational_stock_scope_targets(self):
-        # NEWS-P0-FIX T3: "활성" = 운용 중(paused/archived 제외) — setting_up 포함.
+        # NEWS-S2 확정(2026-08-10): "운용 중" = archived 제외 전부 — setting_up·active·paused 포함.
         # (보유 종목이 전부 setting_up이라 status=ACTIVE 문자 그대로면 no-op이 됨.)
         from apps.monitor.models.monitor import Monitor
 
@@ -43,15 +43,21 @@ class TestGetMonitorTargetSymbols:
             user=user, scope=Monitor.Scope.STOCK, target_ref="AAPL",
             name="AAPL setting up", status=Monitor.Status.SETTING_UP,
         )
-        # paused → 제외
+        # paused = 운용 중(재개 가능) → 포함 (NEWS-S2 확정: archived만 제외)
         Monitor.objects.create(
             user=user, scope=Monitor.Scope.STOCK, target_ref="MSFT",
             name="MSFT paused", status=Monitor.Status.PAUSED,
         )
+        # archived → 제외(유일한 제외 status)
+        Monitor.objects.create(
+            user=user, scope=Monitor.Scope.STOCK, target_ref="NVDA",
+            name="NVDA archived", status=Monitor.Status.ARCHIVED,
+        )
 
         result = _get_monitor_target_symbols(max_symbols=10)
 
-        assert set(result) == {"TLN", "AAPL"}  # active + setting_up, paused/sector 제외
+        # setting_up + active + paused 포함, archived + sector 제외
+        assert set(result) == {"TLN", "AAPL", "MSFT"}
 
     def test_respects_max_symbols(self):
         from apps.monitor.models.monitor import Monitor

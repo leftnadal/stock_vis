@@ -1558,13 +1558,14 @@ def _get_monitor_target_symbols(max_symbols=10):
         from django.apps import apps as django_apps
 
         Monitor = django_apps.get_model("monitor", "Monitor")
-        # "활성 monitor" = 운용 중(paused/archived 제외). status=ACTIVE 문자 그대로면
-        # 보유 종목이 전부 setting_up이라 no-op → 사각지대(TLN 등) 미해소(RECON-NEWS-P0
-        # N2 실측). 목적(수집 유니버스 자동 편입, D-COLLECTION-UNIVERSE-PRINCIPLE)에 맞게
-        # paused/archived만 제외한다.
+        # "운용 중 monitor" = **archived 제외 전부**(NEWS-S2 확정, 2026-08-10 사용자 채택).
+        # status=ACTIVE 문자 그대로면 보유 종목이 전부 setting_up이라 no-op → 사각지대(TLN 등)
+        # 미해소(RECON-NEWS-P0 N2 실측). 목적(수집 유니버스 자동 편입, D-COLLECTION-UNIVERSE-
+        # PRINCIPLE)에 맞게 setting_up·active·paused는 모두 포함하고 archived만 제외한다
+        # (paused=일시정지는 재개 가능한 운용 상태 → 수집 유지가 재개 시 공백 없음).
         symbols = list(
             Monitor.objects.filter(scope=Monitor.Scope.STOCK)
-            .exclude(status__in=[Monitor.Status.PAUSED, Monitor.Status.ARCHIVED])
+            .exclude(status=Monitor.Status.ARCHIVED)
             .values_list("target_ref", flat=True)
             .distinct()[:max_symbols]
         )
