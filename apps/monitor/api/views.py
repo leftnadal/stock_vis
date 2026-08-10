@@ -26,6 +26,7 @@ from rest_framework.views import APIView
 from apps.monitor.catalog import catalog_for
 
 from apps.monitor.api.serializers import (
+    AdvisorNoteSerializer,
     AlertEventSerializer,
     ClaimSerializer,
     IndicatorReadingSerializer,
@@ -33,6 +34,7 @@ from apps.monitor.api.serializers import (
     MonitorSerializer,
 )
 from apps.monitor.models import (
+    AdvisorNote,
     AlertEvent,
     Claim,
     IndicatorReading,
@@ -213,6 +215,23 @@ class MonitorViewSet(viewsets.ModelViewSet):
             window = 30
         window = max(5, min(window, 120))
         return Response(snapshot_series(monitor, window=window))
+
+    @action(detail=True, methods=["get"])
+    def advisor_notes(self, request, pk=None):
+        """ADVISOR L-A 브리핑 목록 (MON-P4-LA T3) — 일지 advisor kind 소스.
+
+        단일 모델 조회(aggregate 창설 아님). 최신순, surface=L-A 한정.
+        """
+        monitor = self.get_object()  # user 스코프 자동 적용
+        try:
+            limit = int(request.query_params.get("limit", 30))
+        except (TypeError, ValueError):
+            limit = 30
+        limit = max(1, min(limit, 90))
+        qs = monitor.advisor_notes.filter(
+            surface=AdvisorNote.Surface.L_A
+        ).order_by("-asof")[:limit]
+        return Response(AdvisorNoteSerializer(qs, many=True).data)
 
 
 class AlertEventViewSet(viewsets.ReadOnlyModelViewSet):

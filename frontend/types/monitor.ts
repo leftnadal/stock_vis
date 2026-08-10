@@ -355,3 +355,18 @@ export interface SnapshotSeriesResponse {
   series: SnapshotSeriesPoint[]
   window: number
 }
+
+// ── ADVISOR 브리핑 일지 (MON-P4-LA T3, GET /monitor/monitors/{id}/advisor_notes/) ──
+// surface=L-A 한정, 최신순(asof desc, BE order_by('-asof')). 일지 kind=advisor 소스.
+export interface AdvisorNote {
+  id: string
+  asof: string
+  surface: string
+  headline: string
+  body: string
+  coverage_n: number
+  coverage_total: number
+  model_id: string
+  prompt_version: string
+  created_at: string
+}

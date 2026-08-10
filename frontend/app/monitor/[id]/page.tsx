@@ -14,6 +14,7 @@ import { VerdictBadge } from '@/components/monitor/VerdictBadge'
 import { JournalFeed } from '@/components/monitor/journal/JournalFeed'
 import { useAuth } from '@/contexts/AuthContext'
 import {
+  useAdvisorNotes,
   useClosePreview,
   useIndicators,
   useMonitor,
@@ -115,6 +116,7 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
   const score = monitor?.latest_score ?? null
   const { data: spark } = useSparkline(monitorId, 30, score !== null) // 추세 곡선(StateBandSparkline 전용) — 무접촉
   const { data: snapshots } = useSnapshots(monitorId, 30, score !== null) // 점수 정본 시계열(MON-P2B T1) — 델타·일지 소스
+  const { data: advisorNotes } = useAdvisorNotes(monitorId, 30, score !== null) // ADVISOR L-A 브리핑(MON-P4-LA T3) — 일지 advisor kind 소스
 
   // close-preview는 무상태라 claim 상태 무관하게 호출 가능 — 이걸로 지표 "최신값"을 보강.
   const firstClaimId = claims?.[0]?.id ?? ''
@@ -156,7 +158,7 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
   const scoreDelta =
     snapshotSeries.length > 0 ? snapshotSeries[snapshotSeries.length - 1].delta : null
 
-  const journal = buildJournal({ snapshots, alerts, monitor, claims })
+  const journal = buildJournal({ snapshots, alerts, monitor, claims, advisorNotes })
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">

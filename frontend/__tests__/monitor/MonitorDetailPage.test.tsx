@@ -91,6 +91,7 @@ vi.mock('@/hooks/useMonitor', () => ({
   useClosePreview: () => ({ data: undefined }),
   useSparkline: () => ({ data: null }),
   useSnapshots: () => ({ data: null }),
+  useAdvisorNotes: () => ({ data: null }),
 }))
 
 import MonitorDetailPage from '@/app/monitor/[id]/page'

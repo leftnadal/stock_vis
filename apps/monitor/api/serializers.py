@@ -2,6 +2,7 @@
 from rest_framework import serializers
 
 from apps.monitor.models import (
+    AdvisorNote,
     AlertEvent,
     Claim,
     ClosureSnapshot,
@@ -10,6 +11,18 @@ from apps.monitor.models import (
     MonitorIndicator,
 )
 from apps.monitor.services.scope_resolver import ScopeResolutionError, resolve
+
+
+class AdvisorNoteSerializer(serializers.ModelSerializer):
+    """ADVISOR 브리핑 동결 기록 (읽기 전용, MON-P4-LA). 일지 advisor kind 소스."""
+
+    class Meta:
+        model = AdvisorNote
+        fields = [
+            "id", "asof", "surface", "headline", "body",
+            "coverage_n", "coverage_total", "model_id", "prompt_version",
+            "created_at",
+        ]
 
 
 class ClosureSnapshotSerializer(serializers.ModelSerializer):

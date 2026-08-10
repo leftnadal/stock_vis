@@ -21,6 +21,8 @@ export const monitorKeys = {
     [...monitorKeys.all, 'sparkline', id, window] as const,
   snapshots: (id: string, window: number) =>
     [...monitorKeys.all, 'snapshots', id, window] as const,
+  advisorNotes: (id: string, limit: number) =>
+    [...monitorKeys.all, 'advisorNotes', id, limit] as const,
 }
 
 export function useMonitors() {
@@ -203,6 +205,16 @@ export function useSnapshots(monitorId: string, window = 30, enabled = true) {
   return useQuery({
     queryKey: monitorKeys.snapshots(monitorId, window),
     queryFn: () => monitorService.getSnapshots(monitorId, window),
+    enabled: enabled && !!monitorId,
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+// ── ADVISOR 브리핑 일지 (MON-P4-LA T3) ── 일지 kind=advisor 소스(useSnapshots 미러).
+export function useAdvisorNotes(monitorId: string, limit = 30, enabled = true) {
+  return useQuery({
+    queryKey: monitorKeys.advisorNotes(monitorId, limit),
+    queryFn: () => monitorService.getAdvisorNotes(monitorId, limit),
     enabled: enabled && !!monitorId,
     staleTime: 1000 * 60 * 5,
   })
