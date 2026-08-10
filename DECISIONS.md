@@ -6059,6 +6059,8 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 
 **D-REGEN-V2-EXEC (2026-08-10, 683 --commit 실행 완료·종결)**: worker 트리 origin/main 동기화(270e7dcb)+워커 재시작 후 `generate_analog_context --select-version v2 --regenerate --commit` 실행(2배치 합산, 첫 배치 하네스 리핑→nohup 재개, 멱등 skip으로 무손실). **결과 = cl3_v2 666(생성 성공) + cl3_v1 잔존 12 + 행없음 5**(683 완결). null 사유=macro 신호 없음 9 + 톤가드 재실패 8(dry-run 674 대비 666=톤가드 억지생성 거부). 톤가드 육안 6/6 통과·provenance 무결. **미결 = cl3_v1 잔존 12일(macro-null 기존)**: 파이프라인이 동결원칙상 v1 행을 자동삭제 안 해 v1 filler 서빙 유지 → **삭제→null 여부 디렉터 결정 대기**(유지 시 사실기반·무해). 실행 트리=sv-worker-runtime(dev=prod 공유 DB). BOUNDARY-LLM 진입 조건 충족(경계 clean·신규부채 0, ALIAS-CHECK만 잔여).
 
+**D-CL3-V1-RESIDUAL (2026-08-10, cl3_v1 잔존 12행 백업 후 삭제·종결)**: D-REGEN-V2-EXEC 미결(cl3_v1 잔존 12) 처분 = **(b) 백업 후 삭제**(가중합 4.30 vs (a)유지 3.10, 마진 1.20, 병진 승인). **삭제 방식 = (i) 행 delete**(why=null 렌더가 아니라 행 부재로 = 기존 행없음 5일과 동형): cards.py는 버전 무관 `filter(date__in)` + `ctx.why_text if ctx else None`(:452) → 행없음=why=null. why_text가 not-null TextField라 (ii) null화는 마이그 필요 → 삭제가 유일 clean·기존 상태 일관. **안전**: 신규 커맨드 `purge_analog_v1_residual`(날짜 목록 ∧ prompt_version=cl3_v1 **이중 조건**=cl3_v2 구조적 차단, dry-run 기본·멱등, 테스트 4). **가역성**: 삭제 선행 커밋 `docs/archive/cl3_v1_residual_backup_2026-08.json`(12행 전문). **실행**: dry-run 12 확인 게이트 → --commit 12행 삭제. 사후 실측 cl3_v1 **0**·cl3_v2 **666 무변**·삭제 3일 서빙 why=null 폴백 확인. 마이그0·regime 109 GREEN. 톤가드 실패 8일 재시도는 S4-REBASE 별건(이 세션 무접촉).
+
 ## D1 — 마인드맵 골격: 업종 2단 뼈대 + 테마 슬롯 (2026-08-10)
 
 **결정 (Chain Sight 재설계 D1)**: 화면의 주인공은 관계 그래프가 아니라 **마인드맵식 카드 분류**다. 그래프·Neo4j 서빙 계열은 **동결**(무접촉).
