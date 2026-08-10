@@ -6157,3 +6157,17 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 ## D-MOAT-STORAGE-PG (2026-08-10, SUNMON-RECON 정정 — 디렉터 가설 기각)
 
 **정정**: 해자(RelationPairSnapshot) 궤적 저장 경로 = **PostgreSQL 스냅샷 테이블 `chainsight_relation_pair_snapshot`, Neo4j 비의존**. "적립이 Neo4j에 물려 침묵" 디렉터 가설 **기각** — SUNMON-RECON 실측: 07-01~08-09 매일 9562행 적립·실패 0(#28 해소), Neo4j-down과 무관. `pair_aggregation.py` `update_or_create` per (canonical_a, canonical_b, period). cf. [[D-CS-P1A-RELANDING]](관계 파이프라인 Neo4j 제거).
+
+## D-SUNMON-REEXTRACT (2026-08-10, CORPUS-SUNMON-EMPTYKW 조치 — 선택지 ① 채택, 병진 승인)
+
+**문제**: SUNMON-RECON 근원 = 추출↔수집 타이밍 레이스. `extract-daily-news-keywords`(16:45 ET·localdate KST)가 주말 기사의 늦은 수집(av-broad 01:00 UTC)보다 이르게 발화 → `status=failed` → **failed 행 재추출 트리거 부재**로 corpus 영구 공백. cf. `docs/features/theme-heat/sunmon_recon_report.md`.
+
+**3안 비교 (가중합, 기준: 근원 적중 0.35·표면 최소 0.30·회귀 위험 0.20·패턴 재사용 0.15)**:
+
+| 안 | 내용 | 가중합 |
+|---|---|---|
+| **① A (채택)** | av-broad 수집 완료에 **체이닝된 재추출 트리거** 추가(당일+전일 failed 재추출). 추출 스케줄·창 정의 무접촉 | **4.40** |
+| B | `collect-*` 평일전용(`1-5`) → 주말 수집 경로 보강(수집 스케줄 변경) | 3.45 |
+| C | `target_date=localdate()` KST 조기창 재정의 | 3.20 |
+
+**결정**: **① A** (마진 0.95). **Why**: 근원(재추출 부재)을 직접 타격하면서 추출 스케줄·창 정의를 **무접촉**(최소 표면). TH-TNV-CHAIN에서 입증된 **체인 패턴 재사용**(신규 beat 없음, #28 drift 회피). B(수집 스케줄)·C(창 재정의)는 표면 넓고 이중집계/비용 리스크 → **C는 관찰 보류**(범위 밖, 향후 재검토). **병진 승인 = ①**. 집행 = 지시서 `TH-SUNMON-REEXTRACT-1`.
