@@ -68,7 +68,9 @@
 
 | ID | Task | 분류 | Depends On | Status |
 |----|------|------|-----------|--------|
-| TH-HEAT-C8-CONVERGENCE | **관찰 프로브**. C8(추정치 리비전) 축적 후 heat 저장 커버리지 수렴 확인 — EstimateSnapshot 3·4회차 축적 뒤 ⑴ z_mode 분포(none=501 감소 여부), ⑵ ThemeHeatScore stored 수(6→11 수렴 여부) 실측. **미수렴 시 조사 트랙으로 승격**(C8 파이프라인 결함 가능성). 근거=SEAL-PUSH-1b 확인1(07-29 6/11 미저장 5 전원 C8 결측). **1차 관찰 = 08-01(토) 아침 프로브에 z_mode 1줄 포함.** | @backend/ops (관찰) | estimates 자동 발화(07-31 금 16:30 ET 첫 발화 이후) | 🆕 등재(관찰 대기) |
+| TH-HEAT-C8-CONVERGENCE | **관찰 프로브**. C8(추정치 리비전) 축적 후 heat 저장 커버리지 수렴 확인. **마감일 재설정(2026-08-10, TH-HEAT-C8-COLDSTART-CHECK 종결 반영)**: cs=0·none=503은 배선 결함이 아니라 **설계된 콜드스타트**(EPS diff lag 56/63일 캘린더 정확 매칭, 첫 스냅샷 07-17 기준 파트너 부재)로 확정. **종결 게이트 = 2026-09-12(토) heat beat**(첫 스냅샷 07-17 + 56일 = 09-11 금 회차 직후)에서 **cs > 0 최초 전환 확인**. GREEN → 관찰 종결 / cs=0 지속 → 정식 조사 승격. 근거=SEAL-PUSH-1b·PROBE-EST-5TH·TH-HEAT-C8-COLDSTART-CHECK. | @backend/ops (관찰) | 2026-09-12(토) heat beat | 🕒 마감일 확정(09-12 게이트 대기) |
+| BRK.B/BF.B cs 편입 확인 | **경량 관찰**. DOTSYM 신규 편입 2종(첫 스냅샷 08-07)의 C8 cross-sectional 편입은 08-07 + 56일 = **2026-10-02(금) 회차**부터 가능(자기 lag 파트너 성립). 그 직후 heat beat에서 BRK.B/BF.B가 cs 모수에 포함되는지 확인. **CONVERGENCE 종결(09-12)과 독립**. | @backend/ops (관찰) | 2026-10-02(금) 회차 | 🆕 등재(관찰 대기) |
+| HONA no_data 관찰 | **경량 관찰**. PROBE-EST-5TH(08-07 5회차)에서 HONA 1종 no_data(FMP estimates 미제공, DOTSYM 무관). 다음 회차 **2026-08-14(금)**에서 데이터 생성 여부 확인 — 지속 시 신규 상장/티커 이슈 별도 판단. | @backend/ops (관찰) | 2026-08-14(금) 회차 | 🆕 등재(관찰 대기) |
 | OPS-SHARED-TREE-RECOVERY | **공유 메인 트리 정상화 + HOLD-P1 통합**. 공유 메인 트리(`/Users/byeongjinjeong/Desktop/stock_vis`)가 ⑴ `monorepo/sess-hold-p1` 체크아웃, ⑵ HOLD-P1 4커밋(`4c920494`~`b8d767aa`)이 이 트리 내 **직접 생성**, ⑶ dirty(스테이지 `D` 1건 `PORTFOLIO_SURVEY_S0_REPORT.md`·untracked 다수) 상태. HOLD-P1 cherry-pick 정합 확인과 통합 처리(브랜치 처분 포함 가능). 근거=SEAL-PUSH-1a 실측(reflog HEAD@{5} sess-hold-p1 전환). **⚠ 브랜치 처분·통합 방식은 사용자 도장 사안**([[feedback_deploy_approval_explicit_quote]]). **OPS-WORKTREE-ISOLATION Phase 2 승격 근거로 본 건 첨부**(공유 트리에서 세션 브랜치 직접 커밋=격리 원칙 위반 실증). | @infra/ops | 사용자 처분 방침 | 🆕 등재(사용자 도장 대기) |
 
 ---
@@ -1108,10 +1110,11 @@
 - 현재 처리: `heat_beat.HEAT_ENTITY_TO_SP500_SECTOR` 매핑으로 비파괴 해소(구성종목 정상 resolve, 실측 missing=7=C2만 present 확인).
 - 의무: 매핑 영구화 vs 시드 GICS 재정렬(ThemeHeatScore 0행·ThemeEtfMap 은 재생성 가능이라 저위험) 중 택일. 재정렬 시 §6.0 "GICS" 정합 + 매핑 삭제.
 
-## TH-UNIVERSE-DOTSYM 🔵 (백로그, 2026-07-18 등재)
-- 발견: SP500Constituent active **503** 중 점(.) 포함 **2종목**(클래스주 BRK.B·BF.B류)이 `live_universe_symbols()`에서 제외(FMP 파싱 이슈) → universe **501**. EstimateSnapshot·heat 유니버스에서 상시 누락.
-- 태스크: 하이픈 변환 프로브(BRK.B→BRK-B FMP 심볼 규약) 검증 → 2종 복원 여부 판정.
-- 시한: **7/24 주간 EstimateSnapshot 전** 착수(다음 수집에 반영 여부 결정).
+## TH-UNIVERSE-DOTSYM ✅ (종결, 2026-08-08 최종 게이트 PASS — DOTSYM 옵션 1)
+- 발견: SP500Constituent active **503** 중 점(.) 포함 **2종목**(클래스주 BRK.B·BF.B)이 `live_universe_symbols()`에서 제외(dot 배제 6개소 필터, Bug #23 402 회피) → universe **501**. EstimateSnapshot·heat 유니버스 상시 누락.
+- 해결: **옵션 1**(DECISIONS D-DOTSYM, 2026-08-01) — 정본=dot 원형, hyphen 변환은 FMPClient 요청/응답 경계 단일 지점(`_make_request`)에 봉인. dot 배제 필터 6지점 전량 제거. 배포 origin/main `18d8c698`(worker_sync 3트리 repoint 완료).
+- **최종 게이트 PASS(PROBE-EST-5TH, 2026-08-08, 5회차 snapshot_date=2026-08-07)**: symbols **503**·created 1003·errors 0 / **BRK.B·BF.B dot 원형 저장·하이픈 변형 부재(역변환 정상)** / 기존 종목 무손실(빠진 종목 0=추가만) / SFI-I1 신규 5메서드도 `_make_request` 경유 변환 자동 적용. 부수: no_data 1종=HONA(DOTSYM 무관, FMP estimates 미제공).
+- 후속: C8 콜드스타트 대기(아래 TH-HEAT-C8-CONVERGENCE) / BRK.B·BF.B cs 편입(아래 신규).
 ## CS-EVIDENCE-SEC-COUNT — evidence_count_total SEC 텍스트 미집계 (백로그, 2026-07-22 ⑳-G)
 - 상태: **백로그 등재만**(⑳-G OUT 범위 = 파이프라인 변경). ⑳-F 진단 근거.
 - 관찰: SEC 10-K 관계(SUPPLIES_TO/COMPETES_WITH/DEPENDS_ON/PARTNER_WITH, 272행)는 `evidence_count_total=0`인데 `relation_basis_summary`에 실제 근거(공시 문장) 존재. 카운터가 co-mention/peer/price만 세고 SEC 텍스트 근거를 세지 않음 → "근거 0건" 오해.
