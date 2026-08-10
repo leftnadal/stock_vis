@@ -1,0 +1,96 @@
+#!/bin/bash
+# Slice 8 Part 2 — pre-commit 브랜치/경로 검증
+# 부채 #39 (Slice 8 Part 2 사이드 산출물)
+
+set -e
+
+# === 1. 브랜치 화이트리스트 검증 ===
+CURRENT_BRANCH=$(git branch --show-current)
+ALLOWED_BRANCHES=("main" "portfolio" "slice8" "slice9" "slice10" "slice11" "slice12" "slice13" "slice14" "slice15" "slice16" "slice17" "security/c1-frontend-deps" "security/c2-backend-deps" "security/c3-django-52-lts" "security/c-bundle" "iron-trading-api")
+
+BRANCH_OK=false
+for allowed in "${ALLOWED_BRANCHES[@]}"; do
+    if [ "$CURRENT_BRANCH" = "$allowed" ]; then
+        BRANCH_OK=true
+        break
+    fi
+done
+
+# monorepo/* 패턴 통과 (PR1~PR8 트랙 재배치, blueprint_v1 §7, 부채 #73 close)
+if [[ "$CURRENT_BRANCH" == monorepo/* ]]; then
+    BRANCH_OK=true
+fi
+
+if [ "$BRANCH_OK" = false ]; then
+    echo "❌ pre-commit 차단: 비화이트리스트 브랜치 '$CURRENT_BRANCH'"
+    echo ""
+    echo "  허용 브랜치: ${ALLOWED_BRANCHES[*]}"
+    echo "  의심: 자동 브랜치 전환 도구 (#40 추적 중)"
+    echo ""
+    echo "  해결:"
+    echo "    git branch --show-current  # 현재 브랜치 확인"
+    echo "    git checkout slice8         # 원하는 브랜치로 이동"
+    echo "    git cherry-pick <commit>    # 필요 시 작업 이전"
+    exit 1
+fi
+
+# === 2. 작업 경로 검증 ===
+EXPECTED_PATH="/Users/byeongjinjeong/Desktop/stock_vis"
+CURRENT_PATH=$(pwd)
+
+if command -v realpath > /dev/null; then
+    CURRENT_REAL=$(realpath "$CURRENT_PATH")
+    EXPECTED_REAL=$(realpath "$EXPECTED_PATH")
+else
+    CURRENT_REAL="$CURRENT_PATH"
+    EXPECTED_REAL="$EXPECTED_PATH"
+fi
+
+if [ "$CURRENT_REAL" != "$EXPECTED_REAL" ]; then
+    echo "⚠️  pre-commit 경고: 비표준 작업 경로"
+    echo ""
+    echo "  현재: $CURRENT_REAL"
+    echo "  표준: $EXPECTED_REAL"
+    echo ""
+    echo "  iCloud 측 작업 의심. 확인 후 진행하세요."
+    echo "  (강제 차단 아님 — 의도적 작업이면 계속 진행)"
+fi
+
+# === 3. KB 큐 미드레인 경고 (HARNESS-KB S3, 게이트 A — soft warning) ===
+# shared_kb 큐에 3일+ 미드레인 항목이 있으면 stderr 경고. 절대 차단 안 함(exit 0 유지).
+# ⚠️ 한계: 이 hook은 .git/hooks(= core.hooksPath: 메인 repo .git/hooks)에 있어
+#    전 worktree에 공유되지만, 새 클론·새 기계에는 따라오지 않는다(git이 hook을
+#    추적하지 않음). 근본 hardening(scripts/hooks + core.hooksPath)은 MAIN-SYNC-FIX
+#    트랙 — 본 항목은 그 전까지의 soft 가드.
+GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+DRAIN_CHECK="$GIT_ROOT/shared_kb/queue_drain_check.py"
+if [ -f "$DRAIN_CHECK" ] && command -v python3 > /dev/null; then
+    python3 "$DRAIN_CHECK" || true   # 항상 exit 0, set -e 보호
+fi
+
+# === 4. common-bugs 채번 가드 (처방 B hardening(c), INFRA-TREATB-HOOKS 2026-08-10) ===
+# staged common-bugs.md diff에 신규 #NN 헤딩(## … (#NN …) 형태) 추가 && 브랜치 ≠ mgmt
+# 패턴(sess-mgmt 포함) → 커밋 거부. 근거 = D-NUMBERING-MGMT-ONLY(채번=mgmt 세션 전용).
+# 병렬 세션 동시 채번 충돌(재grep 규율로 못 막는 구조)을 브랜치 게이트로 근절.
+COMMON_BUGS="sub_claude_md/common-bugs.md"
+if git -C "$GIT_ROOT" diff --cached --name-only | grep -qx "$COMMON_BUGS"; then
+    # 추가된(+) 채번 헤딩만 검출 (기존 항목 본문 수정·헤딩 없는 추가는 무해 → 통과).
+    # 정규식: 줄 시작 '+' + '##'(이상) + … + '(#<숫자>' (파일헤더 '+++'·hunk '@@'는 불일치).
+    ADDED_HEADINGS=$(git -C "$GIT_ROOT" diff --cached -- "$COMMON_BUGS" | grep -E '^\+#{2,}.*\(#[0-9]+' || true)
+    if [ -n "$ADDED_HEADINGS" ]; then
+        if [[ "$CURRENT_BRANCH" != *sess-mgmt* ]]; then
+            echo "❌ pre-commit 차단: 비mgmt 브랜치 '$CURRENT_BRANCH'에서 common-bugs 신규 채번(#NN 헤딩) 추가"
+            echo ""
+            echo "  검출된 신규 헤딩:"
+            echo "$ADDED_HEADINGS" | sed 's/^/    /'
+            echo ""
+            echo "  규약: common-bugs 번호 부여는 mgmt 세션 전용 (D-NUMBERING-MGMT-ONLY)."
+            echo "  해결: 버그 패턴은 헤딩에서 #NN 제거 후 '채번 후보'로만 표기해 커밋 →"
+            echo "        차기 mgmt 배치가 실측+1로 부여. (또는 sess-mgmt-* 브랜치에서 채번)"
+            exit 1
+        fi
+    fi
+fi
+
+echo "✅ pre-commit 검증 통과 (branch=$CURRENT_BRANCH)"
+exit 0
