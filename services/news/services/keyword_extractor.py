@@ -411,3 +411,49 @@ class NewsKeywordExtractor:
                 :limit
             ]
         )
+
+
+# ── SUNMON-REEXTRACT (D-SUNMON-REEXTRACT) ────────────────────────────────────
+# av-broad 수집 완료 후 체이닝: 늦게 도착한 주말 기사로 status=='failed'만 재추출.
+# 파일 로깅은 apps.* 로거(S1 패턴)로 라우팅 — 주말 관측 게이트(G-sunmon) 검증 재료.
+sunmon_logger = logging.getLogger("apps.sunmon_reextract")
+
+
+def reextract_recent_failed_keywords(
+    target_dates: Optional[List[date]] = None,
+) -> List[Dict]:
+    """당일+전일(KST)의 status=='failed' DailyNewsKeyword를 재추출한다(D-SUNMON-REEXTRACT).
+
+    completed 가드(절대): failed 행만 대상. completed 행은 어떤 경로로도 재기록하지 않는다
+    — 여기서 코드 레벨 필터 + extract_daily_keywords 내부 completed-skip 이중 보호.
+    기사 0건이면 extract_daily_keywords가 다시 failed를 기록(공백 유지 = 정상).
+
+    Returns: [{"date","before","after","keywords"}] 재추출 시도 요약(대상 없으면 빈 리스트).
+    """
+    if target_dates is None:
+        today = timezone.localdate()
+        target_dates = [today, today - timedelta(days=1)]
+
+    extractor = None
+    summary: List[Dict] = []
+    for d in target_dates:
+        row = DailyNewsKeyword.objects.filter(date=d).first()
+        if row is None or row.status != "failed":  # completed 가드: failed만 재추출
+            continue
+        before = row.status
+        if extractor is None:
+            extractor = NewsKeywordExtractor(language="ko")
+        # force 없음: completed면 내부 skip(이중 보호). failed는 재조회·재추출.
+        result = extractor.extract_daily_keywords(target_date=d)
+        n = len(result.keywords or [])
+        sunmon_logger.info(
+            "SUNMON_REEXTRACT date=%s before=%s after=%s keywords=%s",
+            d,
+            before,
+            result.status,
+            n,
+        )
+        summary.append(
+            {"date": str(d), "before": before, "after": result.status, "keywords": n}
+        )
+    return summary

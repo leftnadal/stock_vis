@@ -1660,5 +1660,18 @@ def collect_av_broad_news(
         logger.warning(f"collect_av_broad_news: AV 스로틀/한도 → 재시도: {exc}")
         raise self.retry(exc=exc)
 
+    # SUNMON 재추출 체이닝(D-SUNMON-REEXTRACT) — best-effort: 늦게 도착한 주말 기사로
+    # 당일+전일(KST)의 status=='failed' DailyNewsKeyword 재추출. 실패해도 av-broad 결과 보존.
+    try:
+        from services.news.services.keyword_extractor import (
+            reextract_recent_failed_keywords,
+        )
+
+        rx = reextract_recent_failed_keywords()
+        if rx:
+            result["sunmon_reextract"] = rx
+    except Exception as exc:  # noqa: BLE001 — 재추출 실패는 av-broad 성공을 무효화하지 않음
+        logger.warning(f"collect_av_broad_news: SUNMON 재추출 체이닝 실패(무해): {exc}")
+
     logger.info(f"collect_av_broad_news: {result}")
     return result
