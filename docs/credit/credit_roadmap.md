@@ -88,7 +88,7 @@
 | g   | 스트립 밀도 | 6키 고정 해제 → 8칩 확장 + 심각도 정렬(비-gray 좌측), 칩 폭 불변(TH 무침범) |
 | F   | 스코프 재비준 | FRED 6→8종 "고정" 불변규칙 명시 해제 (BB/A 수집, constants docstring 근거) — P2-0 |
 | —   | 파생 저장   | compute-on-read 채택 — 원장 raw 순수성, STEP0 정합 0.00%(787=787)로 검증    |
-| G   | P2a-1c 종결 | C″ 전일(T-1) 귀속 배포(2026-08-10 `bd364778`) — C′ 폐기→nav_stale·updatedAt D-1 귀속·EOD 종가 페어링. P2a-2 전제 갱신: 클린 10거래일에서 재기산, 60관측 = 행 기준(`MIN_OBSERVATIONS=60`) ≈ 09월 중순(스킵률 반영 09-21주). 12:00 원시 JSON 태스크 = 3/3 도달 시 은퇴 상신 |
+| G   | P2a-1c 종결 | C″ 전일(T-1) 귀속 배포(2026-08-10 `bd364778`) — C′ 폐기→nav_stale·updatedAt D-1 귀속·EOD 종가 페어링. P2a-2 전제 갱신: 60관측 = `MIN_OBSERVATIONS=60` 행 기준·**ETF별**·**HOLD 포함**(`constants.py:90` · `signal_service.py` `compute_etf_discount_signal`=`filter(symbol=symbol)`). 현재 10행/ETF → 무스킵 가정 ≈10-20, FMP 스킵률 반영 시 **10월말~11월초**(스킵일=관측 미축적). 12:00 원시 JSON 태스크 = 3/3 도달 시 은퇴 상신 |
 
 ## 6. 교훈 (이 트랙에서 발원)
 
