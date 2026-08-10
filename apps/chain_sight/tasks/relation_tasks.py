@@ -211,197 +211,78 @@ def calculate_price_co_movement(self, period_days: int = 90):
 @shared_task(bind=True, max_retries=1, soft_time_limit=3600, time_limit=3660)
 def update_relation_confidence(self):
     """
-    CS-2-4: RelationConfidence 종합 판정. Celery Beat: 주 1회 (일요일 04:00).
+    CS-2-4: RelationConfidence 종합 판정. Celery Beat: 매일 11:00 ET (스케줄 무변경).
+
+    CS-P1A(D2) 재조립 — Neo4j 의존 제거 + price 착지 은퇴 + co_mention 착지 존치:
+    - P2-1 판정: 구 태스크는 서두 Neo4j `MATCH (a:Stock)-[:PEER_OF]-(b)` Cypher가
+      GraphQueryError로 전체 실패(bolt:7687 미가동, 2026-06-20~)하여 co_mention/price
+      착지 루프에 도달 못 함 → CO_MENTIONED 91% 누수(유니버스내 1,322 중 248만 착지).
+    - 수리: Neo4j run_query 제거 → 태스크가 Neo4j 없이 완주. co_mention만 착지.
+    - PEER_OF 착지 루프 제거: 유일 소스가 Neo4j(FMP peer)였고 그래프 동결 상태.
+      Postgres 자기조달은 update_or_create가 기존 PEER_OF 9,365의 relation_status를
+      변경(예: stale→confirmed)해 OUT 스코프("기존 레코드 status 변경 금지") 위반
+      → 경로째 제거. 기존 레코드 무접촉(서빙 유지). 참조: DECISIONS D2.
+    - PRICE_CORRELATED 착지 은퇴: D2에서 price는 관계 종류에서 제거되어 확인된 연결
+      쌍의 "강도 속성"(P1B)으로 이동. 신규 생성·갱신 중단. 기존 3,784 무접촉.
+      참조: DECISIONS D2.
     """
-    from apps.chain_sight.graph import get_graph_repository
-    from apps.chain_sight.models import (
-        CoMentionEdge,
-        PriceCoMovement,
-        RelationConfidence,
-    )
+    from apps.chain_sight.models import CoMentionEdge, RelationConfidence
     from apps.chain_sight.utils import normalize_pair
 
-    repo = get_graph_repository()
-
-    # 1) 모든 PEER_OF 쌍 수집
-    peers = repo.run_query("""
-        MATCH (a:Stock)-[:PEER_OF]-(b:Stock)
-        WHERE a.ticker < b.ticker
-        RETURN DISTINCT a.ticker AS sym_a, b.ticker AS sym_b
-    """)
-
-    # 2) 같은 industry 쌍
-    same_industry = repo.run_query("""
-        MATCH (a:Stock)-[:BELONGS_TO_INDUSTRY]->(i:Industry)<-[:BELONGS_TO_INDUSTRY]-(b:Stock)
-        WHERE a.ticker < b.ticker
-        RETURN DISTINCT a.ticker AS sym_a, b.ticker AS sym_b
-    """)
-
-    # 모든 후보 쌍 통합
-    all_pairs = set()
-    peer_set = set()
-    industry_set = set()
-
-    for p in peers:
-        pair = (p["sym_a"], p["sym_b"])
-        all_pairs.add(pair)
-        peer_set.add(pair)
-
-    for p in same_industry:
-        pair = (p["sym_a"], p["sym_b"])
-        all_pairs.add(pair)
-        industry_set.add(pair)
-
-    # co-mention 쌍
+    # co-mention 쌍 (임계 count>=2 보존 — P2-1 판정 "임계 아님", 임계 변경 금지.
+    # 유니버스 필터·기간 창은 원 로직에 없으므로 무추가 = 보존).
     co_mention_map = {}
     for cm in CoMentionEdge.objects.filter(co_mention_count__gte=2):
         pair = normalize_pair(cm.symbol_a, cm.symbol_b)
         co_mention_map[pair] = cm.co_mention_count
-        all_pairs.add(pair)
 
-    # price correlation 쌍
-    price_map = {}
-    for pc in PriceCoMovement.objects.filter(correlation__gte=0.5):
-        pair = normalize_pair(pc.symbol_a, pc.symbol_b)
-        price_map[pair] = float(pc.correlation)
-        all_pairs.add(pair)
-
-    # 3) 각 쌍에 대해 관계 타입별 RelationConfidence 판정
-    #    - peer/industry → PEER_OF (truth)
-    #    - co_mention → CO_MENTIONED (market)
-    #    - price_corr → PRICE_CORRELATED (market)
     created, updated = 0, 0
-    for sym_a, sym_b in all_pairs:
+    for (sym_a, sym_b), count in co_mention_map.items():
         # ⑳-3 REVIEW-P2 Part Q: a≠b 가드 — 자기루프 쌍 스킵(모델 save() 가드 선제 회피).
         if sym_a == sym_b:
             continue
-        has_peer = (sym_a, sym_b) in peer_set
-        has_industry = (sym_a, sym_b) in industry_set
-        has_news = (sym_a, sym_b) in co_mention_map
-        has_price = (sym_a, sym_b) in price_map
 
-        # ── PEER_OF (truth): peer 또는 industry 증거가 있을 때 ──
-        if has_peer or has_industry:
-            peer_sources = []
-            if has_peer:
-                peer_sources.append("peer")
-            if has_industry:
-                peer_sources.append("industry")
-            if len(peer_sources) >= 2:
-                tier, status, score = 1, "confirmed", 85
-            else:
-                tier, status, score = 2, "probable", 60
+        # ── CO_MENTIONED (market / serving_layer=evidence): 뉴스 동시출현 증거 ──
+        if count >= 10:
+            tier, status, score = 1, "confirmed", 85
+        elif count >= 5:
+            tier, status, score = 2, "probable", 60
+        else:
+            tier, status, score = 3, "weak", 35
 
-            parts = []
-            if has_peer:
-                parts.append("Peer 관계")
-            if has_industry:
-                parts.append("같은 산업")
-            summary = " + ".join(parts)
-
-            obj, is_new = RelationConfidence.objects.update_or_create(
-                symbol_a=sym_a,
-                symbol_b=sym_b,
-                relation_type="PEER_OF",
-                defaults={
-                    "relation_category": "truth",
-                    "canonical_direction": "both",
-                    "relation_status": status,
-                    "truth_score": score,
-                    "evidence_tier_best": tier,
-                    "evidence_count_total": len(peer_sources),
-                    "evidence_count_independent": len(peer_sources),
-                    "evidence_sources": {"sources": peer_sources},
-                    "has_peer_source": has_peer,
-                    "has_industry_source": has_industry,
-                    "has_news_source": False,
-                    "has_price_source": False,
-                    "relation_basis_summary": summary,
-                    # audit P0 #9: synced_to_neo4j 제거. update_or_create는 save()를 호출하므로 neo4j_dirty=True 자동.
+        obj, is_new = RelationConfidence.objects.update_or_create(
+            symbol_a=sym_a,
+            symbol_b=sym_b,
+            relation_type="CO_MENTIONED",
+            defaults={
+                "relation_category": "market",
+                "canonical_direction": "both",
+                "relation_status": status,
+                "market_score": score,
+                "truth_score": 0,
+                "evidence_tier_best": tier,
+                "evidence_count_total": 1,
+                "evidence_count_independent": 1,
+                "evidence_sources": {
+                    "sources": ["news"],
+                    "co_mention_count": count,
                 },
-            )
-            if is_new:
-                created += 1
-            else:
-                updated += 1
+                "has_peer_source": False,
+                "has_industry_source": False,
+                "has_news_source": True,
+                "has_price_source": False,
+                # CS-P1A Slice2: CO_MENTIONED = 근거 계층(매핑표). 신규 생성분에 반영.
+                "serving_layer": "evidence",
+                "relation_basis_summary": f"뉴스 동시출현 {count}회",
+            },
+        )
+        if is_new:
+            created += 1
+        else:
+            updated += 1
 
-        # ── CO_MENTIONED (market): 뉴스 동시출현 증거 ──
-        if has_news:
-            count = co_mention_map[(sym_a, sym_b)]
-            if count >= 10:
-                tier, status, score = 1, "confirmed", 85
-            elif count >= 5:
-                tier, status, score = 2, "probable", 60
-            else:
-                tier, status, score = 3, "weak", 35
-
-            obj, is_new = RelationConfidence.objects.update_or_create(
-                symbol_a=sym_a,
-                symbol_b=sym_b,
-                relation_type="CO_MENTIONED",
-                defaults={
-                    "relation_category": "market",
-                    "canonical_direction": "both",
-                    "relation_status": status,
-                    "market_score": score,
-                    "truth_score": 0,
-                    "evidence_tier_best": tier,
-                    "evidence_count_total": 1,
-                    "evidence_count_independent": 1,
-                    "evidence_sources": {
-                        "sources": ["news"],
-                        "co_mention_count": count,
-                    },
-                    "has_peer_source": False,
-                    "has_industry_source": False,
-                    "has_news_source": True,
-                    "has_price_source": False,
-                    "relation_basis_summary": f"뉴스 동시출현 {count}회",
-                },
-            )
-            if is_new:
-                created += 1
-            else:
-                updated += 1
-
-        # ── PRICE_CORRELATED (market): 주가 상관 증거 ──
-        if has_price:
-            corr = price_map[(sym_a, sym_b)]
-            if corr >= 0.8:
-                tier, status, score = 1, "confirmed", 85
-            elif corr >= 0.6:
-                tier, status, score = 2, "probable", 60
-            else:
-                tier, status, score = 3, "weak", 35
-
-            obj, is_new = RelationConfidence.objects.update_or_create(
-                symbol_a=sym_a,
-                symbol_b=sym_b,
-                relation_type="PRICE_CORRELATED",
-                defaults={
-                    "relation_category": "market",
-                    "canonical_direction": "both",
-                    "relation_status": status,
-                    "market_score": score,
-                    "truth_score": 0,
-                    "evidence_tier_best": tier,
-                    "evidence_count_total": 1,
-                    "evidence_count_independent": 1,
-                    "evidence_sources": {"sources": ["price"], "correlation": corr},
-                    "has_peer_source": False,
-                    "has_industry_source": False,
-                    "has_news_source": False,
-                    "has_price_source": True,
-                    "relation_basis_summary": f"주가 상관 {corr:.2f}",
-                },
-            )
-            if is_new:
-                created += 1
-            else:
-                updated += 1
-
-    result = {"total_pairs": len(all_pairs), "created": created, "updated": updated}
-    logger.info(f"RelationConfidence: {result}")
+    result = {"total_pairs": len(co_mention_map), "created": created, "updated": updated}
+    logger.info(f"RelationConfidence(co_mention only, CS-P1A): {result}")
     return result
 
 

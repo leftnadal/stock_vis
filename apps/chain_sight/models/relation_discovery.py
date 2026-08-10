@@ -180,6 +180,23 @@ class RelationConfidence(models.Model):
     neo4j_synced_at = models.DateTimeField(null=True, blank=True)
     score_version = models.CharField(max_length=10, default="2.1")
 
+    # CS-P1A Slice2 (additive): 계층 분류 — 근거/유사/제외/보류.
+    # DECISIONS D-CS-REDESIGN-BEFORE-BASELINE 매핑표 기준. 순수 데이터 필드(읽는 API·화면 없음).
+    SERVING_LAYER_CHOICES = [
+        ("evidence", "Evidence"),   # SEC 4종·CO_MENTIONED — 근거 계층(출처 문장·문서 지목)
+        ("context", "Context"),     # PEER_OF·PRICE_CORRELATED — 유사 계층("관계 아님")
+        ("excluded", "Excluded"),   # 서빙 제외
+        ("pending", "Pending"),     # 미분류(default)
+    ]
+    serving_layer = models.CharField(
+        max_length=10,
+        choices=SERVING_LAYER_CHOICES,
+        default="pending",
+        db_index=True,
+        help_text="계층 분류(CS-P1A Slice2). 매핑표: SEC4종·CO_MENTIONED=evidence / "
+        "PEER_OF·PRICE_CORRELATED=context / PEER(2건)=pending.",
+    )
+
     # ⑳-3 S2-B: 관계 도메인 태깅(자동-C 파이프라인). 전부 additive nullable.
     # 승인본(relation_domain)은 검수 승인만이 쓴다(Phase 2). 초안·검증만 파이프라인이 기록.
     DOMAIN_REVIEW_CHOICES = [
