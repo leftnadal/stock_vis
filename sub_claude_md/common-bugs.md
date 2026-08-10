@@ -1413,3 +1413,20 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **증상**: EstimateSnapshot에 07-29(수요일, TH-DEPLOY catch-up 발화)가 있으나, C8 EPS diff는 `anchor − lag`(56/63일) **정확 날짜 매칭**(`eps_diff_at` estimate_revision.py:56)이라 금요일 anchor에서 07-29(수)를 파트너로 잡지 못함. 07-29 회차는 rows는 채웠지만 C8 리비전 계산엔 사실상 고아.
 
 **교훈**: lag 기반 정확-매칭 시계열(diff)은 **수집 요일이 규칙적이어야** 파트너가 성립한다. catch-up·수동 등 비정규 요일 스냅샷은 행은 늘리지만 lag 매칭에서 누락 → 콜드스타트 임계 산출은 **정규 요일 첫 스냅샷**(DOTSYM=07-17 금)을 기산점으로. 임계 대기와 배선 결함을 가를 땐 파트너 존재 여부를 캘린더로 실측.
+## 배치 진척·완주 지표에 창-합(target_windows) 사용 금지 — skip-covered 스필오버로 영구 저계상 (채번 후보, CN-B7-PROBE 2026-08-10) `[ops][data][harness]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지, 번호는 mgmt 채번 시 확정)*
+
+**증상**: C-N-REPAIR 8배치 완료 시점 아침 점검이 진척을 **158/192**로 보고했으나, 8배치×20일=160 기대 대비 2일 부족으로 오인. 실제 DB 커버는 **160/160**(구멍 0).
+
+**원인**: `status.json`의 `target_windows` 합(=배치가 실제 **백필한 창 수**)을 "커버된 일수"로 오독. 연속 배치의 창 가장자리가 다음 배치 첫 날짜를 미리 채움(`--skip-covered`) → 그 배치는 20이 아닌 **19창만 백필**(batch4=2025-05-09·batch5=2025-07-10 각 1일 pre-covered). 창-합은 skip-covered만큼 **영구 저계상**되나 해당 일자는 실제로 커버돼 있음. 완주 시점(192/192)에도 창-합은 <192로 남아 헛경보 유발.
+
+**교훈**: ⑴ 진척·완주 판정의 **유일 유효 지표 = DB 일-존재 스캔**(plan 일자 각 `NewsArticle.filter(published_at__date=D)>0` 카운트). 창 수·target_windows 합은 **판정에 쓰지 말 것**(관측 로그용). ⑵ 멱등 파이프라인(`--skip-covered`)에서 "처리한 단위 수"와 "커버된 대상 수"는 **다른 양** — 스필오버·중복 스킵이 개입하면 전자 < 후자. ⑶ D-CN-COMPLETE 폐기 교훈("창 완료 122/122" 금지)의 재현 — 항상 **대상 단위 존재**로 완료 선언. CHECK-DAILY v2 §3·§6이 이 지표로 고정됨.
+
+## AV summary=null 정당 드롭은 not-null 관문 정상 작동 (이상 아님) — skipped 카운터 의미 정의 (채번 후보, CN-B7-PROBE 2026-08-10) `[news][data][ops]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
+
+**증상**: C-N-REPAIR batch7 로그에 `Failed to save article: null value in column "summary" ... violates not-null constraint` **8건** 출현, `skipped 8`에 계상. "무음 데이터 드롭 아니냐"는 경계 신호.
+
+**원인·판정**: Alpha Vantage NEWS_SENTIMENT가 일부 정형 기사(MarketBeat instant-alerts·13F/insider 신고류)를 **`summary=null`로 제공** → `news_articles.summary` not-null 제약이 저장 시점에 정당 거부. **이상 아님**(관문 승리): ⑴ 해당일(2025-10-08·10-15·11-04)은 드롭과 무관하게 **≥3 커버 유지**(드롭 6유니크 기사가 그날 유일 기사가 아님), ⑵ exit0·status=ok·**시스템 ALERT 무**가 설계상 정상(정당 드롭은 무알림). CN-B7-PROBE로 원인 (A) AV 응답 결함 확정(우리 파싱 결함 (B) 아님 — Failing row가 AV 원본 summary=null임을 직접 노출).
+
+**교훈**: ⑴ **`skipped` 카운터 = save 실패(드롭) 건수** — 재시도분 포함(6유니크가 8회 시도로 계상). 별도 fetch-레벨 skip(url-too-long)은 이 카운터에 미포함. ⑵ 정당 드롭(외부 제공자 결함)과 코드 결함(우리 파싱)의 구분은 **로그 Failing row 원문**으로(요약 아님). ⑶ 커버 완전성(≥1) + 정당 드롭은 **모순 아님** — 커버는 대상일 기사 존재로 판정, 드롭은 개별 기사 품질 문제. 복구 불요(저가치 정형기사·해당일 커버 유지). 근본 수리는 별도 트랙(모델 `summary` default="" or provider 보정).
