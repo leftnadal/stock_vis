@@ -64,6 +64,20 @@ class TestBuildContext:
         assert ctx["delta"] == pytest.approx(0.02)
         assert ctx["overall_score"] == 0.12
 
+    def test_v11_state_display_and_score_precision(self, monitor, make_indicator, add_readings, stock_aapl):
+        # v1.1: 상태=화면 display 달위상 어휘 · 점수 4자리 그대로 프롬프트 인용
+        from apps.monitor.services.state_machine import score_to_phase
+
+        ind = make_indicator(name="momentum_12_1", source_key="momentum_12_1", window=10)
+        add_readings(ind, [float(i) for i in range(10)])
+        _snap(monitor, date(2026, 8, 7), 0.1234)
+        ctx = svc.build_context(monitor)
+        assert ctx["state_display"] == score_to_phase(0.1234)["label"]
+        prompt = svc._render_user_prompt(ctx, True)
+        assert ctx["state_display"] in prompt  # 달 위상 어휘 통일
+        assert "달 위상" in prompt
+        assert "+0.1234" in prompt  # 점수 4자리 그대로(반올림 금지 원문)
+
 
 @pytest.mark.django_db
 class TestUnchanged:
@@ -105,7 +119,7 @@ class TestGenerateBriefing:
         assert note.coverage_total == 1 and note.coverage_n == 1
         assert note.model_id == "claude-sonnet-4-5"
         assert note.input_tokens == 120 and note.output_tokens == 60
-        assert note.prompt_version == "v1"
+        assert note.prompt_version == "v1.1"
 
     def test_idempotent_skip(self, monkeypatch, monitor, make_indicator, add_readings, stock_aapl):
         self._prep(monitor, make_indicator, add_readings)

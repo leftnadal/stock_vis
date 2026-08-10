@@ -18,7 +18,7 @@ from apps.monitor.services.technical import score_indicator_dispatch
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v1.1"
 SURFACE_LA = AdvisorNote.Surface.L_A
 
 # 무변화 임계 (D-MON-P4-LA, STEP0 실측 48델타 P50 0.0125<0.02<P75 0.0252로 확정)
@@ -36,8 +36,10 @@ SYSTEM_PROMPT_V1 = """너는 개인 투자자의 종목 관제를 돕는 '비서
 
 절대 규칙:
 - 매매 행동을 지시하지 마라. "매수/매도/추가/청산/손절/익절하라", "사세요/파세요", "비중을 늘/줄여라" 같은 명령형 표현을 절대 쓰지 마라.
-- 전할 수 있는 것은 오직 사실·거리·상태다: 종합 점수와 그 변화, 현재가와 시나리오 레벨(진입/목표/손절)까지의 거리, 상태 밴드, 근거 지표의 충분성.
+- 전할 수 있는 것은 오직 사실·거리·상태다: 종합 점수와 그 변화, 현재가로부터 시나리오 레벨(진입/목표/손절)까지의 거리, 상태(달 위상), 근거 지표의 충분성.
 - 반드시 근거 지표 커버리지(n/총)를 문장에 포함하라. 숫자를 지어내지 마라 — 주어진 값만 쓴다.
+- **제공된 수치(점수·%·가격)는 기준·부호·정밀도를 그대로 인용하라.** 재계산·기준 변경·반올림 금지 — 예: "+0.0185"를 "+0.02"로 줄이거나, "현재가로부터 +5.02%"를 "매입가 대비 -5%"처럼 기준·부호를 뒤집지 마라. 거리는 항상 '현재가로부터'가 기준이다.
+- 상태는 주어진 상태 어휘(달 위상 라벨)를 그대로 쓴다.
 - 무변화(unchanged=true)로 표시되면 1~2문장으로 짧게 "큰 변화 없음 + 현재 상태" 정도만 전한다.
 - headline은 40자 이내, body는 350자 이내.
 
@@ -46,10 +48,20 @@ SYSTEM_PROMPT_V1 = """너는 개인 투자자의 종목 관제를 돕는 '비서
 
 
 def _pct_distance(close, level):
-    """현재가 대비 레벨까지 거리 %. level 위=양수(더 올라야), 아래=음수."""
+    """현재가로부터 레벨까지 거리 % — **기준=현재가**. level>close 양수(위), <close 음수(아래)."""
     if close in (None, 0) or level is None:
         return None
     return round((float(level) - float(close)) / float(close) * 100.0, 2)
+
+
+def _state_display(score):
+    """화면 display 정본 상태 어휘(달 위상 라벨). MonitorSerializer.get_display와 동일 원천
+    (score_to_phase) — MonitorSnapshot.state(관제 라이프사이클 밴드)나 Monitor.status
+    (setting_up 등 등록 단계)와 다른 축이며, 사용자가 화면에서 보는 어휘가 이것이다.
+    """
+    from apps.monitor.services.state_machine import score_to_phase
+
+    return score_to_phase(score)["label"]
 
 
 def build_context(monitor, as_of=None):
@@ -113,6 +125,7 @@ def build_context(monitor, as_of=None):
         "overall_score": latest.overall_score,
         "delta": delta,
         "state": latest.state,
+        "state_display": _state_display(latest.overall_score),
         "prev_state": prev.state if prev else None,
         "coverage_n": coverage_n,
         "coverage_total": coverage_total,
@@ -161,18 +174,18 @@ def _lexical_guard(text):
 def _render_user_prompt(ctx, unchanged):
     lines = [
         f"종목: {ctx['symbol']}  기준일(asof): {ctx['asof']}",
-        f"종합 점수: {ctx['overall_score']:+.4f} (범위 -1~1)"
+        f"종합 점수: {ctx['overall_score']:+.4f} (범위 -1~1, 소수 4자리 그대로 인용)"
         + (f", 직전 대비 Δ {ctx['delta']:+.4f}" if ctx["delta"] is not None else ", 직전 스냅샷 없음"),
-        f"상태 밴드: {ctx['state']}",
+        f"상태(달 위상): {ctx['state_display']}",
         f"근거 지표 커버리지: {ctx['coverage_n']}/{ctx['coverage_total']} (충분/등록)",
     ]
     if ctx["close"] is not None:
         lines.append(f"현재가(종가): {ctx['close']}")
     if ctx["levels"]:
-        lines.append("시나리오 레벨까지 거리:")
+        lines.append("시나리오 레벨 (거리 기준 = 현재가로부터):")
         for lv in ctx["levels"]:
-            d = f"{lv['distance_pct']:+.2f}%" if lv["distance_pct"] is not None else "n/a"
-            lines.append(f"  - {lv['label']}: {lv['price']} ({d})")
+            d = f"현재가로부터 {lv['distance_pct']:+.2f}%" if lv["distance_pct"] is not None else "n/a"
+            lines.append(f"  - {lv['label']} {lv['price']}: {d}")
     suff_names = [i["name"] for i in ctx["indicators"] if i["sufficient"]]
     if suff_names:
         lines.append("충분 지표: " + ", ".join(suff_names))
