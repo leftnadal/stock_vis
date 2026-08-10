@@ -1257,3 +1257,17 @@
 - 상태: **backlog**(W2 잔존). DailyPrice=raw close·비조정(STEP0 #4) → 채점 지평(h≤252d) 내 분할·대규모 배당 시 실현폭 왜곡.
 - 내용: 채점 시 예측~만기 구간에 액면분할/기업행위 감지되면 해당 예측을 **unscoreable(reason=corporate_action)**로 반환(무리한 채점 금지, 규칙 5 정신). 감지원=split 이벤트 소스 또는 인접 bar 급변(threshold) 휴리스틱.
 - 근거: 현 유니버스(9종)는 표본 미도달이라 즉시 위험 낮으나 h=252d 도달 전 배선 필요. adjClose 도입은 별개 트랙.
+## CS-REDESIGN-BACKLOG — Chain Sight 재설계 D1/D2 후속 백로그 (등재, 2026-08-10)
+출처: D2-LEDGER-PROBE 지시서 Part 1-D. 결정 근거 = [[DECISIONS]] D1·D2. 채번 미부여(백로그).
+- **CS-EXP-2 유니버스 확장 2차** — 트리거: 8-K 가동 후 미해소 타깃 빈도 N주 실측. (D2 Phase 4)
+- **CS-8K-ITEM-EXPAND 8-K item 확대 검토** — 5.02(임원변동) 등, 최소 슬라이스(1.01/2.01) 가동 후. (D2 Phase 2 후속)
+- **CS-STORE-DEDUP 관계 store 이중화 해소 검토** — RelationConfidence 13,701 vs serverless StockRelationship 225,073(HELD_BY_SAME_FUND 197k·SAME_REGULATION 26k). 서빙 소스 단일화 판단.
+- **CS-LLMREL-TTL LLMExtractedRelation 30일 TTL 정책 재검토** — Phase 5 산출물 전량 소멸(현재 0행) 재발 방지.
+- **CS-FE-MINDMAP FE 마인드맵 카드 화면 구축 페이즈** — D1 구조(업종 2단 주소 + 테마 슬롯 + 확인된연결/같은그룹 이원) 반영. 별도 결정·목업 후 착수.
+- 기존 등재분 전건 유지. PROGRESS.md 캐시 갱신 = 본 세션 종료 의식.
+
+## SESS-SIGNAL-FWD-RECON-RETIRE — 브랜치 은퇴 (등재만, 2026-08-10)
+- 상태: **등재만**. 브랜치 삭제는 파괴적 → **병진 수동 영역**([[lesson_branch_d_upstream_refusal]] sess-l2-adopt 전례: -d 거부→HALT 주의).
+- 사유: `monorepo/sess-signal-fwd-recon` 미push 백로그에 잔류물 — ⑴ 이미 origin/main 랜딩된 monitor/HOLD-P1 **중복 3건**(`4c920494`·`02cce323`·`710520e5` ↔ origin `6a093f16`·`63ed5a16`·`8ace1ed9`, mig 0008 origin 존재) ⑵ research_lab **타트랙**(`6973bda3`, sv-research-os 소관) ⑶ **superseded** governance(`0790c8f8` — D-LAND-ATOMIC·D-PROBE 내용 origin 기반영).
+- 이 세션(D2-LEDGER-PROBE) 산출물 `59b9533b`(docs) + vocab_v1 `cc918c40`만 D-LAND-ATOMIC로 별도 랜딩. 잔여 커밋은 중복/타트랙이라 **미랜딩**(딸려보내기 금지).
+- 트리거: 위 3부류 중복/랜딩 재확인 후 브랜치 은퇴. 삭제 전 `git merge-base --is-ancestor` 소진 검증.
