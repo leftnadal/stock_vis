@@ -6114,3 +6114,19 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 ## D-NEWS-VOCAB (2026-08-06, NEWS-VOCAB-BUILD Rev.1~3 — 뉴스 어휘 사전 v1 + 배정 로직)
 
 **결정**: Peer 관계 L1 라벨 어휘를 **저장 뉴스 코퍼스**(NewsArticle 359,962 / NewsEntity, AV NEWS_SENTIMENT 압도)에서 도출. 산출 = `docs/chain_sight/news_vocab/vocab_v1.json`(13버킷 46카테고리 + 7테마, 커버<20 소거). 파이프라인 = P1(결정론 n-gram + 필터 ⑴티커/회사 **풀네임 매칭** + ⑵HHI + ⑶≥6개월) → P1-d(동음이의·非테마 배제, LLM) → P2(한국어 카테고리 정제, LLM). **LLM 사용 범위 = P1-d·P2 정제 한정**(상한 50콜/$0.10, 실사용 14콜 ≈$0.018); L2 태그 군집 트랙의 무LLM·결정론·임베딩 금지는 별개 유효. **배정(Rev.3) = 상대비중 매칭**: 상대 종목 기사 중 테마 문구 등장 **비율 ≥ τ**(절대 건수 폐기). 다중매칭 우선순위 = 그 엣지에서의 **비중** 높은 테마(HHI 우선 폐기 — HHI는 전역 속성이라 개별 엣지 적합도 미반영) → 커버 → 문구 길이. R=50% 안전망 + 최소 2건. **Why**: 절대건수 매칭은 버즈워드 스침 언급을 오배정(ZBRA↔양자컴퓨팅 17건, ZBRA는 바코드·RFID로 무관). 비중+비중우선순위로 ZBRA 양자 **17→0** 교정. τ 검증세트는 **겹침**(AI리더 share≈5% < IBM양자 8%, IONQ는 진짜 양자기업 58%) → τ=4.6%(min-매칭) 채택·share우선순위가 실질 판정. **잔여 저-share(6~16%) 스침 매칭 = M3(태그 교차) 검토 재료**(서빙 반영 전 정밀화, 미승인).
+
+---
+
+## D-CS-P1A-RELANDING (2026-08-10, 뉴스 관계 착지 수리 — before→after KPI)
+
+**집행**: CS-P1A Slice1-4. `update_relation_confidence` 재조립으로 P2-1(뉴스 착지 91% 누수) 수리. 참조: D2.
+
+**KPI before → after** (Slice4 라이브 백필, 병진 GO 게이트 뒤 집행):
+- CO_MENTIONED 유니버스내 쌍: **248 → 1,449** (전체 278 → 1,957, 신규 1,679·갱신 133)
+- last_observed max: **2026-06-20 동결 → 2026-08-10 해소**
+- serving_layer(Slice2 additive, migration 0029 병진 수동 적용) 백필: **evidence 2,229**(SEC4종+CO_MENTIONED) / **context 13,149**(PEER_OF+PRICE_CORRELATED) / **pending 2**(PEER)
+- 총 RelationConfidence 13,701 → 15,380
+
+**구조 결정**: ⑴ 서두 Neo4j `MATCH PEER_OF/BELONGS_TO_INDUSTRY` 제거(GraphQueryError 전체실패 근원) ⑵ PEER_OF 착지 루프 제거 — 유일 소스가 Neo4j(그래프 동결)이고 Postgres 자기조달은 `update_or_create`가 기존 9,365의 relation_status를 변경해 OUT 위반 → 경로째 제거 ⑶ PRICE_CORRELATED 착지 은퇴(D2: price=강도 속성 P1B 이관) ⑷ CO_MENTIONED 착지 존치(임계 count≥2 보존). **기존 PEER_OF 9,365·PRICE 3,784 무접촉**(status·score 불변, `.update()` serving_layer만).
+
+**잔여**: Slice3 종목↔카테고리 매핑은 τ 매칭 로직 코드·종목별 share 데이터 repo 부재로 미수행(별도). 워커 재시작으로 라이브 beat(매일 11:00 ET) 새 코드 반영.
