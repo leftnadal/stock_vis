@@ -2,6 +2,7 @@
 // authAxios baseURL에 이미 /api/v1 포함 → 경로에 중복 금지 (common-bug #19)
 import { authAxios } from '@/lib/api/authAxios'
 import type {
+  AdvisorNote,
   AlertEvent,
   AlertSummary,
   CatalogEntry,
@@ -169,5 +170,13 @@ export const monitorService = {
       params: { window },
     })
     return data
+  },
+
+  // ── ADVISOR 브리핑 일지 (MON-P4-LA T3) ── surface=L-A 한정, 최신순 — 일지 kind=advisor 소스.
+  getAdvisorNotes: async (monitorId: string, limit = 30): Promise<AdvisorNote[]> => {
+    const { data } = await authAxios.get(`/monitor/monitors/${monitorId}/advisor_notes/`, {
+      params: { limit },
+    })
+    return unwrapList<AdvisorNote>(data)
   },
 }

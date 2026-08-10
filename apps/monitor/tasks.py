@@ -111,3 +111,62 @@ def refresh_monitors_task(self):
         "close_suggest_new": len(new_close_ids),
         "digest_sent": digest_res["sent"],
     }
+
+
+@shared_task(bind=True, max_retries=MAX_RETRIES)
+def advisor_briefing_task(self):
+    """활성 stock 모니터별 ADVISOR L-A 정기 브리핑 (MON-P4-LA, D-MON-P4-LA).
+
+    기본 OFF(ADVISOR_ENABLED False → no-op 로그 1줄). ON이면 EOD 신선도 가드(비거래일·
+    미신선 스킵 — refresh와 동일 이중 방어) 후 stock 모니터를 **종목별 개별 콜**(D2 — 한
+    콜 실패는 그 종목만 스킵). 브리핑 생성은 멱등(존재 시 스킵). 실패=무음+ERROR 로그.
+    """
+    from django.conf import settings
+
+    if not settings.ADVISOR_ENABLED:
+        logger.info("advisor briefing skip: ADVISOR_ENABLED=False (기본 OFF 이중잠금)")
+        return {"status": "disabled"}
+
+    as_of = et_today()
+    if not is_eod_fresh(as_of):
+        try:
+            self.retry(countdown=RETRY_COUNTDOWN)
+        except MaxRetriesExceededError:
+            logger.warning(
+                "advisor briefing skip: 오늘(ET %s) EODSignal 미도착 — %d회 재시도 후 종결",
+                as_of,
+                MAX_RETRIES,
+            )
+            return {"status": "skipped_stale_eod", "as_of": as_of.isoformat()}
+
+    from apps.monitor.models import Monitor
+    from apps.monitor.services.advisor_briefing import generate_briefing
+
+    created = skipped = failed = 0
+    for monitor in Monitor.objects.filter(scope=Monitor.Scope.STOCK):
+        try:
+            note = generate_briefing(monitor)
+            if note is not None:
+                created += 1
+            else:
+                skipped += 1
+        except Exception as exc:  # D2 실패 격리 — 해당 종목만
+            failed += 1
+            logger.error(
+                "advisor 브리핑 실패 monitor=%s: %s", monitor.target_ref, exc
+            )
+
+    logger.info(
+        "advisor briefing 완료: as_of=%s created=%d skipped=%d failed=%d",
+        as_of,
+        created,
+        skipped,
+        failed,
+    )
+    return {
+        "status": "ok",
+        "as_of": as_of.isoformat(),
+        "created": created,
+        "skipped": skipped,
+        "failed": failed,
+    }

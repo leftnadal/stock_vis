@@ -31,6 +31,11 @@ CREDIT_SIGNALS_ENABLED = os.getenv('CREDIT_SIGNALS_ENABLED', 'false').lower() ==
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')  # Claude API for RAG
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 
+# MON-P4-LA — ADVISOR 정기 브리핑 (D-MON-P4-LA). 기본 OFF 이중잠금: 이 플래그 + PeriodicTask
+# enabled=False. 점등은 배포 승인 후 수동(§8). ADVISOR_MODEL = 코드베이스 anthropic 컨벤션.
+ADVISOR_ENABLED = os.getenv('ADVISOR_ENABLED', 'false').lower() == 'true'
+ADVISOR_MODEL = os.getenv('ADVISOR_MODEL', 'claude-sonnet-4-5')
+
 # === LLM Provider Settings (Portfolio Coach, slice 1) ===
 # LLMClient 인스턴스별 호출 가드. 임계 도달 시 LLMBudgetExceededError raise.
 LLM_BUDGET_MAX_CALLS = int(os.getenv('LLM_BUDGET_MAX_CALLS', '50'))
