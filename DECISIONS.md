@@ -6122,7 +6122,7 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **집행**: CS-P1A Slice1-4. `update_relation_confidence` 재조립으로 P2-1(뉴스 착지 91% 누수) 수리. 참조: D2.
 
 **KPI before → after** (Slice4 라이브 백필, 병진 GO 게이트 뒤 집행):
-- CO_MENTIONED 유니버스내 쌍: **248 → 1,449** (전체 278 → 1,957, 신규 1,679·갱신 133)
+- CO_MENTIONED 유니버스내 쌍: **248 → 1,449** (전체 278 → 1,957, 신규 **1,679**·갱신 133 — 게이트 dry-run 예측과 정확 일치)
 - last_observed max: **2026-06-20 동결 → 2026-08-10 해소**
 - serving_layer(Slice2 additive, migration 0029 병진 수동 적용) 백필: **evidence 2,229**(SEC4종+CO_MENTIONED) / **context 13,149**(PEER_OF+PRICE_CORRELATED) / **pending 2**(PEER)
 - 총 RelationConfidence 13,701 → 15,380

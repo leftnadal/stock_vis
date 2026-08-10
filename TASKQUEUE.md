@@ -1275,3 +1275,8 @@
 - 사유: `monorepo/sess-signal-fwd-recon` 미push 백로그에 잔류물 — ⑴ 이미 origin/main 랜딩된 monitor/HOLD-P1 **중복 3건**(`4c920494`·`02cce323`·`710520e5` ↔ origin `6a093f16`·`63ed5a16`·`8ace1ed9`, mig 0008 origin 존재) ⑵ research_lab **타트랙**(`6973bda3`, sv-research-os 소관) ⑶ **superseded** governance(`0790c8f8` — D-LAND-ATOMIC·D-PROBE 내용 origin 기반영).
 - 이 세션(D2-LEDGER-PROBE) 산출물 `59b9533b`(docs) + vocab_v1 `cc918c40`만 D-LAND-ATOMIC로 별도 랜딩. 잔여 커밋은 중복/타트랙이라 **미랜딩**(딸려보내기 금지).
 - 트리거: 위 3부류 중복/랜딩 재확인 후 브랜치 은퇴. 삭제 전 `git merge-base --is-ancestor` 소진 검증.
+
+## CS-P1A 후속 3건 (등재, 2026-08-10, CS-P1A-CLOSE)
+- **CS-SAMEGROUP-REFRESH 같은 그룹 갱신 경로 재정의** — CS-P1A가 PEER_OF 착지 루프 제거(Neo4j 유일소스·그래프 동결) → "같은 그룹"(peer+ETF, D1) 관계의 **갱신 경로가 부재**. 기존 PEER_OF 9,365는 무접촉 보존되나 신규/갱신 미발생. Postgres-native 소스(FMP peer 재조달 or ETF 공동편입)로 갱신 경로 재설계 필요. 참조: [[DECISIONS]] D1·D-CS-P1A-RELANDING.
+- **VOCAB-TAU-PIPELINE 구축** — Slice3 종목↔카테고리 τ 매칭이 코드·종목별 share 데이터 repo 부재로 미수행. vocab_v1(46카테고리) 배정 로직(D-NEWS-VOCAB Rev.3, τ=4.6% share 매칭)을 코드로 구현 + 종목별 테마 share 재계산. D1 하위결정 ②(슬롯 승격 기준) 재료.
+- **NEO4J-QUEUE-WORKER-RETIRE 검토(병진 수동)** — neo4j 큐 전용 워커(`-Q neo4j --pool=solo`, PID 17일 구동)가 worker_sync 재기동 대상 밖. 그래프 동결 상태라 neo4j sync 태스크 비활성 → 은퇴 검토. 재기동/종료는 launchd 서비스 접촉(병진 수동).
