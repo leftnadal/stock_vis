@@ -44,6 +44,14 @@ celery -A config worker -Q neo4j -l info --pool=solo     # neo4j queue (fork 없
 celery -A config beat -l info
 ```
 
+### Git 훅 (신규 클론 필수 1회)
+
+```bash
+git config core.hooksPath scripts/hooks   # 버전관리 pre-commit 활성화(브랜치 화이트리스트 + 채번 가드)
+```
+
+> 상세: [scripts/hooks/README.md](scripts/hooks/README.md)
+
 ---
 
 ## 아키텍처 요약
