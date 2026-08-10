@@ -42,6 +42,24 @@ MONITOR_BEAT_DESCRIPTION = (
     "Monitor 허브 — EOD 후 refresh(ingest→evaluate). 18:45 ET (EOD 창 종료 +10분 버퍼)."
 )
 
+# MON-P4-LA — ADVISOR L-A 정기 브리핑 beat. 18:50 ET(monitor-refresh 18:45 스냅샷 생성 +5분).
+# **enabled=False로 최초 생성 후 get_or_create로 점등 상태 보존**(update_or_create가 아님 —
+# 배포 승인 후 수동 enable을 멱등 재실행이 되돌리지 않게). ADVISOR_ENABLED와 이중잠금.
+ADVISOR_BEAT_NAME = "advisor-daily-briefing"
+ADVISOR_BEAT_TASK = "apps.monitor.tasks.advisor_briefing_task"
+ADVISOR_CRONTAB = {
+    "minute": "50",
+    "hour": "18",
+    "day_of_week": "1-5",
+    "day_of_month": "*",
+    "month_of_year": "*",
+    "timezone": "America/New_York",
+}
+ADVISOR_BEAT_DESCRIPTION = (
+    "ADVISOR L-A 정기 브리핑 — EOD 후행 18:50 ET. 기본 OFF(enabled=False + "
+    "ADVISOR_ENABLED 이중잠금). 점등은 배포 승인 후 수동(MON-P4-LA §8)."
+)
+
 
 class Command(BaseCommand):
     help = "Monitor refresh beat DB 등록 + 구 thesis beat 회수 (멱등, #28)"
@@ -59,7 +77,11 @@ class Command(BaseCommand):
             for t in legacy_qs:
                 self.stdout.write(f"[dry-run] would delete legacy thesis beat: {t.name}")
             self.stdout.write(f"[dry-run] would upsert {MONITOR_BEAT_NAME} @ 18:45 America/New_York")
-            self.stdout.write(f"[dry-run] 삭제 예정 thesis={n_legacy}, monitor beat 1건 등록")
+            self.stdout.write(
+                f"[dry-run] would get_or_create {ADVISOR_BEAT_NAME} @ 18:50 America/New_York "
+                f"enabled=False (점등 보존)"
+            )
+            self.stdout.write(f"[dry-run] 삭제 예정 thesis={n_legacy}, monitor+advisor beat 2건 등록")
             return
         legacy_qs.delete()
 
@@ -80,5 +102,28 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f"thesis 회수 {n_legacy}건 · monitor beat [{verb}] {obj.name} "
                 f"@ {crontab.hour}:{crontab.minute} {crontab.timezone} (dow={crontab.day_of_week})"
+            )
+        )
+
+        # ③ advisor 브리핑 beat — get_or_create(최초만 enabled=False, 이후 수동 점등 보존)
+        adv_crontab, _ = CrontabSchedule.objects.get_or_create(**ADVISOR_CRONTAB)
+        adv_obj, adv_created = PeriodicTask.objects.get_or_create(
+            name=ADVISOR_BEAT_NAME,
+            defaults={
+                "task": ADVISOR_BEAT_TASK,
+                "crontab": adv_crontab,
+                "interval": None,
+                "enabled": False,
+                "description": ADVISOR_BEAT_DESCRIPTION,
+            },
+        )
+        adv_state = (
+            "created(enabled=False)" if adv_created
+            else f"exists(enabled={adv_obj.enabled} 보존)"
+        )
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"advisor beat [{adv_state}] {adv_obj.name} "
+                f"@ {adv_crontab.hour}:{adv_crontab.minute} {adv_crontab.timezone}"
             )
         )
