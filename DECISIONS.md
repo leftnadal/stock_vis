@@ -8,6 +8,26 @@
 
 ---
 
+## [2026-08-10] D-MON-P4-LA — ADVISOR L-A 정기 브리핑 [monitor]
+
+> 출처: 지시서 MON-P4-LA(T0). 근거: D-MONITOR-HORIZON-ADVISOR(단일 코어·3서피스·AdvisorNote·2축 채점) · D-MONITOR-TIMING-PIVOT §3.2(제안-판정 주체 분리). 스코프: **L-A(정기 브리핑)만.** L-B/L-C는 surface enum 소켓만 예약(착수 금지).
+
+**결정**:
+- **D1 브리핑 주기** = 매 거래일, EOD 후행 beat **18:50 ET**(기존 EOD 창 18:00~18:35 이후 · `monitor-refresh-daily 18:45 ET`가 스냅샷 선행 생성 → advisor 소비 · 18:50 슬롯 충돌 없음 실측). 무변화 날은 1~2문장 축약.
+- **D2 호출 단위** = 활성 모니터별 개별 콜(1종목 1콜). 실패 격리 — 한 콜 실패는 해당 종목만 스킵.
+- **D3 일지 UI** = A안 원장 동형(advisor도 기존 행 문법: 날짜·kind 배지·1줄 headline, 확장 시 body+meta). 일지 내 **최신 advisor 1건만 자동 펼침**(사용자 조작 > 자동).
+
+**Why**: 브리핑은 관제 부담을 낮추는 '비서'의 사실 요약이지 매매 지시가 아니다(§3.2 제안-판정 분리). 점수 정본은 MonitorSnapshot(P2A/P2B)이며 advisor 경로에서 점수를 **재계산하지 않는다**(동결 기록 인용만). 기본 OFF 이중잠금은 LLM 실호출 비용·오발을 배포 승인 전까지 차단한다.
+
+**How to apply / 불변식**:
+- **언어 계약**: 브리핑은 사실·거리·상태만. 명령형 매매 지시어(매수/매도/추가/청산/손절하라 등) 금지 — 프롬프트 + **사후 lexical 가드** 이중 방어(검출 시 저장 안 함·WARNING).
+- **커버리지 문면 인용 의무**: 모든 브리핑 meta에 `근거 지표 n/총`. 분모 = **해당 모니터 등록 지표 총수**(P2A 충분성 판정과 동일 카탈로그 소스, `catalog_for` 기반), n = source_n 충분 지표 수. **9 하드코딩 금지.**
+- **무변화 정의**: 상태 전이 없음 AND **|Δ overall_score| < 0.02**([-1,1] 스케일, 직전 스냅샷 대비) AND 종가가 시나리오 레벨 3종(진입/목표/손절) 어느 것도 미교차. **임계 0.02 확정** — STEP 0 실측(6종 48델타: P50=0.0125·P75=0.0252·max=0.1885, 0.02 미만 68.8%)에서 P50~P75 사이로 무변화 69%/변화 31% 균형.
+- **기본 OFF 이중잠금**: `ADVISOR_ENABLED=False`(settings) + PeriodicTask `enabled=False`. 점등은 배포 승인 후 수동.
+- **실패 = 무음 스킵 + ERROR 로그**. 일지에 오류·플레이스홀더 행 생성 금지.
+- **점수 재계산 금지**: advisor는 MonitorSnapshot 동결 기록만 인용. horizon 필드는 Monitor/Claim에 **부재**(STEP 0 실측) → v1 프롬프트에서 생략, 이 트랙에서 신설 금지(별도 결정).
+- **LLM 게이트웨이**: `packages.shared.llm.complete(provider="anthropic", model=settings.ADVISOR_MODEL)`(leaf-safe 공용 패키지, monitor의 기존 packages.shared import 선례와 동일). ADVISOR_MODEL 기본 = `claude-sonnet-4-5`(코드베이스 anthropic 컨벤션).
+
 ## [2026-08-08] D-MON-P2B — 표시 정합: 점수 정본 통일 + 사다리 계약 일반화 [monitor]
 
 > 출처: 지시서 MON-P2B(T0). 근거: MON-P2A STEP 0 ADDENDUM 실측(A1 값·델타·일지 3원 소스 혼재 = 스냅샷/sparkline/readings · A2 hold zone_display의 stop<purchase<target 고정 전제가 이익 보호 스탑에서 파손 · A3 무수리 종결). 표시 계층 수리 — 엔진 무접촉.
