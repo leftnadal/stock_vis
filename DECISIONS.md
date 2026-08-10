@@ -26,6 +26,8 @@
 
 **Why**: 관제=의도의 커밋인데 그 종목이 수집 유니버스 밖이면 신호·뉴스가 영원히 비어 관제가 무의미(TLN 뉴스 0건·EODSignal 0). **How to apply**: 각 수집 경로의 유니버스 결정부에 monitor-target 합집합(경계=leaf 앱 역결합 금지, shared/느슨참조 경유). EOD측은 RECON 후.
 
+**[2026-08-10] NEWS-S2 확정 부기 — "운용 중" 정의 = archived 제외 전부**: `_get_monitor_target_symbols`의 status 필터를 `exclude(status__in=[PAUSED, ARCHIVED])` → **`exclude(status=ARCHIVED)`**로 확정(네거티브 필터). **status 도메인 전수**(`Monitor.Status` choices): `setting_up`·`active`·`paused`·`archived` — 이 중 **archived만 제외**, 나머지 셋(setting_up·active·paused) 포함. paused=일시정지는 재개 가능한 운용 상태 → 수집 유지가 재개 시 공백을 없앤다. **실측 근거**(2026-08-10): stock-scope Monitor 6종(GEV/GOOGL/IONQ/IREN/PLTR/TLN) **전부 setting_up · active 0**. "운용 중=active만"이면 6종 전부 누락(전멸) → active 문자 그대로는 사각지대 미해소. **별건 관찰**(좌표만·수리 금지): 6종 status **전이 0건**(개시 이후 setting_up 고정 — active 승격 로직 미발화). test `test_monitor_target_symbols`(7 green)에 paused 포함·archived 제외 케이스 반영.
+
 ## [2026-08-06] D-MON-P2A — 점수 정직성 수리: H1 판정(희석 실재, 층위=scorer) + 스코프 C [monitor]
 
 > 출처: 지시서 MON-P2A. 근거: MON-DETAIL-P1 T3(H1) + 본 트랙 T4·T5 실측. 상위 D-MON-TRACK-ORDER-20260806 ⑴ 발동.

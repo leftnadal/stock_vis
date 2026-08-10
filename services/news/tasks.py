@@ -128,7 +128,13 @@ def collect_daily_news(self, symbols=None, days=1):
 
         # 심볼 목록 결정
         if symbols is None:
-            symbols = _get_mover_symbols(max_symbols=20)
+            # NEWS-P0-FIX(T3/S2): mover 상위 20 ∪ 활성 monitor-target(≤10) — dedupe, 상한 30.
+            mover_symbols = _get_mover_symbols(max_symbols=20)
+            monitor_symbols = _get_monitor_target_symbols(max_symbols=10)
+            symbols = list(dict.fromkeys(mover_symbols + monitor_symbols))[:30]
+            added = [s for s in monitor_symbols if s not in mover_symbols]
+            if added:
+                logger.info(f"collect_daily_news: monitor-target 편입 {added}")
         logger.info(f"collect_daily_news: {len(symbols)} symbols, days={days}")
 
         # 종목별 뉴스 수집
@@ -1080,7 +1086,7 @@ def collect_press_releases_fmp(self, max_symbols=50):
     """
     from services.news.services.aggregator import NewsAggregatorService
     from services.news.services.circuit_breaker import CircuitBreaker
-    from packages.shared.stocks.models import SP500Constituent
+    from packages.shared.stocks.models import SP500Constituent, Stock
 
     breaker = CircuitBreaker("fmp")
     if breaker.is_open():
@@ -1088,9 +1094,18 @@ def collect_press_releases_fmp(self, max_symbols=50):
         return {"skipped": True, "reason": "circuit_open"}
 
     # 시가총액 상위 종목
+    # NEWS-P0-FIX(T2/S1): SP500Constituent에는 market_cap 필드가 없어
+    # `.order_by("-market_cap")`이 매 실행 FieldError로 무음 전량 실패했다(RECON-NEWS-P0).
+    # market_cap은 Stock.market_capitalization에만 존재(STEP 0 실측 채움율 98.83% ≥80%)
+    # → SP500Constituent(활성 심볼) 를 Stock과 심볼로 조인해 시가총액 내림차순 정렬.
+    # market_capitalization이 비어있는 종목은 상위 랭킹에서 자연 제외(에러 아님).
+    sp500_symbols = SP500Constituent.objects.filter(is_active=True).values_list(
+        "symbol", flat=True
+    )
     symbols = list(
-        SP500Constituent.objects.filter(is_active=True)
-        .order_by("-market_cap")
+        Stock.objects.filter(symbol__in=sp500_symbols)
+        .exclude(market_capitalization__isnull=True)
+        .order_by("-market_capitalization")
         .values_list("symbol", flat=True)[:max_symbols]
     )
 
@@ -1526,6 +1541,37 @@ def _get_mover_symbols(max_symbols=30):
 
     except Exception as e:
         logger.error(f"_get_mover_symbols failed: {e}")
+        return []
+
+
+def _get_monitor_target_symbols(max_symbols=10):
+    """활성 stock-scope Monitor의 target_ref(심볼) 집합을 반환 (NEWS-P0-FIX T3/S2).
+
+    apps.monitor는 별개 leaf 앱이라 services/news에서 정적 import하지 않는다
+    (leaf↔leaf 역결합 금지). 대신 Django 앱 레지스트리로 느슨하게 참조한다 —
+    packages/shared/metrics/services/daily_report.py의
+    `django_apps.get_model("chainsight", ...)` 와 동일한 기존 관례.
+    monitor 앱 부재/모델 스키마 변경 등 어떤 사유로든 실패해도 beat 본체를
+    막지 않도록 예외를 삼키고 빈 리스트로 폴백한다.
+    """
+    try:
+        from django.apps import apps as django_apps
+
+        Monitor = django_apps.get_model("monitor", "Monitor")
+        # "운용 중 monitor" = **archived 제외 전부**(NEWS-S2 확정, 2026-08-10 사용자 채택).
+        # status=ACTIVE 문자 그대로면 보유 종목이 전부 setting_up이라 no-op → 사각지대(TLN 등)
+        # 미해소(RECON-NEWS-P0 N2 실측). 목적(수집 유니버스 자동 편입, D-COLLECTION-UNIVERSE-
+        # PRINCIPLE)에 맞게 setting_up·active·paused는 모두 포함하고 archived만 제외한다
+        # (paused=일시정지는 재개 가능한 운용 상태 → 수집 유지가 재개 시 공백 없음).
+        symbols = list(
+            Monitor.objects.filter(scope=Monitor.Scope.STOCK)
+            .exclude(status=Monitor.Status.ARCHIVED)
+            .values_list("target_ref", flat=True)
+            .distinct()[:max_symbols]
+        )
+        return [s.strip().upper() for s in symbols if s and s.strip()]
+    except Exception as e:  # noqa: BLE001 — leaf 격리, beat 본체 보호(#65와 동일 사상)
+        logger.warning(f"_get_monitor_target_symbols failed (non-fatal): {e}")
         return []
 
 
