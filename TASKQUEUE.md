@@ -152,6 +152,7 @@
 | Q19-SD-LINKPRED | S-D 링크예측 재도전 — 시간분할 검증(과거→예측→미래 확인) | @backend | RPS 궤적 견고화 + discovery 재가동 | **예약(트리거 대기)** | ⑱ 기각(궤적 깊이 부족). 트리거: RPS 주간 궤적 ~3-4개월 축적 **또는** discovery 재가동(Q19-DISCOVERY-REACT) |
 | Q19-A3-SECTOR-MOCKUP | A3 섹터 그래프(Sector 모드 Neo4j) 존치/전환 판단 → 전체 조망 목업 트랙(⑳)으로 회부 | @UI-UX-designer | ⑳ 목업 | **회부** | ⑱ A3 카드: Sector 모드 Neo4j 잔존, PG 전환 비용 중. 살릴지 = 병진 가치판단 |
 | Q19-DISCOVERY-REACT | discovery 해자 폭 재성장 — 신규 RC 유입 재가동(고정 S&P500 유니버스 포화 극복) | @backend | 별도 결정 | **todo(조치 보류)** | ⑲ S4: 태스크 전부 enabled·최근 실행이나 **신규 0(분류 b)**. co-mention 입력 04-25~07-08 단절 후 broad 재개(07-08)·유니버스 포화. 재성장=유니버스 확장/신규 소스(대) |
+| Q19-WIDTH-STAGNATION | 해자 폭 정체 실측 — RelationPairSnapshot 매 period **9562행 고정** | @backend | Q19-DISCOVERY-REACT 연계 | **🔍 정찰 등재(2026-08-10)** | SUNMON-RECON 부수 발견: 궤적 **깊이는 건강**(07-01~08-09 매일 9562·실패0·#28 해소)이나 **폭=신규 페어 유입 0**(9562 고정). 근원=유니버스 포화·co-mention 입력 04-25~07-08 단절. 저장=PG `chainsight_relation_pair_snapshot`(Neo4j 비의존). 조치=Q19-DISCOVERY-REACT(유니버스 확장/신규 소스)와 통합 결정 |
 
 ---
 
@@ -1197,10 +1198,11 @@
 - **선행 설계**: G2 앵커(92/19/0/0, ≤07-11 스코프)의 **이관 설계 포함** — 재판정 시 앵커 무효화되므로 신 앵커 정의·비교 기준 재수립 필요. ovr_v2 generation 신설 여부 포함.
 - 근거: TH-RESUME-CORPUS-UNFREEZE 조항(corpus 확장 시 G2 앵커 무효). 배제 결정(TH-SESSION-1 판정②, override 재산출 배제·TNV만).
 
-## CORPUS-SUNMON-EMPTYKW — DailyNewsKeyword 일·월요일 빈 키워드 반복 (관찰, 2026-08-03) [theme-heat][news]
+## CORPUS-SUNMON-EMPTYKW — DailyNewsKeyword 일·월요일 빈 키워드 반복 (🔍 정찰 완료 2026-08-10 → 설계 결정 대기) [theme-heat][news]
 - **관찰**: DailyNewsKeyword 행은 존재하나 `keywords=[]`(빈 추출)가 **일·월요일 반복** — TH-SESSION-1 백필 창서 07-26(Sun)·07-27(Mon)·08-02(Sun)·08-03(Mon) 확정. **토요일(08-01)은 정상**(3 테마 크레딧). → 해당일 TNV 0행, **당일(특히 월) heat가 뉴스 성분(C3) 0/저값으로 계산**되는 영향.
 - **영향 범위**: heat C3=`c3_narrative_from_db`가 롤링 창 참조라 단일 공백일 영향은 완충되나, 일·월 연속 공백은 초반 뉴스 성분 저평가 가능. 6/11 not_computed 전환과는 무관(그 5테마는 C3 외 결측 ≥3).
-- **조치**: 원인 규명(키워드 추출 beat의 주말 스케줄/소스 공백)·조치는 **별도 세션**. 이 세션 조치 금지(관찰 등재만).
+- **🔍 정찰 결과(SUNMON-RECON, 2026-08-10, read-only)**: 근원 = **추출↔수집 타이밍 레이스**(일요일 공백 오진). 08-09 NewsArticle **1229건 존재**하나 `extract-daily-news-keywords`(매일 16:45 ET·localdate KST) 추출(08-08 20:45 UTC)이 기사 수집(08-10 01:01 UTC, av-broad)보다 ~28h 이르게 발화 → 창내 0 → `status=failed`. `collect-*` 수집 beat 대부분 **평일 전용(`* * 1-5`)** → 주말 창은 av-broad(01:00 UTC 일1회)로만 늦게 채워짐. **failed 행 재추출 트리거 부재** = 공백 고착. 전문 `docs/features/theme-heat/sunmon_recon_report.md`.
+- **설계 결정 후보 (조치=다음 사이클)**: **A(주원인)** failed 행 재추출/백필 트리거(av-broad 수집 후 당일+전일 재추출) 또는 추출 스케줄을 수집 뒤로 이동 · **B** collect-* 평일전용→주말 수집 경로 보강 · **C** localdate KST 조기창 완화.
 
 ## SECB-EXPOSURE — grounding_status 노출 설계 결정 사이클 (2026-08-01, Gate2 개정 B-2) [sec-beta][ux]
 - **성격**: 디렉터 세션·**목업 필수** 결정 사이클(소비자 UX 결정). **소비자 결정 전 구축 금지**(γ 사변 구축 금지, D-SECB-GATE2-AMEND-1).

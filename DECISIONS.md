@@ -6141,3 +6141,7 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **구조 결정**: ⑴ 서두 Neo4j `MATCH PEER_OF/BELONGS_TO_INDUSTRY` 제거(GraphQueryError 전체실패 근원) ⑵ PEER_OF 착지 루프 제거 — 유일 소스가 Neo4j(그래프 동결)이고 Postgres 자기조달은 `update_or_create`가 기존 9,365의 relation_status를 변경해 OUT 위반 → 경로째 제거 ⑶ PRICE_CORRELATED 착지 은퇴(D2: price=강도 속성 P1B 이관) ⑷ CO_MENTIONED 착지 존치(임계 count≥2 보존). **기존 PEER_OF 9,365·PRICE 3,784 무접촉**(status·score 불변, `.update()` serving_layer만).
 
 **잔여**: Slice3 종목↔카테고리 매핑은 τ 매칭 로직 코드·종목별 share 데이터 repo 부재로 미수행(별도). 워커 재시작으로 라이브 beat(매일 11:00 ET) 새 코드 반영.
+
+## D-MOAT-STORAGE-PG (2026-08-10, SUNMON-RECON 정정 — 디렉터 가설 기각)
+
+**정정**: 해자(RelationPairSnapshot) 궤적 저장 경로 = **PostgreSQL 스냅샷 테이블 `chainsight_relation_pair_snapshot`, Neo4j 비의존**. "적립이 Neo4j에 물려 침묵" 디렉터 가설 **기각** — SUNMON-RECON 실측: 07-01~08-09 매일 9562행 적립·실패 0(#28 해소), Neo4j-down과 무관. `pair_aggregation.py` `update_or_create` per (canonical_a, canonical_b, period). cf. [[D-CS-P1A-RELANDING]](관계 파이프라인 Neo4j 제거).
