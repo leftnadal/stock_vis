@@ -1,0 +1,588 @@
+{
+  "_meta": {
+    "purpose": "CL3-V1-RESIDUAL-CLEANUP backup — cl3_v1 잔존 12행 (macro-null 기존일, v2 빈선별/톤가드실패). 복원 시 이 파일이 소스.",
+    "exported": "2026-08-10",
+    "count": 12,
+    "restore": "AnalogDayContext.objects.create(**row) per rows (generated_at는 auto_now_add)"
+  },
+  "rows": [
+    {
+      "date": "2023-10-05",
+      "prompt_version": "cl3_v1",
+      "why_text": "개별 기업 이슈와 긍정적 소비 시즌 전망이 엇갈린 날.",
+      "provenance": [
+        {
+          "id": "50381ba4-c636-45f3-b833-8ae30ba005f6",
+          "url": "https://www.unionleader.com/news/business/fda-panel-wont-support-approval-for-amgen-lung-cancer-drug/article_0fac1763-abca-57ab-8609-572b21757d8a.html",
+          "title": "FDA panel won't support approval for Amgen lung cancer drug"
+        },
+        {
+          "id": "a44e0074-6693-496a-9267-a4910c76b909",
+          "url": "https://www.cnbc.com/2023/10/05/clorox-shares-slide-cyberattack-hit-sales.html",
+          "title": "Clorox shares slide after company says cyberattack hit sales hard"
+        },
+        {
+          "id": "ede299e7-dcb9-4b53-9bc9-b72cfc05e962",
+          "url": "https://www.globes.co.il/news/article.aspx?did=1001459557",
+          "title": "Ceragon unlikely to collect big Peruvian debt"
+        },
+        {
+          "id": "f5e5b39e-a8ac-406b-a051-63279ccec97d",
+          "url": "https://www.ohioattorneygeneral.gov/media/news-releases/october-2023/ag-yost-announces-$49-5-million-multistate-settlem",
+          "title": "AG Yost Announces $49.5 Million Multistate Settlement with Blackbaud Over Data Breach"
+        },
+        {
+          "id": "8f6bad80-2373-4220-9891-257acd6fa79e",
+          "url": "https://kstp.com/kstp-news/local-news/settlement-reached-with-software-company-blackbaud-after-multiple-data-breaches-impact-schools-hospitals-and-nonprofits",
+          "title": "Settlement reached with software company Blackbaud after multiple data breaches impact schools, hospitals and nonprofits"
+        },
+        {
+          "id": "3024df09-3888-4cd3-9beb-ef7fc8eaf114",
+          "url": "https://ncdoj.gov/attorney-general-josh-stein-announces-49-5-million-multistate-settlement-with-blackbaud",
+          "title": "Attorney General Josh Stein Announces $49.5 Million Multistate Settlement with Blackbaud"
+        },
+        {
+          "id": "be91b359-ee7b-41de-b1ac-bc4f112dbe68",
+          "url": "https://www.wfyi.org/news/articles/software-company-agrees-to-pay-nearly-50-million-in-multi-state-data-breach-settlement",
+          "title": "Software company agrees to pay nearly $50 million in multi-state, data breach settlement"
+        },
+        {
+          "id": "5df50bc7-00a6-40dd-85a5-eb49e381d7ae",
+          "url": "https://viewfromthewing.com/once-a-maverick-southwest-airlines-turned-into-a-creature-of-government-cronyism",
+          "title": "Once A Maverick, Southwest Airlines Turned Into A Creature of Government Cronyism"
+        },
+        {
+          "id": "a325debc-5219-40ff-a0b8-f3a4ec2bdc02",
+          "url": "https://www.business-live.co.uk/professional-services/brown--brown-acquires-berkeley-27849124",
+          "title": "Brown & Brown acquires Berkeley Insurance"
+        },
+        {
+          "id": "712c78ba-907e-42f0-9890-59d9cb7e4cb1",
+          "url": "https://www.nasdaq.com/articles/rbc-capital-reiterates-zoom-video-communications-inc-zm-outperform-recommendation-0",
+          "title": "RBC Capital Reiterates Zoom Video Communications Inc - (ZM) Outperform Recommendation"
+        },
+        {
+          "id": "60035e3c-7013-4f53-97f1-17b7a49ddea5",
+          "url": "https://www.gurufocus.com/news/2099550/protolabs-appoints-agnes-semington-as-chief-human-resources-officer?mobile=true",
+          "title": "Protolabs Appoints Agnes Semington as Chief Human Resources Officer"
+        },
+        {
+          "id": "cf4caf4f-b87c-4659-8983-158504babd5d",
+          "url": "https://www.businesswire.com/news/home/20231005143372/en/adobe-forecasts-%24221.8-billion-u.s.-holiday-season-online-cyber-monday-to-top-%2412-billion",
+          "title": "Adobe Forecasts $221.8 Billion U.S. Holiday Season Online, Cyber Monday To Top $12 Billion"
+        }
+      ],
+      "generated_at": "2026-07-25T01:38:45.008567+00:00",
+      "id": 51
+    },
+    {
+      "date": "2024-02-09",
+      "prompt_version": "cl3_v1",
+      "why_text": "뚜렷한 시장 주제 없이 개별 기업 소식과 산업별 뉴스가 오간 날.",
+      "provenance": [
+        {
+          "id": "9c58d1c4-ce58-447f-9f71-22dfb84b78f7",
+          "url": "https://www.marketwatch.com/story/childrens-places-stock-slides-27-after-profit-warning-and-as-company-says-its-in-talks-with-lenders-for-new-financing-90784023?gaa_at=eafs&gaa_n=awetsqeagthdmisqmbnea41lgwt6vknhax0y4nuf-9jpaanyvkpolmkz4nqg&gaa_ts=6999ee59&gaa_sig=bmd_o1exrhuffdursvynosnfkxu5i3v1txsrnidjfi1wlrqvev8aedsuldnnjsdohnayvowuu_i6_9xyymvzmg%3D%3D",
+          "title": "Children’s Place’s stock heads for 21-year low after company says it’s running out of cash"
+        },
+        {
+          "id": "9af05a04-3d91-4e42-aab3-a7724e6e7f4b",
+          "url": "https://www.expresspharma.in/agilent-india-recognized-with-the-best-bioprocessing-supplier-award-analytical-services",
+          "title": "Agilent India recognized with the Best Bioprocessing Supplier Award: Analytical Services"
+        },
+        {
+          "id": "f3e686b4-adfc-4a75-a6f1-9cde071e56f0",
+          "url": "https://www.sidley.com/en/newslanding/newsannouncements/2024/02/sidley-represents-american-healthcare-reit-in-its-ipo",
+          "title": "Sidley Represents American Healthcare REIT in its IPO"
+        },
+        {
+          "id": "6921b544-d889-471a-9545-a9cba99dc7d9",
+          "url": "https://www.prnewswire.com/news-releases/mercury-systems-inc-sued-for-securities-law-violations--investors-should-contact-the-gross-law-firm-before-february-12-2024-to-discuss-your-rights--mrcy-302057943.html",
+          "title": "Mercury Systems, Inc. Sued for Securities Law Violations - Investors Should Contact The Gross Law Firm Before February 12, 2024 to Discuss Your Rights - MRCY"
+        },
+        {
+          "id": "967a4fec-b9c4-471b-9114-296fbeba4bc3",
+          "url": "https://www.defensenews.com/industry/2024/02/09/chinese-tech-company-threatens-to-sue-us-over-claim-of-military-links",
+          "title": "Chinese tech company threatens to sue US over claim of military links"
+        },
+        {
+          "id": "844ea392-3089-4f70-bc6e-81737ff412bc",
+          "url": "https://macaudailytimes.com.mo/macau-remains-the-city-with-most-forbes-five-star-hotels.html",
+          "title": "Macau remains the city with most Forbes five-star hotels"
+        },
+        {
+          "id": "3a90ec80-aeb6-4894-b62a-114873bded51",
+          "url": "https://www.workerscompensation.com/daily-headlines/reports-raise-worker-safety-concerns-at-adm",
+          "title": "Reports Raise Worker Safety Concerns at ADM"
+        },
+        {
+          "id": "f86b9958-1414-4035-b062-1b638210f9d1",
+          "url": "https://www.offshore-energy.biz/lr-greek-shipping-majors-launch-new-global-maritime-emissions-reduction-center",
+          "title": "LR, Greek shipping majors launch new global maritime emissions reduction center"
+        },
+        {
+          "id": "3f0720a6-9a55-4287-9517-e598834fd56f",
+          "url": "https://finance.yahoo.com/news/golden-sun-health-technology-group-130000510.html",
+          "title": "Golden Sun Health Technology Group Limited Announces Strategic Transition into the Wellness Industry in China"
+        },
+        {
+          "id": "9020ca79-3162-403d-8805-48b584c227a9",
+          "url": "https://www.accessnewswire.com/newsroom/en/closed-end-funds-and-trusts/abrdn-life-sciences-investors-hql-and-abrdn-healthcare-investors-hqh-ann-832772",
+          "title": "abrdn Life Sciences Investors (HQL) and abrdn Healthcare Investors (HQH) Announce a 25% Increase in Distribution Rates and abrdn Healthcare Opportunities Fund (THQ) Announces a 60% Increase in Distribution Rate"
+        },
+        {
+          "id": "7af2b767-aa0a-4ee2-bbb2-7b50a4eaea0f",
+          "url": "https://investor.vistracorp.com/2024-02-09-texas-tech-chooses-txu-energy-to-power-the-university-system",
+          "title": "Texas Tech Chooses TXU Energy to Power the University System"
+        },
+        {
+          "id": "274a109d-1a8c-48de-a060-b418a0bbb21b",
+          "url": "https://www.reinsurancene.ws/prudential-closes-jumbo-pension-risk-transfer-with-shell-usa",
+          "title": "Prudential closes “jumbo” pension risk transfer with Shell USA"
+        }
+      ],
+      "generated_at": "2026-07-25T01:48:16.283065+00:00",
+      "id": 133
+    },
+    {
+      "date": "2024-10-03",
+      "prompt_version": "cl3_v1",
+      "why_text": "뚜렷한 시장 주제 없이 개별 기업 소식이 다수 보도된 날.",
+      "provenance": [
+        {
+          "id": "9cafff86-1994-4353-8e56-81d5912f4d7f",
+          "url": "https://www.businesswire.com/news/home/20241003607713/en/aeyes-apollo-excels-in-field-testing-demonstrating-unmatched-performance-at-1-kilometer",
+          "title": "AEye’s Apollo Excels in Field Testing Demonstrating Unmatched Performance at 1 Kilometer"
+        },
+        {
+          "id": "d8892d0e-56fa-4580-bbc5-197d21a0cc67",
+          "url": "https://thedigitalbanker.com/intrepid-credit-union-partners-with-alkami-to-launch-new-digital-banking-platform",
+          "title": "Intrepid Credit Union Partners with Alkami to Launch New Digital Banking Platform"
+        },
+        {
+          "id": "39299ac4-6e90-4b0a-93b3-d247a908f983",
+          "url": "https://www.mdm.com/news/operations/manufacturing/ingersoll-rand-makes-acquisitions-in-u-s-italy-india",
+          "title": "Ingersoll Rand Makes Acquisitions in U.S., Italy, India"
+        },
+        {
+          "id": "3a332217-3b0d-44b9-9251-222179d5c962",
+          "url": "https://beverlypress.com/2024/10/sce-offers-college-scholarships-for-stem-fields",
+          "title": "SCE offers college scholarships for STEM fields"
+        },
+        {
+          "id": "dbe0d277-33c1-4502-bd68-379b1a8b83c4",
+          "url": "https://www.massdevice.com/globus-medical-launches-orthopedic-trauma-offerings",
+          "title": "Globus Medical launches new orthopedic trauma portfolio offerings"
+        },
+        {
+          "id": "299a9e09-b543-4e71-afe5-d2674e15d092",
+          "url": "https://insidehpc.com/2024/10/jabil-acquires-liquid-cooling-company-mikros-technologies",
+          "title": "Jabil Acquires Liquid Cooling Company Mikros Technologies"
+        },
+        {
+          "id": "04f92098-673b-4c95-8866-96c8807dd817",
+          "url": "https://thesmartinvestor.com.sg/4-overlooked-us-growth-stocks-to-buy-and-hold-for-the-long-term",
+          "title": "4 Overlooked US Growth Stocks to Buy and Hold for the Long Term"
+        },
+        {
+          "id": "1883d22d-7778-4f7a-a64b-b18ad11294bf",
+          "url": "https://thedefensepost.com/2024/10/03/us-l3harris-poseidon-mro",
+          "title": "US Navy Chooses L3Harris for P-8A Fleet MRO"
+        },
+        {
+          "id": "c0918762-9bba-447b-b0ff-c92392368663",
+          "url": "https://www.innovationnewsnetwork.com/5e-advanced-materials-appoints-mark-zamek-to-senior-leadership-team/51627",
+          "title": "5E Advanced Materials appoints Mark Zamek to senior leadership team"
+        },
+        {
+          "id": "20e334a6-94c1-4a7c-95e1-1fdee5b72e9b",
+          "url": "https://www.etftrends.com/port-strike-continues-dont-ignore-transportation-etfs",
+          "title": "As Port Strike Continues, Don’t Ignore Transportation ETFs"
+        },
+        {
+          "id": "46548bf2-0975-47fe-9de2-025896cee7d7",
+          "url": "https://www.businesswire.com/news/home/20241003297758/en/new-research-from-fidelity-shows-71-of-women-own-investments-in-the-stock-market",
+          "title": "New Research From Fidelity® Shows 71% of Women Own Investments in the Stock Market"
+        },
+        {
+          "id": "a8b22553-85f0-41b2-b1d6-cae716a24f58",
+          "url": "https://aishealth.mmitnetwork.com/blogs/spotlight-on-market-access/pbm-private-label-units-are-drawing-pharma-contracting-scrutiny",
+          "title": "PBM Private-Label Units Are Drawing Pharma Contracting, Scrutiny"
+        }
+      ],
+      "generated_at": "2026-07-25T02:05:36.016290+00:00",
+      "id": 275
+    },
+    {
+      "date": "2025-01-31",
+      "prompt_version": "cl3_v1",
+      "why_text": "개별 기업 뉴스 및 AI 기반 ETF 동향이 전해진 날.",
+      "provenance": [
+        {
+          "id": "5f25d3b6-190d-49f8-ba3d-3a9666c42263",
+          "url": "https://statescoop.com/tyler-technologies-acquires-community-development-platform-mygov",
+          "title": "Tyler Technologies acquires community development platform MyGov"
+        },
+        {
+          "id": "c91a58f6-9140-4144-8534-e32d2f31e491",
+          "url": "https://www.mediapost.com/publications/article/403036/alaska-air-group-consolidates-media-creative-assi.html",
+          "title": "Alaska Air Group Consolidates Media, Creative Assignments 02/03/2025"
+        },
+        {
+          "id": "4c237560-609d-4402-a0b6-a3eb106e3123",
+          "url": "https://www.etfstream.com/articles/etf-wrap-ai-powered-etfs-the-new-focus-in-active",
+          "title": "ETF Wrap: AI-powered ETFs the new focus in active"
+        },
+        {
+          "id": "0989e349-7310-4e3c-9c0d-d09b79eb936f",
+          "url": "https://simplywall.st/stocks/us/capital-goods/nyse-uri/united-rentals/news/united-rentals-inc-nyseuri-just-released-its-yearly-results",
+          "title": "United Rentals, Inc. (NYSE:URI) Just Released Its Yearly Results And Analysts Are Updating Their Estimates"
+        }
+      ],
+      "generated_at": "2026-07-25T02:13:39.381391+00:00",
+      "id": 341
+    },
+    {
+      "date": "2025-02-25",
+      "prompt_version": "cl3_v1",
+      "why_text": "개별 기업의 실적 성장, 신제품 개발 및 법적 이슈가 발표된 날",
+      "provenance": [
+        {
+          "id": "2198a6f1-a40b-43b8-aeb3-eafcdc00ec86",
+          "url": "https://fashionunited.uk/news/business/amer-sports-exceeds-2024-expectations-and-forecasts-further-growth/2025022580339",
+          "title": "Amer Sports exceeds 2024 expectations and forecasts further growth"
+        },
+        {
+          "id": "00414ce9-3da9-4199-966c-2e485d5105a1",
+          "url": "https://m.in.investing.com/news/stock-market-news/candel-therapeutics-stock-rises-on-positive-trial-data-93ch-4685364?ampmode=1",
+          "title": "Candel Therapeutics stock rises on positive trial data By Investing.com"
+        },
+        {
+          "id": "c5d112af-d297-44c7-944f-f8dd00101d3f",
+          "url": "https://www.comscore.com/insights/press-releases/2025/2/comscore-appoints-a-new-country-manager-for-the-uk",
+          "title": "Comscore Appoints a new Country Manager for the UK"
+        },
+        {
+          "id": "8f3de23e-c2ff-47f1-b5c4-b2f7132e93cc",
+          "url": "https://www.recyclingproductnews.com/article/42948/republic-services-showcases-top-talent-in-waste-and-recycling-at-2025-road-eo-competition",
+          "title": "Winners announced at the 2025 ROAD-EO championship"
+        },
+        {
+          "id": "ad925eb6-88c9-4ee3-ad90-5e931345b478",
+          "url": "https://www.nwahomepage.com/business/press-releases/accesswire/991524/shareholders-that-lost-money-on-nextracker-inc-nxt-urged-to-join-class-action-contact-levi-korsinsky-to-learn-more",
+          "title": "Shareholders that lost money on Nextracker Inc.(NXT) Urged to Join Class Action – Contact Levi & Korsinsky to Learn More"
+        },
+        {
+          "id": "bf11714c-f53f-47a3-9a4a-f1f62e5a4ee1",
+          "url": "https://www.clinicaltrialsarena.com/news/pepgen-dm1-therapy-trial",
+          "title": "PepGen reports positive initial data from Phase I DM1 therapy trial"
+        },
+        {
+          "id": "278509af-ceac-43f6-a2de-58b2bbeab94f",
+          "url": "https://www.prnewswire.com/news-releases/introducing-the-timberhue-collection-by-james-hardie-a-revolution-in-siding-aesthetics-and-durability-302384216.html",
+          "title": "Introducing the TimberHue™ Collection by James Hardie: A Revolution in Siding Aesthetics and Durability"
+        },
+        {
+          "id": "322b0b47-f80f-44a9-bc75-f49839c534af",
+          "url": "https://www.polygon.com/news/529310/warner-bros-games-monolith-productions-multiversus-studio-closure",
+          "title": "Warner Bros. closes Monolith Productions and MultiVersus studio, cancels Wonder Woman game"
+        },
+        {
+          "id": "cca2305b-ccf7-40f7-83ae-06e5837da188",
+          "url": "https://freseniusmedicalcare.com/de/medien/newsroom/fresenius-medical-care-erzielt-im-jahr-2024-ein-ergebniswachstum-von-18prozent-und-wird-die-wachstumsdynamik-auch-im-jahr-2025-fortsetzen",
+          "title": "Fresenius Medical Care erzielt im Jahr 2024 ein Ergebniswachstum von 18% und wird die Wachstumsdynamik auch im Jahr 2025 fortsetzen"
+        },
+        {
+          "id": "beec129b-925f-4e1a-a60d-13b5bccda1a3",
+          "url": "https://autonews.gasgoo.com/articles/news/ehang-jac-motors-guoxian-holdings-to-form-jv-for-building-evtol-manufacturing-base-in-hefei-70036056",
+          "title": "EHang, JAC Motors, Guoxian Holdings to form JV for building eVTOL manufacturing base in Hefei"
+        },
+        {
+          "id": "637e717c-906c-4f9d-9d9d-a2337c7c729b",
+          "url": "https://www.whitecase.com/news/press-release/white-case-secures-dismissal-autoliv-eu770-million-uk-competition-appeal",
+          "title": "White & Case secures dismissal for Autoliv in €770 million UK Competition Appeal Tribunal auto parts cartel claim"
+        },
+        {
+          "id": "c3ff8179-5960-4d95-92e9-27bd8b099ade",
+          "url": "https://www.globenewswire.com/news-release/2025/02/25/3031739/0/en/streetleaf-becomes-a-national-vendor-for-forestar-brings-new-solar-powered-innovative-and-cost-effective-streetlights-as-an-option-to-communities-nationwide.html",
+          "title": "Streetleaf Becomes a National Vendor for Forestar; Brings New Solar-Powered, Innovative and Cost-Effective Streetlights as an Option to Communities Nationwide"
+        }
+      ],
+      "generated_at": "2026-07-25T02:15:09.556093+00:00",
+      "id": 352
+    },
+    {
+      "date": "2025-05-19",
+      "prompt_version": "cl3_v1",
+      "why_text": "뚜렷한 시장 주제 없이 개별 종목 뉴스가 오간 날.",
+      "provenance": [
+        {
+          "id": "a1429fb1-35ba-42ca-a66e-3b3abe827e10",
+          "url": "https://www.investing.com/news/company-news/skyward-specialty-insurance-stock-soars-to-alltime-high-of-6366-93ch-4053556",
+          "title": "Skyward Specialty Insurance Stock Soars to All-Time High of $63.66"
+        },
+        {
+          "id": "cdadcb54-5cc1-4109-b298-3984319f4a32",
+          "url": "https://www.prnewswire.com/news-releases/armata-pharmaceuticals-announces-positive-topline-data-from-the-phase-1b2a-disarm-study-of-intravenously-administered-ap-sa02-in-complicated-staphylococcus-aureus-bacteremia-302458664.html",
+          "title": "Armata Pharmaceuticals Announces Positive Topline Data from the Phase 1b/2a diSArm Study of Intravenously Administered AP-SA02 in Complicated Staphylococcus aureus Bacteremia"
+        },
+        {
+          "id": "d5f9a04d-d1d9-4307-b07a-347570fa68d2",
+          "url": "https://cleanroomtechnology.com/thermo-fisher-scientific-launches-bsc-with-improved-airflow",
+          "title": "Thermo Fisher Scientific launches BSC with improved airflow and ergonomics"
+        },
+        {
+          "id": "291150e8-fc5c-4e7e-9fc6-73b358421755",
+          "url": "https://stockstotrade.com/news/sezzle-inc-sezl-news-2025_05_19",
+          "title": "Sezzle’s Stunning Surge: Why the 32% Jump?​"
+        },
+        {
+          "id": "9b9d1a28-101a-4619-9c33-98271e6d8788",
+          "url": "https://www.nationalfisherman.com/northeast/equinor-to-resume-work-at-empire-wind",
+          "title": "Equinor to resume work at Empire Wind"
+        },
+        {
+          "id": "d9de8bee-c2bb-44e5-88a1-cf19c255810d",
+          "url": "https://www.prnewswire.com/news-releases/sana-biotechnology-inc-sued-for-securities-law-violations---contact-the-gross-law-firm-before-may-20-2025-to-discuss-your-rights--sana-302459205.html",
+          "title": "Sana Biotechnology, Inc. Sued for Securities Law Violations - Contact The Gross Law Firm Before May 20, 2025 to Discuss Your Rights - SANA"
+        },
+        {
+          "id": "9c023c10-7403-410a-8574-a1d850afc35b",
+          "url": "https://www.globenewswire.com/news-release/2025/05/19/3084426/0/en/asp-isotopes-inc-enters-into-definitive-agreements-with-terrapower-including-loan-agreement-for-construction-of-a-haleu-production-facility-and-supply-agreements-for-haleu.html",
+          "title": "ASP Isotopes Inc. enters into Definitive Agreements with"
+        },
+        {
+          "id": "c8f4bf0c-47d4-461d-b71c-549656c91296",
+          "url": "https://fox5sandiego.com/business/press-releases/cision/20250519ln87024/g-willi-food-international-reports-the-results-of-first-quarter-2025",
+          "title": "G. WILLI-FOOD INTERNATIONAL REPORTS THE RESULTS OF FIRST QUARTER 2025"
+        },
+        {
+          "id": "e3d92936-034b-4b5b-bf7d-88a48b0caadd",
+          "url": "https://sakana.ai/mufg-bank",
+          "title": "Announcing a Multiyear Partnership between Sakana AI and MUFG Bank"
+        },
+        {
+          "id": "b82d2757-d800-4fa5-ad81-50d4b3516f2c",
+          "url": "https://www.wboy.com/business/press-releases/globenewswire/9453562/deadline-alert-digimarc-corporation-dmrc-investors-who-lost-money-urged-to-contact-glancy-prongay-murray-llp-about-securities-fraud-lawsuit",
+          "title": "Deadline Alert: Digimarc Corporation (DMRC) Investors Who Lost Money Urged To Contact Glancy Prongay & Murray LLP About Securities Fraud Lawsuit"
+        },
+        {
+          "id": "81001baf-b64e-4883-9869-d90c94bc34fc",
+          "url": "https://www.nasdaq.com/articles/acad-stock-soars-us-court-rules-favor-key-nuplazid-patent",
+          "title": "ACAD Stock Soars as US Court Rules in Favor of Key Nuplazid Patent"
+        },
+        {
+          "id": "5e46d04c-77f4-4dfa-8da7-fb872d62ad96",
+          "url": "https://www.conchovalleyhomepage.com/business/press-releases/cision/20250519cl90659/transdigm-group-and-servotronics-inc-announce-acquisition-agreement",
+          "title": "TransDigm Group and Servotronics, Inc. Announce Acquisition Agreement"
+        }
+      ],
+      "generated_at": "2026-07-25T02:19:00.694497+00:00",
+      "id": 384
+    },
+    {
+      "date": "2025-06-11",
+      "prompt_version": "cl3_v1",
+      "why_text": "기업들의 상장, M&A, 신규 사업 추진 등 개별 소식이 부각된 날.",
+      "provenance": [
+        {
+          "id": "a70b26ff-e6a9-447c-bad0-42458a5fa9b3",
+          "url": "https://usaherald.com/ategrity-debuts-with-113m-ipo-above-range",
+          "title": "Ategrity Debuts with $113M IPO Above Range"
+        },
+        {
+          "id": "ecaecaa7-e2ea-481d-a6f3-1ca89ab9aac5",
+          "url": "https://simplywall.st/stocks/us/consumer-services/nasdaq-expe/expedia-group/news/the-32-return-this-week-takes-expedia-groups-nasdaqexpe-shar",
+          "title": "The 3.2% return this week takes Expedia Group's (NASDAQ:EXPE) shareholders five-year gains to 105%"
+        },
+        {
+          "id": "67b5805b-7f84-43ce-9f56-8fe2e7235bb8",
+          "url": "https://www.coca-colacompany.com/media-center/the-coca-cola-company-launches-real-thing-records",
+          "title": "The Coca-Cola Company Launches real thing records., a New Record Label Empowering Rising Artists, in Partnership with Universal Music Group"
+        },
+        {
+          "id": "627c95e2-0c63-4cbe-94d2-8eae9662a8f3",
+          "url": "https://www.truckingdive.com/news/plus-automation-public-offering-spac/750209",
+          "title": "Plus Automation to go public via SPAC deal"
+        },
+        {
+          "id": "9f2a4b7f-5d52-4ecb-bf4e-23282a4349cc",
+          "url": "https://www.lw.com/en/news/2025/06/latham-advises-allison-transmission-on-acquisition-of-dana-off-highway-business",
+          "title": "Latham & Watkins Advises Allison Transmission on Acquisition of Dana’s Off-Highway Business"
+        },
+        {
+          "id": "7601a91c-9b7e-4f06-b629-5dc4e38e71fe",
+          "url": "https://ir.supermicro.com/news/news-details/2025/supermicro-unveils-industrys-broadest-enterprise-ai-solution-portfolio-for-nvidia-blackwell-architecture-to-accelerate-ai-factory-deployments-in-european-market/default.aspx",
+          "title": "Supermicro Unveils Industry's Broadest Enterprise AI Solution Portfolio for NVIDIA Blackwell Architecture to Accelerate AI Factory Deployments in European Market"
+        },
+        {
+          "id": "9852069d-df34-46bb-8588-e1d9576b1119",
+          "url": "https://www.clearygottlieb.com/news-and-insights/news-listing/hca-establishes-4-billion-commercial-paper-program",
+          "title": "HCA Establishes $4 Billion Commercial Paper Program"
+        },
+        {
+          "id": "0ef0a977-d2ab-4143-a1be-88531c77d859",
+          "url": "https://www.lw.com/en/news/2025/06/latham-represents-ategrity-specialty-insurance-company-holdings-in-us113-3-million-ipo",
+          "title": "Latham Represents Ategrity Specialty Insurance Company Holdings in US$113.3 Million IPO"
+        },
+        {
+          "id": "34bf44f8-b8fa-44fa-b0cf-bb41e175ec47",
+          "url": "https://www.iotevolutionworld.com/newsroom/articles/462353-iot-evolution-world-announces-winners-2025-asset-tracking.htm",
+          "title": "IoT Evolution World Announces Winners of 2025 Asset Tracking Awards"
+        },
+        {
+          "id": "88cf4858-688d-4f01-9b5c-7ca4bf6f6961",
+          "url": "https://www.fastcompany.com/91348296/the-georgia-electric-school-bus-factory-shows-the-far-reaching-consequences-of-trumps-federal-funding-cuts",
+          "title": "The Georgia electric school bus factory shows the far-reaching consequences of Trump’s federal funding cuts"
+        },
+        {
+          "id": "5de44304-4755-432e-93d0-520a87236f80",
+          "url": "https://simplywall.st/stocks/us/healthcare/nyse-mck/mckesson/news/those-who-invested-in-mckesson-nysemck-five-years-ago-are-up-1",
+          "title": "Those who invested in McKesson (NYSE:MCK) five years ago are up 366%"
+        },
+        {
+          "id": "8966a942-be05-48ee-8936-612bc4b9259f",
+          "url": "https://coingape.com/gamestop-acquired-4710-bitcoin-as-part-of-strategic-btc-treasury-report",
+          "title": "GameStop Acquired 4,710 Bitcoin as Part of Strategic BTC Treasury: Report"
+        }
+      ],
+      "generated_at": "2026-07-25T02:20:04.724325+00:00",
+      "id": 393
+    },
+    {
+      "date": "2025-12-09",
+      "prompt_version": "cl3_v1",
+      "why_text": "전기차 및 자율주행 관련 개별 기업 뉴스가 오간 날",
+      "provenance": [
+        {
+          "id": "f6853ddc-b0fa-458f-9563-4e5bc91d6410",
+          "url": "https://finance.yahoo.com/news/why-lucid-stock-sank-today-161725317.html",
+          "title": "Why Lucid Stock Sank Today"
+        },
+        {
+          "id": "f060bf1f-3885-4990-9c2d-d4a4b39bf633",
+          "url": "https://finance.yahoo.com/news/aurora-innovation-burns-222-every-172320262.html",
+          "title": "Aurora Innovation Burns $222 for Every Dollar Earned as Reddit Sentiment Crashes"
+        },
+        {
+          "id": "d66b4b3c-deae-4eff-ab87-3e19262b2ce7",
+          "url": "https://www.benzinga.com/insights/options/25/12/49264099/smart-money-is-betting-big-in-tsla-options",
+          "title": "Smart Money Is Betting Big In TSLA Options - Tesla (NASDAQ:TSLA)"
+        }
+      ],
+      "generated_at": "2026-07-25T02:24:33.375043+00:00",
+      "id": 435
+    },
+    {
+      "date": "2025-12-17",
+      "prompt_version": "cl3_v1",
+      "why_text": "뚜렷한 시장 주제 없이 특정 개별 종목 뉴스만 부각된 날.",
+      "provenance": [
+        {
+          "id": "20a5cb6a-ed8f-4e00-a9a7-76050a8ecbd9",
+          "url": "https://www.rttnews.com/story.aspx",
+          "title": "Vision Marine Technologies Shares Surge Over 160%"
+        },
+        {
+          "id": "827d1e56-5287-4670-a8b9-da2914dc8bc1",
+          "url": "https://www.benzinga.com/markets/equities/25/12/49439634/vision-marine-technologies-vmar-stock-popped-157-on-tuesday-heres-why-its-trending",
+          "title": "Vision Marine Technologies (VMAR) Stock Popped 157% on Tuesday: Here's Why It's Trending - Vision Marine Techs (NASDAQ:VMAR)"
+        }
+      ],
+      "generated_at": "2026-07-25T02:24:42.959220+00:00",
+      "id": 437
+    },
+    {
+      "date": "2026-01-15",
+      "prompt_version": "cl3_v1",
+      "why_text": "제공된 헤드라인에서 시장 정보를 파악할 수 없는 날.",
+      "provenance": [
+        {
+          "id": "f06d2a20-a40d-4497-a915-ba08bd590777",
+          "url": "https://test.com/sat2-dd737b95-1a6c-44bc-97d5-9179b644500f",
+          "title": "Debug sat2"
+        },
+        {
+          "id": "e2eb04f3-7333-4312-b5b6-0593eb37e5fd",
+          "url": "https://test.com/test-main-6414f74f-1729-49ee-8f5b-ffc3ec012d6a",
+          "title": "Main article"
+        },
+        {
+          "id": "cca0ea6f-fc7b-4593-971a-cba7ed8ed600",
+          "url": "https://test.com/sat2-affe08f0-64a9-4d61-942c-2fb636f7405b",
+          "title": "Debug sat2"
+        }
+      ],
+      "generated_at": "2026-07-25T02:24:51.787114+00:00",
+      "id": 438
+    },
+    {
+      "date": "2026-02-20",
+      "prompt_version": "cl3_v1",
+      "why_text": "뚜렷한 시장 주제 없이 개별 종목 관련 뉴스가 오간 날.",
+      "provenance": [
+        {
+          "id": "076347ce-25ee-44fe-a4f1-6e639fe46caa",
+          "url": "https://www.cnbc.com/2026/02/20/equinox-optimize-membership-waiting-list.html",
+          "title": "Equinox's $40,000-a-year membership has a waiting list, says chairman Harvey Spevak"
+        },
+        {
+          "id": "1e852b3b-6de7-440b-a98b-60e7581ef664",
+          "url": "https://www.marketwatch.com/story/teslas-most-affordable-cybertruck-is-here-but-musk-hints-it-wont-stay-cheap-for-long-a3ec9480",
+          "title": "Tesla’s ‘most affordable’ Cybertruck is here. But Musk hints it won’t stay cheap for long."
+        },
+        {
+          "id": "4c8bcf1f-3d7c-4ab8-99cd-22cb72e88e31",
+          "url": "https://www.cnbc.com/2026/02/20/were-exiting-our-position-in-this-restaurant-stock-heres-why.html",
+          "title": "We're exiting our position in this restaurant stock — here's why"
+        },
+        {
+          "id": "d5183e03-e1c7-4fdc-97e6-da7be34acb50",
+          "url": "https://www.marketwatch.com/story/opendoors-stock-rallies-as-the-home-buyer-shows-progress-in-pivot-to-leaner-business-model-31576bde",
+          "title": "Opendoor’s stock rallies as the home buyer shows progress in pivot to leaner business model"
+        }
+      ],
+      "generated_at": "2026-07-25T02:25:51.188876+00:00",
+      "id": 446
+    },
+    {
+      "date": "2026-03-06",
+      "prompt_version": "cl3_v1",
+      "why_text": "이란 관련 지정학적 긴장과 에너지 시장 동향이 부각된 날.",
+      "provenance": [
+        {
+          "id": "9afdde12-bc80-4b38-acac-d35ed637e0b5",
+          "url": "https://www.cnbc.com/2026/03/05/house-iran-rejects-war-powers-resolution-trump.html",
+          "title": "House rejects war powers resolution to rein in Trump on Iran"
+        },
+        {
+          "id": "ce831350-45f4-47f9-b3ec-49cdbffd128c",
+          "url": "https://www.cnbc.com/2026/03/05/noem-firing-doesnt-break-dhs-funding-impasse-democrats-say.html",
+          "title": "Noem firing doesn't break DHS funding impasse, Democrats say"
+        },
+        {
+          "id": "6e81d99e-d15f-4a6e-b7f7-ea3a9998f950",
+          "url": "https://news.google.com/rss/articles/cbmixgfbvv95cuxpzwuyruzqtxjbv1bybmpondfeb0hnqw9xuhpmrur3yljmmtbobuswwedsmdr2n0xfmudkcmppejfyls1zngfwytbuzjz0lth0u3m3ahkxszjntgzoznhtlu9lcwjlavmwbuq1vxatqthrsvnvrl9ld2nowujhrg0wym1rczrvvw1zwfbpbdjhaknirg5plxvuqu9hczixuzvzwhvvdmlneep5tvjiyudrve1rtek0sdlhsm1xbmplzjzwnxhpbnc",
+          "title": "China in talks with Iran to allow safe oil and gas passage through Hormuz, sources say - Reuters"
+        },
+        {
+          "id": "f9811120-8ba6-455d-8530-14c421679af3",
+          "url": "https://www.cnbc.com/2026/03/05/nvidia-slides-on-report-that-trump-wants-to-make-us-ai-gatekeeper.html",
+          "title": "Nvidia shares fall on report that Trump is seeking more control of AI chip exports"
+        },
+        {
+          "id": "99614e8d-cc19-49a5-8ccc-201965d6611f",
+          "url": "https://news.google.com/rss/articles/cbmivafbvv95cuxpcg5qwhm0ltfkt28zmtfusnezcghyclhyq01teux2nxzstunltmpjue1mtjnwotk2zjldtkp3ek5vq0vwohvhwmtim0rbntlobkvnzjrbmmjdzhfhs3vltl9odjk4v01eekmwwvpnuuhqzmcxs1fuslhjblpkblravfettvvzoenyvkdqz2p3uxvwvufommhznwtmvupdsndioegzwtvhtgg5vkvpmvjabvm4eddiy1beaxjswq",
+          "title": "Exclusive: Trump on rising gas prices during Iran operation: 'If they rise, they rise' - Reuters"
+        },
+        {
+          "id": "91939b27-fc29-480e-ad8c-7d77d5bf4227",
+          "url": "https://news.google.com/rss/articles/cbmixwfbvv95cuxpv2xsnfhjwvn2rnpjb2vxnuiwmxa5tdjyeuvdafh1bvvmrfdhzwrnemdprg1iexh6medqazr0mvhrtnq1muficddzbzfxuernn3ltam1iyldpam5aexexzmvpmtvstwnfsfngb2xfrghlntbtduvgmgnuwk9kx3k3nlhflw93ohfrcefjste2v3nczjzycuxfeuhlempva3jxoujadmtvluhuylcyenb6akdirdbvzjhkq1uwwwfvcvi0nlrgr25z",
+          "title": "Exclusive: Indian refiners buying prompt Russian oil as Iran war hits supplies, sources say - Reuters"
+        }
+      ],
+      "generated_at": "2026-07-25T02:27:00.971439+00:00",
+      "id": 456
+    }
+  ]
+}
