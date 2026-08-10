@@ -6047,6 +6047,9 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **D-REGEN-V2-2 — 버전 태깅·재생성 방식 = prompt_version 인코딩 + 버전 인지 멱등 (마이그레이션 0)**: `AnalogDayContext`에 별도 select_version 필드 없음(prompt_version 단일 CharField). v1/v2 구분 = **prompt_version 값**(v2→`cl3_v2`, `--select-version v2`+미지정 시 자동 커플링). v1 텍스트는 DB 보존 안 함(덮어쓰기) — **별도 필드 추가는 prod 마이그레이션 유발 → §5 HALT 회피 위해 기각**, 버전 태그 증가로 구분(git 이력이 v1 보존). 멱등: 비-`--regenerate`=날짜 기반 skip(v1 IDENTICAL·조용한 덮어쓰기 0), `--regenerate`=prompt_version 불일치 날만 pending(cl3_v1→cl3_v2 업그레이드 + 동일 v2 재실행 시 skip=재개 가능). **683 전량 명령 = `--select-version v2 --regenerate --commit`**(491 덮어쓰기 + 192 신규).
 
 **D-REGEN-V2-3 — 빈 선별=why=null(억지 생성 금지) 유지, dry-run은 v2 실선별 카운팅**: v2가 macro 신호 없는 날 `[]` 반환 → `generate_for_date`가 None(행 미생성). dry-run은 v1=헤드라인 raw 카운트(IDENTICAL), v2=`select_grounding_v2` 실호출로 비어있지 않은 날 실측(정확 LLM 호출수·순수 DB·외부 API 0). 샘플 게이트 12일 실측(write-free): 10 호출(2 저볼륨=빈선별 why=null)·in 4,314/out 220 tok·**~$0.00184(건당 ~$0.00015)**·톤가드 전통과·v1↔v2 품질 개선 실증(2024-08-05 "개별기업"→"금리인하 기대·하락압력" 등). 검증: regime 스위트 105 GREEN(v2 신규 7)·django check 0·makemigrations 0.
+
+**D-REGEN-V2-EXEC (2026-08-10, 683 --commit 실행 완료·종결)**: worker 트리 origin/main 동기화(270e7dcb)+워커 재시작 후 `generate_analog_context --select-version v2 --regenerate --commit` 실행(2배치 합산, 첫 배치 하네스 리핑→nohup 재개, 멱등 skip으로 무손실). **결과 = cl3_v2 666(생성 성공) + cl3_v1 잔존 12 + 행없음 5**(683 완결). null 사유=macro 신호 없음 9 + 톤가드 재실패 8(dry-run 674 대비 666=톤가드 억지생성 거부). 톤가드 육안 6/6 통과·provenance 무결. **미결 = cl3_v1 잔존 12일(macro-null 기존)**: 파이프라인이 동결원칙상 v1 행을 자동삭제 안 해 v1 filler 서빙 유지 → **삭제→null 여부 디렉터 결정 대기**(유지 시 사실기반·무해). 실행 트리=sv-worker-runtime(dev=prod 공유 DB). BOUNDARY-LLM 진입 조건 충족(경계 clean·신규부채 0, ALIAS-CHECK만 잔여).
+
 ## D1 — 마인드맵 골격: 업종 2단 뼈대 + 테마 슬롯 (2026-08-10)
 
 **결정 (Chain Sight 재설계 D1)**: 화면의 주인공은 관계 그래프가 아니라 **마인드맵식 카드 분류**다. 그래프·Neo4j 서빙 계열은 **동결**(무접촉).
