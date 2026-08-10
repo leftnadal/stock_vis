@@ -1,6 +1,7 @@
-# TH-TNV-CHAIN — 트랙 종결 선언 (초안)
+# TH-TNV-CHAIN — 트랙 종결 선언 (확정)
 
-**작성:** 2026-08-07 · TH-TNV-CHAIN-1 + 1F 완결 · 착지 origin/main `8a41c842`
+**작성:** 2026-08-07 · TH-TNV-CHAIN-1 + 1F 완결 · 코드 착지 origin/main `8a41c842`
+**종결 확정:** 2026-08-10 · **G-obs 통과** · 종결선언(S6) 착지 origin/main `9a715196`
 **전제:** TH-SESSION-1(TNV 백필·재동결 해소)의 후속 — 재동결을 **구조적으로 차단**.
 
 ---
@@ -20,6 +21,7 @@
 | **배포** | worker-runtime `8a41c842` 전진 + celery-worker/beat 재기동. 3요소(코드착지·트리전진·프로세스재기동) 체크 완료 |
 | **G-fire** | **PASS** — ET 18:00 08-06 실전 발화·TNV 22:00:00→heat 22:00:45 DB 입증·오류 0 |
 | **관측성 수정(S1)** | LOGGING에 `apps` 로거(INFO→file·propagate=True) 추가 → TNV_CHAIN 파일 기록. 선존 갭 해소(common-bugs #90) |
+| **관측성 실증(G-obs)** | **PASS 2026-08-10** — 워커 로그 `TNV_CHAIN date=2026-08-07 written=3 zeroed=0` 파일 기록(S1 실증)·DB TNV 3행 22:00:00 UTC·heat 6행 22:00:12~46 인접(체인 정순)·total_run 20. heat E2 증분 로그도 파일 기록(선존 갭 완전 해소). **caveat=선존 Neo4j-down**(heat 6/11·08-03~09 일관·회귀 아님→TH-HEAT-NEO4J-DOWN) |
 
 ## 교훈 (common-bugs)
 - **#88b**: 긴 병진 명령 = 붙여넣기 소프트랩 잘림 → 짧은 셸 스크립트 파일화
@@ -27,9 +29,11 @@
 - **#90**: LOGGING 로거 미라우팅 = logger.info ≠ 파일 기록. propagate=False는 caplog 붕괴
 
 ## 잔여 (게이트 아님)
-- **G-obs**(사후 관찰): 다음 발화 **ET 18:00 08-07**에서 `TNV_CHAIN date=2026-08-07` 로그 **파일 기록** 확인 = S1 수정 실증(병진 "게이트 확인해줘" 한 마디). 통과 시 임시 스크립트 3종 정리.
+- **G-obs**(사후 관찰): ✅ **통과 2026-08-10** — `TNV_CHAIN date=2026-08-07 written=3` 파일 기록 확인(S1 수정 실증)·DB·체인 정합. 임시 스크립트 4종 정리 병진 대기.
 - **TH-TNV-BEAT-SPLIT**(보류): TNV·heat 주기 분화 필요 시 A안(독립 beat) 승격.
-- **CORPUS-SUNMON-EMPTYKW**(관찰): 주말/월 빈 키워드 → 해당일 TNV 0(별도).
+- **CORPUS-SUNMON-EMPTYKW**(관찰): 주말/월 빈 키워드 → 해당일 TNV 0(별도). 08-09(일) written=0 실측 확인.
+- **TH-HEAT-NEO4J-DOWN**(신규 백로그): Neo4j 7687 refused → heat 6/11 저장(status=warning). 선존·비체인.
+- **OPS-SMTP-CRED**(신규 백로그): SMTP 535 BadCredentials → 리포트 메일 태스크 실패(별개).
 
-## 롤백 (미실행·G-obs 통과 시 폐기)
-- 체이닝 커밋 revert 무충돌 확인됨. 절차 = revert→push→worker-runtime 전진·재기동.
+## 롤백 (폐기 — G-obs 통과 2026-08-10)
+- **폐기**(revert 미커밋 상태·문서상 폐기). ~~체이닝 커밋 revert 무충돌 확인됨. 절차 = revert→push→worker-runtime 전진·재기동.~~
