@@ -222,6 +222,21 @@ class RelationConfidence(models.Model):
         help_text="기계검증 결과(항목별 pass/fail + type_match + LLM confidence).",
     )
 
+    # CS-P1B (additive): 연결 강도 = 초과수익 동조성. evidence 계층 쌍에만 계산·기록.
+    # 순수 데이터 필드(읽는 API·화면 없음). 기존 PriceCoMovement(원수익·Neo4j)와 독립.
+    sync_strength = models.FloatField(
+        null=True, blank=True, db_index=True,
+        help_text="초과수익(일간수익−SPY수익) Pearson 상관. evidence 계층 강도(CS-P1B). null=미계산/관측부족.",
+    )
+    sync_window_days = models.IntegerField(
+        null=True, blank=True,
+        help_text="sync_strength 계산 윈도우(거래일). 관행 90.",
+    )
+    sync_computed_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="sync_strength 계산 시각(감사용).",
+    )
+
     class Meta:
         db_table = "chainsight_relation_confidence"
         unique_together = ["symbol_a", "symbol_b", "relation_type"]
