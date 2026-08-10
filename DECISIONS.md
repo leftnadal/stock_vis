@@ -5574,6 +5574,22 @@ D2 T-5 회부 4건(PROGRESS 2a0aba0 "4건 대기" 블록)은 **T-3b(`3a3e921`)�
 **⑥ P2-0 종결 확증 (2026-07-17, ⑤ 자율가동 검증 · 사용자 승인)**: 첫 자동 8키 수집 확인 — beat `credit-signals-ingest-fred-daily` 07-17 07:30 KST 정시 발화(total_run=9), 8계열 전원 당일 07:30 신규 삽입(`ingested_at`), 8키 z/grade 재계산·서빙. 파생 2키 grade 정상(CCC_MINUS_BB=yellow z=1.53 · BBB_MINUS_A=gray z=−1.69, red 미발화 계약 유지), 원장 파생 미적재 계약 유지. **P2-0 종결(07-17): 자율가동 확증, 잔여 0.**
 - **[조항 교정] 전진 판정 기준**: 전진 판정 = 계열별 최신 관측의 **당일 신규 삽입**(`MacroSeriesHistory.ingested_at` 기준). 계열 간 as_of 격차는 **발행 케이던스 정상**(T10Y2Y가 ICE BofA OAS·VIX를 1영업일 선행 — 최근 6관측일 일관). 이 격차는 "일부만 전진(파이프라인 부분실패)"이 아니며 FAIL 아님. (검증 지시서의 "8키 간 as_of 불일치=FAIL" 조항을 본 기준으로 교정 — 향후 로드맵 검증 기준도 동일 적용.)
 - **[부수 관측·이관]** 07-17 compute 지연 4h(ingest 07:30 · state upsert 11:31, default-queue 워커 큐 처리 추정) — credit 코드 결함 아닌 **ops/runtime 사안, 본 프로젝트(Stock-Vis) 이관**. 07-18 run 재현 여부 1회 관측 요청, celery-worker.log가 07-16 18:53 이후 stale이므로 워커 가동상태·로그 경로 점검 동반.
+
+**⑦ T-1 통합 이론 채택 (2026-08-07)**: FMP 채권 ETF `etf/info` nav = 항상 **전일(T-1) EOD 확정치**, 게시 시각만 무작위(오전 ~11:3x ET / 저녁 ~17:1x ET / 미게시). 근거 = iShares·Cbonds 대조 **4/4 센트 일치** → 배포 중 **5/5 승격**(08-08 게시=08-07치 79.49/106.50). 스킵일 존재(08-03·08-06, 양 ETF 동시) = **원천 결손**으로 별도 분류.
+
+**⑧ C′ 시각 게이트 폐기 → nav_stale 재목적화 (2026-08-07)**: 결정 근거 = 08-07 11:30 KST 발화(=08-06 22:30 ET EDT)가 08-06 17:11 ET(마감 후) 게시 혼합행을 통과시킨 **관통 라이브 실증**. 게시 시각으로는 T/T-1 판별 불가 → 마감시각 게이트(C′) 폐기, `ETF_NAV_STALE_TRADING_DAYS`(updatedAt 날짜가 오늘 기준 2거래일+ 과거면 skip=피드 정체 감지)로 재목적화.
+
+**⑨ C″ 날짜 재귀속 채택 (판정 2026-08-07 · 구현 08-08 · 배포 08-10 `bd364778`)**: nav_trade_date = updatedAt(ET)의 **직전 거래일(D-1)** 귀속(휴장·주말 자동 skip) + 종가 페어링 **ⓑ EOD 이력(`/stable/historical-price-eod/full`) 주** / **ⓐ previousClose 교차검증**(불일치=mismatch 플래그·ⓑ 우선). 구현 `b03210a0`(7파일 +590/−165, pytest 79 GREEN, 모델 무변경).
+
+**⑩ FMP 단일 소스 재확인 (2026-08-07~10)**: iShares·Cbonds = **검증 전용, 원장 주입 금지**. 공식치가 존재해도(08-03=79.15/106.07) 백필은 **FMP 회신 조건부**. 원장 = FMP 단일 소스 유지.
+
+**⑪ 폴링 11:30 KST 유지 · 13:30 diff 폐기 · 수동 ingest 전면 동결 (2026-08-07)**: crontab `min=30 hour=11 tz=Asia/Seoul` 유지(게시 편차는 폴링 조정으로 미해결이라 무의미). 수동 ingest 동결 **해제 조건 = 신기준 카운트 3/3**.
+
+**⑫ 신뢰 카운트 재정의 (2026-08-07, 보칙 08-10)**: C″ 배포 후 **3연속 T-1 created**. **FMP 스킵일 = 중립**(유지·미진행) / **리셋 = 혼합행 재출현·오귀속에 한정**.
+
+**⑬ 거래일 캘린더 = credit 자체 미러 신설 (Gate C0, 2026-08-08)**: `apps/credit_signals/trading_calendar.py` — news `ALL_NYSE_HOLIDAYS` 2025~26 복제 + 2027~28 신설, 출처 주석·커버리지 예외(`CalendarCoverageError`)/만료 경보. shared 통합 = 본 프로젝트 큐 이관. DST 전환일 회귀테스트 공백 = **수용**(게시창과 17h+ 이격, zoneinfo 위임, 2026-11-01 익일 육안 확인 1회).
+
+**⑭ 원장 회수·유실 재분류 (2026-08-10 집행 `bd364778`)**: 08-06 혼합행 → 08-05 재귀속 / 08-04·07-30 신설(iShares 원본 대조: HYG 79.40/LQD 106.69 · HYG 79.31/LQD 106.40, price=EOD 페어링) / **유실 확정 {07-21·22·23·08-03·08-06}** — 5일 전부 공식치 기록 보존(백필 채점용), **주입 금지**. 08-03 = 양 ETF 분배락일(Ex-Div). `reattribute_etf_nav` command(재귀속 date 이동=삭제 없음 §10, 신설 --nav-json, dry-run 기본), prod DB 백업 선행.
 ---
 
 ## D-TIMING-DECISIONS-5 (2026-07-16, D-MONITOR-TIMING-PIVOT §9 미확정 5건 해소)
