@@ -253,6 +253,29 @@ class TestHoldZoneDisplay:
         # 손절여유(%)는 new_entry에도 존재 (T1a): stop=90, close=95 → (95-90)/95*100
         assert d["stop_distance_pct"] == pytest.approx((95.0 - 90.0) / 95.0 * 100.0, abs=1e-2)
 
+    def test_profit_protection_stop_generalized(self, make_claim):
+        # MON-P2B T2: 이익 보호 스탑(손절 상향) — 매입 264.59 < 손절 291.38 < 종가 362.43 < 목표 408.61.
+        # [stop,target] 고정 전제 파손 케이스: rows 가격 내림차순 정렬·마커 일반화 범위·anchor 클램프 제거.
+        from apps.monitor.api.serializers import build_zone_display
+
+        c = make_claim(
+            scenario_type=Claim.ScenarioType.HOLD, purchase_price=Decimal("264.59"),
+            entry_price=None, target_price=Decimal("408.61"), stop_price=Decimal("291.38"),
+        )
+        d = build_zone_display(c, zone_anchor(c), 362.43)
+        # rows 가격 내림차순(의미 라벨 유지)
+        values = [r["value"] for r in d["rows"]]
+        assert values == sorted(values, reverse=True)
+        labels = [r["label"] for r in d["rows"]]
+        # 손절(291.38)이 매입가(264.59)보다 위 → rows에서 앞(스탑 상향 반영)
+        assert labels.index("손절") < labels.index("매입가")
+        assert labels[0] == "목표"      # 최고가
+        assert labels[-1] == "매입가"    # 최저가(스탑 상향)
+        # 마커(종가)는 일반화 범위 [264.59, 408.61] 기준 — 기존 [stop,target]=[291.38,408.61]과 다름
+        assert d["marker_fraction"] == pytest.approx((362.43 - 264.59) / (408.61 - 264.59), abs=1e-3)
+        # 매입가 마커 = 최저 레벨 → 0.0 (음수→0 클램프가 아닌 정확 위치)
+        assert d["anchor_fraction"] == pytest.approx(0.0, abs=1e-6)
+
 
 # ── suggest hold (수익/손실 손절 분기 + 본전 회복 N주 검산) ────────────────────
 

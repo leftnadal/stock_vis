@@ -19,6 +19,7 @@ import {
   useMonitor,
   useMonitorAlerts,
   useMonitorClaims,
+  useSnapshots,
   useSparkline,
 } from '@/hooks/useMonitor'
 import { buildJournal } from '@/lib/monitor/journal'
@@ -112,7 +113,8 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
   const { user } = useAuth()
 
   const score = monitor?.latest_score ?? null
-  const { data: spark } = useSparkline(monitorId, 30, score !== null)
+  const { data: spark } = useSparkline(monitorId, 30, score !== null) // 추세 곡선(StateBandSparkline 전용) — 무접촉
+  const { data: snapshots } = useSnapshots(monitorId, 30, score !== null) // 점수 정본 시계열(MON-P2B T1) — 델타·일지 소스
 
   // close-preview는 무상태라 claim 상태 무관하게 호출 가능 — 이걸로 지표 "최신값"을 보강.
   const firstClaimId = claims?.[0]?.id ?? ''
@@ -148,14 +150,13 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
   // 가격축: 활성 Claim 중 zone_display 있는 첫 건 → 스트립 존/손절여유 + 가격 사다리 패널.
   const zoneClaim = (claims ?? []).find((c) => c.status === 'active' && c.zone_display?.zone)
 
-  // 전일 Δ = 스파크라인 최근 두 점 차(스트립 점수 토큰).
-  const series = spark?.series ?? []
+  // 전일 Δ = 점수 정본 시계열(snapshots) 마지막 점의 delta(MON-P2B T1) — sparkline 무접촉.
+  // 산출 가능(마지막 점 delta != null)하면 항상 사용(0 포함), null이면 무표시.
+  const snapshotSeries = snapshots?.series ?? []
   const scoreDelta =
-    series.length >= 2
-      ? Math.round((series[series.length - 1].score - series[series.length - 2].score) * 100) / 100
-      : null
+    snapshotSeries.length > 0 ? snapshotSeries[snapshotSeries.length - 1].delta : null
 
-  const journal = buildJournal({ sparkline: spark, alerts, monitor, claims })
+  const journal = buildJournal({ snapshots, alerts, monitor, claims })
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">

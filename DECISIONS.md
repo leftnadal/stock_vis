@@ -8,6 +8,16 @@
 
 ---
 
+## [2026-08-08] D-MON-P2B — 표시 정합: 점수 정본 통일 + 사다리 계약 일반화 [monitor]
+
+> 출처: 지시서 MON-P2B(T0). 근거: MON-P2A STEP 0 ADDENDUM 실측(A1 값·델타·일지 3원 소스 혼재 = 스냅샷/sparkline/readings · A2 hold zone_display의 stop<purchase<target 고정 전제가 이익 보호 스탑에서 파손 · A3 무수리 종결). 표시 계층 수리 — 엔진 무접촉.
+
+**결정**: ⑴ **점수 표시 정본 = MonitorSnapshot(동결 기록)으로 단일화** — 스트립 값·스트립 델타·일지 스냅샷 전부 동일 원천. 일지는 "시스템이 그날 실제로 기록한 값"만 담는다(로직 변경에도 과거 불변 = 기록 무결성). ⑵ **zone_display 기하·rows를 가격 일반화**(스탑 상향 지원) — [stop, target] 고정 전제 제거. ⑶ **F4 처리 변경**: 종전 잠정안(프리롤 흐리게 유지) 폐기 — 프리롤은 실기록이 아닌 소급 재산출물(A1)이므로 정본 통일의 귀결로 일지에서 자연 소멸. 진입 전 맥락은 사다리·신호 패널이 담당.
+
+**Why**: 값(latest_score 스냅샷)·델타(sparkline 최근 2점차)·일지(readings 실시간 재산출)가 3원 혼재 → 같은 지표가 화면마다 다른 값. 일지가 실시간 재산출이면 "그날 기록"이 로직 변경 시 소급 변형(기록 아닌 추정치). zone_display의 stop<purchase<target 고정 기하는 이익 보호 스탑(손절 상향, 예 GOOGL 매입 264.59 < 손절 291.38 < 종가 362.43 < 목표 408.61)에서 순서·마커가 파손.
+
+**How to apply**: **T1** — 일지 snapshot kind 소스 sparkline.score_series → MonitorSnapshot 행(asof_date·overall_score·직전 스냅샷 대비 Δ). 스트립 델타 소스 sparkline 최근 2점차 → 최신 스냅샷 − 직전 스냅샷(latest_score와 동일 원천). Δ 표시=산출 가능하면 항상(±0.00 포함, 반올림 0 무표시로 인한 은닉 제거), 직전 스냅샷 부재 시만 무표시. sparkline/score_series·목록 카드 곡선은 **무접촉**(추세 곡선=기록 아님, 재산출 수용). **T2** — build_zone_display 범위 = [존재하는 전 레벨의 min, max](stop·purchase·target·익절접근·fair band 전수), rows = 가격 내림차순, anchor_fraction 클램프 제거. **배포**: P2A와 단일 창(P2B 병합 후 빌드·재시작 1회) — 일지 과거가 재산출 로직으로 표시되는 창 0 보장. **검증**: monitor pytest 231(P2A 착지)→243(T1 snapshot_series +6 · T2 스탑상향 +1)·vitest monitor 98→100(+2)·tsc 0. FE PriceLadder는 rows 자체 재정렬 없음(BE 순서 그대로 렌더 — 수리 불요). 병합·배포 hash = P2A와 단일창(승인 후 기입).
+
 ## [2026-08-06] D-COLLECTION-UNIVERSE-PRINCIPLE — 수집 유니버스는 활성 monitor target을 자동 포함 [monitor] [news] [platform]
 
 > 출처: 지시서 MON-P2A T0. 근거: RECON-NEWS-P0(TLN 등 비SP500 보유종목이 어떤 수집 유니버스에도 미포함=사각지대).

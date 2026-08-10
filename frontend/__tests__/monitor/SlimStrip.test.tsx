@@ -156,6 +156,22 @@ describe('SlimStrip', () => {
     expect(c.className).toContain('text-amber-600') // sufficient<total → 경고톤
   })
 
+  it('MON-P2B T1: scoreDelta=0은 무표시가 아니라 · + "+0.00"으로 표시(중립색)', () => {
+    render(
+      <SlimStrip
+        monitor={makeMonitor()}
+        zoneClaim={makeClaim(zoneDisplay)}
+        scoreDelta={0}
+        indicators={indicators}
+        latestValueById={new Map()}
+      />
+    )
+    const delta = screen.getByTestId('token-score-delta')
+    expect(delta).toHaveTextContent('·+0.00')
+    expect(delta.className).not.toContain('text-green-600')
+    expect(delta.className).not.toContain('text-red-600')
+  })
+
   it('MON-P2A T3: 신호 패널에 부족 배지(sufficientById=false)', () => {
     render(
       <SlimStrip
