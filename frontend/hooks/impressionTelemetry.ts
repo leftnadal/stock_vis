@@ -12,6 +12,7 @@
  * telemetry는 유실 허용 데이터 — 재시도 상한 초과 시 조용히 drop(UX 미차단).
  */
 import { tokenUtils } from '@/lib/api/authAxios';
+import { SURFACES } from '@/constants/surfaces';
 
 // ── 튜닝 상수 (도그푸딩 대상 — STRIP-FOLD-TUNE 패턴) ──
 export const IMPRESSION_VISIBILITY_THRESHOLD = 0.5; // 뷰포트 50% 이상
@@ -20,9 +21,9 @@ export const IMPRESSION_FLUSH_INTERVAL_MS = 5000; // 5초 배치 flush
 export const IMPRESSION_MAX_RETRIES = 3; // 전송 실패 재시도 상한
 export const IMPRESSION_BATCH_LIMIT = 100; // 서버 배치 상한과 정합
 
-// 서버 surface 허용값 (STEP 0-3 실측: reco_card 표면 → 서버값 dashboard_eod 매핑)
-export const SURFACE_RECO_CARD = 'dashboard_eod';
-export const SURFACE_NEWS_CHIP = 'news_chip';
+// 서버 surface 허용값 (reco_card 표면 → 서버값 dashboard_eod 매핑). 값 단일 출처 = SURFACES(constants/surfaces.ts).
+export const SURFACE_RECO_CARD = SURFACES.DASHBOARD_EOD;
+export const SURFACE_NEWS_CHIP = SURFACES.NEWS_CHIP;
 
 // ── 전송 엔드포인트 (절대 URL) ──
 // authAxios와 동일하게 NEXT_PUBLIC_API_URL(= /api/v1 포함)을 절대 base로 사용.
