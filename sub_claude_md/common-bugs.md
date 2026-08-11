@@ -1281,7 +1281,7 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **재발 점검 순서**: "X 부재" 인용 전 → 내 base = origin/main인가?(`git rev-list --count HEAD..origin/main`=0?) → 아니면 `git show origin/main:path` 대조 → 그래도 부재면 확정.
 
-## GLOBAL-SCOPE-TASK — 태스크에서 ORM 직접 읽기 시 user 스코프 명시 의무 (채번 후보, SFI-I-1b 2026-08-04) [backend][process]
+## GLOBAL-SCOPE-TASK — 태스크에서 ORM 직접 읽기 시 user 스코프 명시 의무 (#95, SFI-I-1b 2026-08-04, 채번 MGMT-BATCH-A 2026-08-11) [backend][process]
 
 **증상**: SFI-I1 `_coach_universe()`(celery 태스크)가 `WalletHolding/WatchlistItem.objects.all()` 무필터로 읽어 **타 유저(admin) 테스트 데이터(레버리지 ETF 5종)까지 coach 유니버스에 유입** → 자동발화가 admin 심볼 수집. 동일 모델의 화면·dashboard·advisory 소비처는 전부 per-user였음(비대칭).
 
@@ -1413,6 +1413,14 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **증상**: EstimateSnapshot에 07-29(수요일, TH-DEPLOY catch-up 발화)가 있으나, C8 EPS diff는 `anchor − lag`(56/63일) **정확 날짜 매칭**(`eps_diff_at` estimate_revision.py:56)이라 금요일 anchor에서 07-29(수)를 파트너로 잡지 못함. 07-29 회차는 rows는 채웠지만 C8 리비전 계산엔 사실상 고아.
 
 **교훈**: lag 기반 정확-매칭 시계열(diff)은 **수집 요일이 규칙적이어야** 파트너가 성립한다. catch-up·수동 등 비정규 요일 스냅샷은 행은 늘리지만 lag 매칭에서 누락 → 콜드스타트 임계 산출은 **정규 요일 첫 스냅샷**(DOTSYM=07-17 금)을 기산점으로. 임계 대기와 배선 결함을 가를 땐 파트너 존재 여부를 캘린더로 실측.
+
+## `__date` 룩업은 로컬 tz 버킷팅 — UTC 자정 경계 발화가 거짓 0건, 날짜 필터는 UTC 범위로 (#96, SPOT RECON 2026-08-11) [backend][data][process]
+
+**증상**: 2026-08-11 SPOT recon에서 `AnalystSignalSnapshot.objects.filter(captured_at__date=date(2026,8,10))` = **0건** → "발화 부재 의심"으로 STOP 조건 오발동 직전. 실제로는 23:30Z(08-10) 발화 **9행 실재**(beat last_run 2026-08-10 23:30:00Z). `TruncDate` 집계도 동일하게 그 9행을 **08-11**로 버킷팅.
+
+**원인**: Django `__date`/`TruncDate`는 tz-aware datetime을 **프로젝트 `TIME_ZONE`(로컬)로 변환한 뒤** 날짜를 뗀다. UTC 23:30(08-10)은 로컬(KST +9)에서 08-11 08:30 → 로컬 날짜=08-11. 저장은 UTC지만 날짜 룩업이 로컬 경계를 쓰므로 **UTC 자정 근처 발화가 인접 날짜로 새는** 오프바이원.
+
+**규칙**: 특정 UTC "발화 회차"를 조회할 땐 `__date` 금지 — **UTC 반열린 범위**(`captured_at__gte=lo, captured_at__lt=hi`, tzinfo=UTC)로 필터. STOP/0건 판정 전 UTC 범위로 재확인(거짓 0건 방지). 집계 날짜 축이 필요하면 `TruncDate(..., tzinfo=timezone.utc)` 명시. cf. #24(Date.now hydration 계열 tz 함정).
 ## 배치 진척·완주 지표에 창-합(target_windows) 사용 금지 — skip-covered 스필오버로 영구 저계상 (채번 후보, CN-B7-PROBE 2026-08-10) `[ops][data][harness]`
 *(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지, 번호는 mgmt 채번 시 확정)*
 

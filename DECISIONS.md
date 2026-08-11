@@ -8,6 +8,18 @@
 
 ---
 
+## [2026-08-11] D-ARC-NEXT — 결정 사이클: 순차 합성 A→B→D, C는 D 아크 흡수 [portfolio][process]
+
+**결정**: 2026-08-11 결정 사이클(SFI-I3 첫 spot 발화 GREEN 확인 직후) 다음 아크를 **순차 합성**으로 확정한다.
+- **A (즉시)** = mgmt 장부 정합 + 창고 정리(본 MGMT-BATCH-A: 유령 2건 교정·미등재 3건 채번·TASKQUEUE 위생).
+- **B (09-01 前 시한)** = **I3-SPLIT-GUARD** — 지평 내 액면분할/기업행위 감지 시 unscoreable. h21 첫 만기(≈09-01)에 만기 도달 예측이 발생하므로 그 前 배선이 시한. → I3-SPLIT-GUARD status backlog→🕒 시한 확정으로 승격(본 배치 Part 3b).
+- **D (아크)** = **Portfolio Coach FE 아크**(마지막 순수 coach FE = SLICE-20B-F2 GOAL-CREATE-UI 2026-07-31 이후 정체) 재개.
+- **C = D에 흡수** = **I3-DERIVED-RENDER**(SMR·XE 등 DailyPrice=0 unscoreable 종목의 Tier1 파생 렌더)는 독립 아크로 세우지 않고 D(Coach FE) 아크 내부 슬라이스로 흡수한다.
+
+**Why**: ⑴ B는 **날짜 시한**(09-01 h21 만기)이 실재하는 유일 후보라 순서상 선행 — 시한 없는 D/C보다 앞. ⑵ C(derived-render)는 표면(Coach FE)이 D와 동일하고 단독 착수 시 렌더 인프라를 중복 구축하므로 D에 합치는 것이 마찰 최소. ⑶ **타이브레이커 = 시한 실재성** — 가중합이 마진 0.20 이내로 근접할 때 날짜 시한이 박힌 트랙을 우선(B). **가중합 요지**(정성): B=시한0.40+준비도0.30+범위0.20+비용0.10, D=표면가치0.40+준비도0.30+범위0.20+비용0.10 — B가 시한 축에서 우위(마진>0.20이면 자동, ≤0.20이면 시한 실재성 타이브레이커로 B).
+
+**How to apply**: 본 배치(A) 착지 후 → B(I3-SPLIT-GUARD) 미니슬라이스 별도 세션 발행(09-01 前) → D(Coach FE) 아크 착수 시 C(derived-render)를 첫 슬라이스군에 포함. cf. TASKQUEUE I3-SPLIT-GUARD(🕒 시한 확정)·[[project_sfi_i3_scoring]].
+
 ## [2026-08-10] D-BRANCH-DELETE-MANUAL — 파괴적 브랜치 삭제 수동 고정 (위임 불가) [harness] [governance]
 
 **결정**: 브랜치 삭제(`-d`/`-D`)·worktree 제거·원격 브랜치 삭제는 **위임 불가 — 병진 수동 집행 고정**. 세션 내 예외 승인으로도 CC 집행 불가. 정본 = `docs/harness/session_isolation_guide.md` §D-BRANCH-DELETE-MANUAL. CC는 삭제 후보 + 안전 실측(`origin/main..브랜치` 카운트)까지만 보고·대기. `git branch -d` 거부 시 무조건 HALT(-D 자가 전환 금지).

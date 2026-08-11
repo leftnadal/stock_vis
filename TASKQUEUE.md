@@ -791,8 +791,8 @@
 | LAUNCHD-WEB-PLIST-LOAD | `:3000` prod 서버 **launchd 정식 등록**(재부팅 지속) — plist 초안 `docs/operations/com.stockvis.web-frontend.plist` 검토 → `~/Library/LaunchAgents` 복사 + `launchctl bootstrap` **사용자 수동** → 재부팅 후 :3000 자동 부활 검증. ⚠ 적용 전 npm/node 절대경로 실측 교정(초안값) | @사용자수동 | plist 초안 검토(MGMT-BATCH-12 완료) | ✅ **완료 (2026-07-24 집행, Gate4 사용자 명시 승인 절차)** — launchd job `com.stockvis.web-frontend` bootstrap 성공. 검증 3종 PASS: launchctl list `12408 exit0`·lsof :3000 node LISTEN·curl HTTP 200. ⚠ 서빙트리(`sess-hold-p1` base `6973bda`) 디스크 plist=교정 전 초안 → 설치 차단, `git show origin/main:…plist`(nvm 절대경로 교정본) 우회 배치. KeepAlive+RunAtLoad 승격 = orphan 무respawn 근본 해소·impression 재개. 재부팅(집행 7h 전) 선행으로 **다운타임 0**(#66) |
 | WEB-NEXTOLD-CLEANUP | `.next.old-1784176095` 격리 백업(구 빌드, `sv-web-runtime/frontend`) 정리 — 무해하나 디스크 점유. 사용자 수동 `rm -rf` | @사용자수동 (저우선) | — | 💤 **등재 (저우선·수동, MGMT-BATCH-12)** |
 | IMPR-OBJREF-TRUNC | (저우선) `object_ref` 128자 절단 충돌 부채 — 실데이터는 finnhub 단축 id URL이라 위험 낮음 관측(2026-07-16). 뉴스 식별자 재설계 시 함께 처리 | @backend (저우선) | 뉴스 식별자 재설계 시 | 💤 등재 (저우선·수용, MGMT-P2-IMPR-CLOSE) |
-| HEALTH-STALE-FAIL-PROMOTE | **[C] health_check stale pending WARN→FAIL 승격** — `check_stale_pending_backannotation`(MGMT-HARDEN `4ce46ed`)을 1주 클린 관찰 후 FAIL로 격상. 트리거 = **~2026-07-20**(1주 클린) | mgmt(health_check) | ~2026-07-20 (1주 클린 관찰 후) · **HEALTH-BLOCKED-BUILD 착지 선행**(D-HEALTH-BLOCKED-DISTINCTION) | 🕓 대기(트리거 게이트) |
-| HEALTH-BLOCKED-BUILD | **health_check에 'blocked(외부 의존)' 상태 인식 구현**(D-HEALTH-BLOCKED-DISTINCTION 실행) — `check_stale_pending_backannotation`이 `blocked(dep=<TASK-ID>)` 문법을 파싱: blocked 항목은 **WARN 유지**(FAIL 승격 제외), 순수 부기 누락만 FAIL 대상. **남용 방지**: `dep=<TASK-ID>`의 TASKQUEUE 실존 검증(미실존 시 검사 실패). + 테스트(blocked WARN 유지·부기누락 FAIL·미실존 dep 거부) | @mgmt-tooling (health_check) | D-HEALTH-BLOCKED-DISTINCTION | 🆕 **등재 (시한 ~07-20 전 착지, HEALTH-STALE-FAIL-PROMOTE 선결)** |
+| HEALTH-STALE-FAIL-PROMOTE | **[C] health_check stale pending WARN→FAIL 승격** — `check_stale_pending_backannotation`(MGMT-HARDEN `4ce46ed`)을 1주 클린 관찰 후 FAIL로 격상. 트리거 = **~2026-07-20**(1주 클린) | mgmt(health_check) | ~2026-07-20 (1주 클린 관찰 후) · **HEALTH-BLOCKED-BUILD 착지 선행**(D-HEALTH-BLOCKED-DISTINCTION) | **✅ done 2026-07-20 (승격 완료)** — 근거: DECISIONS.md:740 "[C] HEALTH-STALE-FAIL-PROMOTE(07-20 승격) 후 첫 실측 = 승격 성공 판정" + MGMT-MICRO `75551966`이 이 FAIL-승격 로직 경유로 health **15/0/0** 도달(2026-08-11 재실증). 〔status 교정: 🕓 대기 → done, MGMT-BATCH-A 유령 2건 교정〕 |
+| HEALTH-BLOCKED-BUILD | **health_check에 'blocked(외부 의존)' 상태 인식 구현**(D-HEALTH-BLOCKED-DISTINCTION 실행) — `check_stale_pending_backannotation`이 `blocked(dep=<TASK-ID>)` 문법을 파싱: blocked 항목은 **WARN 유지**(FAIL 승격 제외), 순수 부기 누락만 FAIL 대상. **남용 방지**: `dep=<TASK-ID>`의 TASKQUEUE 실존 검증(미실존 시 검사 실패). + 테스트(blocked WARN 유지·부기누락 FAIL·미실존 dep 거부) | @mgmt-tooling (health_check) | D-HEALTH-BLOCKED-DISTINCTION | **✅ done** — 구현 실재 재확인: `scripts/health_check.py` `_BLOCKED_RE`(:917)+`evaluate_stale_pending`(:956, dep 실존 검증)·테스트(`tests/test_health_check_stale_blocked.py` 5 passed)·브랜치 `monorepo/sess-health-blocked-build` origin/main 소진(merge-base ancestor). dep D-HEALTH-BLOCKED-DISTINCTION done. 〔status 교정: 🆕 등재 → done, MGMT-BATCH-A 유령 2건 교정〕 |
 | HEALTH-STALE-TRADINGDAY | (저우선) health_check stale pending 임계 **"3 달력일" → "3 거래일" 교체** — 트리거 = **NYSE 거래일 유틸 도입 시**. 현행 WARN 전용이라 달력일 근사 **수용 상태**(비차단, MGMT-HARDEN) | mgmt(health_check, 저우선) | NYSE 거래일 유틸 도입 시 | 💤 등재(수용·게이트) |
 | P1-OBSERVE | 첫 EOD-bake 실행 후 **실파이프라인 관측**. **✅ 충족 2026-07-04**(D-P1-OBSERVE-DONE): JSON recommendations N=10·6키 IDENTICAL + DB IssuanceLog 10행=N·grain 중복 0(멱등 실증)·conf_ver=1·published_at·user_id null·매도 30%. 결함 2건(워커 표류·0009 미적용) 경유 해소 | 관측(dashboard 디렉션) | 완료 2026-07-04 | ✅ 충족 |
 | P1-B-WORKER-WORKTREE | **worker 전용 worktree**(`~/worktrees/sv-worker-runtime` detached origin/main) + `celery-worker.sh` PROJECT_DIR/plist + 심링크(방향 반전 방식 Y) + `scripts/worker_sync.sh` 신설 — 브랜치 표류 트레드밀 종료. **✅ 완료 2026-07-05**(OPS-B-BUILD): 스크립트 land `921dc0c`, 검증 bake 2회(심링크 생존·6키 IDENTICAL·N=10·IssuanceLog 10행 멱등·HTTP 200). 심링크 방향 반전 = D-B-WORKER-AMEND-1 | ops/infra | 완료 2026-07-05 | ✅ 완료 |
@@ -952,6 +952,7 @@
 | STRIP-BADGE-VARIETY | 칩별 관련 엣지 다양화 — 동일 `seed↔seed` 배지(AAPL↔GOOGL) 반복 완화(chip이 seed 심볼 언급 시 seed↔seed 최강 선택되는 편향). 외부 노드 연결 우선 등 개선 | dashboard 트랙(개선) | 다음 strip 접점 | 💤 등재(트리거 게이트) |
 | URL-V1-ALIGN | BFF 경로 `/api/dashboard/` → `/api/v1/dashboard/` 관례 정렬 + FE stripService의 base 우회(`/api/v1` 제거 로직) 제거. ~~TUNE과 동승 가능~~(TUNE은 `62eec71`로 이미 land). **config 접촉 사전 정당화**: D-DASH-BFF config 예외 범위가 URL-V1-ALIGN 포함으로 확장됨(MGMT-BATCH-9) — root `urls` include 경로 1줄 수정은 내재 산출물로 허용, 그 외 config 변경은 HALT. 착수 시 diff 원문 채증 의무 | @backend + dashboard FE | 다음 apps/dashboard 접점 | 💤 등재(트리거 게이트) |
 | HEALTH-13TH-IDENT | sv health 검사 항목 **12→13 증가분** 정체 확인·기록(monitor refresh 신선도 = MON-P2-BEAT 귀속 추정, 실측 확정) | mgmt(소형) | 착수가능 | 🆕 등재 |
+| HEALTH-HASH-DISPLAY | **[관찰]** health #13 "실행 트리 정합" 라인의 표시 해시가 STEP 0 실측 HEAD와 불일치 관측 — 2026-08-11 RECON: STEP0 HEAD=`c916b32e`인데 health 라인은 `(f27bca5)` 표시(원인 추정=health_check 내부 fetch로 origin/main 세션중 전진, [[lesson_origin_main_advance_union_rebase]]/health 내부 fetch 계열). 판정 OK 정합은 유지되나 표시 해시 출처(HEAD vs 방금 fetch한 origin) 확인 필요. **재현 시 표시 로직(어느 rev를 print하는지) 점검**. ※ **HEALTH-13TH-IDENT(항목 수 12→13 식별)와는 별건** — 본 건은 개별 라인의 해시 표시값 정합. | mgmt(소형·관찰) | 재현 시 | 💤 관찰 |
 
 ---
 
@@ -1277,14 +1278,10 @@
 - 잔여: 첫 19:30 ET 발화 후 미니 recon(9행 spot 전건 T 일치)이 종결 확인 조건.
 
 ## I3-SPLIT-GUARD — 지평 내 액면분할·기업행위 감지 시 unscoreable (2026-08-06, SFI-I-3 Part A) [stocks][portfolio]
-- 상태: **backlog**(W2 잔존, 존치). DailyPrice=raw close·비조정(STEP0 #4) → 채점 지평(h≤252d) 내 분할·대규모 배당 시 실현폭 왜곡.
+- 상태: **🕒 시한 확정** — 차기 미니슬라이스 확정(2026-08-11 결정 사이클 [[DECISIONS]] D-ARC-NEXT), **09-01 h21 첫 만기 前 시한**(만기 도달 예측이 split 오염 시 채점 왜곡 방지). 구 backlog(W2 잔존)에서 승격. DailyPrice=raw close·비조정(STEP0 #4) → 채점 지평(h≤252d) 내 분할·대규모 배당 시 실현폭 왜곡.
 - 내용: 채점 시 예측~만기 구간에 액면분할/기업행위 감지되면 해당 예측을 **unscoreable(reason=corporate_action)**로 반환(무리한 채점 금지, 규칙 5 정신). 감지원=split 이벤트 소스 또는 인접 bar 급변(threshold) 휴리스틱.
 - 근거: 현 유니버스(9종)는 표본 미도달이라 즉시 위험 낮으나 h=252d 도달 전 배선 필요. adjClose 도입은 별개 트랙.
 
-## I3-SPLIT-GUARD — 지평 내 액면분할·기업행위 감지 시 unscoreable (2026-08-06, SFI-I-3 Part A) [stocks][portfolio]
-- 상태: **backlog**(W2 잔존). DailyPrice=raw close·비조정(STEP0 #4) → 채점 지평(h≤252d) 내 분할·대규모 배당 시 실현폭 왜곡.
-- 내용: 채점 시 예측~만기 구간에 액면분할/기업행위 감지되면 해당 예측을 **unscoreable(reason=corporate_action)**로 반환(무리한 채점 금지, 규칙 5 정신). 감지원=split 이벤트 소스 또는 인접 bar 급변(threshold) 휴리스틱.
-- 근거: 현 유니버스(9종)는 표본 미도달이라 즉시 위험 낮으나 h=252d 도달 전 배선 필요. adjClose 도입은 별개 트랙.
 ## CS-REDESIGN-BACKLOG — Chain Sight 재설계 D1/D2 후속 백로그 (등재, 2026-08-10)
 출처: D2-LEDGER-PROBE 지시서 Part 1-D. 결정 근거 = [[DECISIONS]] D1·D2. 채번 미부여(백로그).
 - **CS-EXP-2 유니버스 확장 2차** — 트리거: 8-K 가동 후 미해소 타깃 빈도 N주 실측. (D2 Phase 4)
