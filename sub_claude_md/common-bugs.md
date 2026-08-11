@@ -1475,3 +1475,11 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **원인**: AST 매처가 `func.attr=="Client" and func.value.id=="genai"`로 **이름 하드매칭**. market_pulse는 `from google import genai as genai_module` 별칭 → `genai_module.Client`가 `func.value.id=="genai_module"`이라 **미검출**. 도구가 "0"이라 말하지만 실제 0이 아님(false-negative). 별칭 도입(커밋 `51046350`)은 우회 의도 아닌 단순 명명이나(ALIAS 판정 (나)), 효과는 은닉.
 
 **교훈**: ⑴ **"도구가 0이라 말함 ≠ 실제 0"** — burn-down/gauge류 스캐너는 매칭 커버리지를 주기적으로 역검증(별칭·재export·간접 참조). ⑵ 이름 하드매칭 대신 **import 바인딩 추적**(`import X as Y` → Y도 검출)으로 이름 무관 검출. 수리 = `_genai_bound_names`로 별칭 집합 추적 후 `func.value.id in genai_names`(BOUNDARY-LLM-CB Part C). ⑶ 스캐너 복제본(테스트 ↔ health_check)은 **양쪽 동시 보강**(규약 2장). ⑷ 검출 후 정직 등재(FROZEN 0→1) → 이관 시 해제(1→0)가 정직한 계정.
+## `git branch -d` 거부의 첫 수 = 강제(-D)가 아니라 거부 원인 규명 — 어느 트리 HEAD 기준 판정인지 확인 (채번 후보, GOVCLEANUP-0810-CLEANUP 2026-08-11) [process][harness]
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
+
+**증상**: 격리 worktree 브랜치를 `git branch -d`로 삭제하려 하면 "not fully merged"로 거부. 브랜치는 이미 origin/main에 착지(`origin/main..브랜치 = 0`)했는데도 거부 → "강제 `-D`로 넘어가야 하나?"는 유혹.
+
+**원인·판정**: `-d`의 "merged" 판정은 **명령 실행 트리의 HEAD**(또는 upstream) 기준. 로컬 main 체크아웃이 origin/main보다 뒤처져 있거나 cwd가 엉뚱한 worktree면, origin/main엔 착지한 브랜치도 **그 트리 HEAD 기준으론 미머지로 오탐**(08-10 GOVCLEANUP 사례: cwd 오탐). 삭제 자체가 병진 수동 고정(D-BRANCH-DELETE-MANUAL·[[lesson_branch_d_upstream_refusal]]).
+
+**교훈**: `-d` 거부의 **첫 수는 `-D` 강제가 아니라 거부 원인 규명** — ⑴ `git merge-base --is-ancestor 브랜치 origin/main`로 실제 소진 재확인, ⑵ **어느 트리 HEAD 기준 판정인지** 확인(`git -C <origin/main 추종 트리> branch -d`로 정정 = 강제 없이 해소). 손실 0 실측은 `-D` 근거가 아니라 보고 내용(INC-001/INC-002). cf. 직전 항목 "-d 거부는 HALT 신호"(자가 -D 전환 금지)의 **해소 메커니즘** 보완.
