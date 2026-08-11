@@ -151,3 +151,18 @@ def test_v2_dry_run_macro_signal_reported(_seeded_macro, monkeypatch):
     assert AnalogDayContext.objects.count() == 0
     assert "select=v2" in text
     assert "헤드라인 있는 일수 : 1" in text
+
+
+def test_dates_flag_targets_population_intersection(db, monkeypatch):
+    """--dates: 콤마 목록 ∩ 모집단만 대상(모집단 밖·비존재일 자동 제외). 재시도 게이트용."""
+    for day in (datetime.date(2024, 3, 1), datetime.date(2024, 3, 4)):
+        RegimeSnapshot.objects.create(
+            date=day,
+            snapshot_time=datetime.datetime(day.year, day.month, day.day, 20, 0, tzinfo=datetime.timezone.utc),
+            regime="TRANSITION", coverage=1.0, summary=BACKFILL_MARK,
+        )
+    monkeypatch.setattr(gen, "_invoke_llm", lambda h: "안 불림.")
+    text = _run("--dates", "2024-03-01,2024-03-04", "--select-version", "v2")
+    assert "모집단 2일" in text  # 둘 다 모집단
+    text2 = _run("--dates", "2024-03-01,2099-01-01", "--select-version", "v2")
+    assert "모집단 1일" in text2  # 모집단 밖(2099)은 제외

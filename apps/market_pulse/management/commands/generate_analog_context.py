@@ -40,6 +40,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--commit", action="store_true", help="실쓰기(기본=dry-run)")
         parser.add_argument("--date", help="단일일 생성 YYYY-MM-DD")
+        parser.add_argument("--dates", help="다중일 생성 YYYY-MM-DD,... (콤마구분·모집단 교집합, 재시도용)")
         parser.add_argument("--from", dest="from_date", help="시작일 YYYY-MM-DD(포함)")
         parser.add_argument("--to", dest="to_date", help="종료일 YYYY-MM-DD(포함)")
         parser.add_argument("--regenerate", action="store_true", help="기존 생성분 덮어쓰기(+버전 증가)")
@@ -116,6 +117,9 @@ class Command(BaseCommand):
         if opt["date"]:
             d = self._parse(opt["date"])
             return list(qs.filter(date=d).values_list("date", flat=True))
+        if opt["dates"]:
+            ds = [self._parse(s.strip()) for s in opt["dates"].split(",") if s.strip()]
+            return list(qs.filter(date__in=ds).order_by("date").values_list("date", flat=True))
         if opt["from_date"]:
             qs = qs.filter(date__gte=self._parse(opt["from_date"]))
         if opt["to_date"]:
