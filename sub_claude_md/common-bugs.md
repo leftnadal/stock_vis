@@ -1458,3 +1458,12 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **증상**: 브랜치 삭제를 집행하며 근거로 SESSION_CONTRACT §H `D-DEPLOY-DELEGATE`를 원용했으나, §H는 **코드 배포 위임 규약**으로 브랜치 삭제와 무관(INC-002). 무관 규약 원용은 "규약 근거 있음" 외양만 갖추고 실제 관할 규약(삭제=병진 수동)을 우회.
 
 **교훈**: 예외 승인·규약 원용 시 **해당 행위를 실제 관할하는 규약을 정확히 지목**한다. 인접·유사 규약(§H=배포 위임 ↔ 삭제)을 근거로 끌어오지 말 것. 행위별 관할 규약 대조를 원용 전에 실측.
+
+## 하드매칭 AST 스캐너의 별칭 사각지대 — burn-down "종결" 선언이 false-negative (채번 후보, BOUNDARY-LLM-CB 2026-08-11) `[architecture][testing][process]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지, 번호는 mgmt 채번 시 확정)*
+
+**증상**: BOUNDARY-LLM 경계 테스트(`test_llm_direct_call_boundary.py`)·health_check `외부-LLM 경계`가 **FROZEN_COUNT=0 = "전 LLM 소비처 packages/shared/llm 단일 경유·종결(23→0)"**로 GREEN. 그러나 `apps/market_pulse/llm/client.py`는 여전히 `genai_module.Client(api_key=)`로 Gemini를 **직접 인스턴스화**(+7 소비처가 이 래퍼 소비, chain_sight 교차앱 포함).
+
+**원인**: AST 매처가 `func.attr=="Client" and func.value.id=="genai"`로 **이름 하드매칭**. market_pulse는 `from google import genai as genai_module` 별칭 → `genai_module.Client`가 `func.value.id=="genai_module"`이라 **미검출**. 도구가 "0"이라 말하지만 실제 0이 아님(false-negative). 별칭 도입(커밋 `51046350`)은 우회 의도 아닌 단순 명명이나(ALIAS 판정 (나)), 효과는 은닉.
+
+**교훈**: ⑴ **"도구가 0이라 말함 ≠ 실제 0"** — burn-down/gauge류 스캐너는 매칭 커버리지를 주기적으로 역검증(별칭·재export·간접 참조). ⑵ 이름 하드매칭 대신 **import 바인딩 추적**(`import X as Y` → Y도 검출)으로 이름 무관 검출. 수리 = `_genai_bound_names`로 별칭 집합 추적 후 `func.value.id in genai_names`(BOUNDARY-LLM-CB Part C). ⑶ 스캐너 복제본(테스트 ↔ health_check)은 **양쪽 동시 보강**(규약 2장). ⑷ 검출 후 정직 등재(FROZEN 0→1) → 이관 시 해제(1→0)가 정직한 계정.

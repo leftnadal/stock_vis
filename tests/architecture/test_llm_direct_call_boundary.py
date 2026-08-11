@@ -41,7 +41,13 @@ NAME_CALLS = frozenset({"Anthropic", "AsyncAnthropic"})
 # 슬라이스 ②에서 korean_overview는 이관 완료 → 목록에 없음(회귀 잠금 작동).
 # 동결 23 = 슬라이스 ④ 진행 게이지. 이관 1곳마다 여기서 1키 삭제 + health_check 동시 갱신.
 # 슬라이스 ④ #3 완료 → 빈 목록 = BOUNDARY-LLM burn-down 종결(전 소비처 코어 단일 경유).
-KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
+KNOWN_VIOLATIONS: set[tuple[str, str]] = {
+    # ALIAS-CHECK(2026-08): 별칭 인지 스캐너 보강으로 검출된 은닉 위반 1건.
+    #   market_pulse 옛 로컬 gemini 래퍼(client.py, `genai_module.Client`)가 하드매칭을 우회해
+    #   FROZEN=0 "종결"이 false-negative였음(common-bugs). BOUNDARY-LLM-CB Part B에서
+    #   packages/shared/llm/legacy_gemini.py로 verbatim 이동 시 해제(CORE_EXEMPT 면제 → 0).
+    ("apps/market_pulse/llm/client.py", "genai.Client"),
+}
 
 # health_check.py와 반드시 일치(규약: 양쪽 동시 갱신). 불일치 시 두 곳 다 깨진다.
 # Part ①-aio 완료: 10 → 9 → 8 → 7 → 6(keyword_generator #16 통째).
@@ -59,21 +65,42 @@ KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
 # 슬라이스 ④ #3 완료: 1 → 0(estimator_v3 직접 Anthropic().messages.count_tokens → 코어 count_tokens
 #   util(ADR-LLM-001), messages+system wire IDENTICAL[잉여키 0], cache/fallback 소비자 소유).
 #   = BOUNDARY-LLM burn-down 종결(23→0). 전 LLM 소비처가 packages/shared/llm 단일 경유.
-FROZEN_COUNT = 0
+FROZEN_COUNT = 1
 
 
-def _call_identifier(node: ast.Call) -> str | None:
+def _genai_bound_names(tree: ast.AST) -> set[str]:
+    """이 파일에서 google.genai(신 SDK) 모듈에 바인딩된 로컬 이름 집합(별칭 포함).
+
+    ALIAS-CHECK(2026-08): `from google import genai as genai_module` 같은 별칭이 하드매칭
+    (`func.value.id == "genai"`)을 우회해 `genai_module.Client(...)`가 미검출되던 사각지대 봉합.
+    바인딩을 추적해 이름 무관 검출한다.
+    """
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == "google":
+            for a in node.names:
+                if a.name == "genai":
+                    names.add(a.asname or a.name)
+        elif isinstance(node, ast.Import):
+            for a in node.names:
+                if a.name == "google.genai":
+                    names.add(a.asname or "google")
+    return names
+
+
+def _call_identifier(node: ast.Call, genai_names: set[str]) -> str | None:
     """직접-LLM-호출이면 식별자 문자열, 아니면 None.
 
     - `Anthropic(...)` / `AsyncAnthropic(...)`     → func=Name
-    - `genai.Client(...)`                          → func=Attribute(value=Name('genai'), attr='Client')
+    - `<genai별칭>.Client(...)`                     → func=Attribute(value=Name(genai바인딩), attr='Client')
     - `X.GenerativeModel(...)`                     → func=Attribute(attr='GenerativeModel')
+    genai_names = 해당 파일에서 google.genai에 바인딩된 이름들(별칭 포함, _genai_bound_names).
     """
     func = node.func
     if isinstance(func, ast.Name) and func.id in NAME_CALLS:
         return func.id
     if isinstance(func, ast.Attribute):
-        if func.attr == "Client" and isinstance(func.value, ast.Name) and func.value.id == "genai":
+        if func.attr == "Client" and isinstance(func.value, ast.Name) and func.value.id in genai_names:
             return "genai.Client"
         if func.attr == "GenerativeModel":
             return "GenerativeModel"
@@ -98,9 +125,10 @@ def _collect_violations() -> list[tuple[str, str, int]]:
                 tree = ast.parse(py.read_text(encoding="utf-8"), filename=str(py))
             except (SyntaxError, UnicodeDecodeError):
                 continue
+            genai_names = _genai_bound_names(tree)
             for node in ast.walk(tree):
                 if isinstance(node, ast.Call):
-                    ident = _call_identifier(node)
+                    ident = _call_identifier(node, genai_names)
                     if ident is not None:
                         found.append((rel, ident, node.lineno))
     return found
@@ -157,3 +185,29 @@ def test_frozen_count_matches_known_violations() -> None:
         f"FROZEN_COUNT({FROZEN_COUNT}) != len(KNOWN_VIOLATIONS)({len(KNOWN_VIOLATIONS)}). "
         "동결 항목을 추가/삭제했다면 FROZEN_COUNT와 scripts/health_check.py 를 동시에 갱신하라."
     )
+
+
+def test_aliased_genai_client_detected() -> None:
+    """ALIAS-CHECK 회귀: `from google import genai as X; X.Client(...)` 별칭 검출.
+
+    하드매칭(`func.value.id == "genai"`)이 놓치던 사각지대 — 보강 후 이름 무관 검출되어야.
+    """
+    src = "from google import genai as genai_module\nc = genai_module.Client(api_key='k')\n"
+    tree = ast.parse(src)
+    names = _genai_bound_names(tree)
+    assert names == {"genai_module"}
+    idents = [
+        _call_identifier(n, names) for n in ast.walk(tree) if isinstance(n, ast.Call)
+    ]
+    assert "genai.Client" in idents  # 별칭이어도 검출
+
+
+def test_non_genai_client_not_flagged() -> None:
+    """genai 미import 파일의 무관한 `.Client()`(httpx 등)는 오탐 아님."""
+    src = "import httpx\nc = httpx.Client(timeout=10)\n"
+    tree = ast.parse(src)
+    names = _genai_bound_names(tree)
+    idents = [
+        _call_identifier(n, names) for n in ast.walk(tree) if isinstance(n, ast.Call)
+    ]
+    assert idents == [None]

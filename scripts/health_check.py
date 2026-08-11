@@ -586,15 +586,34 @@ _LLM_NAME_CALLS = frozenset({"Anthropic", "AsyncAnthropic"})
 # tests/architecture/test_llm_direct_call_boundary.py:KNOWN_VIOLATIONS 와 일치(슬라이스 ④ burn-down).
 # korean_overview는 슬라이스 ②에서 이관 완료 → 목록에 없음(회귀 잠금).
 # 슬라이스 ④ #3 완료 → 빈 목록 = BOUNDARY-LLM burn-down 종결(23→0, 전 소비처 코어 단일 경유).
-_LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
+# ALIAS-CHECK(2026-08): 별칭 인지 스캐너 보강으로 검출된 은닉 위반 1건(테스트 KNOWN_VIOLATIONS와 일치).
+# BOUNDARY-LLM-CB Part B(shared/llm/legacy_gemini.py verbatim 이동)에서 CORE_EXEMPT 면제 → 0.
+_LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
+    ("apps/market_pulse/llm/client.py", "genai.Client"),
+}
 
 
-def _llm_call_identifier(node: ast.Call) -> str | None:
+def _llm_genai_bound_names(tree: ast.AST) -> set[str]:
+    """google.genai에 바인딩된 로컬 이름(별칭 포함). 하드매칭 사각지대 봉합(테스트와 동형)."""
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == "google":
+            for a in node.names:
+                if a.name == "genai":
+                    names.add(a.asname or a.name)
+        elif isinstance(node, ast.Import):
+            for a in node.names:
+                if a.name == "google.genai":
+                    names.add(a.asname or "google")
+    return names
+
+
+def _llm_call_identifier(node: ast.Call, genai_names: set[str]) -> str | None:
     func = node.func
     if isinstance(func, ast.Name) and func.id in _LLM_NAME_CALLS:
         return func.id
     if isinstance(func, ast.Attribute):
-        if func.attr == "Client" and isinstance(func.value, ast.Name) and func.value.id == "genai":
+        if func.attr == "Client" and isinstance(func.value, ast.Name) and func.value.id in genai_names:
             return "genai.Client"
         if func.attr == "GenerativeModel":
             return "GenerativeModel"
@@ -619,9 +638,10 @@ def _llm_collect_violations() -> list[tuple[str, str, int]]:
                 tree = ast.parse(py.read_text(encoding="utf-8"), filename=str(py))
             except (SyntaxError, UnicodeDecodeError):
                 continue
+            genai_names = _llm_genai_bound_names(tree)
             for node in ast.walk(tree):
                 if isinstance(node, ast.Call):
-                    ident = _llm_call_identifier(node)
+                    ident = _llm_call_identifier(node, genai_names)
                     if ident is not None:
                         found.append((rel, ident, node.lineno))
     return found
