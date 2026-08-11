@@ -6156,6 +6156,8 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 
 **잔여**: Slice3 종목↔카테고리 매핑은 τ 매칭 로직 코드·종목별 share 데이터 repo 부재로 미수행(별도). 워커 재시작으로 라이브 beat(매일 11:00 ET) 새 코드 반영.
 
+**자동 beat 완주 확인 (P1B STEP1, 2026-08-11 00:00 KST = 08-10 15:00 UTC)**: `update_relation_confidence` **succeeded** 12.7s `{total_pairs:1805, created:142, updated:1663}`, **GraphQueryError 0**. 08-03~08-10 8일 연속 GraphQueryError → **첫 성공**(default 워커가 08-10 16:47 KST 재기동으로 수리 a9d7f388 반영, 실패 로그 전부 재기동 이전). CO_MENTIONED 1,957→**2,099**(+142)·evidence 2,229→**2,371** 자동 드리프트 = P1A 자동 사이클 가동 증거. → **P1A 트랙 완전 종결**.
+
 ## D-MOAT-STORAGE-PG (2026-08-10, SUNMON-RECON 정정 — 디렉터 가설 기각)
 
 **정정**: 해자(RelationPairSnapshot) 궤적 저장 경로 = **PostgreSQL 스냅샷 테이블 `chainsight_relation_pair_snapshot`, Neo4j 비의존**. "적립이 Neo4j에 물려 침묵" 디렉터 가설 **기각** — SUNMON-RECON 실측: 07-01~08-09 매일 9562행 적립·실패 0(#28 해소), Neo4j-down과 무관. `pair_aggregation.py` `update_or_create` per (canonical_a, canonical_b, period). cf. [[D-CS-P1A-RELANDING]](관계 파이프라인 Neo4j 제거).
@@ -6173,3 +6175,13 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 | C | `target_date=localdate()` KST 조기창 재정의 | 3.20 |
 
 **결정**: **① A** (마진 0.95). **Why**: 근원(재추출 부재)을 직접 타격하면서 추출 스케줄·창 정의를 **무접촉**(최소 표면). TH-TNV-CHAIN에서 입증된 **체인 패턴 재사용**(신규 beat 없음, #28 drift 회피). B(수집 스케줄)·C(창 재정의)는 표면 넓고 이중집계/비용 리스크 → **C는 관찰 보류**(범위 밖, 향후 재검토). **병진 승인 = ①**. 집행 = 지시서 `TH-SUNMON-REEXTRACT-1`.
+
+## D-CS-P1B (2026-08-11, 연결 강도 = 초과수익 동조성 — evidence 계층 강도)
+
+**집행**: CS-P1B Slice1-3(병진 GO). evidence 계층 관계 쌍의 **연결 강도** = 두 종목 **초과수익**(일간수익 − SPY 벤치마크수익)의 90거래일 Pearson 상관. `RelationConfidence.sync_strength`(additive, migration 0030 병진 수동). 랜딩 `f27bca59`, 코드 `f66ccf8f`(patch-id `8df151d0…` 불변).
+
+**결정 D-CS-P1B-EXCESS-RETURN**: 원수익 상관(기존 PriceCoMovement) 대신 **초과수익** 상관 채택. **Why**: 원수익 상관은 시장 공통변동(β)에 지배돼 거의 모든 쌍이 고상관 → 관계 변별력 상실. 초과수익은 시장 요인 제거 후 **쌍 고유 동조**만 남겨 evidence 관계의 실질 강도를 측정. 소비자 1(chain_sight)이므로 shared 승격 없이 앱 내 순수 함수(YAGNI).
+
+**KPI (--apply 실측)**: evidence 2,371 中 계산가능 **1,828 (77.1%)** / null **543 전량 insufficient_obs**(<60거래일, zero_variance·벤치결측 0). 분포: 전체 mean **+0.303**·p50 +0.298·[−0.584, +1.000]. **SEC계(n=269) mean +0.355·p50 +0.370 > CO_MENTIONED(n=1,559) mean +0.294·p50 +0.291** — 근거계 관계가 유의하게 더 동조(가설 부합). before 참조(선행 감사 강도-주가 상관 0.45/0.25/0.22) 대비 신규 mean 0.30은 **원수익→초과수익 전환으로 시장β 제거분만큼 하향**(정성 정합). 무접촉 재입증: PEER_OF(9,365)·PRICE_CORRELATED(3,784) last_observed **06-20 불변**, sync_strength 기록 0.
+
+**의존 등재**: `sync_strength ← macro.MarketIndexPrice(index='SPY')` — **chain_sight → macro 데이터 의존**. Market Pulse의 SPY 수집이 중단되면 벤치마크 스테일 → 강도 재계산 부정확 위험(주의: shared.stocks.DailyPrice의 SPY 행은 이미 스테일, macro 쪽이 정본). 재계산 주기·스케줄은 별도 결정(TASKQUEUE CS-SYNC-RECOMPUTE-SCHEDULE).

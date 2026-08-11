@@ -5,6 +5,17 @@
 
 ---
 
+## CS-P1B 후속 (2026-08-11, 연결 강도 랜딩 후)
+
+> 출처: CS-P1B Slice1-3 종결(랜딩 `f27bca59`, DECISIONS `D-CS-P1B`). sync_strength 1,828행 기록.
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| CS-SYNC-RECOMPUTE-SCHEDULE | sync_strength 주기 재계산 — `compute_relation_sync_strength --apply` 정기 실행(가격·co-mention 갱신 반영). beat 등재는 **별도 결정·병진**(현재 일회성 command만) | @infra | 별도 결정 | **todo(스케줄 미정)** | evidence 계층 드리프트(P1A 자동 사이클로 CO_MENTIONED 증가) → 강도 stale. 벤치 macro.SPY 수집 의존(D-CS-P1B). 재계산 캐이던스(주간?)·비용 산정 후 beat 등록 여부 결정 |
+| PRICE-COMOVEMENT-RETIRE | 기존 PriceCoMovement 처분 검토 — 8,859행·PRICE_CORRELATED 3,784쌍. Neo4j PEER_OF 종속(동결)·원수익 상관(초과수익 sync_strength로 대체됨)·주간 beat `calculate_price_co_movement`(Neo4j-down으로 실패 중) | @backend | CS-P1B 안정화 | **todo(검토)** | D2에서 price=강도 속성 P1B 이관 결정. sync_strength가 초과수익 기반 상위 대체 → 구 테이블·PRICE_CORRELATED·주간 beat 은퇴 가부. 파괴적이므로 별도 판정 |
+
+---
+
 ## 거버넌스 — D-PUSH-DELEG (GOV-PUSHDELEG-0810, 2026-08-10)
 
 | ID | Task | 분류 | Depends On | Status |
