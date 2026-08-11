@@ -1193,8 +1193,9 @@
 ## SECB-GE-OBS-17ROW — v1 1768 vs marker 1751 — 17행 관찰 (2026-08-03, G-e STEP0) [sec-beta]
 - 관찰: SupplyChainEvidence total **1768** / prompt_version='v1' **1768** / grounding_method='deterministic_v1' marker **1751** → **17행이 grounded 미표기**(백필 대상 밖·이후 신규 유입 추정). G-e paired 측정은 marker 1751 기준(무영향). 노출/재백필 필요성은 SECB-EXPOSURE·후속에서 판단(현 저우선·등재만).
 
-## SECB-V2-ROLLOUT — v2 프롬프트 전량 적용 결정 (2026-08-03, G-e 후속) [sec-beta]
-- **성격**: G-e 표본 측정(tail 71.07%→0.72%)을 근거로 한 **전량 배포·substrate 통합 결정 사이클**. 측정 세션이 pass/fail·배포를 하지 않음(D-SECB-GATE-E). **전제 4건 해소 전 착수 금지**:
+## SECB-V2-ROLLOUT — v2 프롬프트 전량 적용 (2026-08-03 결정 → 🔵 **실행 중** 2026-08-10) [sec-beta]
+- **🔵 상태 전이(2026-08-10)**: **전제 4건 종결**(SECB-V2-RECON, read-only) → **실행 착수**(지시서 `SECB-V2-ROLLOUT-1`). ⑴ evidence_text=TextField 실존·fill 100%·마이그0 · ⑵ v1 길이=300캡(프롬프트 아티팩트·23% 검열)→**D-SECB-V2-LEN=C**(캡 제거·2000 sanity) · ⑶ bulk_create·unique 없음→**D-SECB-V2-COEXIST=B**(v1 보존·소비 v2 필터) · ⑷ 351 filings/1751행·≤$3.3·go(100건 체크포인트). 서열: 437=G1.5 종결·V-B=STANDBY(하류 조건부, 블로커 아님). 정찰 전문 `docs/features/secb/secb_v2_recon_report.md`.
+- **성격**: G-e 표본 측정(tail 71.07%→0.72%)을 근거로 한 **전량 배포·substrate 통합**. 측정 세션이 pass/fail·배포를 하지 않음(D-SECB-GATE-E). ~~전제 4건 해소 전 착수 금지~~ (✅ 종결):
   - ⑴ **`evidence_text` DB 컬럼 실제 max_length 실측** — 300 초과 저장 시 절단/오류 거동 포함(현 모델은 TextField=무제한이나 실 DDL·다운스트림 `[:100]` basis 등 확인).
   - ⑵ **길이 정책 재설계** — R2(완전 문장) vs 300캡 우선순위 확정: 프롬프트를 고칠지(캡 상향/명문화) or 스키마를 고칠지(evidence 길이 정책).
   - ⑶ **인용 집합 변동 취급** — v2 재추출이 인용 수 변경(COR 28→46): 기존 v1 행 **대체**냐 v2 **병존**이냐 결정.
