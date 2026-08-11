@@ -394,7 +394,7 @@ class Command(BaseCommand):
 
         import json
         from apps.chain_sight.services.domain_tagging import extract_rationale, parse_llm_json
-        from apps.market_pulse.llm.client import generate_with_circuit
+        from packages.shared.llm.legacy_gemini import generate_with_circuit
 
         calls, fail = 0, 0
         for r in rows:

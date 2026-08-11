@@ -55,7 +55,7 @@ TRANSLATION_SCENARIOS = {
 
 def _record_translation(name: str, context: dict) -> dict:
     from apps.market_pulse.llm import translation_prompt as tp
-    from apps.market_pulse.llm.client import DEFAULT_MODEL, generate_with_circuit
+    from packages.shared.llm.legacy_gemini import DEFAULT_MODEL, generate_with_circuit
 
     contents = tp.few_shot_messages()
     contents.append({"role": "user", "parts": [{"text": tp.render_user_prompt(context)}]})
@@ -72,7 +72,7 @@ def _record_translation(name: str, context: dict) -> dict:
 def _record_brief() -> dict:
     from apps.market_pulse.briefing import client as bc
     from apps.market_pulse.briefing.prompt import BriefingContext
-    from apps.market_pulse.llm.client import DEFAULT_MODEL
+    from packages.shared.llm.legacy_gemini import DEFAULT_MODEL
 
     ctx = BriefingContext(
         date="2026-06-19",

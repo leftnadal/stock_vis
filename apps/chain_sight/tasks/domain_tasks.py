@@ -35,7 +35,7 @@ def tag_relation_domain_task(self, rc_id: int):
         if not rc.relation_basis_summary:
             return {"skipped": "no-basis", "rc_id": rc_id}
 
-        from apps.market_pulse.llm.client import generate_with_circuit
+        from packages.shared.llm.legacy_gemini import generate_with_circuit
         from packages.shared.stocks.models import Stock
 
         def llm_call(system, contents):
@@ -137,7 +137,7 @@ def tag_peer_domain_task(self, rc_id: int):
         terc = tercile_of(pair_mcap, t1, t2)
 
         def llm_call(system, contents):
-            from apps.market_pulse.llm.client import generate_with_circuit
+            from packages.shared.llm.legacy_gemini import generate_with_circuit
             # thinking_budget=512(D-L2-THINKING-BUDGET, 배치와 동일).
             resp = generate_with_circuit(
                 system_instruction=system, contents=contents, thinking_budget=512

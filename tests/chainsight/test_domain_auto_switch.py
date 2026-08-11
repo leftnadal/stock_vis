@@ -132,7 +132,7 @@ class TestAutoTaggingE2E:
         rc = _rc("NVDA", "MU", "SUPPLIES_TO",
                  basis="SEC 10-K: We purchase memory from Micron (MU).")
         monkeypatch.setattr(
-            "apps.market_pulse.llm.client.generate_with_circuit",
+            "packages.shared.llm.legacy_gemini.generate_with_circuit",
             lambda **kw: _Resp(_GOOD_JSON),
         )
         from apps.chain_sight.tasks.domain_tasks import tag_relation_domain_task
@@ -155,7 +155,7 @@ class TestAutoTaggingE2E:
             '"claim_type": "known_fact", "basis_hint": "10-K 구매 문장", "counter_signal": ""}}'
         )
         monkeypatch.setattr(
-            "apps.market_pulse.llm.client.generate_with_circuit",
+            "packages.shared.llm.legacy_gemini.generate_with_circuit",
             lambda **kw: _Resp(good),
         )
         from apps.chain_sight.tasks.domain_tasks import tag_relation_domain_task
@@ -177,7 +177,7 @@ class TestAutoTaggingE2E:
             '{"domain_tags": ["메모리·HBM"], "type_match": {"match": true}, "confidence": 0.9}'
         )
         monkeypatch.setattr(
-            "apps.market_pulse.llm.client.generate_with_circuit",
+            "packages.shared.llm.legacy_gemini.generate_with_circuit",
             lambda **kw: _Resp(no_rationale),
         )
         from apps.chain_sight.tasks.domain_tasks import tag_relation_domain_task
@@ -198,7 +198,7 @@ class TestAutoTaggingE2E:
             called["n"] += 1
             return _Resp(_GOOD_JSON)
 
-        monkeypatch.setattr("apps.market_pulse.llm.client.generate_with_circuit", _spy)
+        monkeypatch.setattr("packages.shared.llm.legacy_gemini.generate_with_circuit", _spy)
         from apps.chain_sight.tasks.domain_tasks import tag_relation_domain_task
         res = tag_relation_domain_task(rc.id)
         assert res == {"skipped": "human-reviewed", "rc_id": rc.id}

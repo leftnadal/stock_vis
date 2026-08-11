@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from apps.market_pulse.llm.client import DEFAULT_MODEL, LLMRawResponse
+from packages.shared.llm.legacy_gemini import DEFAULT_MODEL, LLMRawResponse
 from apps.market_pulse.llm.translation_safety import validate_senses
 from apps.market_pulse.models.translation import TranslationLog
 

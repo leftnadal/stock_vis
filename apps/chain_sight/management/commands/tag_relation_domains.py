@@ -67,7 +67,7 @@ class Command(BaseCommand):
         syms = {r["symbol_a"] for r in rows} | {r["symbol_b"] for r in rows}
         names = dict(Stock.objects.filter(symbol__in=syms).values_list("symbol", "stock_name"))
 
-        from apps.market_pulse.llm.client import generate_with_circuit
+        from packages.shared.llm.legacy_gemini import generate_with_circuit
 
         def llm_call(system, contents):
             resp = generate_with_circuit(system_instruction=system, contents=contents)

@@ -41,13 +41,10 @@ NAME_CALLS = frozenset({"Anthropic", "AsyncAnthropic"})
 # 슬라이스 ②에서 korean_overview는 이관 완료 → 목록에 없음(회귀 잠금 작동).
 # 동결 23 = 슬라이스 ④ 진행 게이지. 이관 1곳마다 여기서 1키 삭제 + health_check 동시 갱신.
 # 슬라이스 ④ #3 완료 → 빈 목록 = BOUNDARY-LLM burn-down 종결(전 소비처 코어 단일 경유).
-KNOWN_VIOLATIONS: set[tuple[str, str]] = {
-    # ALIAS-CHECK(2026-08): 별칭 인지 스캐너 보강으로 검출된 은닉 위반 1건.
-    #   market_pulse 옛 로컬 gemini 래퍼(client.py, `genai_module.Client`)가 하드매칭을 우회해
-    #   FROZEN=0 "종결"이 false-negative였음(common-bugs). BOUNDARY-LLM-CB Part B에서
-    #   packages/shared/llm/legacy_gemini.py로 verbatim 이동 시 해제(CORE_EXEMPT 면제 → 0).
-    ("apps/market_pulse/llm/client.py", "genai.Client"),
-}
+# BOUNDARY-LLM-CB Part B(2026-08): market_pulse client.py → packages/shared/llm/legacy_gemini.py
+#   verbatim 이동 → CORE_EXEMPT 면제 → 위반 0. 스캐너는 별칭 인지(Part C)라 이제 FROZEN=0이 정직
+#   (Part C 이전의 0은 하드매칭 사각지대에 의한 false-negative였음).
+KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
 
 # health_check.py와 반드시 일치(규약: 양쪽 동시 갱신). 불일치 시 두 곳 다 깨진다.
 # Part ①-aio 완료: 10 → 9 → 8 → 7 → 6(keyword_generator #16 통째).
@@ -65,7 +62,7 @@ KNOWN_VIOLATIONS: set[tuple[str, str]] = {
 # 슬라이스 ④ #3 완료: 1 → 0(estimator_v3 직접 Anthropic().messages.count_tokens → 코어 count_tokens
 #   util(ADR-LLM-001), messages+system wire IDENTICAL[잉여키 0], cache/fallback 소비자 소유).
 #   = BOUNDARY-LLM burn-down 종결(23→0). 전 LLM 소비처가 packages/shared/llm 단일 경유.
-FROZEN_COUNT = 1
+FROZEN_COUNT = 0
 
 
 def _genai_bound_names(tree: ast.AST) -> set[str]:

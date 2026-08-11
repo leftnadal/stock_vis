@@ -586,11 +586,9 @@ _LLM_NAME_CALLS = frozenset({"Anthropic", "AsyncAnthropic"})
 # tests/architecture/test_llm_direct_call_boundary.py:KNOWN_VIOLATIONS 와 일치(슬라이스 ④ burn-down).
 # korean_overview는 슬라이스 ②에서 이관 완료 → 목록에 없음(회귀 잠금).
 # 슬라이스 ④ #3 완료 → 빈 목록 = BOUNDARY-LLM burn-down 종결(23→0, 전 소비처 코어 단일 경유).
-# ALIAS-CHECK(2026-08): 별칭 인지 스캐너 보강으로 검출된 은닉 위반 1건(테스트 KNOWN_VIOLATIONS와 일치).
-# BOUNDARY-LLM-CB Part B(shared/llm/legacy_gemini.py verbatim 이동)에서 CORE_EXEMPT 면제 → 0.
-_LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
-    ("apps/market_pulse/llm/client.py", "genai.Client"),
-}
+# BOUNDARY-LLM-CB Part B(2026-08): market_pulse client.py → packages/shared/llm/legacy_gemini.py
+# verbatim 이동 → CORE_EXEMPT 면제 → 위반 0. 별칭 인지 스캐너(Part C) 하에 FROZEN=0이 정직.
+_LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
 
 
 def _llm_genai_bound_names(tree: ast.AST) -> set[str]:

@@ -4,8 +4,8 @@ Gemini Briefing Client (PR-E) — 일일 브리핑 본문 생성.
 소속: apps/market_pulse/briefing (app 레이어 LLM 호출 — Brief 고유 프롬프트 조립).
 역할: prompt.py 템플릿에 4 스냅샷(regime/breadth/sector/concentration) + 뉴스를 주입해
   Gemini 2.5 Flash로 동기 호출 → 본문 텍스트 반환. genai 호출·CB 결합 plumbing은
-  `apps/market_pulse/llm/client` 공용 모듈로 단일출처화(복제 0, S1 추출).
-의존: apps.market_pulse.llm.client (genai+CB plumbing), prompt.py (Brief 고유 프롬프트).
+  `packages/shared/llm/legacy_gemini` 공용 모듈로 단일출처화(복제 0, S1 추출·BOUNDARY-LLM-CB 이동).
+의존: packages.shared.llm.legacy_gemini (genai+CB plumbing), prompt.py (Brief 고유 프롬프트).
 주의: Celery 안에서 호출 — **반드시 동기 API**(Bug #8: async genai.Client fork 충돌).
 소비처: tasks/briefing.py의 mp_generate_brief_daily.
 """
@@ -20,7 +20,7 @@ from apps.market_pulse.briefing.prompt import (
     few_shot_messages,
     render_user_prompt,
 )
-from apps.market_pulse.llm.client import (
+from packages.shared.llm.legacy_gemini import (
     DEFAULT_MODEL,
     LLMRawResponse,
     generate_with_circuit,

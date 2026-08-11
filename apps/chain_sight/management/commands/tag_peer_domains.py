@@ -146,7 +146,7 @@ class Command(BaseCommand):
         from apps.chain_sight.services.peer_adjudicator import load_dict
         dct = load_dict()
 
-        from apps.market_pulse.llm.client import generate_with_circuit
+        from packages.shared.llm.legacy_gemini import generate_with_circuit
 
         # 실단가 집계: LLMRawResponse의 usage 포집(래퍼가 .text만 반환하므로 여기서 누적).
         usage = {"prompt": 0, "completion": 0, "latency_ms": 0, "calls": 0}

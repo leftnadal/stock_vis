@@ -36,7 +36,7 @@ def select(target_date: date_cls, select_version: str = "v1") -> list[dict[str, 
 
 def _invoke_llm(headlines: list[dict[str, Any]]) -> str:
     """generate_with_circuit 경유 동기 호출 → 응답 텍스트. (테스트는 이 함수를 monkeypatch.)"""
-    from apps.market_pulse.llm.client import generate_with_circuit
+    from packages.shared.llm.legacy_gemini import generate_with_circuit
 
     resp = generate_with_circuit(
         system_instruction=prompt_mod.SYSTEM_INSTRUCTION,

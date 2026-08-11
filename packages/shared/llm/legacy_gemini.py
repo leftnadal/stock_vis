@@ -1,9 +1,12 @@
 """
-Market Pulse 공용 Gemini 클라이언트 — 동기 호출 plumbing 단일출처 (Brief에서 추출).
+Legacy Gemini 클라이언트 — 동기 호출 plumbing 단일출처 (Brief에서 추출).
 
-소속: apps/market_pulse/llm (app 레이어 LLM 호출 공용 모듈).
+소속: packages/shared/llm (BOUNDARY-LLM-CB Part B에서 apps/market_pulse/llm/client.py verbatim 이동
+  — genai 직접호출을 sanctioned 존[CORE_EXEMPT]으로 이동해 경계 clean). 함수 본문·시그니처·로직 무변경.
+⚠️ UNIFY 대상: 이 모듈은 shared/llm/core(complete/stream)와 별개인 2번째 gemini 경로.
+  통합(core 재사용·중복 제거·Haiku A/B)은 BOUNDARY-LLM-UNIFY 트랙 소관 — 이 세션은 이동만.
 역할: genai 동기 Client 빌드 + circuit breaker(`gemini`) 결합 + usage/latency 추출.
-  소비처(briefing/, 후속 translation/)는 system_instruction·contents만 주입해 재사용 — 복제 0.
+  소비처(market_pulse briefing/translation/regime + chain_sight)는 system_instruction·contents만 주입.
 의존: packages.shared.api_request.circuit_breaker (CB `gemini`), google.genai 동기 클라이언트.
 주의: Celery 안 호출 — **반드시 동기 API**(Bug #8: async genai.Client는 worker fork 충돌).
 """

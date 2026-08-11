@@ -21,7 +21,7 @@ from django.utils import timezone as django_timezone
 
 from apps.market_pulse.llm import translation_prompt as prompt_mod
 from apps.market_pulse.llm import translation_safety as safety_mod
-from apps.market_pulse.llm.client import DEFAULT_MODEL, generate_with_circuit
+from packages.shared.llm.legacy_gemini import DEFAULT_MODEL, generate_with_circuit
 from apps.market_pulse.models.translation import TranslationLog
 
 logger = logging.getLogger(__name__)

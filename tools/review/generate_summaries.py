@@ -1,7 +1,7 @@
 """관계 evidence 한국어 요약 배치 (⑳-3 REVIEW-TOOL-2, 1회성).
 
 review_batch_v2.csv → review_batch_v3.csv (summary_ko·summary_flags 컬럼 추가).
-LLM은 **BOUNDARY-LLM 공유 래퍼**(apps.market_pulse.llm.client.generate_with_circuit)
+LLM은 **BOUNDARY-LLM 공유 래퍼**(packages.shared.llm.legacy_gemini.generate_with_circuit)
 경유만 — 직접 genai 호출 금지. 요약은 "evidence가 무엇을 서술하는가"만(타입 추천·판단 금지).
 
 플래그 하이브리드:
@@ -149,7 +149,7 @@ def main():
             sys.path.insert(0, repo_root)
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
         django.setup()
-        from apps.market_pulse.llm.client import generate_with_circuit
+        from packages.shared.llm.legacy_gemini import generate_with_circuit
 
         stats = {"c": 0, "p": 0, "o": 0}
 
