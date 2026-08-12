@@ -3,8 +3,9 @@
 # cleanup_worktrees_20260812.sh
 # 생성일   : 2026-08-12
 # 생성세션 : MGMT-MICRO (monorepo/sess-mgmt-cleanup-script)
-# 대상건수 : 44 (origin/main 완전 소진 + worktree 딸린 로컬 브랜치)
-# 좌표     : STEP 0 재실측(2026-08-12, origin/main=2aba9dac) 기준
+# 대상건수 : 45 (origin/main 완전 소진 + worktree 딸린 로컬 브랜치)
+# 좌표     : STEP 0 재실측(2026-08-12, origin/main=2aba9dac→6bf3acfd) 기준
+#            리프레시 2026-08-12: sess-mgmt-b28 신규 소진 +1 반영(44→45)
 #
 # 제외 1건(소진이나 라이브 인프라 보호): monorepo/nightly-20260811 @
 #   /Users/byeongjinjeong/stock-vis-nightly/repo — nightly cron 자동화의
@@ -55,6 +56,7 @@ TARGETS=(
   "monorepo/sess-mgmt-b25|/Users/byeongjinjeong/worktrees/sv-mgmt-b25"
   "monorepo/sess-mgmt-b26|/Users/byeongjinjeong/worktrees/sv-mgmt-b26"
   "monorepo/sess-mgmt-b27|/Users/byeongjinjeong/worktrees/sv-mgmt-b27"
+  "monorepo/sess-mgmt-b28|/Users/byeongjinjeong/worktrees/sv-mgmt-b28"
   "monorepo/sess-mgmt-batch-a|/Users/byeongjinjeong/worktrees/sv-mgmt-batch-a"
   "monorepo/sess-mgmt-ledger3|/Users/byeongjinjeong/worktrees/sv-mgmt-ledger3"
   "monorepo/sess-mgmt-taskq|/Users/byeongjinjeong/worktrees/sv-mgmt-taskq"
