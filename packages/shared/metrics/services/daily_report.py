@@ -615,7 +615,7 @@ def collect_system_health() -> Dict[str, Any]:
         .count()
     )
     sec_total_filings = RawDocumentStore.objects.count()
-    sec_total_evidence = SupplyChainEvidence.objects.count()
+    sec_total_evidence = SupplyChainEvidence.objects.current().count()  # v2 필터(D-SECB-V2-COEXIST)
 
     return {
         "celery_worker_alive": celery_worker_alive,

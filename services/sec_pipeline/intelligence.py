@@ -81,7 +81,7 @@ class PipelineDataCollector:
         coll_failed = recent_docs.filter(status="failed").count()
 
         # Extraction
-        recent_ev = SupplyChainEvidence.objects.filter(extracted_at__gte=since)
+        recent_ev = SupplyChainEvidence.objects.current().filter(extracted_at__gte=since)  # v2 필터
         ext_total = recent_ev.count()
         ext_avg_conf = recent_ev.aggregate(avg=Avg("system_confidence"))["avg"] or 0
         ext_types = dict(
@@ -96,7 +96,7 @@ class PipelineDataCollector:
         queue_pending = UnmatchedCompanyQueue.objects.filter(status="pending").count()
 
         # Sync
-        all_ev = SupplyChainEvidence.objects.all()
+        all_ev = SupplyChainEvidence.objects.current()  # v2 필터(D-SECB-V2-COEXIST)
         sync_synced = all_ev.filter(neo4j_dirty=False).count()
         sync_pending = all_ev.filter(
             neo4j_dirty=True, target_company__isnull=False

@@ -31,7 +31,8 @@ class Command(BaseCommand):
         dry_run = options["dry_run"]
         prefix = "[DRY RUN] " if dry_run else ""
 
-        unmatched = SupplyChainEvidence.objects.filter(target_company__isnull=True)
+        # v2 필터: rematch delete가 v1 원장을 건드리지 않도록 스코프(D-SECB-V2-COEXIST=B, v1 보존)
+        unmatched = SupplyChainEvidence.objects.current().filter(target_company__isnull=True)
         total = unmatched.count()
         self.stdout.write(f"{prefix}미매칭 evidence: {total}개")
 

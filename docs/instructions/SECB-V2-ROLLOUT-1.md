@@ -21,7 +21,7 @@
 ## §1. 구현
 
 1. 프롬프트 v2: 300자 캡 지시 제거(`prompts.py:23,66`) → "인용은 원문 verbatim·완결 단위". `prompt_version='v2'` 기록.
-2. 소비측 필터: §0 판정표의 이중 집계 지점 전부에 v2(현행) 필터. v1 무접촉 보존.
+2. 소비측 필터: §0 판정표의 이중 집계 지점 전부에 **supersession 필터** `.current()`(D-SECB-V2-CURRENT, (가)→(나): filing에 v2 있으면 v2·없으면 v1). v1 무접촉 보존. naive `filter(v2)`는 v1-only 과잉배제로 폐기(테스트 13건·창 회귀 실증).
 3. 저장측 sanity: `evidence_text > 2,000자` 시 **경고 로그만**(절단·거부 금지).
 4. grounding 검증(verbatim 대조)은 v1 로직 재사용 — 캡 제거로 원문 매칭이 쉬워지는 방향임을 테스트로 확인.
 

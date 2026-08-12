@@ -49,6 +49,16 @@
 
 **⑷ 비용 기록(go)**: 롤아웃 대상 = deterministic_v1 **351 distinct filings / 1751행**(재카운트·평균 4.97 cites). G-e 표본 basis $0.0094/filing × 351 ≈ **≤$3.3·351콜**(과대추정=표본 cite-rich). **100건 체크포인트**(1단 자동정지→검수→2단). V-B=STANDBY 유지(트리거: 롤아웃 후 nf율 >15%). cf. `docs/features/secb/secb_v2_recon_report.md`.
 
+## [2026-08-12] D-SECB-V2-CURRENT — 소비 필터 = supersession-aware ((가)→(나) 전환) [sec-beta]
+
+**결정**: D-SECB-V2-COEXIST의 "소비측 v2 필터" 구현 = **filing 단위 supersession**. 단일 소스 `SupplyChainEvidence.objects.current()`:
+```
+current() = exclude(prompt_version='v1', source_document IN (v2 보유 filing))
+```
+= filing에 v2가 있으면 그 filing의 v1을 배제, v2가 없으면 v1 유지. 소비 6지점(RC 생성·merger·daily_report·intelligence·quality_checks×3·rematch delete 스코프)에 `.current()` 배선. **마이그 0**(매니저=`QuerySet.as_manager()`, use_in_migrations=False). **원자성**: filing당 v2 삽입은 `save_supply_chain_evidences` 내 `transaction.atomic()` 단일 bulk_create → `.current()`가 부분 supersession을 관측하지 않음.
+
+**Why((가) naive 폐기 경위)**: 초안은 (가) naive `filter(prompt_version='v2')`. 구현 결과 **기존 sec_pipeline 테스트 13건 실패** — v1-only filing(=v2 미존재)까지 과잉 배제. 이는 이중집계 방지가 아니라 **데이터 과잉 배제**이며, 프로덕션에서 **배포~롤아웃 창 회귀**(SEC β 집계·RC·품질·리포트 0 급락)와 **동일 기전**(테스트 13건 = 그 회귀의 프록시). (나) supersession은 "v2 있으면 v2·없으면 v1"이라 이중집계는 차단하되 v1-only는 유지 → 13건·창 회귀 동시 해소. `.current()` 1줄 교체로 전환. **병진 승인 = (나)**. cf. common-bugs 신규(버전 필터 과잉배제).
+
 ## [2026-08-10] D-BRANCH-DELETE-MANUAL — 파괴적 브랜치 삭제 수동 고정 (위임 불가) [harness] [governance]
 
 **결정**: 브랜치 삭제(`-d`/`-D`)·worktree 제거·원격 브랜치 삭제는 **위임 불가 — 병진 수동 집행 고정**. 세션 내 예외 승인으로도 CC 집행 불가. 정본 = `docs/harness/session_isolation_guide.md` §D-BRANCH-DELETE-MANUAL. CC는 삭제 후보 + 안전 실측(`origin/main..브랜치` 카운트)까지만 보고·대기. `git branch -d` 거부 시 무조건 HALT(-D 자가 전환 금지).

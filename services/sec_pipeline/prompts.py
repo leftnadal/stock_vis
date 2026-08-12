@@ -20,7 +20,7 @@ SUPPLY_CHAIN_EXTRACTION_PROMPT = """You are a financial analyst extracting suppl
 For each relationship found, provide:
 - `target_company_name`: The exact name of the other company mentioned (not abbreviations)
 - `relationship_type`: One of: SUPPLIES_TO, CUSTOMER_OF, PARTNER_WITH, DEPENDS_ON, COMPETES_WITH
-- `evidence_text`: The exact sentence or phrase from the text that supports this relationship (max 300 chars)
+- `evidence_text`: The exact sentence(s) from the text that support this relationship, copied verbatim as a complete unit (no length cap)
 - `confidence`: Your confidence in this extraction (0.0 to 1.0)
 - `direction`: "outbound" (source company provides to target) or "inbound" (target provides to source)
 
@@ -63,7 +63,7 @@ SUPPLY_CHAIN_EXTRACTION_PROMPT_V2 = """You are a financial analyst extracting su
 For each relationship found, provide:
 - `target_company_name`: The exact name of the other company mentioned (not abbreviations)
 - `relationship_type`: One of: SUPPLIES_TO, CUSTOMER_OF, PARTNER_WITH, DEPENDS_ON, COMPETES_WITH
-- `evidence_text`: The exact sentence or phrase from the text that supports this relationship (max 300 chars)
+- `evidence_text`: The exact sentence(s) from the text that support this relationship, copied verbatim as a complete unit (no length cap)
 - `confidence`: Your confidence in this extraction (0.0 to 1.0)
 - `direction`: "outbound" (source company provides to target) or "inbound" (target provides to source)
 
@@ -84,7 +84,7 @@ For each relationship found, provide:
 **Evidence extraction rules (verbatim grounding)**:
 - The evidence_text field MUST be an exact, contiguous substring copied character-for-character from the filing text, preserving original punctuation, capitalization, numbers, symbols, and whitespace exactly as they appear in the source.
 - Always extend evidence_text to complete sentence boundaries. Never cut a sentence in the middle: begin at the first character of the first sentence containing the supporting claim, and end at the terminal punctuation of the last sentence. If a sentence contains a list, include the entire list through the end of that sentence.
-- If the supporting claim spans multiple sentences, include the full contiguous span of complete sentences, up to a maximum of 300 characters. If the span would exceed this limit, keep the sentence containing the core claim complete and drop whole sentences from the edges — never truncate mid-sentence.
+- If the supporting claim spans multiple sentences, include the full contiguous span of complete sentences. Never truncate mid-sentence; prefer the complete verbatim unit over any length limit.
 - Do not paraphrase, normalize, abbreviate, translate, re-punctuate, or summarize. Do not insert ellipses ("...") and do not join non-adjacent fragments of text.
 - Before returning your output, verify that every evidence_text value appears verbatim as a contiguous substring of the filing text. If any value fails this check, re-copy it directly from the source. Never output evidence_text that fails this verification.
 

@@ -67,7 +67,7 @@ def run_post_batch_quality_checks(hours_back: int = 24) -> list:
             alerts.append(f"⚠️ Track B unknown 비율 {unknown_rate:.0%} — 30% 초과")
 
     # ── 3. Ticker 매칭률 ──
-    recent_ev = SupplyChainEvidence.objects.filter(extracted_at__gte=since)
+    recent_ev = SupplyChainEvidence.objects.current().filter(extracted_at__gte=since)  # v2 필터
     ev_total = recent_ev.count()
     if ev_total > 0:
         matched = recent_ev.filter(target_company__isnull=False).count()
@@ -89,7 +89,7 @@ def run_post_batch_quality_checks(hours_back: int = 24) -> list:
         alerts.append(f"⚠️ 미매칭 큐 적체 {pending_queue}건 — 100건 초과")
 
     # ── 6. Neo4j dirty 적체 ──
-    dirty_count = SupplyChainEvidence.objects.filter(
+    dirty_count = SupplyChainEvidence.objects.current().filter(  # v2 필터
         neo4j_dirty=True, target_company__isnull=False
     ).count()
     if dirty_count > 50:
@@ -125,7 +125,7 @@ def get_dashboard_stats() -> dict:
     )
 
     docs = RawDocumentStore.objects.all()
-    evidences = SupplyChainEvidence.objects.all()
+    evidences = SupplyChainEvidence.objects.current()  # v2 필터(D-SECB-V2-COEXIST)
     bm = BusinessModelSnapshot.objects.all()
     queue = UnmatchedCompanyQueue.objects.all()
 

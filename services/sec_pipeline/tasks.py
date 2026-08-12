@@ -453,7 +453,7 @@ def sync_dirty_to_neo4j(self):
     # ── Phase A: PG lock + dict 복사 ──
     with transaction.atomic():
         dirty_qs = (
-            SupplyChainEvidence.objects.filter(
+            SupplyChainEvidence.objects.current().filter(  # v2 필터(RC 이중가중 차단)
                 neo4j_dirty=True, target_company__isnull=False
             )
             .select_related("source_company", "target_company", "source_document")

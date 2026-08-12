@@ -91,7 +91,7 @@ def calculate_edge_dqs(source_ticker: str, target_ticker: str) -> dict:
     """
     from .models import SupplyChainEvidence
 
-    evidences = SupplyChainEvidence.objects.filter(
+    evidences = SupplyChainEvidence.objects.current().filter(  # v2 필터(D-SECB-V2-COEXIST)
         source_company_id=source_ticker,
         target_company_id=target_ticker,
     )

@@ -10,7 +10,10 @@ import logging
 
 from django.conf import settings
 
-from .prompts import BUSINESS_MODEL_EXTRACTION_PROMPT, SUPPLY_CHAIN_EXTRACTION_PROMPT
+from .prompts import (
+    BUSINESS_MODEL_EXTRACTION_PROMPT,
+    SUPPLY_CHAIN_EXTRACTION_PROMPT_V2,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +53,7 @@ class GeminiExtractor:
 
         paragraphs_text = "\n\n---\n\n".join(filtered_paragraphs)
 
-        prompt = SUPPLY_CHAIN_EXTRACTION_PROMPT.format(
+        prompt = SUPPLY_CHAIN_EXTRACTION_PROMPT_V2.format(
             symbol=symbol,
             company_name=company_name,
             paragraphs=paragraphs_text,

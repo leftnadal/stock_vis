@@ -10,7 +10,12 @@ SEC-PR-3: Track A 추출 결과 검증 + DB 저장
 
 import logging
 
-from .prompts import PROMPT_VERSION
+from django.db import transaction
+
+from .prompts import PROMPT_VERSION_V2
+
+# D-SECB-V2-LEN=C: 300 캡 제거. sanity 경고선(로그만 — 절단·거부 금지).
+EVIDENCE_SANITY_WARN_LEN = 2000
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +190,16 @@ def save_supply_chain_evidences(validated: list, document, source_symbol: str):
 
     evidences = []
     for rel in validated:
+        ev_text = rel["evidence_text"]
+        # D-SECB-V2-LEN=C: sanity 경고만 — 절단·거부 금지(verbatim 보존).
+        if len(ev_text) > EVIDENCE_SANITY_WARN_LEN:
+            logger.warning(
+                "SECB_V2_SANITY evidence_text %d자 > %d (%s→%s) — 경고만·절단 없음",
+                len(ev_text),
+                EVIDENCE_SANITY_WARN_LEN,
+                source_symbol,
+                rel["target_company_name"],
+            )
         evidences.append(
             SupplyChainEvidence(
                 source_document=document,
@@ -192,14 +207,17 @@ def save_supply_chain_evidences(validated: list, document, source_symbol: str):
                 target_company=None,  # Phase 1.5 TickerMatcher에서 매칭
                 target_company_name=rel["target_company_name"],
                 relationship_type=rel["relationship_type"],
-                evidence_text=rel["evidence_text"],
+                evidence_text=ev_text,
                 system_confidence=rel["system_confidence"],
                 confidence_grade=rel["confidence_grade"],
                 neo4j_dirty=True,
-                prompt_version=PROMPT_VERSION,
+                prompt_version=PROMPT_VERSION_V2,
             )
         )
 
-    created = SupplyChainEvidence.objects.bulk_create(evidences)
+    # filing 단위 원자성(D-SECB-V2-CURRENT): 한 filing의 v2 행이 부분 관측되지 않도록
+    # 단일 트랜잭션. .current() supersession이 부분 상태를 보지 않는다.
+    with transaction.atomic():
+        created = SupplyChainEvidence.objects.bulk_create(evidences)
     logger.info(f"{source_symbol}: saved {len(created)} supply chain evidences")
     return created

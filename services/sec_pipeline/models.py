@@ -64,8 +64,24 @@ class RawDocumentStore(models.Model):
 # ──────────────────────────────────────────────
 
 
+class SupplyChainEvidenceQuerySet(models.QuerySet):
+    def current(self):
+        """소비 기본 = **supersession-aware**(D-SECB-V2-CURRENT). filing(source_document)에
+        v2가 있으면 그 filing의 v1은 배제(v2가 대체), v2가 없으면 v1 유지.
+        → D-SECB-V2-COEXIST=B("v1 보존·이중집계 차단")를 배포~롤아웃 창 회귀 없이 충족.
+        (naive `filter(v2)`는 v1-only filing까지 과잉 배제 = 창/테스트 회귀, 폐기.)
+        원자성: filing당 v2 삽입은 단일 bulk_create(save_supply_chain_evidences 내
+        transaction.atomic) → 부분 supersession 관측 불가."""
+        v2_filings = SupplyChainEvidence.objects.filter(
+            prompt_version="v2"
+        ).values("source_document")
+        return self.exclude(prompt_version="v1", source_document__in=v2_filings)
+
+
 class SupplyChainEvidence(models.Model):
     """10-K에서 추출된 supply chain 관계 (Track A)."""
+
+    objects = SupplyChainEvidenceQuerySet.as_manager()
 
     RELATIONSHIP_CHOICES = [
         ("SUPPLIES_TO", "Supplies To"),

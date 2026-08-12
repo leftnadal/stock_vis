@@ -1483,3 +1483,7 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **원인·판정**: `-d`의 "merged" 판정은 **명령 실행 트리의 HEAD**(또는 upstream) 기준. 로컬 main 체크아웃이 origin/main보다 뒤처져 있거나 cwd가 엉뚱한 worktree면, origin/main엔 착지한 브랜치도 **그 트리 HEAD 기준으론 미머지로 오탐**(08-10 GOVCLEANUP 사례: cwd 오탐). 삭제 자체가 병진 수동 고정(D-BRANCH-DELETE-MANUAL·[[lesson_branch_d_upstream_refusal]]).
 
 **교훈**: `-d` 거부의 **첫 수는 `-D` 강제가 아니라 거부 원인 규명** — ⑴ `git merge-base --is-ancestor 브랜치 origin/main`로 실제 소진 재확인, ⑵ **어느 트리 HEAD 기준 판정인지** 확인(`git -C <origin/main 추종 트리> branch -d`로 정정 = 강제 없이 해소). 손실 0 실측은 `-D` 근거가 아니라 보고 내용(INC-001/INC-002). cf. 직전 항목 "-d 거부는 HALT 신호"(자가 -D 전환 금지)의 **해소 메커니즘** 보완.
+
+## 버전 마이그레이션 소비 필터 = supersession, naive 버전 필터는 v1-only 과잉배제 (채번 후보, SECB-V2-ROLLOUT 2026-08-12) `[data][process]`
+
+**증상**: 프롬프트/스키마 v1→v2 롤아웃에서 "소비측 v2 필터"를 `filter(prompt_version='v2')`(naive)로 걸자 **v2 미존재 행(v1-only)까지 배제** → 기존 테스트 13건 실패 + 배포~롤아웃 창에 집계·RC·리포트 0 급락(회귀). 이중집계 방지가 아니라 **데이터 과잉배제**. **교훈**: 신·구 버전 **병존(coexist) 소비 필터는 항상 supersession-aware** — "신버전 있으면 신버전, 없으면 구버전"(단위=대체 경계, 예: filing/document). `exclude(old, unit IN (신버전 보유 unit))`. 단일 소스 메서드(`.current()`)로 정의해 naive↔supersession 전환을 1곳에서. 테스트 대량 실패 = 프로덕션 회귀의 프록시(테스트만 고치면 회귀 출하). cf. D-SECB-V2-CURRENT.
