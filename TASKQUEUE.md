@@ -1227,7 +1227,10 @@
 ## SECB-GE-OBS-17ROW — v1 1768 vs marker 1751 — 17행 관찰 (2026-08-03, G-e STEP0) [sec-beta]
 - 관찰: SupplyChainEvidence total **1768** / prompt_version='v1' **1768** / grounding_method='deterministic_v1' marker **1751** → **17행이 grounded 미표기**(백필 대상 밖·이후 신규 유입 추정). G-e paired 측정은 marker 1751 기준(무영향). 노출/재백필 필요성은 SECB-EXPOSURE·후속에서 판단(현 저우선·등재만).
 
-## SECB-V2-ROLLOUT — v2 프롬프트 전량 적용 (2026-08-03 결정 → 🔵 **실행 중** 2026-08-10) [sec-beta]
+## SECB-V2-ROLLOUT — v2 프롬프트 전량 적용 (2026-08-03 결정 → 🔵 실행 → ✅ **done 2026-08-13**) [sec-beta]
+- **✅ 종결(2026-08-13)**: v2 프롬프트(캡 제거·verbatim) 전량 롤아웃 완료. **종결 실측**: filing 커버리지 **351/351**(결정론 accession_no ASC·stage1 100+stage2 251·중복0·누락0) · v2 **1718행/341 filings** · **전체 nf율 0.58%**(v1 잔여 2.03% 대비 개선)·verified **96.2%** · 길이정책 발현(캡 제거: p90 480·max 3096·>300 38.8%·2000초과 2행=sanity 경고만·무절단) · **v1 1751 완전 무접촉**(#79 전수: count·prompt_version 전부 v1·max 300 유지) · **V-B=STANDBY 미발동**(nf 0.58%≤15%). 비용 실측 ~$3.3/351콜(2단 체크포인트).
+- **§3 경위(절단결함·복구)**: 1단 첫 실행이 안전게이트 통과했으나 길이 미발현(max300·143/497 "..."절단) → 근원=`validator evidence[:297]+"..."`(§0 grep `[:300]`만 봐 누락, D-SECB-V2-LEN=C 미구현) → 수정 `c9400d18`+오염 v2 497 삭제(v1 coexist 무손실)+1단 재실행(max970·verified 67.6%→94.8%) → 2단. common-bugs 2건(supersession 필터·절단 grep 전변형).
+- **RESIDUAL-10**: v2 0행 filing **10건**(LLM 관계 0추출·경계성) = **v1 supersession 폴백(무손실)**. 결정 ⓐ 수용(재시도 안 함·저우선). accession: 0000804328-25-000085·0000320193-25-000079·0001193125-26-044769·0001543151-26-000015·0001628280-25-056698·0001037868-26-000016·0001193125-26-074129·0000920148-26-000111·0001674101-26-000008·0000016732-25-000112.
 - **🔵 상태 전이(2026-08-10)**: **전제 4건 종결**(SECB-V2-RECON, read-only) → **실행 착수**(지시서 `SECB-V2-ROLLOUT-1`). ⑴ evidence_text=TextField 실존·fill 100%·마이그0 · ⑵ v1 길이=300캡(프롬프트 아티팩트·23% 검열)→**D-SECB-V2-LEN=C**(캡 제거·2000 sanity) · ⑶ bulk_create·unique 없음→**D-SECB-V2-COEXIST=B**(v1 보존·소비 v2 필터) · ⑷ 351 filings/1751행·≤$3.3·go(100건 체크포인트). 서열: 437=G1.5 종결·V-B=STANDBY(하류 조건부, 블로커 아님). 정찰 전문 `docs/features/secb/secb_v2_recon_report.md`.
 - **성격**: G-e 표본 측정(tail 71.07%→0.72%)을 근거로 한 **전량 배포·substrate 통합**. 측정 세션이 pass/fail·배포를 하지 않음(D-SECB-GATE-E). ~~전제 4건 해소 전 착수 금지~~ (✅ 종결):
   - ⑴ **`evidence_text` DB 컬럼 실제 max_length 실측** — 300 초과 저장 시 절단/오류 거동 포함(현 모델은 TextField=무제한이나 실 DDL·다운스트림 `[:100]` basis 등 확인).
