@@ -1487,3 +1487,7 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 ## 버전 마이그레이션 소비 필터 = supersession, naive 버전 필터는 v1-only 과잉배제 (채번 후보, SECB-V2-ROLLOUT 2026-08-12) `[data][process]`
 
 **증상**: 프롬프트/스키마 v1→v2 롤아웃에서 "소비측 v2 필터"를 `filter(prompt_version='v2')`(naive)로 걸자 **v2 미존재 행(v1-only)까지 배제** → 기존 테스트 13건 실패 + 배포~롤아웃 창에 집계·RC·리포트 0 급락(회귀). 이중집계 방지가 아니라 **데이터 과잉배제**. **교훈**: 신·구 버전 **병존(coexist) 소비 필터는 항상 supersession-aware** — "신버전 있으면 신버전, 없으면 구버전"(단위=대체 경계, 예: filing/document). `exclude(old, unit IN (신버전 보유 unit))`. 단일 소스 메서드(`.current()`)로 정의해 naive↔supersession 전환을 1곳에서. 테스트 대량 실패 = 프로덕션 회귀의 프록시(테스트만 고치면 회귀 출하). cf. D-SECB-V2-CURRENT.
+
+## "캡 제거" 정책 변경 시 절단 지점 grep은 `[:N]` 전 변형을 훑어야 (프롬프트만·`[:300]`만 = 은닉 절단 잔존) (채번 후보, SECB-V2-ROLLOUT 2026-08-13) `[data][process]`
+
+**증상**: evidence 300 캡 제거에서 프롬프트 캡 + `[:300]`만 grep해 제거했으나 `validator`의 **`evidence[:297] + "..."`**(다른 슬라이스 리터럴)를 놓침 → v2 롤아웃 1단 497행 중 **143행이 "..."로 끝남**(mid-sentence 절단·verbatim 위배). nf율은 정상(1.21%)이나 **verified 67.6% 저조**로만 발현(절단이 grounding 대조를 조용히 깸). **교훈**: ⑴ 길이/절단 정책 변경은 **프롬프트→파서→validator→save 전 계층** 훑기, grep은 특정 숫자 아닌 `\[: *[0-9]+`·`\.\.\.` 전 변형. ⑵ 롤아웃 게이트에 **길이 max·`endswith('...')` 카운트** 포함(nf율만 보면 놓침). ⑶ 오염분은 coexist(v1 보존)라 v2만 삭제 후 재추출로 복구. cf. D-SECB-V2-LEN.

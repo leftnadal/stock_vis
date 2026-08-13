@@ -138,6 +138,29 @@ def test_rematch_scope_preserves_v1():
     assert v1u not in list(scoped)
 
 
+def test_validate_no_truncation_over_300():
+    """D-SECB-V2-LEN=C: validate가 >300 evidence를 절단하지 않고 '...' 미부착(verbatim)."""
+    from services.sec_pipeline.validator_track_a import validate_supply_chain_result
+
+    long_ev = (
+        "The Company depends on Supplier X for critical components, and this "
+        "dependency spans multiple product lines across several fiscal years, "
+        "creating a concentration risk that management actively monitors on a "
+        "continuous basis and discloses in detail within its annual report to "
+        "shareholders, lenders, and regulators in every jurisdiction worldwide."
+    )
+    assert len(long_ev) > 300
+    raw = {"relationships": [{
+        "target_company_name": "Supplier X", "relationship_type": "DEPENDS_ON",
+        "evidence_text": long_ev, "confidence": 0.9, "direction": "inbound",
+    }]}
+    result = validate_supply_chain_result(raw, "AAPL")
+    assert len(result) == 1
+    assert result[0]["evidence_text"] == long_ev  # 원문 그대로
+    assert not result[0]["evidence_text"].endswith("...")
+    assert len(result[0]["evidence_text"]) > 300  # 절단 안 됨
+
+
 def test_grounding_verbatim_long_evidence_verified():
     """캡 제거 방향 실증: >300자 완결 인용이 원문 verbatim 부분문자열이면 VERIFIED."""
     sentence = (

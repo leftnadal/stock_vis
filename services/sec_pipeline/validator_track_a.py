@@ -139,10 +139,8 @@ def validate_supply_chain_result(result: dict, source_symbol: str) -> list:
         if rel_type not in ALLOWED_RELATIONSHIP_TYPES:
             rel_type = "DEPENDS_ON"
 
-        # evidence 길이 제한 (300자)
-        if len(evidence) > 300:
-            evidence = evidence[:297] + "..."
-
+        # D-SECB-V2-LEN=C: 300 캡·절단 제거. verbatim 완결 단위 보존(생략부호 "..." 금지 —
+        # 절단은 grounding verbatim 대조 위배). 과대 길이는 save 시 sanity 경고만(2000).
         validated.append(
             {
                 "target_company_name": target_name,
