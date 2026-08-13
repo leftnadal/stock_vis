@@ -22,7 +22,9 @@
 
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |----|------|-------|------------|--------|-----------|
-| MPS-1 | 스트레스 스코어 엔진 + regime/stress API + 수집 2종 배선 | @backend | — | ✅ **코드 done(`6c1c3736`, 미push)** | 엔진(가족균등가중 z 평균)+카테고리+백분위+방향2종+level_band 잠정. TDD 36 신규 GREEN·전체 4773 pass(선존 3건 별개)·경계0·health❌0·regime판정 150 GREEN. **랜딩=origin/main(7a0ef653 base) 전진분 rebase 후 push** |
+| MPS-1 | 스트레스 스코어 엔진 + regime/stress API + 수집 2종 배선 | @backend | — | ✅ **코드 done(`6c1c3736`+`8d868651`)** | 엔진(가족균등가중 z 평균)+카테고리+백분위+방향2종+level_band 잠정. TDD 36 신규 GREEN·전체 4773 pass·경계0·health❌0·regime판정 150 GREEN |
+| MPS-1-LAND | level_band 개명(crisis→severe, D-MPS-BAND-NAME) + F5-① l3_why import 수리 + 원장(D-MPS-* 4건 보강) + rebase·push | @backend | MPS-1 | 🔵 **착지(rebase→재검→push)** | 개명=문자열만(임계값·로직 무변경)·금지규칙2 계약 테스트 신설. l3_why 신규 GREEN(선존 3→1). 개명커밋+수리커밋+원장커밋 |
+| MON-ADVISOR-DATEDEP | **known-fail(OPS 별건)**: `tests/monitor/test_advisor_briefing.py` 2건(`test_creates_note`·`test_coverage_denominator_not_hardcoded_9`) date-dependent 실패(DailyPrice coverage_n=0) | @infra | — | 🕒 **known-fail 등재** | MPS-1 회귀서 발견·클린 트리(내 diff 없는 트리) 재현 확정=선존. 오늘(08-13) 기준 DailyPrice 윈도 정합 깨짐 추정. 레지스트리 미등록이라 등재 — 수리는 OPS(MPS-1 무관) |
 | MPS-1-DEPLOY | seed 0007 apply(prod) + 워커 재기동(#41 FRED_RECURRING_SERIES 상수) + beat 반영(#28 setup_marketpulse_beat 관례) → DTWEXBGS·STLFSI4 일상 수집 점등 | 병진 수동 | MPS-1 push | 🟡 **승인 게이트** | prod write. seed 미적용 시 recurring이 `.get()` skip(무해). 점등 후 최초 fetch 0행 아님 확인(#B1 limit no-op은 신규 series 미해당) |
 | MPS-1-BACKFILL | 신규 2종 소급 백필 실행(prod write) | 병진 수동 | MPS-1-DEPLOY | 🟡 **승인 게이트(dry-run 산정 완료)** | dry-run: STLFSI4=**162 주간점**(2023-07~, in-memory 실측)·DTWEXBGS≈**780 일간(추정, 2023-07~today 윈도)** 또는 전체이력. 호출=1/series(backfill_v2_a1 limit=100000 asc). 소급 백필=무손실이라 지연 비용 0 |
 | MPS-SOFR | **별건**: SOFR 스프레드 series 전략 확정(**별건 내 프로브 허용**) + 필요시 market_pulse 파생 최소 설계. 소급 백필로 무손실 | @backend | — | 🕒 **보류(기한=S4-REBASE 성분 편입 심사 前)** | market_pulse 파생 인프라 부재로 MPS-1서 배선 보류(D-MPS-INDICATORS). 단일 raw 존재 시 1줄, 파생(SOFR−EFFR)이면 최소 파생 설계 필요 |

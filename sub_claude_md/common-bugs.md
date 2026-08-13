@@ -1509,3 +1509,9 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **증상**: `SECEdgarClient.download_8k_text`가 filing 디렉토리 인덱스(`.../{acc}/`)를 스크래핑해 primary doc 링크를 찾는 경로가 `//index.htm` 404 다발(표본 20/20 실패). CIK zero-padding·디렉토리 리스팅 형식 취약.
 
 **해결**: submissions JSON의 `primaryDocument[i]`를 직접 사용 → `https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc_nodash}/{primary}` (CIK leading-zero 제거). 8-K 다운로드 20/20·885건 실패 0. CS-P2-8K는 로컬 헬퍼로 우회(공유 client 무접촉·수리는 TASKQUEUE `P28K-CLIENT-FIX`). 10-K는 `download_10k_text`가 primary_document 직접 사용이라 무관.
+## 모듈 이관 시 소비자 전수 grep 범위에 `tests/` 포함 — 누락 소비자의 import 깨짐이 '선존 실패'로 위장 (채번 후보, MPS-1-LAND 2026-08-13) `[testing][boundary][process]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
+
+**증상**: 모듈 이관(예: BOUNDARY-LLM-CB `apps/market_pulse/llm/client.py`→`packages/shared/llm/legacy_gemini.py`)에서 소비자 import를 일괄 갱신할 때 **`tests/` 하위 소비자를 누락**. 앱 코드 9곳은 갱신됐으나 10번째 소비자(테스트)가 구 경로를 유지 → `ImportError: cannot import name 'client'`. 이 실패가 다음 세션엔 **"선존 실패"로 위장**(내 diff 무관으로 오판)돼 방치되고, known-fail 레지스트리에도 미등록으로 남는다.
+
+**교훈**: 소비자 전수 grep 범위에 **`tests/`를 명시**한다(`grep -rn '<구 경로>' apps/ packages/ tests/`). 이관 완료 판정 = 앱+테스트 양쪽 0건. **위장 식별법**: "선존 실패"로 분류하기 전에 실패가 **모듈 부재/import 오류**면 이관 drift 의심(코드 로직 실패와 구분). 모킹 대상도 함께 정합 — 호출시점 로컬 import(`def f(): from X import g`)는 **소스 모듈 X를 패치**해야 monkeypatch가 유효(소비 모듈 패치는 무효). cf. BOUNDARY-LLM-CB([[project_boundary_llm_track]]).

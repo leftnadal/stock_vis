@@ -45,6 +45,24 @@
 - **Gate 2 정지 = 현행 유지.** 재가동 판정은 V2 체크포인트 결과와 함께.
 
 **STEP 0 측정 / 검증**: 181 v1 필터 재확인 ✅(438 not_found → 181 TRUE-NONVERBATIM, 결정론 일치). F_v2 = `grounding_method='deterministic_v1'` distinct filings = 351(참조 일치). 교집합 부록 = `docs/features/chain-sight/sec_beta_vb_absorb_intersection.md`.
+## [2026-08-13] MPS-1-LAND — level_band 개명 + 누락 D-MPS-* 보강 [marketpulse][stress]
+
+**D-MPS-BAND-NAME — level_band 최고 단계 = `severe`(구 `crisis`).** 임계값(0.5/1.5)·로직·`band_provisional` 무변경 — 문자열만.
+- Why: 금지규칙 2(D-MPS-COPY) = "CRISIS/위기 단어는 classifier 실발동일에만". enum에 `crisis`가 박히면 FE가 raw 값을 표시하는 순간 규칙 위반 시작. **미push 상태 = pre-push 개명이 최저비용.** 디렉터 세션 퀀트 4.65·마진 1.60(자동확정). `severe`가 classifier 5단계·repo 어휘와 무충돌(STEP 0 grep 0) → 폴백 `strained` 불요.
+- How to apply: `stress.py::level_band` 반환 `"crisis"`→`"severe"` + 금지규칙 2 계약 테스트(`test_band_vocab_excludes_crisis`). classifier CRISIS(`models/regime.py:24`) 무접촉.
+
+**D-MPS-TRACK — Phase 1.5 Crisis/Stress 레이어 = MP-STRESS 트랙, 초판 표시 전용.** MPS-1(백엔드)→MPS-2(FE·카피) 분리.
+- Why: "Phase 1.5"는 원장에서 이미 Translation Layer(종결)를 지칭(STEP 0 조사) → 명명 충돌 회피 위해 신규 트랙 ID = MP-STRESS. 초판은 미검증이라 표시 전용(판정 미입력).
+- How to apply: TASKQUEUE MP-STRESS 트랙(MPS-1/DEPLOY/BACKFILL/2/SOFR/S4-REBASE-COMPONENT).
+
+**D-MPS-SOFR-DEFER — SOFR 스프레드 배선 보류(MPS-SOFR 별건).**
+- Why: market_pulse 수집 경로(EconomicIndicator/IndicatorValue)에 파생(DERIVED) 인프라 부재(그건 credit_signals 전용). SOFR가 파생(SOFR−EFFR)이면 신규 파생 함수 신설 = 소량 초과. 단일 raw series 확정은 프로브 필요(§3 규율). **소급 백필로 무손실 = 지연 비용 0.** 디렉터 옵션1(프로브·credit_signals 경유 기각).
+- How to apply: TASKQUEUE MPS-SOFR(기한=S4-REBASE 성분 편입 심사 前, 별건 내 프로브 허용).
+
+**D-MPS-MONTHLY-DECOUPLE — 스코어·regime 입력은 월간 거시군(CPI·FEDFUNDS·UNRATE·PCEPI) 미포함 → 월간군 stale 무영향, 수리는 OPS 별건.**
+- Why: 14지표 벡터(`INDICATOR_CODE_MAP`)에 월간군 없음(일간 위기·금리·주간 NFCI만) → STEP 0에서 발견한 월간군 정체(age 133~254)가 스트레스 스코어에 파급 0. 결합을 강제하지 않아 스코어는 신선 신호만 사용.
+- How to apply: TASKQUEUE MON-MONTHLY-MACRO-OPS(별건 수리). Crisis 레이어가 월간 거시 소비 시 선수리.
+
 ## [2026-08-13] MPS-1 MP-STRESS 백엔드 — 결정 8건 흡수 (D-MPS-*) [marketpulse][stress]
 
 > MP-STRESS 결정 사이클(프로젝트 `mp_stress_decisions.md`)에서 닫힌 8결정의 repo 1차 소스 흡수.
