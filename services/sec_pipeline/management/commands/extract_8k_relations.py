@@ -62,6 +62,7 @@ class Command(BaseCommand):
         cat_dist = Counter()
         n_cp = 0
         landed = landed_new = landed_existing = queued = self_skip = 0
+        acq_withheld = 0  # acquisition: 방향/주체 결함으로 RC 착지 보류(증거만)
         below_conf = 0
         filings_with_cp = empty = errors = 0
         spot = []
@@ -108,17 +109,29 @@ class Command(BaseCommand):
                     continue
                 rel_type = CATEGORY_TO_RELATION[cat]
                 ticker, method = matcher.match(c["name"], source_sector)
+                # 신뢰 해소 = exact/alias만. fuzzy(token_sort≥80)는 오매칭 위험(실측:
+                # Masimo→Masco·Synaptics→Snap-on·Comerica→Corning) → 미해소 취급, 착지 금지.
+                trusted = bool(ticker) and ticker in univ and method in ("exact", "alias")
 
-                if not ticker or ticker not in univ:
+                if trusted and ticker == company:
+                    self_skip += 1
+                    continue
+
+                ev = None
+                if apply:
+                    ev = SEC8KCounterpartyEvidence.objects.create(
+                        filing=filing, source_symbol=company,
+                        raw_target_name=c["name"],
+                        resolved_ticker=ticker if (ticker and ticker in univ) else "",
+                        match_method=method or "", relationship_type=rel_type,
+                        item_code=c.get("item") or "", filing_date=filing.filing_date,
+                        evidence_text=c["evidence"], landed=False,
+                    )
+
+                if not trusted:
+                    # 미해소 or fuzzy → 큐(확장 2차 근거), 미착지
                     would_queue += 1
                     if apply:
-                        SEC8KCounterpartyEvidence.objects.create(
-                            filing=filing, source_symbol=company,
-                            raw_target_name=c["name"], resolved_ticker="",
-                            match_method="", relationship_type=rel_type,
-                            item_code=c.get("item") or "", filing_date=filing.filing_date,
-                            evidence_text=c["evidence"], landed=False,
-                        )
                         qe, created = UnmatchedCompanyQueue.objects.get_or_create(
                             raw_company_name=c["name"],
                             defaults={
@@ -134,11 +147,14 @@ class Command(BaseCommand):
                         queued += 1
                     continue
 
-                if ticker == company:
-                    self_skip += 1
+                # ACQUIRED(acquisition): filer→상대 방향/주체가 원문에서 불안정(실측:
+                # BEAM→BMY 등 방향 역·merger sub 오지목) → RC 착지 보류(증거만 보존).
+                # 방향·주체 disambiguation은 TASKQUEUE(8-K ACQUIRED 정제) 후 재개.
+                if cat == "acquisition":
+                    acq_withheld += 1
                     continue
 
-                # 해소 성공 → 착지
+                # 해소 성공(commercial/supply, exact/alias) → 착지
                 would_land += 1
                 if not apply:
                     continue
@@ -177,13 +193,9 @@ class Command(BaseCommand):
                         ),
                     },
                 )
-                SEC8KCounterpartyEvidence.objects.create(
-                    filing=filing, source_symbol=company,
-                    raw_target_name=c["name"], resolved_ticker=ticker,
-                    match_method=method or "", relationship_type=rel_type,
-                    item_code=c.get("item") or "", filing_date=filing.filing_date,
-                    evidence_text=c["evidence"], landed=True,
-                )
+                if ev is not None:
+                    ev.landed = True
+                    ev.save(update_fields=["landed"])
                 landed += 1
                 landed_this = True
                 if is_new:
@@ -210,9 +222,10 @@ class Command(BaseCommand):
         self.stdout.write("\n=== 깔때기 ===")
         self.stdout.write(f"  filings 처리: {total_filings} (상대기업 보유 {filings_with_cp} / empty {empty} / LLM err {errors})")
         self.stdout.write(f"  착지후보 신뢰도미달(<{min_conf}): {below_conf}")
+        self.stdout.write(f"  ACQUIRED 착지보류(방향결함, 증거만): {acq_withheld}")
         if apply:
-            self.stdout.write(f"  착지 쌍: {landed} (신규 {landed_new} / 기존증거보강 {landed_existing})")
-            self.stdout.write(f"  미해소 큐 적재: {queued}  self-skip: {self_skip}")
+            self.stdout.write(f"  착지 쌍(commercial/supply·exact/alias): {landed} (신규 {landed_new} / 기존증거보강 {landed_existing})")
+            self.stdout.write(f"  미해소 큐 적재(미해소+fuzzy): {queued}  self-skip: {self_skip}")
         else:
             self.stdout.write(f"  [시뮬] 착지가능: {would_land}  미해소예상: {would_queue}  self-skip: {self_skip}")
 
