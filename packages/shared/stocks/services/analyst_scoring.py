@@ -128,12 +128,16 @@ def _index_at_or_before(dates: list, d: date) -> Optional[int]:
     return res
 
 
-def resolve_realized(bars: list, capture_date: date, h: int, as_of: date):
+def resolve_realized(bars: list, capture_date: date, h: int, as_of: date, splits=None):
     """capture로부터 h거래일 후 실현가 해석 (W3).
 
     반환 (status, realized_date, realized_close).
     status ∈ {"ok", "immature", "unscoreable:no_data", "unscoreable:no_spot",
-              "unscoreable:series_break"}.
+              "unscoreable:series_break", "unscoreable:corporate_action"}.
+
+    splits = 해당 종목 분할일 리스트(date). capture_date < split ≤ realized_date인 분할이
+    있으면 원시(비조정) close가 오염되므로 unscoreable:corporate_action(I3-SPLIT-GUARD,
+    D-SPLIT-1). splits=None/빈 리스트면 분기 미발동 → 기존 산출 IDENTICAL.
     """
     if not bars:
         return ("unscoreable:no_data", None, None)
@@ -153,7 +157,13 @@ def resolve_realized(bars: list, capture_date: date, h: int, as_of: date):
     gap_days = (bars[j][0] - bars[j - 1][0]).days
     if gap_days > W3_ALLOWANCE_TRADING_DAYS * _CAL_PER_TD + 3:
         return ("unscoreable:series_break", None, None)
-    return ("ok", bars[j][0], bars[j][1])
+    realized_date = bars[j][0]
+    # 예측~만기 구간(capture 배타 ~ realized 포함) 내 분할 = 원시 close 오염 → 채점 불가.
+    if splits:
+        for sd in splits:
+            if capture_date < sd <= realized_date:
+                return ("unscoreable:corporate_action", None, None)
+    return ("ok", realized_date, bars[j][1])
 
 
 def _earliest_maturity_est(predictions: list, h: int) -> Optional[str]:
@@ -167,7 +177,9 @@ def _earliest_maturity_est(predictions: list, h: int) -> Optional[str]:
 # ============================================================
 # Tier 1 채점 과목 (순수 함수: predictions·bars → dict)
 # ============================================================
-def direction_hit_rate(predictions, bars_by_symbol, as_of, horizons=(21, 63)) -> dict:
+def direction_hit_rate(
+    predictions, bars_by_symbol, as_of, horizons=(21, 63), splits_by_symbol=None
+) -> dict:
     """① 방향 적중률. 예측 방향 = sign(target − spot). 적중/표본/이항 p."""
     out = {}
     for h in horizons:
@@ -180,7 +192,8 @@ def direction_hit_rate(predictions, bars_by_symbol, as_of, horizons=(21, 63)) ->
             if pred_dir == 0:
                 continue
             status, _, rclose = resolve_realized(
-                bars_by_symbol.get(p.symbol, []), p.capture_date, h, as_of
+                bars_by_symbol.get(p.symbol, []), p.capture_date, h, as_of,
+                (splits_by_symbol or {}).get(p.symbol, []),
             )
             if status == "ok":
                 sample += 1
@@ -202,7 +215,9 @@ def direction_hit_rate(predictions, bars_by_symbol, as_of, horizons=(21, 63)) ->
     return out
 
 
-def target_progress(predictions, bars_by_symbol, as_of, horizons=(63, 126, 252)) -> dict:
+def target_progress(
+    predictions, bars_by_symbol, as_of, horizons=(63, 126, 252), splits_by_symbol=None
+) -> dict:
     """② 목표가 진행률. 실현폭/예측폭 비율의 중앙값·IQR."""
     out = {}
     for h in horizons:
@@ -215,7 +230,8 @@ def target_progress(predictions, bars_by_symbol, as_of, horizons=(63, 126, 252))
             if pred_move == 0:
                 continue
             status, _, rclose = resolve_realized(
-                bars_by_symbol.get(p.symbol, []), p.capture_date, h, as_of
+                bars_by_symbol.get(p.symbol, []), p.capture_date, h, as_of,
+                (splits_by_symbol or {}).get(p.symbol, []),
             )
             if status == "ok":
                 ratios.append(float((rclose - p.spot) / pred_move))
@@ -233,7 +249,9 @@ def target_progress(predictions, bars_by_symbol, as_of, horizons=(63, 126, 252))
     return out
 
 
-def cross_sectional_ic(predictions, bars_by_symbol, as_of, horizons=(21, 63)) -> dict:
+def cross_sectional_ic(
+    predictions, bars_by_symbol, as_of, horizons=(21, 63), splits_by_symbol=None
+) -> dict:
     """③ 횡단면 IC. 주간 코호트 upside% 순위 vs 실현수익 순위 Spearman."""
     weeks = defaultdict(list)
     for p in predictions:
@@ -249,7 +267,8 @@ def cross_sectional_ic(predictions, bars_by_symbol, as_of, horizons=(21, 63)) ->
                 if p.spot is None or p.spot == 0 or p.target_consensus is None:
                     continue
                 status, _, rclose = resolve_realized(
-                    bars_by_symbol.get(p.symbol, []), p.capture_date, h, as_of
+                    bars_by_symbol.get(p.symbol, []), p.capture_date, h, as_of,
+                    (splits_by_symbol or {}).get(p.symbol, []),
                 )
                 if status != "ok":
                     continue
@@ -289,8 +308,12 @@ def _git_head() -> str:
 
 
 def load_scoring_inputs(as_of: date, symbols=None):
-    """ORM 읽기 → (predictions, bars_by_symbol, counts). as_of 이하만."""
-    from packages.shared.stocks.models import AnalystSignalSnapshot, DailyPrice
+    """ORM 읽기 → (predictions, bars_by_symbol, splits_by_symbol, counts). as_of 이하만."""
+    from packages.shared.stocks.models import (
+        AnalystSignalSnapshot,
+        DailyPrice,
+        StockSplit,
+    )
 
     qs = AnalystSignalSnapshot.objects.filter(captured_at__date__lte=as_of)
     if symbols:
@@ -302,7 +325,9 @@ def load_scoring_inputs(as_of: date, symbols=None):
     )
     syms = sorted({r["symbol"] for r in rows})
     bars_by_symbol = {}
+    splits_by_symbol = {}
     daily_rows = 0
+    splits_rows = 0
     for s in syms:
         bars = list(
             DailyPrice.objects.filter(stock__symbol=s, date__lte=as_of)
@@ -311,6 +336,13 @@ def load_scoring_inputs(as_of: date, symbols=None):
         )
         bars_by_symbol[s] = bars
         daily_rows += len(bars)
+        split_dates = list(
+            StockSplit.objects.filter(stock__symbol=s, date__lte=as_of)
+            .order_by("date")
+            .values_list("date", flat=True)
+        )
+        splits_by_symbol[s] = split_dates
+        splits_rows += len(split_dates)
 
     predictions = []
     for r in rows:
@@ -327,11 +359,20 @@ def load_scoring_inputs(as_of: date, symbols=None):
             Prediction(r["symbol"], cap_date, spot, r["target_consensus"], cohort)
         )
     counts = {"ass_rows": len(rows), "daily_price_rows": daily_rows}
-    return predictions, bars_by_symbol, counts
+    return predictions, bars_by_symbol, splits_by_symbol, counts
 
 
-def reproduction_header(as_of: date, counts: dict, extra_counts: Optional[dict] = None) -> dict:
-    """재현 좌표 블록(규칙 2). AdvisoryRun 행수는 apps 계층(command)에서 extra로 주입."""
+def reproduction_header(
+    as_of: date,
+    counts: dict,
+    extra_counts: Optional[dict] = None,
+    splits_input_rows: Optional[int] = None,
+    splits_max_date: Optional[str] = None,
+) -> dict:
+    """재현 좌표 블록(규칙 2). AdvisoryRun 행수는 apps 계층(command)에서 extra로 주입.
+
+    splits_input_rows·splits_max_date = 채점 시점 StockSplit 좌표(I3-SPLIT-GUARD, additive).
+    """
     row_counts = dict(counts)
     if extra_counts:
         row_counts.update(extra_counts)
@@ -340,20 +381,32 @@ def reproduction_header(as_of: date, counts: dict, extra_counts: Optional[dict] 
         "scoring_version": SCORING_VERSION,
         "git_head": _git_head(),
         "input_rows": row_counts,
+        "splits_input_rows": splits_input_rows,
+        "splits_max_date": splits_max_date,
     }
 
 
 def score_tier1(as_of: date, symbols=None) -> dict:
     """Tier 1 전과목 코호트별 산출 + 재현 헤더."""
-    predictions, bars, counts = load_scoring_inputs(as_of, symbols)
-    result = {"header": reproduction_header(as_of, counts), "cohorts": {}}
+    predictions, bars, splits, counts = load_scoring_inputs(as_of, symbols)
+    splits_rows = sum(len(v) for v in splits.values())
+    splits_max = max((d for v in splits.values() for d in v), default=None)
+    result = {
+        "header": reproduction_header(
+            as_of,
+            counts,
+            splits_input_rows=splits_rows,
+            splits_max_date=splits_max.isoformat() if splits_max else None,
+        ),
+        "cohorts": {},
+    }
     for cohort in ("pinned", "derived"):
         preds_c = [p for p in predictions if p.cohort == cohort]
         entry = {
             "prediction_count": len(preds_c),
-            "direction_hit_rate": direction_hit_rate(preds_c, bars, as_of),
-            "target_progress": target_progress(preds_c, bars, as_of),
-            "cross_sectional_ic": cross_sectional_ic(preds_c, bars, as_of),
+            "direction_hit_rate": direction_hit_rate(preds_c, bars, as_of, splits_by_symbol=splits),
+            "target_progress": target_progress(preds_c, bars, as_of, splits_by_symbol=splits),
+            "cross_sectional_ic": cross_sectional_ic(preds_c, bars, as_of, splits_by_symbol=splits),
         }
         if cohort == "pinned":
             # epoch 태깅(D-I3-5): 수리 前=혼합 관례(캐비앗) / 後=T 관례. 수식 무변경.
