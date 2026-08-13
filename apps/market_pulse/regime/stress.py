@@ -145,11 +145,15 @@ def price_trend(
 
 
 def level_band(score: float | None) -> str | None:
-    """잠정 밴드(안정/주의/위기). 경계값은 상위 밴드 포함(≥). **S4-REBASE 재산정 대상**."""
+    """잠정 밴드(stable/caution/severe). 경계값은 상위 밴드 포함(≥). **S4-REBASE 재산정 대상**.
+
+    최고 단계 = **severe**(D-MPS-BAND-NAME). classifier 5단계의 "CRISIS/위기"는 실발동일에만
+    쓰는 별개 어휘 — 금지규칙 2(D-MPS-COPY) 준수를 위해 밴드 enum에 crisis 단어를 두지 않는다.
+    """
     if score is None:
         return None
     if score < STRESS_BAND_LOW:
         return "stable"
     if score < STRESS_BAND_HIGH:
         return "caution"
-    return "crisis"
+    return "severe"

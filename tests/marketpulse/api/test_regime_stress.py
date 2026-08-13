@@ -128,7 +128,7 @@ class TestRegimeStress:
         body = auth_client.get(_url()).json()["data"]
         assert body["available"] is True
         assert isinstance(body["score"], float)
-        assert body["level_band"] in {"stable", "caution", "crisis"}
+        assert body["level_band"] in {"stable", "caution", "severe"}
         assert set(body["percentile"]) == {"value", "window_days"}
         assert body["percentile"]["window_days"] >= 1
         # direction 2종

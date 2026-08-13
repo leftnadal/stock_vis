@@ -170,13 +170,23 @@ class TestLevelBand:
     def test_caution_mid(self):
         assert stress.level_band(1.0) == "caution"
 
-    def test_crisis_high(self):
-        assert stress.level_band(1.6) == "crisis"
+    def test_severe_high(self):
+        assert stress.level_band(1.6) == "severe"
 
     def test_boundaries_inclusive_lower(self):
         # 경계값은 상위 밴드에 포함(≥)
         assert stress.level_band(0.5) == "caution"
-        assert stress.level_band(1.5) == "crisis"
+        assert stress.level_band(1.5) == "severe"
+
+    def test_band_vocab_excludes_crisis(self):
+        # 금지규칙 2(D-MPS-COPY): 밴드 enum에 classifier "crisis" 단어를 두지 않는다.
+        #   FE가 raw 값을 표시해도 규칙 위반이 시작되지 않도록 코드로 고정(MPS-2 FE 짝).
+        bands = {
+            stress.level_band(s)
+            for s in (-1.0, 0.0, 0.4, 0.5, 1.0, 1.49, 1.5, 1.6, 3.0)
+        }
+        assert bands == {"stable", "caution", "severe"}
+        assert "crisis" not in bands
 
     def test_none_score(self):
         assert stress.level_band(None) is None
