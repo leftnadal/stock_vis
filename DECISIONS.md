@@ -6283,3 +6283,21 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **D-BOUNDARY-LLM-CB — 경계 정직화(C) + 래퍼 verbatim 이동(B), A(완전통합) 이연**: STEP 0 재검이 지시서 전제 반증 → HALT 후 디렉터 재산정. 실측 = ⑴ `packages/shared/llm/`(core+gemini/anthropic providers)이 **이미 성숙·다앱 경유** ⑵ market_pulse `apps/market_pulse/llm/client.py`(`genai_module.Client`)가 **별칭으로 경계 스캐너 하드매칭(`func.value.id=="genai"`) 우회 → FROZEN=0 종결이 false-negative** ⑶ 소비처 9곳·교차앱(mp translation/briefing/regime + chain_sight domain_tasks/3커맨드 + tools/review). **채택 = C→B(가중합 4.10 vs A 3.50, 타이브레이커=행위보존/저위험)**: **C**(별칭 인지 스캐너 `_genai_bound_names` 바인딩 추적 → 위반 1 검출 → KNOWN_VIOLATIONS 등재 FROZEN 0→1·테스트/health 동시·common-bugs) → **B**(client.py verbatim → `packages/shared/llm/legacy_gemini.py`, **함수 본문 md5 IDENTICAL `72fd28a6`**·소비처 9 import경로만·CORE_EXEMPT 면제 → 위반 0 재증명 FROZEN 1→0). **ALIAS 판정 = (나) 단순 명명**(도입 `51046350` 우회 의도 무). **A(shim→core 통합·gemini 중복 제거·Haiku A/B) = BOUNDARY-LLM-UNIFY 이연**(트리거=S4-REBASE or 다음 shared/llm 작업). 회귀: 경계·regime·chainsight domain·translation GREEN(test_attention 5 fail=pre-existing·LLM 무접촉 stash 대조)·마이그0·health 15/0/0·#47 소멸(worker sync).
 
 **D-TONEGUARD-RETRY — REGEN-V2 톤가드 실패 8일 1회 재시도(동일 프롬프트·기준, shim 실전 스모크)**: 대상 = macro 신호 有 + cl3_v2 부재 8일(신규 `--dates` 플래그·dry-run 정확히 8 게이트). 동일 cl3_v2 프롬프트·동일 톤가드 1회(기준 완화 0). **결과 = 4 통과(cl3_v2 생성) / 4 재실패(null 유지)**: 통과 2025-02-25·04-17·05-19·11-21(관세·신용등급·고용 맥락·톤가드 clean), 재실패 2023-10-05·2024-02-02·2025-05-15·2025-11-04. 재실패분 = **추가 재시도 금지, S4-REBASE 반환**(LLM 비결정성 자연 통과만 수용, 억지 생성 금지). 전체 cl3_v2 666→670. 실행이 legacy_gemini shim 경유(구 client.py 제거된 트리서 생성 성공 = B 이동 실전 검증).
+
+## D-CS-P2-8K (2026-08-13, 8-K 파이프라인 — 근거계층 관계 추출·착지)
+
+**집행**: CS-P2-8K Slice1-4(병진 GO). 682 유니버스 8-K item 1.01/2.01 백필 1년 → LLM 추출/분류 → ticker 해소 → `RelationConfidence` serving_layer=evidence 착지. 랜딩 `16060620`. **재사용**: 공유 SECEdgarClient(8-K 지원 내장)·ticker_matcher.match()·`UnmatchedCompanyQueue`(+`source_form` additive). **신규**: `SEC8KFiling`(event-driven·filing_date=시점·10-K RawDocumentStore와 분리)·`SEC8KCounterpartyEvidence`(증거행·시점)·마이그 0004(적용).
+
+**D-CS-P2-8K-LLM-CLASSIFY — 추출 = LLM 추출+분류(Gemini 2.5 Flash), 규칙기반 아님.** **Why**: item 1.01의 다수가 금융계약(상대=은행/수탁자/underwriter)이라 규칙기반은 은행명을 거짓 관계로 추출. LLM이 commercial/supply/acquisition vs financing/unclear 분류로 노이즈 필터. 실측 = **financing 73.5%(1,846/2,513)+unclear 3.9% = 노이즈 77.4% 필터**(병진 추정 ~50%보다 높음). 비용 ~$1-3(승인).
+
+**D-CS-P2-8K-LAND-GUARD — 착지 = exact/alias × commercial/supply만.** financing/unclear = 원문(SEC8KFiling) 보존·미착지·카운트만(강행 착지 금지·원칙 우선). 미해소·fuzzy = UnmatchedCompanyQueue(source_form=8-K, 확장 2차 근거).
+
+**KPI**: 885 filings(실패0)·822 상대보유 → 2,513 counterparty → 착지후보 568 → **실착지 15관계**(PARTNER_WITH 8·SUPPLIES_TO 7·전부 confirmed·evidence·score85)·**시점 커버 18/18=100%**. 미해소 큐 375(8-K)·증거 549 보존. 실관계 품질(AMD→META·CRWV→NVDA·DAL→BA·PLUG→WMT·IREN→MSFT).
+
+**F1(fuzzy 오매칭)**: ticker_matcher fuzzy(token_sort≥80)가 Masimo→Masco·Synaptics→Snap-on·Comerica→Corning·UniFirst→RTX 등 **거짓 관계** 생성 → fuzzy 착지 금지(exact/alias만), 이미 착지분 롤백. 근본 = token_set 개선(TASKQUEUE `P28K-TICKER-TOKENSET`, "현행 재사용" 지시서 준수).
+
+**F2(ACQUIRED 방향결함)**: item 2.01/1.01 인수의 filer→상대 방향·주체가 원문에서 불안정(BEAM→BMY 방향역·merger sub 오지목·자회사 오매칭) → **ACQUIRED RC 착지 보류**(증거만 보존). 재개 = 방향 판정 설계(TASKQUEUE `P28K-ACQUIRED-DIR`) 후.
+
+**매핑표 갱신(ACQUIRED)**: item 2.01(인수/합병/스핀오프) → **ACQUIRED = evidence 계층**(RelationConfidence choices additive·마이그 0031 no-op DDL·적용). 단 착지는 F2로 보류(choices·증거는 준비, RC 착지만 게이트). item 1.01 상업 → PARTNER_WITH·공급 → SUPPLIES_TO(evidence, 착지). **롤백**: 이미 --apply된 fuzzy+ACQUIRED 착지 58건 삭제(신규 생성분만·선존 0·증거 landed=False 보존) → 73→15.
+
+**공유 client 버그**: `SECEdgarClient.download_8k_text` 디렉토리 스크래퍼가 `//index.htm` 404 → 로컬 헬퍼(primaryDocument 직접 URL) 우회(공유 client 무접촉 승인). 수리 = TASKQUEUE `P28K-CLIENT-FIX`. common-bugs 등재. **유니버스 682→683**(FDXF=FedEx Freight 스핀오프 편입 확인).

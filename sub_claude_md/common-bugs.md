@@ -1503,3 +1503,9 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **증상**: 세션 브랜치를 origin/main에 union rebase(흡수)하면 커밋 해시가 재작성됨. 이미 push된 원격 세션 브랜치를 갱신하려면 `push --force`가 필요 → force 유발.
 
 **교훈**: rebase 흡수 후 **원격 세션 브랜치를 갱신하지 않는다**. 착지는 `git push origin HEAD:main`(main으로 직행 ff-push) — 원격 세션 브랜치(구 해시)는 **미갱신 잔존**시키고 **수동 삭제 목록(D-BRANCH-DELETE-MANUAL)** 으로 넘긴다. 이렇게 하면 rebase가 있어도 **force 필요 상황 자체를 만들지 않는다**(D-PUSH-DELEG (iii) 준수). 08-11 SECB-G15 착지에서 확립(D-PUSHDELEG-PROVE 3차 GREEN).
+
+## SEC EDGAR 8-K 원문 다운로드 = submissions primaryDocument 직접 URL (디렉토리 스크래퍼 `//index.htm` 404) (채번 후보, CS-P2-8K 2026-08-13) `[data][sec]`
+
+**증상**: `SECEdgarClient.download_8k_text`가 filing 디렉토리 인덱스(`.../{acc}/`)를 스크래핑해 primary doc 링크를 찾는 경로가 `//index.htm` 404 다발(표본 20/20 실패). CIK zero-padding·디렉토리 리스팅 형식 취약.
+
+**해결**: submissions JSON의 `primaryDocument[i]`를 직접 사용 → `https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc_nodash}/{primary}` (CIK leading-zero 제거). 8-K 다운로드 20/20·885건 실패 0. CS-P2-8K는 로컬 헬퍼로 우회(공유 client 무접촉·수리는 TASKQUEUE `P28K-CLIENT-FIX`). 10-K는 `download_10k_text`가 primary_document 직접 사용이라 무관.

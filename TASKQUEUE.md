@@ -5,6 +5,20 @@
 
 ---
 
+## CS-P2-8K 후속 (2026-08-13, 8-K 파이프라인 랜딩 후)
+
+> 출처: CS-P2-8K 종결(랜딩 `16060620`, DECISIONS `D-CS-P2-8K`). 착지 15관계·미해소 375·증거 549 보존.
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| P28K-ACQUIRED-DIR | **8-K ACQUIRED 방향 판정 설계** — filer/상대의 acquirer·target 역할 판정 + merger sub/자회사 배제 → ACQUIRED RC 착지 재개 | @backend | F2 | **todo** | 현재 착지 보류(증거만). filer→상대 방향이 원문서 불안정(BEAM→BMY 역·merger sub 오지목). LLM 역할 추출 or item 2.01 구조 파싱. 재개 전제 |
+| P28K-TICKER-TOKENSET | ticker_matcher token_set_ratio 개선 — fuzzy 오매칭(Masimo→Masco·Synaptics→Snap-on) 근절 | @backend | 독립 | **todo** | F1. 현행 token_sort≥80 오매칭 다발 → 8-K fuzzy 착지 금지 중. 접미사/법인격 정규화 + token_set. 8-K·10-K 공통 |
+| P28K-CLIENT-FIX | `SECEdgarClient.download_8k_text` 디렉토리 스크래퍼 수리(`//index.htm` 404) → primaryDocument 직접 URL | @backend | 독립 | **todo** | 이번엔 로컬 헬퍼 우회(공유 client 무접촉 승인). 근본 수리는 공유 client 반영. common-bugs 등재 |
+| P28K-BEAT | 8-K 일일 수집 beat 등재 결정(collect_8k_filings→extract_8k_relations 체이닝 주기 실행) | @infra | 별도 결정·병진 | **todo(스케줄 미정)** | Bug #28 준수(register_*_beats DB 등록). LLM 비용·캐이던스 산정 후. 현재 일회성 command만 |
+| P28K-ITEM-EXPAND | item 확대 검토(5.02 임원 등 material event) — 관계 신호 가치 평가 | @backend | 별도 결정 | **backlog** | 현재 1.01/2.01만. 5.02(임원)=관계 아님 → 신중. 8-K item 유형별 관계성 평가 |
+
+---
+
 ## CS-P1B 후속 (2026-08-11, 연결 강도 랜딩 후)
 
 > 출처: CS-P1B Slice1-3 종결(랜딩 `f27bca59`, DECISIONS `D-CS-P1B`). sync_strength 1,828행 기록.
