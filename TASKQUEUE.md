@@ -16,6 +16,19 @@
 | P28K-CLIENT-FIX | `SECEdgarClient.download_8k_text` 디렉토리 스크래퍼 수리(`//index.htm` 404) → primaryDocument 직접 URL | @backend | 독립 | **todo** | 이번엔 로컬 헬퍼 우회(공유 client 무접촉 승인). 근본 수리는 공유 client 반영. common-bugs 등재 |
 | P28K-BEAT | 8-K 일일 수집 beat 등재 결정(collect_8k_filings→extract_8k_relations 체이닝 주기 실행) | @infra | 별도 결정·병진 | **todo(스케줄 미정)** | Bug #28 준수(register_*_beats DB 등록). LLM 비용·캐이던스 산정 후. 현재 일회성 command만 |
 | P28K-ITEM-EXPAND | item 확대 검토(5.02 임원 등 material event) — 관계 신호 가치 평가 | @backend | 별도 결정 | **backlog** | 현재 1.01/2.01만. 5.02(임원)=관계 아님 → 신중. 8-K item 유형별 관계성 평가 |
+## MP-STRESS 트랙 (2026-08-13 개설, Crisis/Stress 레이어)
+
+> 출처: MP-STRESS 결정 사이클(D-MPS-* 8건, DECISIONS 2026-08-13). MPS-1 백엔드 코드 랜딩 = worktree `sv-mps1-stress` 커밋 `6c1c3736`(미push). 초판 = 표시 전용(regime 판정 무접촉).
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| MPS-1 | 스트레스 스코어 엔진 + regime/stress API + 수집 2종 배선 | @backend | — | ✅ **코드 done(`6c1c3736`, 미push)** | 엔진(가족균등가중 z 평균)+카테고리+백분위+방향2종+level_band 잠정. TDD 36 신규 GREEN·전체 4773 pass(선존 3건 별개)·경계0·health❌0·regime판정 150 GREEN. **랜딩=origin/main(7a0ef653 base) 전진분 rebase 후 push** |
+| MPS-1-DEPLOY | seed 0007 apply(prod) + 워커 재기동(#41 FRED_RECURRING_SERIES 상수) + beat 반영(#28 setup_marketpulse_beat 관례) → DTWEXBGS·STLFSI4 일상 수집 점등 | 병진 수동 | MPS-1 push | 🟡 **승인 게이트** | prod write. seed 미적용 시 recurring이 `.get()` skip(무해). 점등 후 최초 fetch 0행 아님 확인(#B1 limit no-op은 신규 series 미해당) |
+| MPS-1-BACKFILL | 신규 2종 소급 백필 실행(prod write) | 병진 수동 | MPS-1-DEPLOY | 🟡 **승인 게이트(dry-run 산정 완료)** | dry-run: STLFSI4=**162 주간점**(2023-07~, in-memory 실측)·DTWEXBGS≈**780 일간(추정, 2023-07~today 윈도)** 또는 전체이력. 호출=1/series(backfill_v2_a1 limit=100000 asc). 소급 백필=무손실이라 지연 비용 0 |
+| MPS-SOFR | **별건**: SOFR 스프레드 series 전략 확정(**별건 내 프로브 허용**) + 필요시 market_pulse 파생 최소 설계. 소급 백필로 무손실 | @backend | — | 🕒 **보류(기한=S4-REBASE 성분 편입 심사 前)** | market_pulse 파생 인프라 부재로 MPS-1서 배선 보류(D-MPS-INDICATORS). 단일 raw 존재 시 1줄, 파생(SOFR−EFFR)이면 최소 파생 설계 필요 |
+| MPS-2 | FE 스트레스 카드 + 결정론 카피 템플릿 + 금지규칙 테스트 | @frontend+@backend | MPS-1 push | 🕒 **다음 슬라이스** | 입력물 = MPS-1 payload 계약 확정본(§8 보고). AnomalyPanel 이웃/CardShell 신규카드 후보. 한국 색관례(rose=경보 이중의미 주의) |
+| S4-REBASE-COMPONENT | **S4-REBASE 성분 편입 심사 Tier1+2** — 신규 수집 3종(DTWEXBGS·STLFSI4·SOFR)의 스코어 성분 편입 여부 + baseline μ·σ·가족 멤버십·level_band 문턱 재산정 | @backend | 수집 이력 축적 | 🕒 **트리거 대기** | MPS-1은 "수집만·미편입"으로 이력만 확보. 편입=잣대·문턱 동반 재산정이라 S4-REBASE 이벤트에서만(D-MPS-INDICATORS·D-MPS-BAND-PROVISIONAL) |
+| MON-MONTHLY-MACRO-OPS | **OPS 별건**: 월간군(CPIAUCSL·FEDFUNDS·UNRATE·PCEPI) 갱신 수리 — `update_economic_indicators` beat 트리거되나 배타 소유 월간 series DB 최신이 2026-04(PCEPI 2025-12) 정체(age 133~254) | @infra | — | 🕒 **별건 등재(STEP0 A 발견)** | MPS-1 STEP 0 실측 발견. Crisis 레이어가 월간 거시(고용/인플레) 소비 시 선수리 필요. 원인 규명(FRED 호출 실패? 파서?) 후 수리 |
 
 ---
 

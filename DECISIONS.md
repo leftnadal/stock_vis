@@ -45,6 +45,42 @@
 - **Gate 2 정지 = 현행 유지.** 재가동 판정은 V2 체크포인트 결과와 함께.
 
 **STEP 0 측정 / 검증**: 181 v1 필터 재확인 ✅(438 not_found → 181 TRUE-NONVERBATIM, 결정론 일치). F_v2 = `grounding_method='deterministic_v1'` distinct filings = 351(참조 일치). 교집합 부록 = `docs/features/chain-sight/sec_beta_vb_absorb_intersection.md`.
+## [2026-08-13] MPS-1 MP-STRESS 백엔드 — 결정 8건 흡수 (D-MPS-*) [marketpulse][stress]
+
+> MP-STRESS 결정 사이클(프로젝트 `mp_stress_decisions.md`)에서 닫힌 8결정의 repo 1차 소스 흡수.
+> 구현 랜딩 = 코드 커밋 `6c1c3736`(worktree sv-mps1-stress). 초판 = **표시 전용**(판정 미입력).
+
+**D-MPS-SCORE — 스코어 = 현행 완전벡터 14지표의 가족 균등가중(1/|fam|) z 평균.**
+- Why: analog 거리(`distance_sq`)와 **동일 가중 철학**(가족 내부 접기 1/|fam|, 단독 유효축 1) → 별도 잣대 발명 없이 이미 동결된 D-ANALOG-DIST(가족)·D-S4-BASELINE(μ·σ)을 재사용해 drift 0. 4 유효 축(stress·financial·return_1d·vol_20d) 균등평균 = 종합.
+- How to apply: `apps/market_pulse/regime/stress.py::composite_score`. z=`analog.to_z`(고정 BACKFILL_V2 잣대), 축=`_mean_present`(결측 제외·발명 금지), round 3.
+
+**D-MPS-DIRECTION — 방향 2종.** ⑴ 스트레스 방향 = 종합 스코어 Δ5거래일·Δ20거래일 부호 조합(worsening/easing/mixed) ⑵ 가격 추세 = SPY 종가 vs 20·60일 이동평균(uptrend/downtrend/mixed).
+- Why: "지금 악화 중인가"는 레벨(스코어)만으론 불충분 → 1·2차 변화(Δ)와 가격 추세가 방향축. 거래일 인덱스(스냅샷=거래일 1행)로 비거래일 조인 함정 회피(Slice B 전례).
+- How to apply: `stress.stress_direction`·`stress.price_trend`. 뷰(`_regime_stress_detail`)가 최신 스냅샷 anchor 대비 5·20 거래일 전 행에서 Δ 산출.
+
+**D-MPS-COPY — 백분위 = 당일 스코어의 자기 역사 내 백분위(가용 이력 전체, "지난 N 중 상위 %").** window_days payload 노출(정직 표기).
+- Why: "위기 유사" 카피(MPS-2)의 정직성 재료 — 절대 스코어보다 자기역사 상대 위치가 직관적·오도 적음. 이력 길이를 함께 노출해 표본 얕음을 은폐하지 않음.
+- How to apply: `stress.percentile_of`(≤ 비율×100, round 1). 모집단=전 스냅샷 스코어.
+
+**D-MPS-INDICATORS — 신규 위기지표 수집 개시(스코어 미편입).** DTWEXBGS(달러지수·daily)·STLFSI4(금융스트레스·weekly, 검증 전용). **SOFR = 배선 보류(MPS-SOFR 별건)** — market_pulse에 파생(DERIVED) 인프라 부재이고 단일 raw series 확정은 프로브 필요 → 소급 백필로 무손실이라 지연 비용 0. 편입 심사는 S4-REBASE Tier1+2.
+- Why: 스코어 성분 확대(잣대·문턱 재산정 동반)는 S4-REBASE 이벤트에서만. 그 전 "수집만" = 미래 심사용 이력 확보 + 현 스코어 안정성 보존. SOFR 정정 근거: 프로브(옵션2)는 파생 인프라 부재를 못 풀고, credit_signals 경유(옵션3)는 이중 원장·소유권 혼입.
+- How to apply: `FRED_RECURRING_SERIES` +2 + seed `macro/migrations/0007`. `INDICATOR_CODE_MAP`(load_inputs 대상)에 미추가 = 구조적 미편입.
+
+**D-MPS-NO-CLASSIFY-INPUT — regime 판정 무접촉.** 스코어는 classifier·히스테리시스·`stress_input` 훅·RegimeSnapshot 쓰기 경로를 건드리지 않는다(read/compute만).
+- Why: 초판 스코어는 미검증 → 판정에 넣으면 5단계 국면·알림이 흔들림. 표시 전용으로 실운영 관측 후 별도 결정 사이클에서 훅 연결. intraday↔EOD 별개 시스템 헌법과 동일 격리 원칙.
+- How to apply: 신규 `regime/stress.py`·`_regime_stress_detail`만 추가(가산). classifier `stress_input` 스텁은 `del` 유지.
+
+**D-MPS-BAND-PROVISIONAL — level_band 경계는 잠정(z 0.5/1.5), S4-REBASE 재산정 대상.** payload `band_provisional=true` 정직 표기.
+- Why: 문턱 캘리브레이션(역사 위기 분포 대비)은 MPS-1 범위 밖 — 잠정값으로 표면만 열되 확정으로 오인되지 않게 명시.
+- How to apply: `stress.STRESS_BAND_LOW/HIGH` 상수 + 뷰 `meta.band_provisional`.
+
+**D-MPS-CATEGORY — 카테고리(표시축)는 성분명 추론.** 변동성/신용/금리곡선/금융환경/가격 5종. **가족(합성축)과 다른 축**(financial 가족 9가 3카테고리로 분해).
+- Why: 코드에 성분→표시카테고리 라벨 **부재**(STEP 0 실측) → 추론 매핑임을 명시. 합성(스코어)은 가족가중, 표시 묶음은 카테고리로 분리해 "무엇이 올랐나" 카피 재료 제공.
+- How to apply: `stress.STRESS_CATEGORIES`(상호배타·14 전수 커버, 가드 테스트).
+
+**D-MPS-SURFACE — regime/stress 신규 엔드포인트, compute-on-read(저장 0).** zscore/analog 패턴(serve-time·1h 캐시). 저장 모델 신설 회피.
+- Why: dev=prod 공유 DB에서 저장 모델 = prod 마이그레이션 리스크. 스코어는 스냅샷 inputs에서 파생 가능 → compute-on-read로 마이그 0(§5 회피 우선). overview 편입은 요약 배지(MPS-2) 몫, 상세는 전용 엔드포인트 관례.
+- How to apply: `cards.py::RegimeStressView`(url `regime/stress`), 캐시 `regime_stress_key`.
 
 ## [2026-08-11] D-ARC-NEXT — 결정 사이클: 순차 합성 A→B→D, C는 D 아크 흡수 [portfolio][process]
 
