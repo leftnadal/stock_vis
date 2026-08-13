@@ -8,6 +8,32 @@
 
 ---
 
+## [2026-08-12] D-MON-P4-LA-CLOSE — MON-P4-LA ADVISOR L-A 정기 브리핑 트랙 종결 [monitor][governance]
+
+**결정**: MON-P4-LA(ADVISOR L-A 정기 브리핑) 트랙을 **종결**한다. 근거 = 첫 자동 브리핑(asof `2026-08-11`)이 **6종 각 1행 착지**(팔란티어·탈렌·GE버노바·구글·아이렌·아이온큐, `monitor_advisornote` 실측) — 08-10 배포 스모크 6행과 함께 멱등. 계보 = `43959512(NEWS)→7a7396a6(P4 병합)→85c16572` 선형이며 `85c16572`는 origin/main 조상으로 완전 흡수(merge-base 확인).
+
+**브랜치 정리**: 세션 브랜치 `sess-p4-la`·`sess-news-p0-fix`는 로컬·원격(`git ls-remote`)·워크트리 모두 **부재**. 삭제 기록(주체·시점)은 원장(INCIDENTS.md INC-002 = `sess-govcleanup0810` 건, `D-BRANCH-DELETE-MANUAL`)에 **무기록** → **정리 주체 미상(GOV 정리 추정, 미확정)**. 병합 커밋 `7a7396a6`이 main 흡수 확인되어 작업 유실 없음. ⚠️ 삭제 자체는 CC 미집행([[D-BRANCH-DELETE-MANUAL]] 위임 불가) — PART B는 대상 부재로 스킵(규약 준수).
+
+**Why**: 배포·점등(migration 0009 prod·ADVISOR_ENABLED=true·beat 18:50 ET)에 더해 **익일 첫 자동 발화의 실착지**가 확인돼야 트랙 종결이 정당 — asof 08-11 6행이 그 증거. 브랜치 정리 항을 "미확정"으로 남기는 것은 원장 무기록을 사실대로 봉인(추정을 확정으로 승격 금지).
+
+**How to apply**: 잔여 관측(일지 advisor 자동펼침 tri-state 화면검수)은 사용자 브라우저 액션이라 트랙 종결과 별개. 후속 결함(상태 원천·TLN 커버리지)은 [[D-ADVISOR-STATE-SOURCE]]·별건. cf. `project_mon_p4_la_advisor`.
+
+## [2026-08-12] D-ADVISOR-STATE-SOURCE — advisor 프롬프트 "상태" 원천 = MonitorSnapshot.state (단독 수리 금지) [monitor][governance]
+
+**결정**: advisor 브리핑 프롬프트의 "상태" 렌더 원천은 **`MonitorSnapshot.state`**이며 `Monitor.status`가 **아니다**(가설 a 확정). T1(`8418209d`)은 `latest.state` 원시 인용, v1.1(`5ebe7970`)은 `_state_display(overall_score)=score_to_phase().label` 파생 — 어느 쪽도 `Monitor.status` 미경유. 이 원천 필드 좌표에 대한 **단독 수리를 금지**한다(계획 세션 결정 대기).
+
+**Why**: 6종 실측 = `Monitor.status=setting_up`(등록 단계) ↔ 최신 `MonitorSnapshot.state=active`(상태기 자동 판정 밴드)가 **동시에 참** — 서로 다른 축이라 "상태 active" 인용과 NEWS 실측(setting_up)이 모순 아님. 별건 관찰 "Monitor status 전이 0건"과 **커플링 가능성**이 있어, 상태 축 정의를 단독으로 손대면 전이 로직과 충돌 위험. ⚠️ 좌표 파일 `apps/monitor/services/advisor_briefing.py`는 현 체크아웃에 부재(병합 `7a7396a6` 이후 트리에만 존재) — 수리 세션은 up-to-date base 필수.
+
+**How to apply**: 수리 여부·방식은 "status 전이 0건" 조사와 **묶어서** 계획 세션이 결정. 프롬프트에 "상태"를 어느 축(등록단계 status vs 관제밴드 state)으로 노출할지 UX 결정 선행. cf. `project_monitor_hub_rebuild`.
+
+## [2026-08-12] D-P4-GATE-PROVENANCE — 조건부 사전승인 게이트의 판정 조건 원문 등재 의무 [process][harness]
+
+**결정**: 조건부 사전승인 게이트(예: 배포창 G1/G2)의 **판정 조건 원문**은 실행 지시서 폐기 전 `DECISIONS.md`/`PROGRESS.md`에 **등재**해야 한다. 게이트 문언을 휘발성 지시서에만 두면 사후 검증이 불가능하다.
+
+**Why**: P4-LA 배포창의 조건부 게이트 G1/G2는 지시서 휘발성 폐기(하네스 규약: 실행 지시서 repo 미보관)로 **명명 원문이 생존 기록 어디에도 부재**(PROGRESS·DECISIONS·docs·메모리 전무). 복원 가능한 것은 GEV 실호출 스모크 PASS·BUILD_ID 게이트뿐이며 이를 "G1/G2"에 대응시키는 것은 사후 추론에 불과 → **"조건부 사전승인은 판정이 전부 기계적일 때만"** 원칙의 사후 검증(재량 개입 여부 판별)이 **원문 부재로 불가**. 이는 지시서 흡수 규약([[CLAUDE.md]] 지시서 폐기 전 흡수 확인)의 사각 = "비자명 결정의 왜"에 게이트 판정 문언을 포함시키지 않은 누락.
+
+**How to apply**: 향후 조건부 게이트를 발행하는 지시서는 세션 종료 전 게이트 ID·판정 조건·관측 근거를 원장에 흡수(자명한 STEP 0 측정값은 제외 대상이나 **게이트 판정 문언은 비자명 결정에 해당**). cf. `feedback_deploy_approval_explicit_quote`.
+
 ## [2026-08-11] D-ARC-NEXT — 결정 사이클: 순차 합성 A→B→D, C는 D 아크 흡수 [portfolio][process]
 
 **결정**: 2026-08-11 결정 사이클(SFI-I3 첫 spot 발화 GREEN 확인 직후) 다음 아크를 **순차 합성**으로 확정한다.
