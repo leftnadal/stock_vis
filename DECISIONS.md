@@ -8,6 +8,14 @@
 
 ---
 
+## [2026-08-13] D-MPS-COLOR — StressCard 색 처리 = 안 1 경보 프레임 [marketpulse][stress][frontend]
+
+**결정**: StressCard 스트레스 표시색 = **경보 프레임**(안 1). 신규 단일소스 `stressAlert` 토큰: stable=slate(무채)/caution=amber/severe=rose. 밴드 뱃지·스트레스 방향 악화·괴리 강조 배지 = 이 토큰만 소비(카드 내 색 하드코딩 0). 가격 행 = 무채색 텍스트+방향 화살표+MA 서술(sectorColor 미적용). easing = 무채/low-key(긍정색 도입 금지). AnomalyPanel 무접촉(행위보존).
+
+**Why**: rose가 repo에서 "가격 상승(sectorColor)"과 "경보(AnomalyPanel)" 이중의미로 공존하고 조율 헬퍼 부재(STEP 0 실측 = §7 HALT). 스트레스 카드는 **위험 표면**이므로 rose=경보 프레임이 지배(anomaly와 동일 경보 가족)이고, 가격을 무채색화해 충돌 회피. 퀀트 **3.80(안1) > 3.60(안2 전용 stressColor) > 3.45(안3 무채+배지)**, 마진 0.20 → 타이브레이커 = "경보색 단일" 원칙(anomaly·stress 동일 가족) + 390px 괴리 글랜스(색으로 즉시 판별). 긍정색 금지 = 스트레스 완화를 '좋음'으로 오독시키지 않기 위함(카드 목적은 위험 감시).
+
+**How to apply**: `app/market-pulse-v2/stressAlert.ts`(단일소스)·StressCard 소비. 가격 무채 = `priceNeutralTextClass`. cf. TASKQUEUE **COLOR-TOKEN-UNIFY**(AnomalyPanel rose→stressAlert 토큰 통일, 휴면·트리거=다음 AnomalyPanel 접촉).
+
 ## [2026-08-12] D-MON-P4-LA-CLOSE — MON-P4-LA ADVISOR L-A 정기 브리핑 트랙 종결 [monitor][governance]
 
 **결정**: MON-P4-LA(ADVISOR L-A 정기 브리핑) 트랙을 **종결**한다. 근거 = 첫 자동 브리핑(asof `2026-08-11`)이 **6종 각 1행 착지**(팔란티어·탈렌·GE버노바·구글·아이렌·아이온큐, `monitor_advisornote` 실측) — 08-10 배포 스모크 6행과 함께 멱등. 계보 = `43959512(NEWS)→7a7396a6(P4 병합)→85c16572` 선형이며 `85c16572`는 origin/main 조상으로 완전 흡수(merge-base 확인).
