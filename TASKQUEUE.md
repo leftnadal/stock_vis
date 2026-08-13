@@ -20,10 +20,11 @@
 
 | ID | Task | 분류 | Depends On | Status |
 |----|------|------|-----------|--------|
-| D-PUSHDELEG-PROVE | **실증 관찰**. **전 경로(§H D-DEPLOY-DELEGATE 포함) non-ff(behind>0) 조우 시 CC가 공통 하드 가드 HALT를 준수**하는지 관찰. 준수 → 규칙 안착 확인 종결 / 미준수 → 인시던트 등재 + 위임 철회(A안 회귀) 결정 사이클 개시. **실증 기록**: ⑴ 2026-08-10 GOV-PUSHDELEG-0810 STEP 0 behind=1→3 및 다중 편차 **HALT 2회 준수(1차 GREEN)**. ⑵ **2차 GREEN(08-10)** — push 가드 전 순서 완주: behind=13 HALT → 병진 승인 흡수(rebase) → behind 0 재확인 → force 미사용 → 착지 검증. | @all (관찰) | 다음 non-ff 조우 | 🟢 2차 실증 GREEN·상시 관찰 |
+| D-PUSHDELEG-PROVE | **실증 관찰**. **전 경로(§H D-DEPLOY-DELEGATE 포함) non-ff(behind>0) 조우 시 CC가 공통 하드 가드 HALT를 준수**하는지 관찰. 준수 → 규칙 안착 확인 종결 / 미준수 → 인시던트 등재 + 위임 철회(A안 회귀) 결정 사이클 개시. **실증 기록**: ⑴ 2026-08-10 GOV-PUSHDELEG-0810 STEP 0 behind=1→3 및 다중 편차 **HALT 2회 준수(1차 GREEN)**. ⑵ **2차 GREEN(08-10)** — push 가드 전 순서 완주: behind=13 HALT → 병진 승인 흡수(rebase) → behind 0 재확인 → force 미사용 → 착지 검증. ⑶ **3차 GREEN(08-11, SECB-G15-DECOMP-0811)** — push 직전 divergence(behind=8) 조우 → 전진분(8커밋)·교집합(원장 2파일) 실측 보고 후 HALT → 승인 흡수(union rebase onto 최신 origin/main, 충돌 0) → **HEAD:main 직행·원격 세션 브랜치 미갱신으로 force 회피**(D-PUSH-DELEG (iii)) → behind 0 재확인 후 ff-push. | @all (관찰) | 다음 non-ff 조우 | 🟢 3차 실증 GREEN·상시 관찰 |
 | GOVPUSH-CLEANUP | **사후 정리**. GOV-PUSHDELEG-0810 격리 worktree/브랜치 제거. **✅ done(2026-08-10)**: 병진 예외 승인 하 CC 집행(worktree remove + branch -D, 손실 0). **경위 종결 = INC-002**(예외 승인 집행 + -d→-D 자가 전환 → D-BRANCH-DELETE-MANUAL 명문화). 손상 0. | 병진 수동(예외 집행됨) | — | ✅ done (INC-002) |
 | GOVCLEANUP-0810-CLEANUP | **사후 정리 (병진 수동 — CC 실행 절대 금지, D-BRANCH-DELETE-MANUAL 적용 1호)**. GOV-CLEANUP-0810 착지·검증 후 격리 worktree `~/worktrees/sv-govcleanup0810` 제거 + 브랜치 `monorepo/sess-govcleanup0810` 삭제. **CC는 후보+안전 실측(`origin/main..브랜치`)까지만 보고**, 삭제 집행은 병진 수동. | 병진 수동 | 커밋 착지 후 | ✅ **done(2026-08-10 병진 수동 집행 완료)** — worktree 제거·브랜치 **정상 `-d` 삭제(-D 불사용, cwd 오탐 규명으로 해소)**, 손상 0. **D-BRANCH-DELETE-MANUAL 적용 1호 성공.** (08-11 실측 재확인: worktree/브랜치 부재.) |
-| SECB-G15-CLEANUP | **사후 정리 (병진 수동 — CC 실행 절대 금지, D-BRANCH-DELETE-MANUAL)**. SECB-G15-DECOMP-0811 착지·검증 후 격리 worktree `~/worktrees/sv-secb-g15` 제거 + 브랜치 `monorepo/sess-secb-g15` 삭제. **CC는 후보+안전 실측(`origin/main..브랜치`)까지만 보고**, 삭제 집행은 병진 수동. | 병진 수동 | 커밋 착지 후 | 🆕 등재(병진 수동 대기) |
+| SECB-G15-CLEANUP | **사후 정리 (병진 수동 — CC 실행 절대 금지, D-BRANCH-DELETE-MANUAL)**. SECB-G15-DECOMP-0811 착지·검증 후 격리 worktree `~/worktrees/sv-secb-g15` 제거 + 로컬 브랜치 `monorepo/sess-secb-g15` 삭제 + **원격 브랜치 `origin/monorepo/sess-secb-g15` 삭제 포함**(HEAD:main 직행 착지로 원격 세션 브랜치는 미갱신 잔존 = 삭제 대상). **CC는 후보+안전 실측(`origin/main..브랜치`)까지만 보고**, 삭제 집행은 병진 수동. | 병진 수동 | 커밋 착지 후 | 🆕 등재(병진 수동 대기) |
+| SECB-VB-ABSORB-CLEANUP | **사후 정리 (병진 수동 — CC 실행 절대 금지, D-BRANCH-DELETE-MANUAL)**. SECB-VB-ABSORB-0811 착지·검증 후 격리 worktree `~/worktrees/sv-vbabsorb` 제거 + 브랜치 `monorepo/sess-vbabsorb` 삭제(원격 push 시 원격 브랜치 포함). **CC는 후보+안전 실측까지만 보고**, 삭제 집행은 병진 수동. | 병진 수동 | 커밋 착지 후 | 🆕 등재(병진 수동 대기) |
 
 ---
 
@@ -1205,6 +1206,12 @@
   - ⑶ **인용 집합 변동 취급** — v2 재추출이 인용 수 변경(COR 28→46): 기존 v1 행 **대체**냐 v2 **병존**이냐 결정.
   - ⑷ **1751건 전량 재추출 비용 추정** — 표본 실측 $0.047/5 filings = **$0.0094/filing** 외삽 → deterministic_v1 = **351 distinct filings** × $0.0094 ≈ **$3.3**(LLM 351콜). **오차 명기**: 표본은 인용 풍부 filing(평균 24 cites)이라 substrate 평균(5.0 cites/filing)보다 출력 비용 상향 편향 = **과대추정 방향**(실제 ≤ $3.3 추정). 재시도·quota 미포함.
 - 근거: G-e 결과 `docs/features/chain-sight/sec_beta_ge_v2_result.md` + caveat(300자 초과). cf. SECB-PROMPT-V2(소비 완료), D-SECB-GATE-E.
+- **체크포인트 합격 기준 추가(2026-08-11, D-SECB-VB-ABSORB)**: 100건 체크포인트 합격 기준에 **"v2 유니크 not_found율 < v1 19.3%(184/952 계열) 대비 유의 개선"** 포함. 측정 = `prompt_version` 필터로 v1/v2 분리 집계. **개선 실패 시 → C(전용 V-B) 결정 사이클 재소집**(D-SECB-VB-ABSORB C 회귀 예약).
+
+## SECB-VB-ABSORB 후속 트랙 (2026-08-11, D-SECB-VB-ABSORB) [sec-beta]
+- **SECB-V2-NORMFIX** — grounding 대조기 **소문자 완화 1줄**(NORM-MISS 3건 구제, `services/sec_pipeline/grounding.py`). **V2 grounding 수정에 편승, 단독 세션 금지**(경량). 순위: V2 롤아웃 grounding 재배선 시. @backend
+- **SECB-DUP-EXTRACT** — 중복 추출 결함 트랙(동일 (filing,문장) 최대 22회, not_found 중 254건 중복 계상). 조사 범위 = **추출 루프의 중복 생성 지점 + 기존 중복 레코드 정리 방침**(정리 = 파괴적 후보 → 병진 판정). 순위: **V2 체크포인트 이후**. @backend/@qa
+- **SECB-VB-ABSORB-DIFF521** — 교집합 차집합 실측 결과 `|F_nb − F_v2| = 1 filing [521]`(PAYX, 미접지 v1 straggler·`grounding_method=NULL`). **미포함분 V2 대상 추가 여부 = 디렉터 판정 대기**(목록만, 부록 `sec_beta_vb_absorb_intersection.md` A-2). 부수: 미접지 v1 17행/5 filing(513·515·519·521·522) 백필 여부 별건. 병진/디렉터
 
 ## TH-TRIGGER-FIRED — TH Session 1 트리거 발화 (2026-08-03, SEC β 종결 선행 충족) [theme-heat] ✅ **소비 완료 (TH-SESSION-1, 2026-08-03)**
 - **발화 조건 충족**: SEC β 트랙 종결 선언 확정(`sec_beta_closure_declaration.md`) → TH Session 1 선행 조건 해소.

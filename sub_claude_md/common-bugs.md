@@ -1491,3 +1491,15 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 ## "캡 제거" 정책 변경 시 절단 지점 grep은 `[:N]` 전 변형을 훑어야 (프롬프트만·`[:300]`만 = 은닉 절단 잔존) (채번 후보, SECB-V2-ROLLOUT 2026-08-13) `[data][process]`
 
 **증상**: evidence 300 캡 제거에서 프롬프트 캡 + `[:300]`만 grep해 제거했으나 `validator`의 **`evidence[:297] + "..."`**(다른 슬라이스 리터럴)를 놓침 → v2 롤아웃 1단 497행 중 **143행이 "..."로 끝남**(mid-sentence 절단·verbatim 위배). nf율은 정상(1.21%)이나 **verified 67.6% 저조**로만 발현(절단이 grounding 대조를 조용히 깸). **교훈**: ⑴ 길이/절단 정책 변경은 **프롬프트→파서→validator→save 전 계층** 훑기, grep은 특정 숫자 아닌 `\[: *[0-9]+`·`\.\.\.` 전 변형. ⑵ 롤아웃 게이트에 **길이 max·`endswith('...')` 카운트** 포함(nf율만 보면 놓침). ⑶ 오염분은 coexist(v1 보존)라 v2만 삭제 후 재추출로 복구. cf. D-SECB-V2-LEN.
+## 동일 트랙 선행 산출물 발견 시 1줄 확인 후 진행 — 의도적 정련인지 중복 집행인지 상신 (채번 후보, SECB-VB-ABSORB-0811 2026-08-11) `[process][harness]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
+
+**증상**: G1.5 분해 지시서 집행 중 동명 목적 스크립트·보고서·사전 지시서가 **이미 origin/main에 착지**(4d0ed3b5)돼 있음을 발견. 지시서가 참조값(437)을 인용 = 그 산출물 출력값 → 선행 존재를 알고도 재발주한 정황.
+
+**교훈**: 지시서 집행 초입에 **동일 트랙 선행 산출물을 grep으로 census**하고, 있으면 ⑴ 지시서가 그 출력을 참조하는가(=디렉터 인지 하 의도적 정련) ⑵ 분류·파일명이 **차분(delta)인가 중복인가**를 실측해 **1줄 상신** 후 진행. 판별 근거 = 지시서의 참조값 출처·신규 분류축(예: 소문자 완화 = 선행 미실시)·파일명 구분. 무판별 병렬 산출물 생성은 원장 혼선. cf. [[feedback_spec_infeasible_surface_before_substitute]].
+
+## 원격 세션 브랜치는 rebase 후 갱신하지 않는다 — force 회피, HEAD:main 직행 (채번 후보, SECB-VB-ABSORB-0811 2026-08-11) `[process][git][harness]`
+
+**증상**: 세션 브랜치를 origin/main에 union rebase(흡수)하면 커밋 해시가 재작성됨. 이미 push된 원격 세션 브랜치를 갱신하려면 `push --force`가 필요 → force 유발.
+
+**교훈**: rebase 흡수 후 **원격 세션 브랜치를 갱신하지 않는다**. 착지는 `git push origin HEAD:main`(main으로 직행 ff-push) — 원격 세션 브랜치(구 해시)는 **미갱신 잔존**시키고 **수동 삭제 목록(D-BRANCH-DELETE-MANUAL)** 으로 넘긴다. 이렇게 하면 rebase가 있어도 **force 필요 상황 자체를 만들지 않는다**(D-PUSH-DELEG (iii) 준수). 08-11 SECB-G15 착지에서 확립(D-PUSHDELEG-PROVE 3차 GREEN).

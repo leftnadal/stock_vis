@@ -33,6 +33,18 @@
 **Why**: P4-LA 배포창의 조건부 게이트 G1/G2는 지시서 휘발성 폐기(하네스 규약: 실행 지시서 repo 미보관)로 **명명 원문이 생존 기록 어디에도 부재**(PROGRESS·DECISIONS·docs·메모리 전무). 복원 가능한 것은 GEV 실호출 스모크 PASS·BUILD_ID 게이트뿐이며 이를 "G1/G2"에 대응시키는 것은 사후 추론에 불과 → **"조건부 사전승인은 판정이 전부 기계적일 때만"** 원칙의 사후 검증(재량 개입 여부 판별)이 **원문 부재로 불가**. 이는 지시서 흡수 규약([[CLAUDE.md]] 지시서 폐기 전 흡수 확인)의 사각 = "비자명 결정의 왜"에 게이트 판정 문언을 포함시키지 않은 누락.
 
 **How to apply**: 향후 조건부 게이트를 발행하는 지시서는 세션 종료 전 게이트 ID·판정 조건·관측 근거를 원장에 흡수(자명한 STEP 0 측정값은 제외 대상이나 **게이트 판정 문언은 비자명 결정에 해당**). cf. `feedback_deploy_approval_explicit_quote`.
+## [2026-08-11] D-SECB-VB-ABSORB — V-B 전용 파이프라인 불개설, 181은 V2 롤아웃에 흡수 (B) [sec-beta]
+
+**결정**: SEC β G1.5 재판정 완주 결과, **V-B(LLM 재추출) 전용 파이프라인을 신설하지 않는다.** ④ TRUE-NONVERBATIM 181건은 **V2 롤아웃(v2 프롬프트 재추출)에 흡수** — V2 재추출(자연 verbatim 인용 프롬프트)이 V-B의 목적(비-verbatim 인용 교정)을 겸한다. **가중합: A(수용 종결) 3.60 / B(V2 흡수) 4.25 / C(전용 신설) 2.90 — 마진 0.65 → 병진 승인(2026-08-11).**
+
+**Why**: ⑴ **G1.5 분해**(SECB-G15-DECOMP-0811): not_found 438 = DUP-EXTRACT 254 + [ITEM-MISSING 0 · NORM-MISS 3 · TRUE-NONVERBATIM 181 · OTHER 0](유니크 184). ⑵ **COVERAGE 실측**(SECB-G15-COVERAGE): 추출기 LLM 입력 = item 1+7(1A 저장·Track A 미투입) ⊂ 대조 원문 1+1A+7 → **커버리지 누출(입력⊄대조) 구조적 불가** → 181 = 진성 비-verbatim 확정(item 3/8은 미저장·미입력, DB 컬럼 부재로 재대조 자체 불가). ⑶ **교집합 실측**(SECB-VB-ABSORB-0811 Part A): 181건(128 filing) 중 **180건(99.4%)이 V2 대상 351 filing에 자연 포함** → 전용 파이프라인은 99.4% 중복. V2가 겸하지 못하는 잔여는 미접지 straggler 1건([521], 별도 백필 사안). ⑷ 전용 V-B(C)는 별도 프롬프트·검증·비용을 신설하나 V2가 동일 재추출을 이미 수행 = 중복 투자.
+
+**How to apply**:
+- **V-B 전용 파이프라인 = 불개설.** 181 교정은 V2 롤아웃 산출물(v2 재인용)로 판정.
+- **C 회귀 예약**: V2 **100건 체크포인트**에서 v2 유니크 not_found율이 v1(19.3% = 184/952 계열) 대비 **유의 개선 실패** 시 → C(전용 V-B) 결정 사이클 재소집. 측정 = `prompt_version` 필터로 v1/v2 분리 집계.
+- **Gate 2 정지 = 현행 유지.** 재가동 판정은 V2 체크포인트 결과와 함께.
+
+**STEP 0 측정 / 검증**: 181 v1 필터 재확인 ✅(438 not_found → 181 TRUE-NONVERBATIM, 결정론 일치). F_v2 = `grounding_method='deterministic_v1'` distinct filings = 351(참조 일치). 교집합 부록 = `docs/features/chain-sight/sec_beta_vb_absorb_intersection.md`.
 
 ## [2026-08-11] D-ARC-NEXT — 결정 사이클: 순차 합성 A→B→D, C는 D 아크 흡수 [portfolio][process]
 
