@@ -955,6 +955,7 @@
 | URL-V1-ALIGN | BFF 경로 `/api/dashboard/` → `/api/v1/dashboard/` 관례 정렬 + FE stripService의 base 우회(`/api/v1` 제거 로직) 제거. ~~TUNE과 동승 가능~~(TUNE은 `62eec71`로 이미 land). **config 접촉 사전 정당화**: D-DASH-BFF config 예외 범위가 URL-V1-ALIGN 포함으로 확장됨(MGMT-BATCH-9) — root `urls` include 경로 1줄 수정은 내재 산출물로 허용, 그 외 config 변경은 HALT. 착수 시 diff 원문 채증 의무 | @backend + dashboard FE | 다음 apps/dashboard 접점 | 💤 등재(트리거 게이트) |
 | HEALTH-13TH-IDENT | sv health 검사 항목 **12→13 증가분** 정체 확인·기록(monitor refresh 신선도 = MON-P2-BEAT 귀속 추정, 실측 확정) | mgmt(소형) | 착수가능 | 🆕 등재 |
 | HEALTH-HASH-DISPLAY | **[관찰]** health #13 "실행 트리 정합" 라인의 표시 해시가 STEP 0 실측 HEAD와 불일치 관측 — 2026-08-11 RECON: STEP0 HEAD=`c916b32e`인데 health 라인은 `(f27bca5)` 표시(원인 추정=health_check 내부 fetch로 origin/main 세션중 전진, [[lesson_origin_main_advance_union_rebase]]/health 내부 fetch 계열). 판정 OK 정합은 유지되나 표시 해시 출처(HEAD vs 방금 fetch한 origin) 확인 필요. **재현 시 표시 로직(어느 rev를 print하는지) 점검**. ※ **HEALTH-13TH-IDENT(항목 수 12→13 식별)와는 별건** — 본 건은 개별 라인의 해시 표시값 정합. | mgmt(소형·관찰) | 재현 시 | 💤 관찰 |
+| BRANCH-S1B1-DIVERGE | **[관찰]** WORKTREE-CLEANUP-8 집행 중 `sess-s1b1` worktree는 제거됐으나 로컬 브랜치 ref 잔존 — 로컬 tip `d919fb22` ≠ `origin/monorepo/sess-s1b1`(`4bd93c8e`)로 `git branch -d` 거부(자체 upstream 미머지). **origin/main 기준으로는 소진(안전)**이나 자체 추적 원격이 앞서 있어 `-d` 오탐. 분기 원인 미확인(원격에 로컬 미반영 커밋 존재 추정)·**방치 무해**(worktree 없는 브랜치 ref). 처분(`-D`)은 병진 수동(D-BRANCH-DELETE-MANUAL). ※ HEALTH-HASH-DISPLAY와 무관. | 병진 수동(관찰) | 병진 재량 | 💤 관찰 |
 
 ---
 
