@@ -172,7 +172,7 @@ class TestRegimeAnalog:
 
         이웃 선정은 오늘 벡터 의존이라 고정 이웃 2개로 monkeypatch — 배선(why lookup)만 격리 검증.
         """
-        from apps.market_pulse.llm import client as llm_client
+        from packages.shared.llm import legacy_gemini as llm_client
         from apps.market_pulse.models import AnalogDayContext
         from apps.market_pulse.regime import analog
 
