@@ -14,6 +14,7 @@ from django.urls import path
 from apps.market_pulse.api.views.cards import (
     CardDetailView,
     RegimeAnalogView,
+    RegimeStressView,
     RegimeZScoreView,
 )
 from apps.market_pulse.api.views.health import HealthView
@@ -29,6 +30,7 @@ urlpatterns = [
     path("cards/<str:card_id>/detail", CardDetailView.as_view(), name="card-detail"),
     path("regime/zscore", RegimeZScoreView.as_view(), name="regime-zscore"),
     path("regime/analog", RegimeAnalogView.as_view(), name="regime-analog"),
+    path("regime/stress", RegimeStressView.as_view(), name="regime-stress"),
     path("news/refresh", NewsRefreshView.as_view(), name="news-refresh"),
     path("i18n", I18nView.as_view(), name="i18n"),
     path("health", HealthView.as_view(), name="health"),

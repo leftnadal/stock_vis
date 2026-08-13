@@ -117,7 +117,8 @@ class TestSyncFredIndicators:
 
         assert set(result['series']) == set(FRED_RECURRING_SERIES)
         # NFCI×4 + HY pair + T10Y3M(초기 7) + VIXCLS·DGS10·DGS2·T10Y2Y(MP-VIX-STALE)
-        assert len(result['series']) == 11
+        #   + DTWEXBGS·STLFSI4(MPS-1 수집만·미편입) = 13
+        assert len(result['series']) == 13
         for code in FRED_RECURRING_SERIES:
             assert IndicatorValue.objects.filter(indicator__code=code).count() == 2
 
@@ -138,8 +139,8 @@ class TestSyncFredIndicators:
             mp_sync_fred_indicators_daily.apply().get()
             mp_sync_fred_indicators_daily.apply().get()  # 2회
 
-        # update_or_create → 2회 실행해도 행 수 불변 (11 series × 2 obs)
-        assert IndicatorValue.objects.count() == 22
+        # update_or_create → 2회 실행해도 행 수 불변 (13 series × 2 obs)
+        assert IndicatorValue.objects.count() == 26
 
 
 @pytest.mark.django_db

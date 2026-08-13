@@ -68,6 +68,18 @@ def regime_analog_key(today, window_end) -> str:
     )
 
 
+# MPS-1 MP-STRESS: 연속 스트레스 스코어 1h 캐시. 키에 최신 스냅샷일(anchor) + 모집단 경계
+#   (스코어가 최신 스냅샷마다 바뀜 / 백필 창 변화 시 자연 무효화).
+REGIME_STRESS_TTL_SEC = 3600
+
+
+def regime_stress_key(as_of, window_end) -> str:
+    return (
+        f"mp:global:regime_stress:{as_of}:{window_end}:"
+        f"{_bucket(REGIME_STRESS_TTL_SEC)}"
+    )
+
+
 def i18n_key(locale: str = "ko") -> str:
     return f"mp:global:i18n:{locale}:{_bucket(I18N_TTL_SEC)}"
 

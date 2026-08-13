@@ -254,6 +254,49 @@ class RegimeAnalogView(APIView):
         return Response(_envelope(payload, started, cache_state="MISS"))
 
 
+@extend_schema(
+    summary="Regime stress score (MPS-1)",
+    description=(
+        "연속 스트레스 스코어(14지표 가족 균등가중 z 평균) + 카테고리 서브스코어 + "
+        "자기역사 백분위 + 방향 2종(스트레스 Δ5d·Δ20d / SPY vs MA20·MA60). baseline = "
+        "소급 모집단(고정 잣대) μ·σ. serve-time·미저장, 1h 캐시. **regime 판정 무접촉**. "
+        "level_band 잠정(S4-REBASE 재산정 대상)."
+    ),
+    tags=["Market Pulse v2"],
+    responses={200: OpenApiTypes.OBJECT, 401: OpenApiTypes.OBJECT},
+)
+class RegimeStressView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [MarketPulseUserThrottle, MarketPulseHourThrottle]
+
+    def get(self, request, *args, **kwargs):
+        from django.db.models import Max
+
+        started = time.time()
+        today = django_timezone.localdate()
+        wend = RegimeSnapshot.objects.filter(summary=BACKFILL_MARK).aggregate(
+            mx=Max("date")
+        )["mx"]
+        if wend is None:
+            return Response(
+                _envelope({"available": False}, started, cache_state="MISS")
+            )
+        key = cache_keys.regime_stress_key(today, wend)
+        try:
+            cached = cache.get(key)
+        except Exception:  # pragma: no cover - 캐시 장애 폴백
+            cached = None
+        if cached is not None:
+            return Response(_envelope(cached, started, cache_state="HIT"))
+
+        payload = _regime_stress_detail()
+        try:
+            cache.set(key, payload, timeout=cache_keys.REGIME_STRESS_TTL_SEC)
+        except Exception:  # pragma: no cover - 캐시 장애 폴백
+            pass
+        return Response(_envelope(payload, started, cache_state="MISS"))
+
+
 def _regime_detail():
     today = django_timezone.localdate()
     snap = RegimeSnapshot.objects.filter(date=today).first()
@@ -493,6 +536,84 @@ def _regime_analog_detail() -> dict:
             "horizons": list(analog.HORIZONS),
             "population": len(pop_rows),
             "spy_trading_days": len(trading),
+        },
+    }
+
+
+# MPS-1 MP-STRESS: 연속 스트레스 스코어 — 전용 빌더(결정론, regime 판정 무접촉).
+#   baseline = 고정 소급 모집단(summary=BACKFILL_MARK, coverage≥1.0)의 μ·σ(analog와 동일 잣대).
+#   스코어 시계열 = 전 스냅샷 행(소급+라이브)을 고정 잣대 z→가족 균등가중 평균. 최신 스냅샷 anchor.
+#   방향 Δ5d/Δ20d·카테고리 Δ5d = anchor 대비 5·20 거래일 전 행(스냅샷=거래일 1행). 저장 0.
+def _regime_stress_detail() -> dict:
+    from apps.market_pulse.regime import analog, stress
+    from apps.market_pulse.regime.inputs import ALL_INPUT_KEYS
+    from apps.market_pulse.regime.zscore import compute_baseline
+
+    pop_rows = list(
+        RegimeSnapshot.objects.filter(summary=BACKFILL_MARK, coverage__gte=1.0)
+        .order_by("date")
+        .values_list("date", "inputs")
+    )
+    if not pop_rows:
+        return {"available": False}
+    baseline = compute_baseline([inp for _, inp in pop_rows], ALL_INPUT_KEYS)
+
+    # 전 스냅샷(소급+라이브) 거래일 순 → (date, z, score). score None(불충분 z) 행은 제외.
+    all_rows = list(
+        RegimeSnapshot.objects.order_by("date").values_list("date", "inputs")
+    )
+    scored: list[tuple[Any, dict, float]] = []
+    for d, inp in all_rows:
+        z = analog.to_z(inp or {}, baseline)
+        s = stress.composite_score(z)
+        if s is not None:
+            scored.append((d, z, s))
+    if not scored:
+        return {"available": False}
+
+    anchor_date, anchor_z, anchor_score = scored[-1]
+    z_5d = scored[-6][1] if len(scored) >= 6 else None
+    score_5d = scored[-6][2] if len(scored) >= 6 else None
+    score_20d = scored[-21][2] if len(scored) >= 21 else None
+    pop_scores = [s for _, _, s in scored]
+
+    # 가격 추세: SPY 종가 vs MA20·MA60(거래일 종가만, 비거래일 조인 회피).
+    spy = MarketIndex.objects.filter(symbol="SPY").first()
+    closes = (
+        [
+            float(c)
+            for d, c in MarketIndexPrice.objects.filter(index=spy)
+            .exclude(close__isnull=True)
+            .order_by("date")
+            .values_list("date", "close")
+            if d.weekday() < 5
+        ]
+        if spy
+        else []
+    )
+    spy_close = closes[-1] if closes else None
+    ma20 = round(sum(closes[-20:]) / 20, 4) if len(closes) >= 20 else None
+    ma60 = round(sum(closes[-60:]) / 60, 4) if len(closes) >= 60 else None
+    pct = stress.percentile_of(anchor_score, pop_scores)
+
+    return {
+        "available": True,
+        "as_of": anchor_date.isoformat(),
+        "score": anchor_score,
+        "level_band": stress.level_band(anchor_score),
+        "percentile": {"value": pct, "window_days": len(pop_scores)},
+        "direction": {
+            "stress": stress.stress_direction(anchor_score, score_5d, score_20d),
+            "price": stress.price_trend(spy_close, ma20, ma60),
+        },
+        "categories": stress.category_subscores(anchor_z, z_5d),
+        "meta": {
+            "population": len(pop_rows),
+            "band_thresholds": {
+                "low": stress.STRESS_BAND_LOW,
+                "high": stress.STRESS_BAND_HIGH,
+            },
+            "band_provisional": True,  # S4-REBASE 재산정 대상(정직 표기)
         },
     }
 

@@ -137,6 +137,9 @@ def mp_sync_yahoo_indicators_daily(
 #   정상 발행 확인(경우 P=커버리지 갭, 우리 수리 가능) → 재귀 task 대상에 편입.
 #   VIX3M·MOVE는 mp_sync_yahoo_indicators_daily(Yahoo)가 별도 커버 → FRED 미지원(400)이라 제외.
 #   CPIAUCSL·FEDFUNDS·UNRATE·PCEPI는 월간 발행이라 일간 재귀 대상 아님(별도).
+#   MPS-1(D-MPS-INDICATORS): DTWEXBGS(달러지수·daily)·STLFSI4(금융스트레스·weekly, NFCI 선례로
+#     weekly의 daily 재귀 편입 무해) 수집 개시 — **스코어 미편입**(load_inputs 대상 아님, S4-REBASE 심사).
+#     SOFR 스프레드는 배선 보류(MPS-SOFR 별건). seed 0007 적용 전엔 command가 .get() skip(무해).
 FRED_RECURRING_SERIES = (
     "NFCI",
     "NFCICREDIT",
@@ -149,6 +152,8 @@ FRED_RECURRING_SERIES = (
     "DGS10",
     "DGS2",
     "T10Y2Y",
+    "DTWEXBGS",  # MPS-1: 달러지수(수집만·미편입)
+    "STLFSI4",   # MPS-1: 금융스트레스지수(검증 전용·미편입)
 )
 
 
