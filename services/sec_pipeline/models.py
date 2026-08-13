@@ -403,6 +403,13 @@ class UnmatchedCompanyQueue(models.Model):
         help_text='[{"ticker":"TSM","name":"...","score":0.82}, ...]',
     )
     resolved_ticker = models.CharField(max_length=20, blank=True, default="")
+    # CS-P2-8K (additive): 출처 form 종류. 기존 1,272행은 전부 10-K(default 유지).
+    source_form = models.CharField(
+        max_length=10,
+        default="10-K",
+        db_index=True,
+        help_text="미해소 이름의 출처 form (10-K / 8-K). first-seen 기준.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -463,3 +470,103 @@ class PipelineIntelligenceReport(models.Model):
 
     def __str__(self):
         return f"Report {self.report_date} ({self.severity})"
+
+
+# ──────────────────────────────────────────────
+# 9. SEC8KFiling — 8-K filing 원문 저장 (CS-P2-8K, event-driven)
+# ──────────────────────────────────────────────
+
+
+class SEC8KFiling(models.Model):
+    """8-K filing 저장. 10-K용 RawDocumentStore와 별개 — 8-K는 event-driven이라
+    fiscal_year 개념이 없고 item taxonomy(1.01/2.01 등)가 다르며 filing_date 자체가
+    이벤트 시점(핵심 값)이다. 신규 모델로 10-K 저장소를 오염시키지 않는다(additive).
+    """
+
+    STATUS_CHOICES = [
+        ("collected", "Collected"),   # 원문 저장 완료, 추출 전
+        ("extracted", "Extracted"),   # 상대 기업 추출 완료
+        ("empty", "Empty"),           # 원문에서 상대 기업 미지목
+        ("failed", "Failed"),         # 다운로드/파싱 실패
+    ]
+
+    symbol = models.ForeignKey(
+        "stocks.Stock",
+        on_delete=models.CASCADE,
+        related_name="sec_8k_filings",
+        db_column="symbol_id",
+    )
+    cik = models.CharField(max_length=10)
+    accession_no = models.CharField(max_length=30, unique=True)
+    filing_date = models.DateField(db_index=True, help_text="8-K 제출일 = 이벤트 시점(핵심).")
+    items = models.JSONField(
+        default=list, blank=True, help_text='보고된 item 코드 목록 예: ["1.01","9.01"]'
+    )
+    primary_doc_url = models.URLField(max_length=500, blank=True, default="")
+    raw_text = models.TextField(blank=True, default="")
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default="collected")
+    collected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "sec_8k_filing"
+        ordering = ["-filing_date"]
+        indexes = [
+            models.Index(fields=["symbol", "-filing_date"]),
+            models.Index(fields=["status"]),
+        ]
+
+    def __str__(self):
+        return f"{self.symbol_id} 8-K {self.filing_date} ({self.accession_no})"
+
+
+# ──────────────────────────────────────────────
+# 10. SEC8KCounterpartyEvidence — 8-K 상대 기업 증거 (CS-P2-8K, 시점 포함)
+# ──────────────────────────────────────────────
+
+
+class SEC8KCounterpartyEvidence(models.Model):
+    """8-K에서 추출된 상대 기업 증거 행. filing_date(시점) 보유 — D1/D2가 강조한
+    '관계의 시점'을 이 행이 담는다. 해소 성공 시 RelationConfidence(chain_sight,
+    serving_layer=evidence)로 착지(landed=True). 해소 실패는 UnmatchedCompanyQueue.
+    """
+
+    RELATIONSHIP_CHOICES = [
+        ("PARTNER_WITH", "Partner With"),   # item 1.01 중요 계약 기본 매핑
+        ("SUPPLIES_TO", "Supplies To"),
+        ("DEPENDS_ON", "Depends On"),
+        ("ACQUIRED", "Acquired"),           # item 2.01 인수/처분 (신규 유형, 게이트 승인 대상)
+    ]
+
+    filing = models.ForeignKey(
+        SEC8KFiling, on_delete=models.CASCADE, related_name="counterparties"
+    )
+    source_symbol = models.CharField(max_length=20, help_text="8-K 제출 기업(관계 원점).")
+    raw_target_name = models.CharField(max_length=200, help_text="원문에서 추출된 상대 기업명.")
+    resolved_ticker = models.CharField(
+        max_length=20, blank=True, default="", help_text="ticker_matcher 해소 결과(빈값=미해소)."
+    )
+    match_method = models.CharField(
+        max_length=20, blank=True, default="", help_text="alias/exact/fuzzy(현행 ticker_matcher)."
+    )
+    relationship_type = models.CharField(max_length=20, choices=RELATIONSHIP_CHOICES)
+    item_code = models.CharField(max_length=10, help_text='출처 item 예: "1.01"/"2.01".')
+    filing_date = models.DateField(
+        db_index=True, help_text="filing 시점(비정규화, 착지 관계의 시점 정보)."
+    )
+    evidence_text = models.TextField(blank=True, default="", help_text="상대 기업 지목 문장 발췌.")
+    landed = models.BooleanField(
+        default=False, db_index=True, help_text="RelationConfidence evidence 착지 여부."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "sec_8k_counterparty_evidence"
+        indexes = [
+            models.Index(fields=["source_symbol", "relationship_type"]),
+            models.Index(fields=["resolved_ticker"]),
+            models.Index(fields=["landed"]),
+        ]
+
+    def __str__(self):
+        tgt = self.resolved_ticker or self.raw_target_name
+        return f"{self.source_symbol} → {tgt} [{self.relationship_type}] {self.filing_date}"

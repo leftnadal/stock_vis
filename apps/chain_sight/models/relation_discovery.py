@@ -84,6 +84,9 @@ class RelationConfidence(models.Model):
         # 라벨 부여 — choices는 검증/표시용이라 컬럼 DDL 무변경(sqlmigrate no-op).
         ("PARTNER_WITH", "Partner With"),
         ("DEPENDS_ON", "Depends On"),
+        # CS-P2-8K: 8-K item 2.01(인수/합병/스핀오프) 관계. choices는 검증/표시용 →
+        # 컬럼 DDL 무변경(sqlmigrate no-op, additive). 병진 승인 08-13.
+        ("ACQUIRED", "Acquired"),
     ]
     RELATION_CATEGORY_CHOICES = [
         ("truth", "Truth"),
