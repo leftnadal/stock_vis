@@ -262,6 +262,16 @@ export async function fetchRegimeAnalog(): Promise<
   return data
 }
 
+// MPS-2: 스트레스 스코어 카드 전용 엔드포인트(1h 캐시). 봉투 동일.
+export async function fetchRegimeStress(): Promise<
+  CardDetailEnvelope<RegimeStressPayload>
+> {
+  const { data } = await client.get<CardDetailEnvelope<RegimeStressPayload>>(
+    '/regime/stress',
+  )
+  return data
+}
+
 export async function refreshNews(): Promise<{
   _meta: { generated_at: string; count: number; pool_size: number; seen_count: number }
   items: NewsItem[]
@@ -386,6 +396,35 @@ export interface RegimeAnalogPayload {
     horizons?: number[]
     population?: number
     spy_trading_days?: number
+  }
+}
+
+// MPS-2: 스트레스 스코어 payload(D-MPS-* 계약). 색은 FE(stressAlert), 카피는 stressCopy 소관.
+export type StressLevelBand = 'stable' | 'caution' | 'severe'
+export type StressDirState = 'worsening' | 'easing' | 'mixed'
+export type PriceDirState = 'uptrend' | 'downtrend' | 'mixed'
+
+export interface StressCategory {
+  key: string
+  z: number | null
+  d5: number | null
+}
+
+export interface RegimeStressPayload {
+  available: boolean
+  as_of?: string
+  score?: number | null
+  level_band?: StressLevelBand
+  percentile?: { value: number | null; window_days: number }
+  direction?: {
+    stress: { d5: number | null; d20: number | null; state: StressDirState }
+    price: { vs_ma20: string | null; vs_ma60: string | null; state: PriceDirState }
+  }
+  categories?: StressCategory[]
+  meta?: {
+    population?: number
+    band_thresholds?: { low: number; high: number }
+    band_provisional?: boolean // 내부 메타 — 카드 미표시(파싱만 보존)
   }
 }
 

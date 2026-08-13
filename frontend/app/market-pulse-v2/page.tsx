@@ -16,6 +16,7 @@ import { ConcentrationCardSummary } from './cards/ConcentrationCardSummary'
 import { DeltaCard } from './cards/DeltaCard'
 import { RegimeCardSummary } from './cards/RegimeCardSummary'
 import { SectorHeatmap } from './cards/SectorHeatmap'
+import { StressCardContainer } from './cards/StressCardContainer'
 import { AnalogCardContainer } from './details/AnalogCard'
 import { CardDetailContainer } from './details/CardDetailContainer'
 import { REGIME_TERM } from './meaning'
@@ -82,6 +83,11 @@ export default function MarketPulseV2Page() {
             onOpen={() => setOpenCard('regime')}
             sense={selectSense(translations, 'regime')}
           />
+        </div>
+
+        {/* ③a Stress Card — 시장 스트레스 (MPS-2, hero 직하 = Delta 위) */}
+        <div className="mt-4">
+          <StressCardContainer />
         </div>
 
         {/* ③b Delta Card — 어제와 달라진 것 (MP2-DELTA Slice 1) */}
