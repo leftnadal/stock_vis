@@ -529,6 +529,14 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 
 ---
 
+## [2026-08-14] BATCH-31 관찰 기록 2건 (신규 D 채번 없음) [process] [harness]
+
+**관찰 A — read-only recon 트리 정책(전향 규칙)**: RECON-REPORT-R1(BATCH-31 v1)이 **읽기 전용 recon을 메인 repo에서 무편집 수행**(임시 worktree `sess-recon-r1` 미생성)한 절차 편차를 **수용**한다. 사유 = PART A 전 항목이 `git show origin/main:<파일>` **트리 독립 읽기**라 작업 트리가 불필요·CLEANUP 부채만 증가. → **전향 규칙(한 줄 명문화)**: **`git show` 전용 read-only recon은 트리리스(메인 repo 무편집) 허용, 그 외(체크아웃·빌드·health가 트리 상태에 의존하는) recon은 격리 worktree 필수.**
+
+**관찰 B — 지시서 전달 누락 감지 선례**: BATCH-31 v1은 "보고서 유실 복구"로 발급됐으나 recon 실측 결과 **S2-B1-BE 실행·BATCH-31 착지 모두 부재**(worktree·브랜치·커밋 0) = **보고 유실이 아니라 본 트랙 발급분 미전달**로 판별. origin/main 전진 5커밋은 전량 타 트랙(DSS-RECON-1 ×3 + MPS-2 ×2). → 타 트랙 배치 착지 중 본 트랙 발급분이 미전달될 수 있으며 recon으로 판별 가능하다는 **선례 기록**(별도 규칙 신설 없음).
+
+---
+
 ## [2026-08-13] D-C2-S2-FUNNEL-COV — coverage_detail 퍼널 편입 = B안(별도 층·2계열) [dashboard] [platform]
 
 **결정**: C2-S2 안건 ⓑ(coverage_detail 층 편입) = **B안(별도 표시 층 편입·2계열 분리)** 확정. 가중합 **B 4.50 / C 3.70 / A 2.40, 마진 0.80(<1.0) → 사용자 확인으로 확정**(08-13, BATCH-30 지시서로 공급).
@@ -537,6 +545,13 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 - **적체 비제거 원칙**: 점검(coverage_detail) 노출은 적체에서 항목을 **제거하지 않는다**. 적체 의미 = **유기 전달 실패**이므로, 게이트 방문(점검)으로 항목이 사라지면 지표가 자기 방문으로 오염된다.
 - **표면 분류 = SURFACES 모듈 상수(SURFACE_KIND) + 완비 가드**: 전 표면이 organic/audit로 분류됨을 가드 테스트가 강제(미분류 표면 추가 시 실패).
 - **근거**: **관찰자 효과** — 점검 노출(08-12 실측 coverage_detail 61행) > 유기(~40행)이고, 게이트 방문 자체가 방문 인센티브를 순환 생성 → 유기 표면만으로 본판정을 격리해야 지표 정직성 보존. **⚠ 행위보존 아님**: 본판정에서 점검 노출을 빼므로 판정값이 의도적으로 변한다(before/after 대조가 build DoD).
+
+📎 **백-어노테이션 — 구현 분할 = BE→FE 2슬라이스(위임 메뉴 A안) + S2-B1 HALT 정산 (2026-08-14, MGMT-BATCH-31)**:
+- **구현 분할 확정 = BE→FE 2슬라이스(위임 메뉴 A안)**: coverage API audit 층 선행(`S2-B1-BE`, platform 트랙) → FE 렌더(`S2-B1-FE`, dashboard 트랙). 가중합 **A 4.20 / A′ 3.85 / C 3.30 / B 3.20, 마진 0.35 → 타이브레이커**(SURFACES 소재 미확정 리스크 + 1인 직렬 운영) **+ 사용자 확정(08-13)**.
+- **⚠ 명명 주의(혼동 금지)**: 설계 선택지 **"B안"**(별도 층·2계열, 안건 ⓑ 사이클)과 구현 분할 **"A안"**(BE→FE, HALT 위임 사이클)은 **별개 결정 사이클의 라벨**이다.
+- **"본판정 유기만 · 적체 비제거" = BE 현행 기성립**(실측 확인): `apps/platform/api/views.py:181` `COVERAGE_SURFACES = (SURFACE_DASHBOARD_EOD,)` · L185 `COVERAGE_DETAIL_SURFACE = "coverage_detail"` · L228 "coverage_detail 방어적 제외"(D-P2-COVERAGE-SURFACE 유산) → **coverage_detail ∉ COVERAGE_SURFACES 이미 성립**. → **S2-B1 성격 재조정**: 본판정 계열은 **before=after가 기대값**, delta는 audit 층 추가분에 한정. 위 "**행위보존 아님**" 문언은 **audit 층 신설에 한정**(본판정 수치는 불변 기대).
+- **API 계약 하한**(additive·기존 `CoverageResponse` 필드 무변): audit 집계 3종(`observed_uniq` · `audit_only_unexposed` · `overlap`) + **per-item `audited` 플래그**(또는 audited 키 목록). serializer 최종 형상 = **S2-B1-BE STEP 0 실측 후 확정**.
+- **S2-B1-FUNNELCOV 무편집 HALT 정산(08-13)**: 파일 0 · 커밋 0 · worktree `sv-s2b1`(FE HALT 무편집분·origin/main 0커밋 ahead). 백엔드 의존(audit 층 API 미반환)으로 HALT → BE 선행 위임. **STEP 0.6 실측 5종**(원장 최초 기록 — 이전엔 세션 보고에만 존재): imp uniq `dashboard_eod 44` / `coverage_detail 61` / `news_chip 36` · **cov단독(배지 대상) 49** · **cov∩eod 12** · **news_chip∩eod 0**(URL object_ref, join 0 실증 = D-C2-S1-NEWSCHIP 키스페이스 직교의 데이터 재확인).
 
 ## [2026-08-06] D-C2-GATE-SPLIT — C-2 게이트 = 분할 개시 (C안) [dashboard] [platform]
 
