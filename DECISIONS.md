@@ -8,6 +8,23 @@
 
 ---
 
+## [2026-08-14] D-MPS-OPS-SYNC — MP-STRESS 점등 = 워커 런타임 광의 동기 승인 [marketpulse][ops]
+
+**결정**: MP-STRESS 점등(seed·수집·백필)을 위해 sv-worker-runtime을 origin/main으로 **ff-only 광의 동기**(c9400d18→24커밋) + default 워커·beat 재기동을 승인·집행. 퀀트 4.45>3.50>2.90, 마진 0.95 → 타이브레이커 = ff-only 비파괴성(롤백=c9400d18) + 프리뷰 3단.
+- Why: 라이브 default 워커/beat가 c9400d18(pre-MPS-1)에서 구동 중이라 FRED_RECURRING 신규 2종 미보유 → 점등 불가. 24커밋 동기는 SECB·CS·MGMT·MPS 다트랙 landed 코드 동반이나 ff-only(비파괴·롤백 가능)라 승인.
+- 집행 증빙: migrate --plan = **macro.0007 단독**(타 트랙 스키마 마이그 0·전부 기적용) · check 0 · health 15/0/0 · 재기동 창 0건 · **launchd kickstart**(worker 63121→51619·beat 63127→51624·cwd sv-worker-runtime·PeriodicTask 124 무손상) · neo4j 워커(15346)·Desktop 트리 무접촉.
+- How to apply: 워커 런타임 = launchd(com.stockvis.celery-worker/beat, KeepAlive, WorkingDirectory=sv-worker-runtime) → 동기는 `git checkout origin/main` + `launchctl kickstart -k`. cf. TASKQUEUE DEPLOY-RUNBOOK(절차 정의).
+
+## [2026-08-14] INC-MPS-BACKFILL-SCOPE — 백필 스코프 초과(--econ-only 누락) [marketpulse][ops][incident]
+
+**경위**: Part 2.2 백필에서 `backfill_v2_a1 --series-id DTWEXBGS --from 2023-07-01`을 **`--econ-only` 없이** 실행. `--series-id`는 econ만 스코프하고 **심볼(MarketIndex) 파트는 무스코프** → 섹터 ETF 11종(XLB·XLC·XLE·XLF·XLI·XLK·XLP·XLRE·XLU·XLV·XLY) MarketIndexPrice에 각 +689행 = **총 7,579행** 의도 밖 삽입.
+
+**영향(전수 실측)**: ⑴ **스코어 무영향** — BEFORE=AFTER(-0.197/stable/30.8/804 동일)·**SPY MarketIndexPrice 미변경**(inserted 0)이라 스트레스 스코어 SPY 파생 무손상(08-13 -0.175 대비 차이는 신규 거래일 스냅샷 804, 백필 무관). ⑵ **멱등**(재백필 inserted 0). ⑶ 카드출력 무변(섹터=저장 SectorFlowSnapshot·최근창). ⑷ econ = DTWEXBGS 776·STLFSI4 162만(정상·타 econ 무변).
+
+**처분 = 존치**(퀀트 4.45 vs 3.00, 마진 1.45): 정당 행 오삭 리스크·정책 중복. **추가 근거 = 자연 소멸**: `PRESERVED_INDEX_SYMBOLS={"SPY"}`만 purge 예외 → 섹터 ETF는 롤링 365일 purge 대상 → `cleanup_old_data`(일요일)가 365일 초과분(대부분) 자연 제거.
+
+**근본원인 = 운영 절차 실수(케이스 i)**: dry-run이 `[DRY-RUN] Market (11): [...]`을 **표시했으나 출력 grep 필터로 미대조**. 커맨드 결함 아님. cf. common-bugs(--econ-only·프리뷰 전수 대조), TASKQUEUE BACKFILL-SCOPE-GUARD.
+
 ## [2026-08-13] D-MPS-COLOR — StressCard 색 처리 = 안 1 경보 프레임 [marketpulse][stress][frontend]
 
 **결정**: StressCard 스트레스 표시색 = **경보 프레임**(안 1). 신규 단일소스 `stressAlert` 토큰: stable=slate(무채)/caution=amber/severe=rose. 밴드 뱃지·스트레스 방향 악화·괴리 강조 배지 = 이 토큰만 소비(카드 내 색 하드코딩 0). 가격 행 = 무채색 텍스트+방향 화살표+MA 서술(sectorColor 미적용). easing = 무채/low-key(긍정색 도입 금지). AnomalyPanel 무접촉(행위보존).

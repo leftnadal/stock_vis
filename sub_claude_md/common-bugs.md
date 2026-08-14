@@ -1515,3 +1515,13 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **증상**: 모듈 이관(예: BOUNDARY-LLM-CB `apps/market_pulse/llm/client.py`→`packages/shared/llm/legacy_gemini.py`)에서 소비자 import를 일괄 갱신할 때 **`tests/` 하위 소비자를 누락**. 앱 코드 9곳은 갱신됐으나 10번째 소비자(테스트)가 구 경로를 유지 → `ImportError: cannot import name 'client'`. 이 실패가 다음 세션엔 **"선존 실패"로 위장**(내 diff 무관으로 오판)돼 방치되고, known-fail 레지스트리에도 미등록으로 남는다.
 
 **교훈**: 소비자 전수 grep 범위에 **`tests/`를 명시**한다(`grep -rn '<구 경로>' apps/ packages/ tests/`). 이관 완료 판정 = 앱+테스트 양쪽 0건. **위장 식별법**: "선존 실패"로 분류하기 전에 실패가 **모듈 부재/import 오류**면 이관 drift 의심(코드 로직 실패와 구분). 모킹 대상도 함께 정합 — 호출시점 로컬 import(`def f(): from X import g`)는 **소스 모듈 X를 패치**해야 monkeypatch가 유효(소비 모듈 패치는 무효). cf. BOUNDARY-LLM-CB([[project_boundary_llm_track]]).
+
+## `backfill_v2_a1`은 `--econ-only` 없으면 심볼(MarketIndexPrice)까지 백필 — `--series-id`는 econ만 스코프 (채번 후보, INC-MPS-BACKFILL-SCOPE 2026-08-14) `[data][ops]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
+
+**증상**: 단일 econ series 백필 의도로 `backfill_v2_a1 --series-id DTWEXBGS --from 2023-07-01`(--econ-only 없이) 실행 → **섹터 ETF 11종 MarketIndexPrice에 각 +689행(총 7,579행) 의도 밖 삽입**. `--series-id`는 **Economic 파트만** 스코프하고 **Market(심볼) 파트는 무스코프**(전 섹터 ETF 대상). **원인**: 커맨드가 econ+symbol 이중 타깃이며 위험한 기본값(심볼 전량)이 --series-id로 안 좁혀짐. **해결**: econ만 원하면 **`--econ-only` 필수**. (무해 판정 근거: SPY만 purge 예외라 섹터 ETF 초과분은 롤링 365일 purge로 자연 소멸.)
+
+## 백필 프리뷰는 수치 대조 **전에** 쓰기 대상 테이블 전수를 대조 — grep 필터가 파트를 가린다 (채번 후보, INC-MPS-BACKFILL-SCOPE 2026-08-14) `[ops][process]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
+
+**증상**: `backfill_v2_a1 --dry-run` 출력에 `[DRY-RUN] Economic (1): [...]` + **`[DRY-RUN] Market (11): [...]`** 두 파트가 모두 표시됐으나, 출력을 `grep -iE "series명|row|건"`으로 필터링해 **Market 파트를 화면에서 놓침** → 심볼 백필을 미대조하고 실행. **교훈**: 프리뷰(dry-run) 검토는 **grep 필터 없이 전체 출력**을 보고 **쓰기 대상 테이블/엔티티 전수**(Economic + Market 등)를 확인한 뒤 실행. 프리뷰 필터링은 "수치만 보고 스코프를 안 보는" 함정. cf. INC-MPS-BACKFILL-SCOPE.
