@@ -15,6 +15,15 @@
 **Why**: rose가 repo에서 "가격 상승(sectorColor)"과 "경보(AnomalyPanel)" 이중의미로 공존하고 조율 헬퍼 부재(STEP 0 실측 = §7 HALT). 스트레스 카드는 **위험 표면**이므로 rose=경보 프레임이 지배(anomaly와 동일 경보 가족)이고, 가격을 무채색화해 충돌 회피. 퀀트 **3.80(안1) > 3.60(안2 전용 stressColor) > 3.45(안3 무채+배지)**, 마진 0.20 → 타이브레이커 = "경보색 단일" 원칙(anomaly·stress 동일 가족) + 390px 괴리 글랜스(색으로 즉시 판별). 긍정색 금지 = 스트레스 완화를 '좋음'으로 오독시키지 않기 위함(카드 목적은 위험 감시).
 
 **How to apply**: `app/market-pulse-v2/stressAlert.ts`(단일소스)·StressCard 소비. 가격 무채 = `priceNeutralTextClass`. cf. TASKQUEUE **COLOR-TOKEN-UNIFY**(AnomalyPanel rose→stressAlert 토큰 통일, 휴면·트리거=다음 AnomalyPanel 접촉).
+## [2026-08-13] D-SPLIT-1 — I3-SPLIT-GUARD 구현 방식 = B안(전용 모델 + nightly) [stocks][portfolio]
+
+**결정**: 채점 지평(예측~만기) 내 액면분할/기업행위 감지를 **B안 — 전용 `StockSplit` 모델 + nightly 수집**으로 구현한다. 예측~만기 구간에 분할이 있으면 원시(비조정) DailyPrice close가 오염되므로 해당 예측을 `unscoreable:corporate_action`으로 반환(채점 산식 무변경, unscoreable 분기만 추가).
+
+**병진 override**: 디렉터 추천 = C안(4.25, 인접 bar 급변 휴리스틱 등 경량), 채택 = **B안(3.80)**, **마진 −0.45 수용**. 사유 = 정합·확장성(배당/합병 등 기업행위 일반화의 토대 — StockSplit 모델이 향후 CorporateAction 계열로 확장 가능, 휴리스틱은 오탐/누락 양방향 리스크).
+
+**Why**: ⑴ raw close 기반 채점(D-I3, DailyPrice 비조정)에서 분할은 series_break gap 휴리스틱에 **안 걸린다**(분할은 날짜 홀을 안 만듦) → 별도 감지원 필수. ⑵ FMP `/stable/splits` 실데이터 가용(preflight A2 확인) → 전용 모델에 정본 저장이 휴리스틱보다 정확. ⑶ append-only 시계열 = 기존 원장 패턴(AnalystSignalSnapshot) 재사용.
+
+**How to apply**: `packages.shared.stocks.StockSplit`(마이그 0014, additive·기존 테이블 무접촉) + `FMPClient.get_stock_splits` + `apps.portfolio.tasks.ingest_stock_splits`(_coach_universe 재사용, append/skip) + beat `portfolio-stock-splits-daily` 19:45 ET(analyst 19:30 후·financials 20:00 前, 충돌 0). 채점 접합 = `resolve_realized(..., splits)`: `capture_date < split ≤ realized_date` → `unscoreable:corporate_action`. **재현 헤더 4→6필드**(additive: `splits_input_rows`·`splits_max_date`). **SCORING_VERSION=1 유지** — splits 빈/None 시 산출 byte-IDENTICAL(단위 테스트 입증), 현 유니버스 9종은 채점 지평 내 분할 0(NVDA/TSLA/GOOGL/AAPL 최근 분할 전부 2026 스냅샷 前). 배치 = shared 모델 / apps 태스크(shared→apps 역참조 회피, 경계 가드 통과). prod migrate·beat 등록 = HALT(D-PROBE-PRODWRITE-RULE, 병진 승인). cf. TASKQUEUE I3-SPLIT-GUARD · [[project_sfi_i3_scoring]].
 
 ## [2026-08-12] D-MON-P4-LA-CLOSE — MON-P4-LA ADVISOR L-A 정기 브리핑 트랙 종결 [monitor][governance]
 

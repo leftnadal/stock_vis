@@ -1326,9 +1326,18 @@
 - 잔여: 첫 19:30 ET 발화 후 미니 recon(9행 spot 전건 T 일치)이 종결 확인 조건.
 
 ## I3-SPLIT-GUARD — 지평 내 액면분할·기업행위 감지 시 unscoreable (2026-08-06, SFI-I-3 Part A) [stocks][portfolio]
-- 상태: **🕒 시한 확정** — 차기 미니슬라이스 확정(2026-08-11 결정 사이클 [[DECISIONS]] D-ARC-NEXT), **09-01 h21 첫 만기 前 시한**(만기 도달 예측이 split 오염 시 채점 왜곡 방지). 구 backlog(W2 잔존)에서 승격. DailyPrice=raw close·비조정(STEP0 #4) → 채점 지평(h≤252d) 내 분할·대규모 배당 시 실현폭 왜곡.
-- 내용: 채점 시 예측~만기 구간에 액면분할/기업행위 감지되면 해당 예측을 **unscoreable(reason=corporate_action)**로 반환(무리한 채점 금지, 규칙 5 정신). 감지원=split 이벤트 소스 또는 인접 bar 급변(threshold) 휴리스틱.
-- 근거: 현 유니버스(9종)는 표본 미도달이라 즉시 위험 낮으나 h=252d 도달 전 배선 필요. adjClose 도입은 별개 트랙.
+- 상태: **✅ done (2026-08-13, D-SPLIT-1 B안 구현·랜딩)** — StockSplit 모델(shared.stocks 마이그 0014 **prod 적용 완료**, HALT ① 승인)+`FMPClient.get_stock_splits`+`ingest_stock_splits`(apps.portfolio)+`sync_stock_splits_beat`(19:45 ET)+resolve_realized `unscoreable:corporate_action` 분기+재현헤더 additive 2필드. 게이트: 회귀 746(blast: stocks·portfolio·arch)+신규 11 passed·경계가드 통과·health 15/0/0·산식 IDENTICAL(빈 splits). **잔여(병진 수동)**: HALT ②(beat 등록)=코드 배포+워커 재기동 후 별도 승인. 09-01 h21 시한 前 배관 완료.
+- 내용(구현 확정): 예측~만기 구간(`capture_date < split.date ≤ realized_date`) 분할 존재 시 `unscoreable:corporate_action`. 감지원 = FMP `/stable/splits` 전용 StockSplit 모델(휴리스틱 아님, D-SPLIT-1).
+- 근거: raw close(비조정)는 분할을 series_break gap으로 못 잡음(날짜 홀 무발생) → 전용 감지원 필수. 현 9종 채점 지평 내 분할 0(NVDA/TSLA/GOOGL/AAPL 최근 분할 전부 2026 스냅샷 前). adjClose 도입은 별개 트랙.
+
+## SPLIT-CALENDAR-PREVIEW — 예정 분할 선반영 검토 (등재, 2026-08-13) [stocks][portfolio]
+- 내용: FMP `/stable/splits-calendar`(사전 예고, preflight A3 가용 확인)로 **예정 분할을 사후가 아닌 사전에** unscoreable 선반영할지 검토. 현 I3-SPLIT-GUARD는 발효(사후) 분할만 감지 — 예정 분할이 만기 구간에 걸리는 예측을 미리 표시하면 채점 대기 중 사용자 오해 감소.
+- 트리거: I3-SPLIT-GUARD 첫 발화 후 예정 분할 실사례 발생 시. 유니버스 9종은 현재 예정 창(2026-08~10) 0건.
+- 상태: 💤 등재(트리거 게이트).
+
+## BRANCH-REF-SWEEP — 로컬 브랜치 ref 소진 분류·정리 (등재, 2026-08-13) [harness][ops]
+- 내용: 로컬 브랜치 ref **~155개**(대부분 worktree 없는 과거 nightly/세션 ref). `cleanup_worktrees_20260812.sh` 패턴 재사용해 **worktree 없는 소진 브랜치 전용** 정리 스크립트 생성(생성만·집행 병진 수동, D-BRANCH-DELETE-MANUAL). origin/main `merge-base --is-ancestor` 소진 재검증 후 `-d`(거부 시 skip), 활성/미소진 제외.
+- 상태: 💤 등재(저우선). 방치 무해(dangling ref)이나 census 위생용.
 
 ## CS-REDESIGN-BACKLOG — Chain Sight 재설계 D1/D2 후속 백로그 (등재, 2026-08-10)
 출처: D2-LEDGER-PROBE 지시서 Part 1-D. 결정 근거 = [[DECISIONS]] D1·D2. 채번 미부여(백로그).
