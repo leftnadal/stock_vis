@@ -8,6 +8,14 @@
 
 ---
 
+## [2026-08-14] D-MPS-OPS-WEBSYNC — 웹 런타임 동기 + FE 리빌드 + :3000 서빙 교체 승인 [marketpulse][ops][frontend]
+
+**결정**: sv-web-runtime을 origin/main으로 ff-only 동기 + FE prod 리빌드 + :3000 서빙 교체 승인·집행(StressCard 라이브 검수 가능화). 퀀트 4.55/3.50/2.90, 마진 1.05. 전례 = D-MPS-OPS-SYNC(worker).
+- Why: MPS-2 StressCard가 :3000에 표시되려면 웹 런타임(c9400d18 스테일)이 origin/main 코드·빌드를 서빙해야. D-MPS-OPS-SYNC는 worker/beat 한정이라 별도 승인.
+- 집행 증빙: ff 동기(c9400d18→03280d04, StressCard 소스 유입)·FE deps 무변경(npm ci 불요)·**빌드 먼저**(npm run build exit0·BUILD_ID `xInPbQnnN8Tv9A6vbyrHK`·.next 백업 선행=무중단 폴백)→서빙 교체→스모크(:3000 200×5·StressCard 번들 포함·cwd 동기트리). neo4j/Desktop 무접촉.
+- **서빙 교체 인시던트(해소)**: `launchctl kickstart -k`가 **launchd 관리 이탈한 구 orphan 프로세스(Aug10, PPID→1)**를 못 죽여 새 인스턴스가 **EADDRINUSE :3000** 실패 → 구 빌드 계속 서빙. 해소 = orphan(npm start+next-server) 수동 `kill -TERM` → KeepAlive 자동재기동 + 클린 kickstart → 새 프로세스(오늘 기동·새 .next) :3000 단독 바인딩·launchd 관리 복구. cf. common-bugs(kickstart orphan), DEPLOY-RUNBOOK.
+- 잔여(병진): 390px 실기기 검수 → stable 문구 결정 → (채택 시) Part 4 폴리시 슬라이스.
+
 ## [2026-08-14] D-MPS-OPS-SYNC — MP-STRESS 점등 = 워커 런타임 광의 동기 승인 [marketpulse][ops]
 
 **결정**: MP-STRESS 점등(seed·수집·백필)을 위해 sv-worker-runtime을 origin/main으로 **ff-only 광의 동기**(c9400d18→24커밋) + default 워커·beat 재기동을 승인·집행. 퀀트 4.45>3.50>2.90, 마진 0.95 → 타이브레이커 = ff-only 비파괴성(롤백=c9400d18) + 프리뷰 3단.
