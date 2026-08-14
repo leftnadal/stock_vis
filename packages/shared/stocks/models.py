@@ -28,6 +28,9 @@ class Stock(models.Model):
     sector = models.CharField(max_length=100, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     official_site = models.URLField(blank=True, null=True)
+    # SEC EDGAR CIK (zero-padded 10자리). 8-K 일일수집·10-K·재해소 파이프라인이 반복 사용하므로
+    # on-demand 조회 대신 영구 저장 (CS-P3-UNIVERSE, D-CS-P3). additive nullable.
+    cik = models.CharField(max_length=10, blank=True, null=True, db_index=True)
     fiscal_year_end = models.CharField(max_length=20, blank=True, null=True)
     latest_quarter = models.DateField(blank=True, null=True)
 

@@ -6413,3 +6413,23 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **매핑표 갱신(ACQUIRED)**: item 2.01(인수/합병/스핀오프) → **ACQUIRED = evidence 계층**(RelationConfidence choices additive·마이그 0031 no-op DDL·적용). 단 착지는 F2로 보류(choices·증거는 준비, RC 착지만 게이트). item 1.01 상업 → PARTNER_WITH·공급 → SUPPLIES_TO(evidence, 착지). **롤백**: 이미 --apply된 fuzzy+ACQUIRED 착지 58건 삭제(신규 생성분만·선존 0·증거 landed=False 보존) → 73→15.
 
 **공유 client 버그**: `SECEdgarClient.download_8k_text` 디렉토리 스크래퍼가 `//index.htm` 404 → 로컬 헬퍼(primaryDocument 직접 URL) 우회(공유 client 무접촉 승인). 수리 = TASKQUEUE `P28K-CLIENT-FIX`. common-bugs 등재. **유니버스 682→683**(FDXF=FedEx Freight 스핀오프 편입 확인).
+
+## D-CS-P3 (2026-08-13, 유니버스 확장 1차 — 후보 통합→게이트→편입→재해소)
+
+**집행**: CS-P3-UNIVERSE Slice1-3(병진 GO·컷=전량·FMP 144콜 승인·마이그 병진 수동). worktree `monorepo/sess-p3-universe` base `b7d25aff`. **재사용**: StockService.get_company_profile + daily_price_backfill(FDXF 편입 입증 경로) · seed_relations_to_chainsight · backfill_serving_layer. **신규**: `Stock.cik`(additive nullable db_index·마이그 0014_stock_cik·병진 수동 적용) + `induct_cs_universe` command.
+
+**D-CS-P3-CANDIDATE — 후보 = exact/alias만(company_tickers.json 대조).** pending UCQ 1399(10-K 1024+8-K 375) → SEC company_tickers.json(10,387) exact/alias 대조 → NEW 75티커(unmatched 1309=해외/비상장/일반명사 93.6%·P2-4 "유니버스밖 95.6%" 정합). **P2-4의 108→75 순화 = fuzzy 오탐 제거**(재해소 143≈P2-4 144 교차검증 통과 — 티커 수 줄어도 재해소 행수 동일=고빈도 정당매칭 지배). 컷=전량(빈도컷은 이름변형 분리로 재해소가치와 어긋남 143중 50만 포착·양출처 교집합=공집합 붕괴·전량도 FMP 1.5%라 무손실).
+
+**D-CS-P3-AMBIG — ambiguous 15 규칙 판정: share-class→유동성 상위·ADR→ADR 티커·불가→제외.** ADR 10(UL·SAP·ABBNY·BCS·MUFG·BUD·FMS·NVS·CAJPY·SAN, 원 alpha-first 6건 교정 BCLYF→BCS 등)+share-class 3(BRK.B는 기존유니버스→편입 아닌 재해소·BC 보통주·SR 보통주)+제외 2(HXSCL/SKHY 둘 다 OTC pink·CHSCL/M/N/O/P 우선주만). → **편입 = 75−제외2−기존유니버스(BRK.B)1 = 72티커**.
+
+**D-CS-P3-CIK — Stock에 cik 영구 저장(additive).** on-demand 반복조회 대신 저장(8-K 일일수집·10-K·재해소가 반복 사용하는 영구 파이프라인). 마이그 0014 병진 수동 적용. 신규 72 + (기존 683은 미백필, 별도).
+
+**D-CS-P3-RERESOLVE-EXACT — 재해소 = exact/alias만·fuzzy 착지 금지(F1 준수).** ⚠**실측 함정**: TickerMatcher._match_exact가 Stock.stock_name(FMP명) 매칭이라 evidence명("SYNNEX Corporation")↔FMP명("TD Synnex Corp") 갭 → **fuzzy로 빠져 CSX(철도) 오매칭**(F1 재앙). 해소: ⑴ 검증된 company_tickers.json exact 매칭을 **CompanyAlias 88건 시드**(source=CS-P3-UNIVERSE, durable 브릿지) ⑵ 재해소 루프에서 **method='fuzzy' 거부**(exact/alias만 target_company 세팅). **fuzzy 105건 거부**(10-K 70+8-K 35, 오착지 방지).
+
+**재해소 스코프 = SCE.current() 1759 기준(병진 지시).** 324 재해소(exact 184+alias 140) → seed_relations 신규 94쌍+523 업데이트 → serving_layer=evidence 백필(+94). **분해**: 67→신규72 티커(편입 payoff) / 257→기존 유니버스(**08월 v2 재추출 1735행이 매칭·시딩 미실행한 백로그 소급 해소** = STEP0 추정 143과의 2.2배 차이 근원, current 1759 기준이라 스코프 내). **v2 파이프라인 갭 발견**: v2 재추출이 evidence 적재만·매칭→seed 미실행 → 별도 관찰 대상. **8-K**: C8 미착지 549 → resolved 73(fuzzy 35 거부) → commercial/supply(PARTNER_WITH/SUPPLIES_TO) **8착지(신규 7쌍)** · **ACQUIRED 65 = resolved_ticker 세팅(증거보강)·RC 착지 보류(F2)**. C8 landed 18→26.
+
+**KPI**: 유니버스 **683→755(+72)** · 편입커버 sector/industry/cik/price **72/72 전건(100%)**·DailyPrice 17,287행·FMP 드롭 0(ADR/OTC 포함 /stable/profile 전건 커버) · 재해소 SCE.current() 미해소 1759→**1435** · RC evidence 계층 2613→**2714(+101 신규쌍=94 10-K+7 8-K)**·RC total 15764→15865 · CompanyAlias 86→**174(+88)**. 신규 72종 sync_strength는 이력 누적 후 자동 편입(즉시 아님).
+
+**8-K 어카운팅 갭(병진 부대 원장)**: EDGAR 인덱스 후보 893 중 8건 수집 전 드롭(미기록). F1 "실패 0"의 스코프는 **착지 885 기준**(extracted 822+empty 63). 893→885 감소분은 원장·DB 무기록.
+
+**STEP0 F1/F2 정정(박힌 값 신뢰 금지)**: 지시서 괄호 추정("893→885 사유"·"IREN 이중유형")은 DECISIONS 원장에 **부재** — 실제 F1=fuzzy 오매칭 착지금지, F2=ACQUIRED 방향결함 보류. IREN=8-K filer(source ×6)+유니버스원+Monitor 타깃(counterparty로는 0). SCE "1,437→3,155 급증"=대부분 supersession 아티팩트(`.current()` 미해소는 실제 1,759, 3,155는 v1+v2 중복 포함).

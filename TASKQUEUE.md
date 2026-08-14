@@ -1345,7 +1345,9 @@
 
 ## CS-REDESIGN-BACKLOG — Chain Sight 재설계 D1/D2 후속 백로그 (등재, 2026-08-10)
 출처: D2-LEDGER-PROBE 지시서 Part 1-D. 결정 근거 = [[DECISIONS]] D1·D2. 채번 미부여(백로그).
-- **CS-EXP-2 유니버스 확장 2차** — 트리거: 8-K 가동 후 미해소 타깃 빈도 N주 실측. (D2 Phase 4)
+- **CS-EXP-2 유니버스 확장 2차** — ~~트리거: 8-K 가동 후 미해소 타깃 빈도 N주 실측~~ → **재정의(D-CS-P3 후, 2026-08-13)**: 확장 1차(72티커 편입·SCE.current() 미해소 1759→1435) 후 잔여 미해소 **1,435행** 기준. 트리거 = ⑴ 잔여 미해소를 exact/alias 재대조 시 US상장&유니버스밖 신규 티커가 빈도≥2로 재축적, 또는 ⑵ 8-K beat(P28K-BEAT) 가동 후 미해소 상대 신규 유입. **1차는 exact/alias만이라 잔여 1,435 대부분=해외/비상장/일반명사(구조적 미해소)** → 2차는 신규 유입분 위주. (D2 Phase 4)
+- **CS-P3-EXISTING-CIK-BACKFILL 기존 683 CIK 백필** — 1차는 신규 72만 CIK 세팅. 기존 683은 미백필(company_tickers.json 대조 or SEC get_cik). 8-K 일일수집(P28K-BEAT) 전 유용. (D-CS-P3-CIK 후속)
+- **CS-P3-V2-MATCH-GAP v2 재추출 매칭·시딩 갭** — 08월 v2 재추출(1735행)이 evidence 적재만·매칭→seed 미실행 관찰(D-CS-P3 재해소서 257행 소급). v2 추출 파이프라인에 매칭→seed 체이닝 편입 검토. (신규, 관찰→결정)
 - **CS-8K-ITEM-EXPAND 8-K item 확대 검토** — 5.02(임원변동) 등, 최소 슬라이스(1.01/2.01) 가동 후. (D2 Phase 2 후속)
 - **CS-STORE-DEDUP 관계 store 이중화 해소 검토** — RelationConfidence 13,701 vs serverless StockRelationship 225,073(HELD_BY_SAME_FUND 197k·SAME_REGULATION 26k). 서빙 소스 단일화 판단.
 - **CS-LLMREL-TTL LLMExtractedRelation 30일 TTL 정책 재검토** — Phase 5 산출물 전량 소멸(현재 0행) 재발 방지.
