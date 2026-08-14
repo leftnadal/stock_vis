@@ -1525,3 +1525,8 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 *(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
 
 **증상**: `backfill_v2_a1 --dry-run` 출력에 `[DRY-RUN] Economic (1): [...]` + **`[DRY-RUN] Market (11): [...]`** 두 파트가 모두 표시됐으나, 출력을 `grep -iE "series명|row|건"`으로 필터링해 **Market 파트를 화면에서 놓침** → 심볼 백필을 미대조하고 실행. **교훈**: 프리뷰(dry-run) 검토는 **grep 필터 없이 전체 출력**을 보고 **쓰기 대상 테이블/엔티티 전수**(Economic + Market 등)를 확인한 뒤 실행. 프리뷰 필터링은 "수치만 보고 스코프를 안 보는" 함정. cf. INC-MPS-BACKFILL-SCOPE.
+
+## `launchctl kickstart -k`가 관리 이탈 orphan을 못 죽여 EADDRINUSE — 서빙 교체 실패(구 빌드 계속) (채번 후보, D-MPS-OPS-WEBSYNC 2026-08-14) `[infra][ops]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
+
+**증상**: 웹 런타임 리빌드 후 `launchctl kickstart -k com.stockvis.web-frontend`로 서빙 교체 시도 → 새 인스턴스가 `Error: listen EADDRINUSE :::3000`로 기동 실패, **구 빌드가 계속 서빙**(StressCard 미표시). `launchctl list`가 `-  <exit>  <label>`(관리 PID 없음). **원인**: 이전에 launchd가 관리를 놓친 **구 프로세스가 PPID→1로 reparent**돼 :3000을 계속 점유(예: npm start + next-server 쌍, 며칠 전 기동). kickstart는 **launchd가 추적하는 인스턴스만** 재기동하므로 orphan은 살아남아 포트 점유. **판정**: `lsof -i :3000 -sTCP:LISTEN`의 PID 기동시각(`ps -o lstart`)이 **오늘이 아니면 orphan**. **해결**: orphan(부모 npm start + 자식 next-server) `kill -TERM` → KeepAlive 자동재기동 or 클린 kickstart → 새 프로세스(오늘 기동·새 .next)가 :3000 단독 바인딩·launchd 관리 복구. **검증**: 리스너 PID 기동시각=지금 + `lsof -ti :3000` 단일 + 서빙 프로세스 cwd=동기 트리. cf. DEPLOY-RUNBOOK.
