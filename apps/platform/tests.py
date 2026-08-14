@@ -236,7 +236,7 @@ def test_coverage_normal_aggregation():
         _ref("BBB", today, "P1"),
         _ref("CCC", today, "S1"),
     }
-    # 미노출 항목 필드 계약
+    # 미노출 항목 필드 계약 (audited = S2-B1-BE additive 필드)
     item = d["unexposed"][0]
     assert set(item) == {
         "object_ref",
@@ -244,8 +244,10 @@ def test_coverage_normal_aggregation():
         "signal_date",
         "signal_tag",
         "days_since_issue",
+        "audited",
     }
     assert item["days_since_issue"] == 0
+    assert item["audited"] is False  # audit 관측 없음
     assert d["meta"]["surfaces_included"] == ["dashboard_eod"]
     assert d["meta"]["join_misses"] == 0
 
@@ -334,3 +336,104 @@ def test_coverage_no_issuance_zero_rate():
     assert d["summary"]["issued"] == 0
     assert d["summary"]["exposure_rate"] == 0.0
     assert d["unexposed"] == []
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# S2-B1-BE: audit(점검) 층 — D-C2-S2-FUNNEL-COV 2계열(organic/audit)
+# coverage_detail 표면 관측의 additive 읽기 집계(스키마 무변경, 본판정 격리).
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def test_coverage_audit_split_observed_overlap_unexposed():
+    """① audit 집계 분리 정확성 + 불변식(observed_uniq == overlap + audit_only_unexposed)."""
+    client, user = _auth_client()
+    today = timezone.localdate()
+    x1 = Stock.objects.create(symbol="X1")  # 유기 노출 + 점검 → overlap
+    x2 = Stock.objects.create(symbol="X2")  # 점검만 → audit_only_unexposed
+    x3 = Stock.objects.create(symbol="X3")  # 미노출·점검 없음
+    x4 = Stock.objects.create(symbol="X4")  # 유기 노출·점검 없음
+    for s in (x1, x2, x3, x4):
+        _issue(s, today, "P5")
+    _impress(user.id, _ref("X1", today, "P5"))  # 유기 exposed
+    _impress(user.id, _ref("X4", today, "P5"))  # 유기 exposed
+    _impress(user.id, _ref("X1", today, "P5"), surface="coverage_detail")  # 점검
+    _impress(user.id, _ref("X2", today, "P5"), surface="coverage_detail")  # 점검
+
+    d = client.get(COVERAGE_URL).data
+    a = d["audit"]
+    assert a["surface"] == "coverage_detail"
+    assert a["observed_uniq"] == 2  # {X1, X2}
+    assert a["overlap"] == 1  # X1 (점검 ∩ 유기 exposed)
+    assert a["audit_only_unexposed"] == 1  # X2 (점검했으나 유기 미노출)
+    # 불변식
+    assert a["observed_uniq"] == a["overlap"] + a["audit_only_unexposed"]
+    # 본판정 격리 — 점검이 exposed/unexposed 수치에 안 샘
+    assert d["summary"]["exposed"] == 2  # X1, X4 (유기만)
+    assert d["summary"]["unexposed_count"] == 2  # X2, X3
+
+
+def test_coverage_audit_flag_only_on_unexposed_backlog():
+    """② per-item audited 플래그가 미노출 적체에만 의미 있게 붙는다."""
+    client, user = _auth_client()
+    today = timezone.localdate()
+    x1 = Stock.objects.create(symbol="X1")  # 유기 노출 + 점검 (unexposed 아님)
+    x2 = Stock.objects.create(symbol="X2")  # 미노출 + 점검 → audited True
+    x3 = Stock.objects.create(symbol="X3")  # 미노출 + 점검 없음 → audited False
+    for s in (x1, x2, x3):
+        _issue(s, today, "P5")
+    _impress(user.id, _ref("X1", today, "P5"))  # 유기 exposed
+    _impress(user.id, _ref("X1", today, "P5"), surface="coverage_detail")
+    _impress(user.id, _ref("X2", today, "P5"), surface="coverage_detail")
+
+    d = client.get(COVERAGE_URL).data
+    by_ref = {u["object_ref"]: u for u in d["unexposed"]}
+    # 유기 노출된 X1 은 미노출 적체에 없음 → 플래그 대상 아님
+    assert _ref("X1", today, "P5") not in by_ref
+    assert by_ref[_ref("X2", today, "P5")]["audited"] is True
+    assert by_ref[_ref("X3", today, "P5")]["audited"] is False
+
+
+def test_coverage_audit_does_not_shift_organic_judgment():
+    """③ 기존 필드 무변 회귀 — 점검 데이터가 본판정 수치를 흔들지 않는다(before=after)."""
+    client, user = _auth_client()
+    today = timezone.localdate()
+    s1 = Stock.objects.create(symbol="AAA")
+    s2 = Stock.objects.create(symbol="BBB")
+    s3 = Stock.objects.create(symbol="CCC")
+    _issue(s1, today, "P5")
+    _issue(s2, today, "P1")
+    _issue(s3, today, "S1")
+    _impress(user.id, _ref("AAA", today, "P5"))  # 유기 exposed 1건
+    # 미노출 2건을 점검 표면에서 관측 (본판정에 영향 없어야 함)
+    _impress(user.id, _ref("BBB", today, "P1"), surface="coverage_detail")
+    _impress(user.id, _ref("CCC", today, "S1"), surface="coverage_detail")
+
+    d = client.get(COVERAGE_URL).data
+    # 본판정 = test_coverage_normal_aggregation 과 동일값(점검 무영향)
+    assert d["summary"]["issued"] == 3
+    assert d["summary"]["exposed"] == 1
+    assert d["summary"]["unexposed_count"] == 2
+    assert d["summary"]["exposure_rate"] == round(1 / 3, 4)
+    assert d["meta"]["surfaces_included"] == ["dashboard_eod"]
+    # 점검 층은 별도 계열로만 반영
+    assert d["audit"]["observed_uniq"] == 2
+    assert d["audit"]["audit_only_unexposed"] == 2
+    assert d["audit"]["overlap"] == 0
+
+
+def test_coverage_audit_zero_data_safe_defaults():
+    """④ audit 데이터 0건 — additive 필드가 안전한 기본값(0/False)으로 존재."""
+    client, user = _auth_client()
+    today = timezone.localdate()
+    s = Stock.objects.create(symbol="ZZZ")
+    _issue(s, today, "P5")  # 발급만, 점검 0
+
+    d = client.get(COVERAGE_URL).data
+    assert "audit" in d
+    assert d["audit"] == {
+        "surface": "coverage_detail",
+        "observed_uniq": 0,
+        "audit_only_unexposed": 0,
+        "overlap": 0,
+    }
+    assert d["unexposed"][0]["audited"] is False
