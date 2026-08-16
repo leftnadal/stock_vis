@@ -43,16 +43,21 @@ PRICE_RETURN_WINDOW_DAYS = 60
 
 
 # ────────────────────────────── EPS 레그 (스냅샷 diff) ──────────────────────────────
-def eps_diff_at(eps_by_date: dict, anchor: date) -> Optional[float]:
+def eps_diff_at(
+    eps_by_date: dict, anchor: date, lag_days: Optional[int] = None
+) -> Optional[float]:
     """
-    anchor 스냅샷의 60일 EPS diff = eps[anchor] − eps[anchor − lag]. lag 8(56d)→9(63d) 폴백.
+    anchor 스냅샷의 EPS diff = eps[anchor] − eps[anchor − lag].
 
-    lag 8·9 모두 부재 → None (diff 미성립). eps_by_date = {snapshot_date: eps_avg} (단일 FY).
+    lag_days=None(기본, C8 경로 행위보존) → lag 8(56d)→9(63d) 폴백.
+    lag_days=정수(DSS WoW=7) → 단일 lag (lag_days,), 폴백 없음.
+    파트너 부재 → None. eps_by_date = {snapshot_date: eps_avg} (단일 FY). (D-DSS-LAGPARAM 3-A)
     """
     cur = eps_by_date.get(anchor)
     if cur is None:
         return None
-    for lag in (LAG_PRIMARY_DAYS, LAG_FALLBACK_DAYS):
+    lags = (LAG_PRIMARY_DAYS, LAG_FALLBACK_DAYS) if lag_days is None else (lag_days,)
+    for lag in lags:
         prev = eps_by_date.get(anchor - timedelta(days=lag))
         if prev is not None:
             return float(cur) - float(prev)
