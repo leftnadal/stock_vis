@@ -131,4 +131,67 @@ describe('CoverageDetailView', () => {
     )
     expect(useImpressionTracker).not.toHaveBeenCalled()
   })
+
+  // ───────────────────────────────────────────────────────────────────────
+  // S2-B1-FE: 점검 층(빗금) + "점검됨" 배지 (D-C2-S2-FUNNEL-COV 2계열 audit)
+  // ───────────────────────────────────────────────────────────────────────
+
+  it('① "점검됨" 배지 = audited true 항목에만', () => {
+    const data: CoverageResponse = {
+      ...base,
+      audit: { surface: 'coverage_detail', observed_uniq: 1, audit_only_unexposed: 1, overlap: 0 },
+      unexposed: [
+        { ...base.unexposed[0], audited: true }, // ACGL
+        { ...base.unexposed[1], audited: false }, // AAPL
+      ],
+    }
+    render(<CoverageDetailView data={data} />)
+    expect(screen.getAllByTestId('audited-badge')).toHaveLength(1)
+    const rows = screen.getByTestId('coverage-unexposed-list').querySelectorAll('li')
+    expect(rows[0]).toHaveTextContent('ACGL')
+    expect(rows[0]).toHaveTextContent('점검됨')
+    expect(rows[1]).toHaveTextContent('AAPL')
+    expect(rows[1]).not.toHaveTextContent('점검됨')
+  })
+
+  it('② 점검 층 = audit 집계(observed_uniq·audit_only_unexposed·overlap) 렌더', () => {
+    const data: CoverageResponse = {
+      ...base,
+      audit: { surface: 'coverage_detail', observed_uniq: 61, audit_only_unexposed: 49, overlap: 12 },
+    }
+    render(<CoverageDetailView data={data} />)
+    const layer = screen.getByTestId('coverage-audit-layer')
+    expect(layer).toHaveTextContent('점검 층')
+    expect(layer).toHaveTextContent('61')
+    expect(layer).toHaveTextContent('49')
+    expect(layer).toHaveTextContent('12')
+  })
+
+  it('④ audit 부재(구형 서빙) → 점검 층·배지 생략, 기존 화면 동일', () => {
+    render(<CoverageDetailView data={base} />) // base 엔 audit 필드 없음
+    expect(screen.queryByTestId('coverage-audit-layer')).toBeNull()
+    expect(screen.queryByTestId('audited-badge')).toBeNull()
+    // 본판정·미노출 리스트는 그대로 렌더
+    expect(screen.getByTestId('coverage-detail')).toHaveTextContent('노출율')
+    expect(screen.getByTestId('coverage-unexposed-list')).toHaveTextContent('ACGL')
+  })
+
+  it('⑤ 점검 데이터 있어도 본판정 표시 무변 + 적체 비제거(배지만)', () => {
+    const data: CoverageResponse = {
+      ...base, // summary issued 50 / exposed 4 / rate 0.08 / unexposed 46
+      audit: { surface: 'coverage_detail', observed_uniq: 2, audit_only_unexposed: 2, overlap: 0 },
+      unexposed: [
+        { ...base.unexposed[0], audited: true },
+        { ...base.unexposed[1], audited: true },
+      ],
+    }
+    render(<CoverageDetailView data={data} />)
+    const detail = screen.getByTestId('coverage-detail')
+    // 본판정 표시 무변(노출율 8% 그대로)
+    expect(detail).toHaveTextContent('8%')
+    // 적체 비제거 — audited=true 2건 모두 목록에 존재(필터·제거 없음)
+    const rows = screen.getByTestId('coverage-unexposed-list').querySelectorAll('li')
+    expect(rows).toHaveLength(2)
+    expect(screen.getAllByTestId('audited-badge')).toHaveLength(2)
+  })
 })
