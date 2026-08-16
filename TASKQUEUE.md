@@ -1137,8 +1137,10 @@
 - **미결 사안(본 세션 묵시 실행 금지 확인)**: 결정28 C1 가드의 07-10 **소급 여부**는 미결정. 소급 정정 = heat delta 불연속(07-10 자체가 방법론 개정 이전) → **TH-HISTORY-MARKER와 통합 검토**(07-10 이전 마커 or 07-10 행 재산출+마커).
 - 트리거: 별도 승인. 착수 시 ths_pre 스냅샷 + 롤백(`restore_heat_snapshot`) 경로 재사용.
 
-## TH-DSS-IMPL — DSS 점수화 구현 (등재, TH-16 2026-07-13)
-- 상태: **등재**(사분면 가로축). E2 quadrant.dss 채움. **전제: EstimateSnapshot 2회차(7/24 예상) 이상 축적**. 설계 초안 별도 비준.
+## TH-DSS-IMPL — DSS 점수화 구현 (🔵 구현 착수, DSS-IMPL-1 2026-08-16)
+- 상태: **🔵 구현 착수**(DSS-IMPL-1, 브랜치 `monorepo/sess-dss-impl1`). 전제 충족(EstimateSnapshot 6회차·WoW 4쌍). 결정 5건 착지: D-DSS-AGG(1-B)·D-DSS-SIGNAL(2-A)·D-DSS-LAGPARAM(3-A)·D-DSS-FY-MATCH·D-DSS-ANALYST-FILTER.
+- 선행 정찰 = DSS-RECON-1(`7b4775d2`). Slice 1(lag 파라미터화·회귀)→2(SymbolDemandSignal+migrate)→3(계산·적재)→4(백필·검산·Δ분포). A-매칭 성립(99.8%≥95%).
+- **HONA no_data 관찰 종결(2026-08-14)**: 07-17~08-07 estimates no_data 지속하던 HONA가 08-14 회차부터 유입(2 FY행) — no_data 해소 확인(TH 관찰 게이트 중계분).
 
 ## TH-HISTORY-MARKER — heat 이력 방법론 변경 마커 (등재 백로그, TH-16 2026-07-13, 우선순위 하)
 - 상태: **등재(백로그)**. 사전 개정일(h2_v1→h2_v2 등)·산식 개정 전후로 delta/history 구분 마커. 우선순위 하.

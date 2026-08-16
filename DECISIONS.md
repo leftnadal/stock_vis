@@ -8,6 +8,46 @@
 
 ---
 
+## [2026-08-16] D-DSS-LAGPARAM — eps_diff_at lag 파라미터화 (3-A, 기존 상수 기본 보존) [theme-heat][dss]
+
+**결정**: `estimate_revision.eps_diff_at`에 `lag_days` 파라미터를 추가하되 **기본값 = 기존 모듈 상수(56/63 폴백 로직)**. DSS WoW(7일)는 `lag_days=7`로 호출, C8 호출부는 인자 생략(행위보존). **3-A(기존 함수 파라미터화) 채택** — 신규 diff 함수 복제(3-B) 대비.
+
+**Why**: DSS-RECON-1 ③ 실측 = `eps_diff_at`이 lag 56/63을 모듈 상수로 하드코딩·시그니처 미노출 → WoW 재사용 불가. 파라미터화는 **로직 단일 소스 유지**(DECISIONS 규약 10장 복제 금지)하며 C8 경로 IDENTICAL 보존. 신규 함수(3-B)는 diff 로직 이중화 = drift 위험.
+
+**How to apply**: `eps_diff_at(eps_by_date, anchor, lag_days=None)` — `None`이면 기존 `(56,63)` 폴백, 정수면 `(lag_days,)` 단일 lag. C8 호출부 무변경. **회귀 앵커**: compute_c8_from_db(as_of=2026-08-14) 전종목 출력 SHA256 `f1245b5e…` + C8 66 테스트 IDENTICAL(불일치 HALT). 기본값 경로 단위 테스트(인자 생략 ≡ 상수 명시) 추가.
+
+## [2026-08-16] D-DSS-FY-MATCH — DSS WoW 동일 회계연도 조인 (차기 FY, 미스매치 제외) [theme-heat][dss]
+
+**결정**: DSS WoW 방향 신호는 **동일 fiscal_year 조인**으로 계산 — 이번 주 차기 FY(=anchor.year+1) 행과 **지난주 동일 FY** 행을 매칭. 지난주 동일 FY 부재 시 `excluded=fy_mismatch`.
+
+**Why**: 함정 A(회계기간 롤오버) 방지. FMP `date`(기말일)에서 연도만 저장(fiscal_year)되므로 FY 명시 조인이 유일 방어. **STEP 0-3 전수 실측**: 인접 4쌍 차기FY(2027) 양쪽 존재 = **99.8%(498~500/공통)** ≥ 95% → A-매칭 성립(강등 경로 미발동). 서로 다른 FY diff = 개정 아닌 기간 이동 = spurious.
+
+**How to apply**: anchor 주 `fiscal_year = anchor.year+1` 행 기준, `anchor − 7d` 주 동일 fiscal_year 행 탐색. 부재 = fy_mismatch 제외. C8 로더(fy=as_of.year+1)와 동일 스코프 규칙.
+
+## [2026-08-16] D-DSS-ANALYST-FILTER — 컨센서스 구성 변화 가드 (|Δnum_analysts|≥2 제외) [theme-heat][dss]
+
+**결정**: WoW 쌍에서 `|num_analysts_curr − num_analysts_prev| ≥ 2` → `excluded=analyst_delta`. ±1 이내는 허용(잡음).
+
+**Why**: 함정 B(컨센서스 구성 변화). DSS-RECON-1 ⑥ 실측 = num_analysts WoW 변동 unchanged 70.6%/±1 22.0%/**±2+ 7.3%**. 애널리스트 참여 수가 크게 바뀌면 EPS 컨센서스 diff가 **개정(revision)이 아니라 구성 변화(composition)** 오염 → 방향 신호 왜곡. 임계 2 = ±1 잡음 허용·±2+ 구성 변화 배제(≈7% 제외 예상).
+
+**How to apply**: 동일-FY 조인 성립 후 num_analysts 양쪽 존재 시 판정. 결측 시 필터 미적용(direction 계산은 진행, exclude_reason 별개). 제외분은 breadth 유효분모에서 빠짐.
+
+## [2026-08-16] D-DSS-SIGNAL — 종목 신호 = EPS diff 부호 (2-A) [theme-heat][dss]
+
+**결정**: 종목 방향 신호 = **`direction = sign(eps_curr − eps_prev)`**(상향 +1 / 하향 −1 / 불변 0). **2-A(부호 단독) 채택** — 크기 가중(2-B) 대비.
+
+**Why**: 방향(breadth) 집계의 원자 = 상/하향 카운트. 부호는 크기 잡음에 강건·해석 단순. 크기(ε 임계·크기 정규화=함정 D)는 **사후 판정**으로 이연 — Slice 4가 `|Δeps/eps_prev|` 분위수(p50/75/90/99)·0비율을 로그해 ε 결정 재료 제공(설계 사이클). 초판은 부호만.
+
+**How to apply**: 동일-FY·analyst 가드 통과 종목만 direction 산출. eps_prev=0 등 경계는 sign() 정의대로(0→0). excluded=true 종목은 direction 미집계.
+
+## [2026-08-16] D-DSS-AGG — 섹터 breadth 집계 = (상향−하향)/유효분모 (1-B) [theme-heat][dss]
+
+**결정**: DSS 섹터 점수 = **breadth = (상향 수 − 하향 수) / 유효분모**, 유효분모 = `excluded=false` 종목 수. 범위 [−1, +1]. **1-B(순 방향 비율) 채택**.
+
+**Why**: "재무 지지"의 정의 = 섹터 내 EPS 컨센서스가 얼마나 **한 방향으로 정렬**됐는가. (상향−하향)/유효분모는 −1(전원 하향)~+1(전원 상향) 정규화 = 섹터 간 비교 가능·유니버스 크기 무관. 분모를 유효(제외 후)로 두어 **결측·가드 제외가 신호를 희석하지 않음**. ThemeDemandScore.score(0~100 스케일 매핑)·components(up/down/valid_denom/breadth 원값 동반 기록).
+
+**How to apply**: 섹터별 direction 집계 → breadth = (Σ+1 − Σ−1)/유효분모. status = supported(breadth≥τ)/detached(≤−τ)/neutral/not_computed(유효분모 0). **분모 동반 기록 = components JSON**(기존 테이블 스키마 무변경). τ·score 스케일은 초판 기록 후 사후 조정(Slice 4 분포 재료).
+
 ## [2026-08-14] D-MPS-OPS-WEBSYNC — 웹 런타임 동기 + FE 리빌드 + :3000 서빙 교체 승인 [marketpulse][ops][frontend]
 
 **결정**: sv-web-runtime을 origin/main으로 ff-only 동기 + FE prod 리빌드 + :3000 서빙 교체 승인·집행(StressCard 라이브 검수 가능화). 퀀트 4.55/3.50/2.90, 마진 1.05. 전례 = D-MPS-OPS-SYNC(worker).
