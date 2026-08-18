@@ -6528,3 +6528,37 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **8-K 어카운팅 갭(병진 부대 원장)**: EDGAR 인덱스 후보 893 중 8건 수집 전 드롭(미기록). F1 "실패 0"의 스코프는 **착지 885 기준**(extracted 822+empty 63). 893→885 감소분은 원장·DB 무기록.
 
 **STEP0 F1/F2 정정(박힌 값 신뢰 금지)**: 지시서 괄호 추정("893→885 사유"·"IREN 이중유형")은 DECISIONS 원장에 **부재** — 실제 F1=fuzzy 오매칭 착지금지, F2=ACQUIRED 방향결함 보류. IREN=8-K filer(source ×6)+유니버스원+Monitor 타깃(counterparty로는 0). SCE "1,437→3,155 급증"=대부분 supersession 아티팩트(`.current()` 미해소는 실제 1,759, 3,155는 v1+v2 중복 포함).
+
+## D-CS-P4 (2026-08-18, 운영 자동화 + ACQUIRED 게이트 HALT + 오염 감사 + 위생)
+
+**집행**: CS-P4-OPS(재스코프 1안·병진). worktree `monorepo/sess-p4-ops` base 8bff8a09(CS-P3 랜딩분). Slice1(ops)·3(cik)·4(원장) 진행, **Slice2(ACQUIRED 착지) HALT→P28K-ACQUIRED-DIR 이관**.
+
+**D-ACQ-DIR (병진 확정·소비)**: 인수 관계는 **방향 엣지(인수자→피인수자)**로 저장. 역할 명확한 건만 착지·불명확 보류. 방향 정보=lag-leading 분석 해자 원료 → **무방향 병합 금지**. **단 본 세션 착지 보류(0-3 게이트 미달)** — 재개는 P28K-ACQUIRED-DIR(재해소 정제+역할판정)에서.
+
+**D-CARD-GATE (병진 확정·소비)**: 카드 연결 표시 = **serving_layer=evidence 계층만**. CO_MENTIONED = "같은 그룹" 신호(연결선 미표시·별도 섹션). FE는 CS-P5. **★A-2 실측 보강**: `serving_layer=evidence` 단독으론 부족 — evidence 계층 3,097 중 **CO_MENTIONED 2,771(89%·전건 has_news_source·status weak 89%)가 혼재**. 연결선 필터 = `serving_layer=evidence AND relation_type∈{SUPPLIES_TO,PARTNER_WITH,DEPENDS_ON,COMPETES_WITH}`(=SEC4종 388), CO_MENTIONED은 "같은 그룹"으로 분리.
+
+**Slice2 HALT (0-3 게이트)**: 8-K item 2.01 표본 대조 = **filer=인수자 성립률 <90%** — item 2.01은 "취득 OR **처분**"이라 filer=매도자 다수(ALB·AMD·CCI 매각), 합병 피인수측 filer(APGE), 방향 불안정(BEAM). 착지후보 resolved 97 중 item2.01은 18뿐. **더 근본: 상대 티커 해소 오염** — resolved 97 = exact38+alias27+**fuzzy32**, fuzzy 30/32 오매칭(American National→AMT·Apellis→ALNY·Calpine→CI·Naveris→NVR). 방향판정 이전 재해소 정제 필요.
+
+**추가 A-1 오염 감사(read-only·수정 금지)**: **오염 = fuzzy method 국한**(ACQUIRED exact/alias 0 오매칭 실증) → **P3 착지분 클린**(시드 88 0실오류[Google LLC→GOOGL=정당 자회사]·C8 landed 26 0실오류). **선존 오염**: fuzzy-era SCE 해소분 **비브랜드 진짜오류 38 distinct**(Ablecom→ALGN·Cerner→CVX·Arrow→EA·Change→HCA·Epic→INCY 등, 토큰충돌·P3 이전) — serving_layer=evidence에 거짓 관계 존재 → **SCE-POLLUTION-CLEANUP 트랙**. 레거시 CompanyAlias 1실오류(Marvell→DIS). 브랜드별칭 18(AWS→AMZN·YouTube→GOOGL=정당).
+
+**추가 A-2 evidence 조성**: 3,097 = CO_MENTIONED 2,771 + SEC4종 388(COMPETES150·PARTNER93·SUPPLIES90·DEPENDS55). CO_MENTIONED first_observed 08월 2,493 급증 = ④ 증분원=`chainsight-co-mentions`/`update_relation_confidence` 야간 beat(일회성 아님).
+
+**Slice1 ops 태스크(신규·미배포)**: `sec-8k-daily`(collect_8k_filings→extract_8k_relations 체인·증분·exact/alias·ACQUIRED보류) + `chainsight-sync-strength-weekly`(주1회·초과수익 상관 재계산, 근거=일단위 무의미·신규종목 이력누적 자동편입). call_command 재사용·pytest 3 GREEN. **beat 등록=DB-only 병진 복붙 블록**(dict 금지·Bug#28).
+
+**Slice3 cik 백필**: 기존 683 cik null → SEC company_tickers.json 매핑 **668 백필(.update()·FMP 무콜)**, cik 채움 72→**740/755**. 잔여 15(AEP·BK·FI·K·MMC·WBA 등 티커개명/특수) = FMP 예산 회부·후속.
+
+**추가 B 비보통주 재판별**: mc=0은 **72 전건**(induction 매핑 갭·신호 무효). exchange 기준 재판별 → **OTC 4(ABBNY·CAJPY·DKILF·HKHC)**, GPJA(채권형)는 NYSE 등재라 미포착·수동검토. market_cap 백필=FMP 캐시 없음 → **72콜 예산 보고·정지(무콜)**, caveat=induction이 이미 empty mc 수신→재콜 효과 불확실.
+
+**추가 C**: 레거시 `config/celery.py:141 app.conf.beat_schedule` dict(populated·운영은 DatabaseScheduler) **소거 금지** → BEAT-DICT-RETIRE 등재만(Bug#28 위험 명시).
+
+**R-1/R-2 재대조 (2026-08-18, read-only 라이브 재측정·수정 0·ASOF 06:37 UTC)**:
+- **R-1 (evidence 산술 어카운팅)**: 라이브 `serving_layer=evidence` **총계 3,159 = CO_MENTIONED 2,771 + SEC4종 388**(COMPETES150·PARTNER93·SUPPLIES90·DEPENDS55, 기타 0·**분포 합=총계 무결**). 전체 RC serving_layer: context 13,149 / evidence 3,159 / pending 2. ⚠️**원장 원표기 "3,097" = 총계 오기 → 3,159로 정정**(성분값 2,771·388은 정확, 2,771+388=3,159, 62 차이는 총계 기입 오류일 뿐 결손 아님). **본 정정 반영 완료(이 줄)**.
+- **R-2 (오염×착지 교집합)**: A-1의 fuzzy-era 오매칭 **38 중 37 = v2 재추출 supersession으로 무력화**(v1 [superseded]·v2가 target=NULL로 남김=정당 거부 → `current()` 소비층 미유입·미착지: Ablecom→ALGN·Cerner→CVX·Arrow→EA·Change→HCA·Epic→INCY 전부 NULL 확인). **RC evidence SEC4종 실유입 = 1건: `FTNT→DIS`(DEPENDS_ON·confirmed)** = Marvell Technology Group→DIS **오(誤) CompanyAlias 시드** 경유(fuzzy 아님). **부수 발견 = 자기루프 2건**(`V→V` SUPPLIES_TO·`GS→GS` DEPENDS_ON — 자회사[Authorize.net/Cybersource·GSBE/GSAMI]가 모회사 자기 티커로 해소). 나머지 서빙층 저유사 별칭(Google↔Alphabet·AWS↔Amazon·ESPN↔Disney·YouTube/Instagram/WhatsApp↔META)은 **정당**(브랜드/자회사→모회사). **→ P5 카드층 비-클리어**: SCE-POLLUTION-CLEANUP 스코프 확정 = ⑴오 alias(Marvell→DIS) 삭제 ⑵착지 self-loop 가드(source==target 드롭). 수정=별도 승인(본 재대조는 목록·카운트만·무수정).
+
+## [2026-08-18] D-EPHEMERAL-OUTPUT-SCRATCHPAD — 병진 소비 산출물은 scratchpad/*.md 영속화 [harness]
+
+**결정**: 병진(사람)이 복붙·실행해야 하는 산출물(beat DB 등록 블록·최종 랜딩 보고·수동 런북 등)은 채팅 출력만으로 끝내지 말고 **scratchpad/*.md(또는 적절하면 repo docs) 파일로도 저장**한 뒤 경로를 보고에 명시한다.
+
+**Why**: CS-P4-OPS에서 이전 세션이 발행한 beat DB 등록 복붙 블록이 `/clear`로 소실 → 본 세션에서 재발행해야 했다(실사례). 병진 소비 산출물은 세션 경계를 넘어 살아야 하는데 채팅은 휘발성이다.
+
+**How to apply**: 병진 복붙/핸드오프 생성 시 `scratchpad/<task>_handoff.md`로 Write → 보고에 파일 경로 첨부. 부대: [[feedback_deploy_approval_explicit_quote]](병진 실행 게이트)와 짝.

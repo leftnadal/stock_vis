@@ -695,3 +695,25 @@ def _log_stage(
         detail=detail[:1000] if detail else "",
         duration_seconds=round(duration, 2) if duration else None,
     )
+
+
+@shared_task(
+    bind=True, name="sec-8k-daily", max_retries=1, soft_time_limit=1800, time_limit=1860
+)
+def collect_and_extract_8k_daily(self, days: int = 3):
+    """8-K 일일 수집→추출→해소→착지 체인 (CS-P4-OPS Slice1).
+
+    증분: collect_8k_filings가 accession_no 중복 스킵(신규만 status=collected),
+    extract_8k_relations가 status=collected만 처리 후 extracted 전환 → 무인 완주 가능.
+    착지 규약 승계(D-CS-P2-8K): exact/alias × commercial·supply만 RC evidence 착지,
+    ACQUIRED 보류(F2·D-ACQ-DIR 별도 트랙), fuzzy 착지 금지.
+    """
+    from io import StringIO
+
+    from django.core.management import call_command
+
+    out = StringIO()
+    call_command("collect_8k_filings", "--apply", f"--days={days}", stdout=out)
+    call_command("extract_8k_relations", "--apply", stdout=out)
+    logger.info("sec-8k-daily 완주 (days=%s): %s", days, out.getvalue()[-400:])
+    return {"status": "ok", "days": days}
