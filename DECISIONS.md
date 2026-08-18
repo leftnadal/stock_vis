@@ -627,6 +627,13 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 - **API 계약 하한**(additive·기존 `CoverageResponse` 필드 무변): audit 집계 3종(`observed_uniq` · `audit_only_unexposed` · `overlap`) + **per-item `audited` 플래그**(또는 audited 키 목록). serializer 최종 형상 = **S2-B1-BE STEP 0 실측 후 확정**.
 - **S2-B1-FUNNELCOV 무편집 HALT 정산(08-13)**: 파일 0 · 커밋 0 · worktree `sv-s2b1`(FE HALT 무편집분·origin/main 0커밋 ahead). 백엔드 의존(audit 층 API 미반환)으로 HALT → BE 선행 위임. **STEP 0.6 실측 5종**(원장 최초 기록 — 이전엔 세션 보고에만 존재): imp uniq `dashboard_eod 44` / `coverage_detail 61` / `news_chip 36` · **cov단독(배지 대상) 49** · **cov∩eod 12** · **news_chip∩eod 0**(URL object_ref, join 0 실증 = D-C2-S1-NEWSCHIP 키스페이스 직교의 데이터 재확인).
 
+📎 **백-어노테이션 — ⓑ 구현 3/3 완결 (2026-08-18, MGMT-BATCH-33)**: coverage_detail 2계열 표시가 본선 착지 완료 — 3슬라이스 전부 origin/main.
+- **S2-B1-BE** (`5c539714`, platform): coverage API audit 층 — `audit{surface,observed_uniq,audit_only_unexposed,overlap}` + `unexposed[].audited`(additive·불변식 observed_uniq==overlap+audit_only_unexposed·본판정 무변).
+- **S2-B1-FE** (`05e0e85c`, dashboard): 빗금 저채도 점검 층 + "점검됨" 배지 + **audit-absent 강건 렌더**(구형 서빙 응답에 audit 부재 시 기존 화면 동일 — FE 선착지 창 안전).
+- **S2-B1-SHARED** (`30f038b1`, shared): `SURFACE_KIND`(organic/audit) 상수 + **2중 완비**(Record<Surface,SurfaceKind> 컴파일 타임 + `surfaces.guard.test.ts` 런타임 가드).
+- **⚠ 구분(혼동 금지)**: **SURFACE_KIND 분류(organic/audit) ≠ 퍼널 멤버십**. 본판정 포함 정본 = BE `COVERAGE_SURFACES=(dashboard_eod,)` **불변**. `news_chip`은 **분류상 organic**이되 **D-C2-S1-NEWSCHIP 퍼널 영구 제외**(키스페이스 직교·안건 ⓒ 소관) 유지 — SURFACE_KIND는 계열 분류일 뿐 퍼널 편입 근거 아님.
+- **잔여**: 서빙 트리(web·api) 구형 → 배포/재시작(#62 사용자 일괄) 후 라이브 점등 · 안건 ⓐ 기본 창(days) 산정(입력 확보).
+
 ## [2026-08-06] D-C2-GATE-SPLIT — C-2 게이트 = 분할 개시 (C안) [dashboard] [platform]
 
 **결정**: 2026-08-06 C-2 게이트 = **분할 개시(C안)**. 가중합 **C 4.25 > B 3.55 > A 3.15, 마진 0.70(0.40~1.00 구간) → 사용자 확인으로 확정**. 안건별 증거 상태가 갈려(⑵⑷⑸ 확보 / ⑴⑶ 부족) 증거선 그대로 분할한다.
