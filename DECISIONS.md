@@ -6463,3 +6463,15 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **추가 B 비보통주 재판별**: mc=0은 **72 전건**(induction 매핑 갭·신호 무효). exchange 기준 재판별 → **OTC 4(ABBNY·CAJPY·DKILF·HKHC)**, GPJA(채권형)는 NYSE 등재라 미포착·수동검토. market_cap 백필=FMP 캐시 없음 → **72콜 예산 보고·정지(무콜)**, caveat=induction이 이미 empty mc 수신→재콜 효과 불확실.
 
 **추가 C**: 레거시 `config/celery.py:141 app.conf.beat_schedule` dict(populated·운영은 DatabaseScheduler) **소거 금지** → BEAT-DICT-RETIRE 등재만(Bug#28 위험 명시).
+
+**R-1/R-2 재대조 (2026-08-18, read-only 라이브 재측정·수정 0·ASOF 06:37 UTC)**:
+- **R-1 (evidence 산술 어카운팅)**: 라이브 `serving_layer=evidence` **총계 3,159 = CO_MENTIONED 2,771 + SEC4종 388**(COMPETES150·PARTNER93·SUPPLIES90·DEPENDS55, 기타 0·**분포 합=총계 무결**). 전체 RC serving_layer: context 13,149 / evidence 3,159 / pending 2. ⚠️**원장 원표기 "3,097" = 총계 오기 → 3,159로 정정**(성분값 2,771·388은 정확, 2,771+388=3,159, 62 차이는 총계 기입 오류일 뿐 결손 아님). **본 정정 반영 완료(이 줄)**.
+- **R-2 (오염×착지 교집합)**: A-1의 fuzzy-era 오매칭 **38 중 37 = v2 재추출 supersession으로 무력화**(v1 [superseded]·v2가 target=NULL로 남김=정당 거부 → `current()` 소비층 미유입·미착지: Ablecom→ALGN·Cerner→CVX·Arrow→EA·Change→HCA·Epic→INCY 전부 NULL 확인). **RC evidence SEC4종 실유입 = 1건: `FTNT→DIS`(DEPENDS_ON·confirmed)** = Marvell Technology Group→DIS **오(誤) CompanyAlias 시드** 경유(fuzzy 아님). **부수 발견 = 자기루프 2건**(`V→V` SUPPLIES_TO·`GS→GS` DEPENDS_ON — 자회사[Authorize.net/Cybersource·GSBE/GSAMI]가 모회사 자기 티커로 해소). 나머지 서빙층 저유사 별칭(Google↔Alphabet·AWS↔Amazon·ESPN↔Disney·YouTube/Instagram/WhatsApp↔META)은 **정당**(브랜드/자회사→모회사). **→ P5 카드층 비-클리어**: SCE-POLLUTION-CLEANUP 스코프 확정 = ⑴오 alias(Marvell→DIS) 삭제 ⑵착지 self-loop 가드(source==target 드롭). 수정=별도 승인(본 재대조는 목록·카운트만·무수정).
+
+## [2026-08-18] D-EPHEMERAL-OUTPUT-SCRATCHPAD — 병진 소비 산출물은 scratchpad/*.md 영속화 [harness]
+
+**결정**: 병진(사람)이 복붙·실행해야 하는 산출물(beat DB 등록 블록·최종 랜딩 보고·수동 런북 등)은 채팅 출력만으로 끝내지 말고 **scratchpad/*.md(또는 적절하면 repo docs) 파일로도 저장**한 뒤 경로를 보고에 명시한다.
+
+**Why**: CS-P4-OPS에서 이전 세션이 발행한 beat DB 등록 복붙 블록이 `/clear`로 소실 → 본 세션에서 재발행해야 했다(실사례). 병진 소비 산출물은 세션 경계를 넘어 살아야 하는데 채팅은 휘발성이다.
+
+**How to apply**: 병진 복붙/핸드오프 생성 시 `scratchpad/<task>_handoff.md`로 Write → 보고에 파일 경로 첨부. 부대: [[feedback_deploy_approval_explicit_quote]](병진 실행 게이트)와 짝.
