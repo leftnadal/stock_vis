@@ -11,7 +11,7 @@
 
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |----|------|-------|------------|--------|-----------|
-| P28K-ACQUIRED-DIR | **8-K ACQUIRED 방향 판정 설계** — filer/상대의 acquirer·target 역할 판정 + merger sub/자회사 배제 → ACQUIRED RC 착지 재개 | @backend | F2 | **todo** | 현재 착지 보류(증거만). filer→상대 방향이 원문서 불안정(BEAM→BMY 역·merger sub 오지목). LLM 역할 추출 or item 2.01 구조 파싱. 재개 전제 |
+| P28K-ACQUIRED-DIR | **8-K ACQUIRED 재해소 정제 + 방향 판정 설계**(CS-P4 0-3 게이트 HALT로 스코프 확대) — ⑴상대 티커 **재해소 정제**(resolved 97 중 fuzzy 32 오매칭 제거·exact/alias만) ⑵**역할 판정**(filer=인수자/매도자/피인수 분류, **item 2.01 완료 vs 1.01 계약 구분**·merger sub/자회사 배제) ⑶방향 엣지(인수자→피인수자, D-ACQ-DIR·무방향병합 금지) 착지 재개 | @backend | F2·D-ACQ-DIR | **todo(설계 사이클)** | CS-P4 0-3: item2.01=취득OR처분→filer=매도자 다수(ALB·AMD·CCI). 별도 결정 사이클 |
 | P28K-TICKER-TOKENSET | ticker_matcher token_set_ratio 개선 — fuzzy 오매칭(Masimo→Masco·Synaptics→Snap-on) 근절 | @backend | 독립 | **todo** | F1. 현행 token_sort≥80 오매칭 다발 → 8-K fuzzy 착지 금지 중. 접미사/법인격 정규화 + token_set. 8-K·10-K 공통 |
 | P28K-CLIENT-FIX | `SECEdgarClient.download_8k_text` 디렉토리 스크래퍼 수리(`//index.htm` 404) → primaryDocument 직접 URL | @backend | 독립 | **todo** | 이번엔 로컬 헬퍼 우회(공유 client 무접촉 승인). 근본 수리는 공유 client 반영. common-bugs 등재 |
 | P28K-BEAT | 8-K 일일 수집 beat 등재 결정(collect_8k_filings→extract_8k_relations 체이닝 주기 실행) | @infra | 별도 결정·병진 | **todo(스케줄 미정)** | Bug #28 준수(register_*_beats DB 등록). LLM 비용·캐이던스 산정 후. 현재 일회성 command만 |
@@ -1346,8 +1346,13 @@
 ## CS-REDESIGN-BACKLOG — Chain Sight 재설계 D1/D2 후속 백로그 (등재, 2026-08-10)
 출처: D2-LEDGER-PROBE 지시서 Part 1-D. 결정 근거 = [[DECISIONS]] D1·D2. 채번 미부여(백로그).
 - **CS-EXP-2 유니버스 확장 2차** — ~~트리거: 8-K 가동 후 미해소 타깃 빈도 N주 실측~~ → **재정의(D-CS-P3 후, 2026-08-13)**: 확장 1차(72티커 편입·SCE.current() 미해소 1759→1435) 후 잔여 미해소 **1,435행** 기준. 트리거 = ⑴ 잔여 미해소를 exact/alias 재대조 시 US상장&유니버스밖 신규 티커가 빈도≥2로 재축적, 또는 ⑵ 8-K beat(P28K-BEAT) 가동 후 미해소 상대 신규 유입. **1차는 exact/alias만이라 잔여 1,435 대부분=해외/비상장/일반명사(구조적 미해소)** → 2차는 신규 유입분 위주. (D2 Phase 4)
-- **CS-P3-EXISTING-CIK-BACKFILL 기존 683 CIK 백필** — 1차는 신규 72만 CIK 세팅. 기존 683은 미백필(company_tickers.json 대조 or SEC get_cik). 8-K 일일수집(P28K-BEAT) 전 유용. (D-CS-P3-CIK 후속)
+- ~~**CS-P3-EXISTING-CIK-BACKFILL 기존 683 CIK 백필**~~ → **✅ CS-P4 완료**: company_tickers.json 매핑 **668 백필**(.update()·FMP 무콜), cik 채움 72→**740/755**. **잔여 15**(AEP·BK·CTRA·DAY·FI·GEVG·HOLX·IPG·IREG·K·MMC·NUVL·OKLL·SATS·WBA=티커개명/특수) → **CS-P4-CIK-RESIDUAL**(FMP 15콜 예산 회부·후속).
 - **CS-P3-V2-MATCH-GAP v2 재추출 매칭·시딩 갭** — 08월 v2 재추출(1735행)이 evidence 적재만·매칭→seed 미실행 관찰(D-CS-P3 재해소서 257행 소급). v2 추출 파이프라인에 매칭→seed 체이닝 편입 검토. (신규, 관찰→결정)
+- **SCE-POLLUTION-CLEANUP fuzzy-era SCE 오매칭 정제**(CS-P4 A-1) — 선존 fuzzy-era SupplyChainEvidence 해소분 **비브랜드 진짜오류 38 distinct**(Ablecom→ALGN·Cerner→CVX·Arrow→EA·Change→HCA·Epic→INCY 등, 토큰충돌) + 레거시 CompanyAlias 1(Marvell→DIS). serving_layer=evidence에 거짓 관계 존재→D-CARD-GATE 연결선 오염. exact/alias 재판정으로 정제(수정=별도 승인, A-1은 목록만·무수정). P3 착지분은 클린(오염=P3 이전). (신규)
+- **BEAT-DICT-RETIRE 레거시 beat dict 은퇴 검토**(CS-P4 추가C, Bug#28 위험) — `config/celery.py:141 app.conf.beat_schedule` dict populated(운영=DatabaseScheduler·DB 121건). dict는 DatabaseScheduler에서 무시되나 존재 자체가 drift 위험(Bug#28). **소거 금지·등재만** — 은퇴는 전 태스크 DB 등록 확인 후 별도. (신규)
+- **CS-P4-NONCOMMON-FLAG1 신규72 비보통주 판정 대기**(CS-P4 추가B·플래그1) — mc=0은 72전건(induction 갭·신호무효). exchange 기준 재판별 = **OTC 4(ABBNY·CAJPY·DKILF·HKHC)** + GPJA(채권형·NYSE 등재라 미포착·수동검토). **판정=병진 결정**(유지/모회사 리맵/은퇴). 조치 금지. (신규)
+- **CS-P4-MC-BACKFILL 신규72 market_cap 백필** — FMP 캐시 없음→72콜 필요. **예산 보고·정지**(무콜). caveat=induction이 이미 empty mc 수신→재콜 효과 불확실(FMP /stable/profile marketCap 미제공 의심 선확인 필요). (신규·예산 회부)
+- **CS-P4-BEAT-REGISTER ops 태스크 beat DB 등록**(병진 영역) — `sec-8k-daily`·`chainsight-sync-strength-weekly` DB-only 등록(복붙 블록 발행). dict 금지(Bug#28). 워커 재시작 병진. (신규·병진 실행 대기)
 - **CS-8K-ITEM-EXPAND 8-K item 확대 검토** — 5.02(임원변동) 등, 최소 슬라이스(1.01/2.01) 가동 후. (D2 Phase 2 후속)
 - **CS-STORE-DEDUP 관계 store 이중화 해소 검토** — RelationConfidence 13,701 vs serverless StockRelationship 225,073(HELD_BY_SAME_FUND 197k·SAME_REGULATION 26k). 서빙 소스 단일화 판단.
 - **CS-LLMREL-TTL LLMExtractedRelation 30일 TTL 정책 재검토** — Phase 5 산출물 전량 소멸(현재 0행) 재발 방지.
