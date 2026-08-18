@@ -1332,7 +1332,7 @@
 - 잔여: 첫 19:30 ET 발화 후 미니 recon(9행 spot 전건 T 일치)이 종결 확인 조건.
 
 ## I3-SPLIT-GUARD — 지평 내 액면분할·기업행위 감지 시 unscoreable (2026-08-06, SFI-I-3 Part A) [stocks][portfolio]
-- 상태: **✅ done (2026-08-13, D-SPLIT-1 B안 구현·랜딩)** — StockSplit 모델(shared.stocks 마이그 0014 **prod 적용 완료**, HALT ① 승인)+`FMPClient.get_stock_splits`+`ingest_stock_splits`(apps.portfolio)+`sync_stock_splits_beat`(19:45 ET)+resolve_realized `unscoreable:corporate_action` 분기+재현헤더 additive 2필드. 게이트: 회귀 746(blast: stocks·portfolio·arch)+신규 11 passed·경계가드 통과·health 15/0/0·산식 IDENTICAL(빈 splits). **잔여(병진 수동)**: HALT ②(beat 등록)=코드 배포+워커 재기동 후 별도 승인. 09-01 h21 시한 前 배관 완료.
+- 상태: **✅ done (2026-08-13, D-SPLIT-1 B안 구현·랜딩)** — StockSplit 모델(shared.stocks 마이그 0014 **prod 적용 완료**, HALT ① 승인)+`FMPClient.get_stock_splits`+`ingest_stock_splits`(apps.portfolio)+`sync_stock_splits_beat`(19:45 ET)+resolve_realized `unscoreable:corporate_action` 분기+재현헤더 additive 2필드. 게이트: 회귀 746(blast: stocks·portfolio·arch)+신규 11 passed·경계가드 통과·health 15/0/0·산식 IDENTICAL(빈 splits). **HALT ②(배포·beat 등록) ✅완료(2026-08-18, 승인 A·B·C)**: worker_sync(3트리→`bc2cb7e4`)+celery/beat 재기동 → `ingest_stock_splits` registered 확인 → `sync_stock_splits_beat` → PeriodicTask `portfolio-stock-splits-daily`(enabled=True·19:45 ET·dow1-5·last_run None). migrate 0015 no-op merge(0014×2 리프 통합, DDL 0) 동시 적용. **첫 발화 = 다음 평일 19:45 ET → 익일 recon(D-SPLIT-1 예약, 별도 세션)**. 09-01 h21 시한 前 완결.
 - 내용(구현 확정): 예측~만기 구간(`capture_date < split.date ≤ realized_date`) 분할 존재 시 `unscoreable:corporate_action`. 감지원 = FMP `/stable/splits` 전용 StockSplit 모델(휴리스틱 아님, D-SPLIT-1).
 - 근거: raw close(비조정)는 분할을 series_break gap으로 못 잡음(날짜 홀 무발생) → 전용 감지원 필수. 현 9종 채점 지평 내 분할 0(NVDA/TSLA/GOOGL/AAPL 최근 분할 전부 2026 스냅샷 前). adjClose 도입은 별개 트랙.
 
