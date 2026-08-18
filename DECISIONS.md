@@ -8,6 +8,46 @@
 
 ---
 
+## [2026-08-13] D-SWAP-REVIEW — 보유 종목 교체 검토 트랙 신설 [monitor][swap-review][governance]
+
+**결정**: "보유 X를 계속 들 것인가·판다면 무엇으로 바꾸는가"에 답하는 **SWAP-REVIEW 트랙 신설**(v2 확정). 4원칙: ⑴ **계산 분산·화면 통합**(렌즈별 수치는 소유 앱 계산, 비교는 읽기전용 FE 컴포지션·BE 결합 0·monitor leaf 유지) ⑵ **판정 주연=계약**(사전 커밋 근거 생사 + 교체 마찰 산술이 주연, 통계는 지지/반대/**침묵** 3값 조연) ⑶ **검토=상태**(트리거 개시·매일 델타·해소/판정/기한 3경로 종결) ⑷ **성공지표=무기록 결정률 0%**(막지 않고 기록). 정본 = [docs/features/swap-review/ADR-D-SWAP-REVIEW.md](docs/features/swap-review/ADR-D-SWAP-REVIEW.md)(불변식 12건·패치 P-1~P-5·스테이징 v0~v2).
+
+**Why**: 처분효과 방어 미완 구획(진입은 규율화·**보유지속/교체는 무규율 지대**, Odean 1998) + 사용자 실수요(GEV 익절·IONQ 근거소멸). 계획세션 자기점검 결함 12건 + RECON-SWAP-0813(main `551ea7f5`) 실측 + 행동 스트레스테스트 ST-1~4 누수방어를 원칙으로 승격. 핵심 규율 = **판정 위계(계약>마찰>통계)·침묵 규칙(구간 0 포함시 침묵)·렌즈 가중합산 단일점수 영구금지·무기록 결정률 0% KPI·v0 2주 생존 게이트**.
+
+**How to apply**: v0 착수는 **별도 지시서 대기**(본 등재는 원칙 확정·구현 착수 아님). 히스테리시스는 z 노이즈 실측 도출(RECON B-4 확정). 시장z=2단 분해(SPY·VIX 확보), 테마z=SPIN-1(테마 heat 시계열 영속화+Neo4j 복구) 후행. cf. [[D-ADVISOR-STATE-SOURCE]]·[[D-P4-GATE-PROVENANCE]]. ⚠️ ADR verbatim 잔존 정밀도 플래그 2건(§3.11 "520종×3년" 페어링·§7 "상태 4원화" vs 실측 3원)은 §8 미확정으로 이월(RECON 대조 = EODSignal 520종은 ~6개월, ~3년 심도는 DailyPrice 747종 / 상태축 실측 3원).
+
+## [2026-08-13] D-DIRECTIVE-PRE-DISPATCH-DECISIONS-CHECK — 통제대상 조작 지시서 발행 전 기존 규율 대조 [process][harness]
+
+**결정**: 통제 대상(배포·beat·마이그·브랜치 삭제·공유main 접촉)을 조작하는 지시서는 **발행 전 DECISIONS 기존 규율과 자기 대조**하고 저촉 여부를 지시서 서두에 명기한다(CLOSEOUT 국면 이월 승격).
+
+**Why**: 예외 승인 하 조작이 기존 결정(D-BRANCH-DELETE-MANUAL 등)과 충돌한 전례(INC-002 계열). 지시서가 스스로 규율 대조를 선언하면 집행 세션이 저촉을 재발견하는 비용·리스크가 준다.
+
+**How to apply**: 지시서 헤더에 "DECISIONS 대조(발행 전 자기 회부): …저촉 규율 없음/있음" 한 줄. 본 트랙의 RECON-SWAP·ADR-LANDING 지시서가 적용 1·2호.
+
+## [2026-08-13] D-BRANCH-CUT-FROM-LATEST — 세션 브랜치 최신 절단 + 절단 베이스 해시 명기 [process][harness]
+
+**결정**: 세션 브랜치는 **origin/main 최신에서 절단**하고, **절단 베이스 해시를 보고서에 명기**한다.
+
+**Why**: RECON-SWAP-0813이 구판 트리(`sess-signal-fwd-recon`)에서 절단돼 advisor 트랙 전체(모델·서비스·mig0009·FE)를 미포함, C-4 등 측정이 구판 기준이 되는 드리프트 발생(RECON C 이상관측 5·C-4 재검증 필요 원인). 최신 절단 + 베이스 해시 명기로 측정 기준을 추적 가능하게 한다.
+
+**How to apply**: `git worktree add … origin/main`(최신) + 보고 STEP 0에 "절단 베이스 = <해시>". 본 ADR-LANDING 브랜치가 적용 1호(베이스 `551ea7f5`).
+
+## [2026-08-13] D-WORKTREE-COUNT-VOLATILE — 워크트리 수 = 공유 가변 상태 [process][harness]
+
+**결정**: 워크트리 총수는 **다중 동시 세션이 add/remove하는 공유 가변 상태**이므로 **시점 측정값으로만 취급**하고, 지시서 "정리 N건"과의 세션별 델타 1:1 대조는 **폐지**한다. 이월 산술 2건(CLEANUP-8 "63→22 vs 40 삭제"·"22→18 vs 정리 3건")은 본 규약으로 **종결 처리**.
+
+**Why**: 63→22(−41)=40 완전삭제+1 부분(s1b1 worktree-only), 22→18(−4)=① 1건 실제거+동시세션 병렬 −3 — 둘 다 오기가 아니라 공유 가변성의 결과(RECON STEP 0 해명). 델타 대조를 규약으로 만들면 매 세션 유령 불일치를 재조사하는 비용이 사라진다.
+
+**How to apply**: 워크트리 수는 그 시점 스냅샷으로만 보고, 이전 값과의 차를 정합성 검증에 쓰지 않는다. PROGRESS에 산술 2건 종결 표기.
+
+## [2026-08-13] D-A4-FILTER-SCOPE-MISREAD — ORM 필터 스코프 오인에 의한 무음 과소집계 (좌표) [process][monitor]
+
+**결정**(관측 등재·좌표만): DIRECTIVE-MON-P4의 A-4 "TLN broad news 0행" 관측은 **오관측** — `NewsArticle.filter(entities__source='alpha_vantage')` 필터 스코프 한정이 원인이고, 경로 무관 실측은 **5건**(RECON-SWAP A-4 정정). 이는 "무음 실패 클래스"(에러 없이 필터 범위가 좁아 결과가 과소 집계되는 오독)로 분류한다. 수리 아님 — 좌표 기록.
+
+**Why**: 단일 필터 조건을 전수로 착각하면 0/공백을 사실로 오인한다. 커버리지·존재 판정 쿼리는 **필터 스코프를 명시**하고 경로 무관 대조를 병기해야 한다(RECON A-4가 `entities__symbol` 경유 경로무관 재측정으로 정정).
+
+**How to apply**: 존재/커버리지 조회 시 필터가 "전수"인지 "부분경로"인지 명기. common-bugs `#NN` 채번은 비mgmt 브랜치 가드로 차단되어 본 관측은 DECISIONS에 등재(mgmt 세션이 원하면 common-bugs 번호로 승격 가능).
+
 ## [2026-08-16] D-DSS-LAGPARAM — eps_diff_at lag 파라미터화 (3-A, 기존 상수 기본 보존) [theme-heat][dss]
 
 **결정**: `estimate_revision.eps_diff_at`에 `lag_days` 파라미터를 추가하되 **기본값 = 기존 모듈 상수(56/63 폴백 로직)**. DSS WoW(7일)는 `lag_days=7`로 호출, C8 호출부는 인자 생략(행위보존). **3-A(기존 함수 파라미터화) 채택** — 신규 diff 함수 복제(3-B) 대비.
