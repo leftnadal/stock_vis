@@ -1,11 +1,16 @@
 """ADVISOR L-A 브리핑 서비스 검증 (MON-P4-LA T1). LLM은 mock."""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
+from django.utils import timezone
 
 from apps.monitor.models import AdvisorNote
 from apps.monitor.models.monitoring import MonitorSnapshot
 from apps.monitor.services import advisor_briefing as svc
+
+# readings 앵커 = 스냅샷 as_of(2026-08-07)에 정합 — now 앵커 시 asof<= 필터가
+# readings를 전량 배제해 coverage_n=0이 되는 fixture time-bomb 방지.
+_READINGS_BASE = timezone.make_aware(datetime(2026, 8, 7, 12, 0))
 
 
 class _Resp:
@@ -55,7 +60,7 @@ class TestBuildContext:
         # 지표 2개만 등록 → 분모=2 (9 하드코딩 아님)
         for k in ("momentum_12_1", "volume_ratio"):
             ind = make_indicator(name=k, source_key=k, window=10)
-            add_readings(ind, [float(i) for i in range(10)])
+            add_readings(ind, [float(i) for i in range(10)], base=_READINGS_BASE)
         _snap(monitor, date(2026, 8, 6), 0.10)
         _snap(monitor, date(2026, 8, 7), 0.12)
         ctx = svc.build_context(monitor)
@@ -104,7 +109,7 @@ class TestUnchanged:
 class TestGenerateBriefing:
     def _prep(self, monitor, make_indicator, add_readings):
         ind = make_indicator(name="momentum_12_1", source_key="momentum_12_1", window=10)
-        add_readings(ind, [float(i) for i in range(10)])
+        add_readings(ind, [float(i) for i in range(10)], base=_READINGS_BASE)
         _snap(monitor, date(2026, 8, 6), 0.10)
         _snap(monitor, date(2026, 8, 7), 0.30)  # Δ=0.2 변화
 

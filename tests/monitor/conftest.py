@@ -40,10 +40,16 @@ def make_indicator(monitor):
 
 @pytest.fixture
 def add_readings():
-    """지표에 시계열 판독값 추가 (오늘 기준 역순 일자)."""
+    """지표에 시계열 판독값 추가 (기본 = 오늘 기준 역순 일자).
 
-    def _add(indicator, values, status="ok"):
-        base = timezone.now()
+    base를 넘기면 그 시각을 앵커로 역순 생성 — 스냅샷 as_of를 과거 고정값으로 쓰는
+    테스트에서 readings가 as_of 이하로 들어오도록 정합시킬 때 사용(now 앵커 시
+    ``asof__date__lte`` 필터가 전량 배제해 coverage_n=0이 되는 fixture time-bomb 방지).
+    """
+
+    def _add(indicator, values, status="ok", base=None):
+        if base is None:
+            base = timezone.now()
         n = len(values)
         for i, v in enumerate(values):
             IndicatorReading.objects.create(
