@@ -59,7 +59,8 @@
 | GOVCLEANUP-0810-CLEANUP | **사후 정리 (병진 수동 — CC 실행 절대 금지, D-BRANCH-DELETE-MANUAL 적용 1호)**. GOV-CLEANUP-0810 착지·검증 후 격리 worktree `~/worktrees/sv-govcleanup0810` 제거 + 브랜치 `monorepo/sess-govcleanup0810` 삭제. **CC는 후보+안전 실측(`origin/main..브랜치`)까지만 보고**, 삭제 집행은 병진 수동. | 병진 수동 | 커밋 착지 후 | ✅ **done(2026-08-10 병진 수동 집행 완료)** — worktree 제거·브랜치 **정상 `-d` 삭제(-D 불사용, cwd 오탐 규명으로 해소)**, 손상 0. **D-BRANCH-DELETE-MANUAL 적용 1호 성공.** (08-11 실측 재확인: worktree/브랜치 부재.) |
 | SECB-G15-CLEANUP | **사후 정리 (병진 수동 — CC 실행 절대 금지, D-BRANCH-DELETE-MANUAL)**. SECB-G15-DECOMP-0811 착지·검증 후 격리 worktree `~/worktrees/sv-secb-g15` 제거 + 로컬 브랜치 `monorepo/sess-secb-g15` 삭제 + **원격 브랜치 `origin/monorepo/sess-secb-g15` 삭제 포함**(HEAD:main 직행 착지로 원격 세션 브랜치는 미갱신 잔존 = 삭제 대상). **CC는 후보+안전 실측(`origin/main..브랜치`)까지만 보고**, 삭제 집행은 병진 수동. | 병진 수동 | 커밋 착지 후 | ✅ **done(2026-08-11 병진 수동)** — worktree 제거·원격 `--delete` 삭제·로컬 `-d`(첫 시도 stale upstream ref 거부 → 원격 삭제로 ref 소멸 후 `-d` 재시도 성공, `-D` 불사용). 손상 0. |
 | SECB-VB-ABSORB-CLEANUP | **사후 정리 (병진 수동 — CC 실행 절대 금지, D-BRANCH-DELETE-MANUAL)**. SECB-VB-ABSORB-0811 착지·검증 후 격리 worktree `~/worktrees/sv-vbabsorb` 제거 + 브랜치 `monorepo/sess-vbabsorb` 삭제(원격 push 시 원격 브랜치 포함). **CC는 후보+안전 실측까지만 보고**, 삭제 집행은 병진 수동. | 병진 수동 | 커밋 착지 후 | ✅ **done(2026-08-11 병진 수동)** — worktree 제거·로컬 `-d` 삭제(원격 브랜치 미생성). 손상 0. |
-| DSS-RECON-1-CLEANUP | **사후 정리 (병진 수동 — CC 실행 절대 금지, D-BRANCH-DELETE-MANUAL)**. DSS-RECON-1 착지·검증 후 격리 worktree `~/worktrees/sv-dss-recon1` 제거 + 로컬 브랜치 `monorepo/sess-dss-recon1` 삭제(HEAD:main 직행 = 원격 세션 브랜치 미생성). **CC 안전 실측**: `origin/main..monorepo/sess-dss-recon1 = 0`(완전 흡수·안전, `-d` 가능·`-D` 불요). 삭제 집행은 병진 수동. | 병진 수동 | 커밋 착지 후 | 🆕 등재(병진 수동 대기) |
+| DSS-RECON-1-CLEANUP | **사후 정리 (병진 수동 — CC 실행 절대 금지, D-BRANCH-DELETE-MANUAL)**. DSS-RECON-1 착지·검증 후 격리 worktree `~/worktrees/sv-dss-recon1` 제거 + 로컬 브랜치 `monorepo/sess-dss-recon1` 삭제. | 병진 수동 | 커밋 착지 후 | ✅ **done(2026-08-18 병진 수동)** — worktree 제거·로컬 `-d` 삭제(`--set-upstream-to=origin/main` 후 origin/main 기준 판정). **-D 통산 0회 유지.** |
+| DSS-IMPL-1-CLEANUP | **사후 정리 (병진 수동 — CC 실행 절대 금지, D-BRANCH-DELETE-MANUAL)**. DSS-IMPL-1 착지·검증 후 격리 worktree `~/worktrees/sv-dss-impl1` 제거 + 로컬 브랜치 `monorepo/sess-dss-impl1` 삭제. | 병진 수동 | 커밋 착지 후 | ✅ **done(2026-08-18 병진 수동)** — worktree 제거·로컬 `-d` 삭제(set-upstream+`-d`). **-D 통산 0회 유지.** |
 
 ---
 
@@ -1143,6 +1144,9 @@
 - 선행 정찰 = DSS-RECON-1(`7b4775d2`). Slice 1(lag 파라미터화·회귀)→2(SymbolDemandSignal+migrate)→3(계산·적재)→4(백필·검산·Δ분포). A-매칭 성립(99.8%≥95%).
 - **HONA no_data 관찰 종결(2026-08-14)**: 07-17~08-07 estimates no_data 지속하던 HONA가 08-14 회차부터 유입(2 FY행) — no_data 해소 확인(TH 관찰 게이트 중계분).
 
+## DSS-FLAT-OBS — 08-14 near-flat 주간 관찰 (등재, MGMT-LEDGER-1 2026-08-19) [theme-heat][dss]
+- 08-21(금) 7회차 발화 시 flat 비율 1수치 중계. 재차 ~99%면 FMP 컨센서스 갱신 주기 read-only 정찰 발부, 정상 분포 복귀 시 08-14를 저신호 주간으로 기록 종결. **게이트일 08-21.**
+
 ## TH-HISTORY-MARKER — heat 이력 방법론 변경 마커 (등재 백로그, TH-16 2026-07-13, 우선순위 하)
 - 상태: **등재(백로그)**. 사전 개정일(h2_v1→h2_v2 등)·산식 개정 전후로 delta/history 구분 마커. 우선순위 하.
 
@@ -1254,7 +1258,7 @@
 ## SECB-VB-ABSORB 후속 트랙 (2026-08-11, D-SECB-VB-ABSORB) [sec-beta]
 - **SECB-V2-NORMFIX** — grounding 대조기 **소문자 완화 1줄**(NORM-MISS 3건 구제, `services/sec_pipeline/grounding.py`). **V2 grounding 수정에 편승, 단독 세션 금지**(경량). 순위: V2 롤아웃 grounding 재배선 시. @backend
 - **SECB-DUP-EXTRACT** — 중복 추출 결함 트랙(동일 (filing,문장) 최대 22회, not_found 중 254건 중복 계상). 조사 범위 = **추출 루프의 중복 생성 지점 + 기존 중복 레코드 정리 방침**(정리 = 파괴적 후보 → 병진 판정). 순위: **V2 체크포인트 이후**. @backend/@qa
-- **SECB-VB-ABSORB-DIFF521** — 교집합 차집합 실측 결과 `|F_nb − F_v2| = 1 filing [521]`(PAYX, 미접지 v1 straggler·`grounding_method=NULL`). **미포함분 V2 대상 추가 여부 = 디렉터 판정 대기**(목록만, 부록 `sec_beta_vb_absorb_intersection.md` A-2). 부수: 미접지 v1 17행/5 filing(513·515·519·521·522) 백필 여부 별건. 병진/디렉터
+- **SECB-VB-ABSORB-DIFF521** — 교집합 차집합 실측 결과 `|F_nb − F_v2| = 1 filing [521]`(PAYX, 미접지 v1 straggler·`grounding_method=NULL`). **✅ 확정 반영(디렉터 판정, MGMT-LEDGER-1 2026-08-19)**: straggler **5건 전체(513·515·519·521·522) V2 편입** — **V2 스코프 356 = 351 + `grounding_method IS NULL` 5**. V2 대상 쿼리에 `grounding_method IS NULL` 포함으로 갱신(자동결정 마진 1.40). **쿼리 갱신 구현은 V2 실행 세션 위임.** 부록 `sec_beta_vb_absorb_intersection.md` A-2.
 
 ## TH-TRIGGER-FIRED — TH Session 1 트리거 발화 (2026-08-03, SEC β 종결 선행 충족) [theme-heat] ✅ **소비 완료 (TH-SESSION-1, 2026-08-03)**
 - **발화 조건 충족**: SEC β 트랙 종결 선언 확정(`sec_beta_closure_declaration.md`) → TH Session 1 선행 조건 해소.
@@ -1266,6 +1270,9 @@
 - **성격**: 확장된 corpus(07-12 이후분 포함)를 근거로 ThemeTermOverride(현 215 ovr_v1)를 **재판정**하는 별도 결정 사이클. **트리거 = 사전 품질 저하 관측 시**(현 미발동).
 - **선행 설계**: G2 앵커(92/19/0/0, ≤07-11 스코프)의 **이관 설계 포함** — 재판정 시 앵커 무효화되므로 신 앵커 정의·비교 기준 재수립 필요. ovr_v2 generation 신설 여부 포함.
 - 근거: TH-RESUME-CORPUS-UNFREEZE 조항(corpus 확장 시 G2 앵커 무효). 배제 결정(TH-SESSION-1 판정②, override 재산출 배제·TNV만).
+
+## TH-SUNMON-REEXTRACT-1 — ✅ **종결 (G-sunmon GREEN, MGMT-LEDGER-1 2026-08-19)** [theme-heat][news]
+- D-SUNMON-REEXTRACT(①A av-broad 완료 후 failed 재추출 체이닝) 구현·배포·백필 완료(08-10) → **첫 주말 08-16/17 실측 게이트 통과**. **G-sunmon GREEN**: corpus 문서 08-16(일) published_at **1,616** · 08-17(월) **1,610**(양일 >0) + TNV_CHAIN 라인 존재(celery-worker-error.log `date=2026-08-06 written=4` · sv-worker-runtime/stocks.log `date=2026-08-07 written=3`). 일요일 오진 재발 0. 정리 대상 worktree `sv-sunmon-recon`(병진 수동, D-BRANCH-DELETE-MANUAL).
 
 ## CORPUS-SUNMON-EMPTYKW — DailyNewsKeyword 일·월요일 빈 키워드 반복 (🔍 정찰 완료 2026-08-10 → 설계 결정 대기) [theme-heat][news]
 - **관찰**: DailyNewsKeyword 행은 존재하나 `keywords=[]`(빈 추출)가 **일·월요일 반복** — TH-SESSION-1 백필 창서 07-26(Sun)·07-27(Mon)·08-02(Sun)·08-03(Mon) 확정. **토요일(08-01)은 정상**(3 테마 크레딧). → 해당일 TNV 0행, **당일(특히 월) heat가 뉴스 성분(C3) 0/저값으로 계산**되는 영향.

@@ -8,6 +8,26 @@
 
 ---
 
+## [2026-08-19] D-DSS-EPSILON — ε 노이즈 임계 도입 보류 (정상 주간 누적 후 판정) [theme-heat][dss]
+
+**결정(보류)**: ε 노이즈 임계 도입 여부는 정상 주간 WoW 6쌍 누적 시 Δ분포 재산출 후 판정(08-14 이상 주간 오염 표본 배제). 초판 = 임계 없음(D-DSS-SIGNAL 2-A 유지).
+
+**Why**: DSS-IMPL-1 Slice 4 Δ분포는 08-14 near-flat 주간(FMP 컨센서스 무변동, flat 498)이 0비율 44.1%를 편향 오염 → ε 임계를 지금 고정하면 오염 표본에 맞춤. 정상 분포 6쌍 확보 후 p90(1.4%)~p99(8.4%) 재확인이 건전한 재료.
+
+## [2026-08-19] D-DSS-TAU — BREADTH_TAU 확정 보류 (사분면 UX 결정 사이클과 결합) [theme-heat][dss]
+
+**결정(보류)**: `BREADTH_TAU=0.10`은 status NOT NULL 제약에 따른 초판 라벨 파라미터. 원 breadth·유효분모가 `components`(jsonb)에 보존되어 가역. 확정은 사분면 노출 UX 결정 사이클(목업 동반)과 결합 — status 소비자 확정 시. γ규율 순서 준수.
+
+**Why**: τ는 supported/detached 라벨 경계일 뿐 원값(breadth) 손실 없음(components 보존 = 소급 재라벨 가역). 소비자(사분면 UX)가 없는 상태에서 τ를 고정하면 사변 구축(γ 위반). UX 목업으로 status 소비 형태가 확정될 때 함께 정한다.
+
+## [2026-08-19] D-PUSHDELEG-REBASE-ABSORB — 미푸시 세션 브랜치 behind>0 흡수 5조건 (D-PUSH-DELEG 하위 부칙) [harness][git][governance]
+
+**결정**: 미푸시 세션 브랜치의 behind>0 흡수는 **5조건 동시 충족 시 허용**: (i) push 대기 블록 사전 선언 (ii) 병진 명시 push 지시 (iii) rebase-onto-origin/main·force 금지 (iv) 흡수 후 재검증(makemigrations --check + 영향 테스트) (v) 해시 재작성 즉시 중계·구해시 무효 명시. **D-GOBS-REBASE-STANDING(docs-only 역머지)과 적용 범위 구분 병존.**
+
+**Why**: rebase 흡수는 커밋 해시를 재작성하므로 무통제 시 원장 앵커 무효화·force 유혹. 5조건이 push 위임(D-PUSH-DELEG)의 안전 봉투 — 특히 (iii) force 금지 + (v) 해시 중계로 원장 정합 유지. docs-only 세션은 D-GOBS-REBASE-STANDING(자동 역머지) 별도 적용.
+
+**실증**: DSS-IMPL-1(2026-08-16) — 6전진 origin/main에 union rebase 충돌 0 → makemigrations --check 클린·C8 68 pass 재확인 → HEAD:main ff-push(force 미사용)·구해시(586ddae2 계열)→신해시(534819af 계열) 중계.
+
 ## [2026-08-13] D-SWAP-REVIEW — 보유 종목 교체 검토 트랙 신설 [monitor][swap-review][governance]
 
 **결정**: "보유 X를 계속 들 것인가·판다면 무엇으로 바꾸는가"에 답하는 **SWAP-REVIEW 트랙 신설**(v2 확정). 4원칙: ⑴ **계산 분산·화면 통합**(렌즈별 수치는 소유 앱 계산, 비교는 읽기전용 FE 컴포지션·BE 결합 0·monitor leaf 유지) ⑵ **판정 주연=계약**(사전 커밋 근거 생사 + 교체 마찰 산술이 주연, 통계는 지지/반대/**침묵** 3값 조연) ⑶ **검토=상태**(트리거 개시·매일 델타·해소/판정/기한 3경로 종결) ⑷ **성공지표=무기록 결정률 0%**(막지 않고 기록). 정본 = [docs/features/swap-review/ADR-D-SWAP-REVIEW.md](docs/features/swap-review/ADR-D-SWAP-REVIEW.md)(불변식 12건·패치 P-1~P-5·스테이징 v0~v2).
