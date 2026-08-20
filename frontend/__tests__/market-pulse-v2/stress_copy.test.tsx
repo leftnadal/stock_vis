@@ -52,9 +52,10 @@ describe('백분위 분기(F2)', () => {
     expect(sev.percentile).toContain('상위 6%')
     expect(sev.percentile).toContain('지난 3년')
   })
-  it('stable = 중립 서술, "상위 64.9%" 어색문구 미생성', () => {
+  it('stable = 중립 서술, "상위 64.9%" 어색문구 미생성 + "지난 3년 대비" 시계열 기준 명시', () => {
     const st = buildStressCopy({ levelBand: 'stable', percentileValue: 35.1, stressState: 'mixed', priceState: 'mixed' })
     expect(st.percentile).not.toContain('상위')
+    expect(st.percentile).toContain('지난 3년') // stable도 caution/severe와 동일 3년 시계열 기준 명시(D-MPS-COPY)
   })
 })
 

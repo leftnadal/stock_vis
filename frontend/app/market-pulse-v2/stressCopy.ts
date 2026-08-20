@@ -55,7 +55,7 @@ const PRICE_PHRASE: Record<PriceState, string> = {
 /** 백분위 문구: caution/severe = "지난 3년 중 상위 N%" 강조 / stable = 중립(상위% 미생성). */
 function percentilePhrase(band: LevelBand, value: number): string {
   if (band === 'stable') {
-    return '자기 이력에서 낮은 수준'
+    return '지난 3년 대비 낮은 수준'
   }
   return `지난 3년 중 상위 ${topPercent(value)}%`
 }

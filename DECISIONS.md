@@ -231,6 +231,7 @@
 **D-MPS-COPY — 백분위 = 당일 스코어의 자기 역사 내 백분위(가용 이력 전체, "지난 N 중 상위 %").** window_days payload 노출(정직 표기).
 - Why: "위기 유사" 카피(MPS-2)의 정직성 재료 — 절대 스코어보다 자기역사 상대 위치가 직관적·오도 적음. 이력 길이를 함께 노출해 표본 얕음을 은폐하지 않음.
 - How to apply: `stress.percentile_of`(≤ 비율×100, round 1). 모집단=전 스냅샷 스코어.
+- **보강(2026-08-20, sess-mps-copy-polish)**: stable 밴드 백분위 문구 "자기 이력에서 낮은 수준" → **"지난 3년 대비 낮은 수준"** — caution/severe가 이미 쓰는 "지난 3년" 시계열 관용구로 통일(모호한 "자기 이력" 제거·기준 창 명시). 금지규칙 54조합 스캔·mp2_stress 재통과.
 
 **D-MPS-INDICATORS — 신규 위기지표 수집 개시(스코어 미편입).** DTWEXBGS(달러지수·daily)·STLFSI4(금융스트레스·weekly, 검증 전용). **SOFR = 배선 보류(MPS-SOFR 별건)** — market_pulse에 파생(DERIVED) 인프라 부재이고 단일 raw series 확정은 프로브 필요 → 소급 백필로 무손실이라 지연 비용 0. 편입 심사는 S4-REBASE Tier1+2.
 - Why: 스코어 성분 확대(잣대·문턱 재산정 동반)는 S4-REBASE 이벤트에서만. 그 전 "수집만" = 미래 심사용 이력 확보 + 현 스코어 안정성 보존. SOFR 정정 근거: 프로브(옵션2)는 파생 인프라 부재를 못 풀고, credit_signals 경유(옵션3)는 이중 원장·소유권 혼입.
