@@ -6562,3 +6562,20 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **Why**: CS-P4-OPS에서 이전 세션이 발행한 beat DB 등록 복붙 블록이 `/clear`로 소실 → 본 세션에서 재발행해야 했다(실사례). 병진 소비 산출물은 세션 경계를 넘어 살아야 하는데 채팅은 휘발성이다.
 
 **How to apply**: 병진 복붙/핸드오프 생성 시 `scratchpad/<task>_handoff.md`로 Write → 보고에 파일 경로 첨부. 부대: [[feedback_deploy_approval_explicit_quote]](병진 실행 게이트)와 짝.
+
+## [2026-08-19] D-SCE-POLLUTION-CLEANUP — 오염 정제 집행 (D-CS-P4 부기) [chainsight]
+
+> 트랙: SCE-POLLUTION-CLEANUP(스코프 한정 prod-write 승인·병진). worktree `monorepo/sess-sce-pollution-cleanup` base origin/main `24043cd4`. STEP 0 HALT(대상 3행 전제 vs 실측 13 self-loop)→디렉터 스코프 확대 승인.
+
+**집행 내역(prod-write, transaction.atomic 원자)**:
+- ⑴ 오 CompanyAlias 하드삭제 = `Marvell Technology Group Ltd.→DIS` **중복 2행**(id 40·41, 지시서 전제 "1행"과 달리 실측 2행 중복·승인 후 둘 다 삭제). ESPN계 정당 DIS alias 무접촉.
+- ⑵ 재해소(exact/alias만): 정상 alias 시드 `Marvell Technology Group Ltd.→MRVL`(구 법인명→현법인, 2021 재편) → SCE id=3451 target DIS→MRVL → **`FTNT→MRVL` DEPENDS_ON evidence 착지(confirmed)**. `FTNT→DIS`(id 13032)는 `serving_layer='excluded'` 비파괴 무효화(회수 성공).
+- ⑶ evidence 자기루프 **13행 전량** `serving_layer='excluded'`(id 13016·13017·13038·13043·13081·13142·13153·13160·13191·13192·13213·13218·13220 = V·GS·EXR×2·MTB·SATS·SO·PWR·DLR×2·NVR·HCA·ON). `.update()` 비파괴. **처리 후 evidence self-loop = 0**.
+- ⑷ 착지 source==target 드롭 가드 = **이미 완비**(모델 `save()` `SelfLoopError` 신규create 차단 + 10-K/8-K/CO_MENTIONED 3경로 인라인 `continue` + `tests/chainsight/test_self_loop_guard.py`). 13행은 이 가드(⑳-3 REVIEW-P2 Part Q) **이전** 레거시. 신규 추가 불요(DB CheckConstraint 승격은 잔존 TASKQUEUE).
+- 추가1(excluded 지속성): 야간 beat는 excluded 미복원 확인(SEC 10-K 경로=self-loop skip·serving_layer 미기입 / CO_MENTIONED·8-K=자기 타입만·self-loop 가드). **유일 회귀원=수동 `backfill_serving_layer`(relation_type만)** → **가드 이중화**: self-loop→excluded 재분류 + 기존 excluded 보존(evidence 복원 금지). pytest 3(`test_backfill_serving_layer_selfloop.py`).
+
+**R-2가 2건만 잡은 원인(부기)**: R-2는 fuzzy **이름-유사도 휴리스틱 스캔**이라 자회사→모회사 이름차(V→V·GS→GS)만 걸렸고, self-loop **전수 쿼리**(`symbol_a=F("symbol_b")`)가 아니었다 → 실제 evidence self-loop 모집단 **13**(전부 SEC4종·has_supply_chain_source·confirmed). 교훈: **오염 전수는 구조 쿼리로, 휴리스틱 스캔은 하한**. self-loop은 이름차와 무관(동일 티커)이라 유사도 스캔 사각.
+
+**Why**: D-CARD-GATE(evidence AND SEC4종) 연결선 오염 제거 = P5 카드층 클리어 전제. 비파괴(excluded/계층변경) 우선·하드삭제는 alias 시드 2행 한정(승인). MRVL 재적 확인(NASDAQ·cik 0001835632) → 오염 무효화가 아니라 **정상 관계 회수**(FTNT→MRVL)까지 달성.
+
+**검증**: alias Marvell→DIS 0 / →MRVL 1·SCE3451→MRVL·FTNT→MRVL evidence 1·FTNT→DIS excluded·evidence self-loop 0·evidence 총계 3356→3343(−14 excluded +1 신규)·excluded 14. pytest 7 GREEN(self-loop 가드 4 + backfill 하드닝 3).
