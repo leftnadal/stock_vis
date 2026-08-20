@@ -2,7 +2,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { monitorService } from '@/services/monitorService'
-import type { CloseClaimInput, MonitorInput } from '@/types/monitor'
+import type {
+  ClaimEvidenceInput,
+  CloseClaimInput,
+  DecisionJournalEntryInput,
+  MonitorInput,
+  SwapHoldLogInput,
+} from '@/types/monitor'
 
 export const monitorKeys = {
   all: ['monitor'] as const,
@@ -23,6 +29,12 @@ export const monitorKeys = {
     [...monitorKeys.all, 'snapshots', id, window] as const,
   advisorNotes: (id: string, limit: number) =>
     [...monitorKeys.all, 'advisorNotes', id, limit] as const,
+  // ── 근거 / 보류 / 결정 일지 (RECON-SWAP-0813 PART 3-FE) ──
+  evidences: (claimId: string) => [...monitorKeys.all, 'evidences', claimId] as const,
+  evidenceStatus: (claimId: string, asOf?: string) =>
+    [...monitorKeys.all, 'evidenceStatus', claimId, asOf ?? 'today'] as const,
+  holdLogs: (claimId: string) => [...monitorKeys.all, 'holdLogs', claimId] as const,
+  journalEntries: (claimId: string) => [...monitorKeys.all, 'journalEntries', claimId] as const,
 }
 
 export function useMonitors() {
@@ -217,5 +229,76 @@ export function useAdvisorNotes(monitorId: string, limit = 30, enabled = true) {
     queryFn: () => monitorService.getAdvisorNotes(monitorId, limit),
     enabled: enabled && !!monitorId,
     staleTime: 1000 * 60 * 5,
+  })
+}
+
+// ── Claim 근거 (RECON-SWAP-0813 PART 1) ──
+
+export function useClaimEvidences(claimId: string, enabled = true) {
+  return useQuery({
+    queryKey: monitorKeys.evidences(claimId),
+    queryFn: () => monitorService.listClaimEvidences(claimId),
+    enabled: enabled && !!claimId,
+  })
+}
+
+export function useCreateClaimEvidence() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: ClaimEvidenceInput) => monitorService.createClaimEvidence(payload),
+    onSuccess: (_data, payload) => {
+      qc.invalidateQueries({ queryKey: monitorKeys.evidences(payload.claim) })
+      // 근거 생사 판정은 as_of별 키라 claim 전체 evidenceStatus 접두를 무효화.
+      qc.invalidateQueries({ queryKey: [...monitorKeys.all, 'evidenceStatus', payload.claim] })
+    },
+  })
+}
+
+// 근거 생사 판정(계약층) — 상태 변경 없는 조회.
+export function useEvidenceStatus(claimId: string, asOf?: string, enabled = true) {
+  return useQuery({
+    queryKey: monitorKeys.evidenceStatus(claimId, asOf),
+    queryFn: () => monitorService.getEvidenceStatus(claimId, asOf),
+    enabled: enabled && !!claimId,
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+// ── 교체 검토 보류 이력 (RECON-SWAP-0813 PART 3-BE) ──
+
+export function useSwapHoldLogs(claimId: string, enabled = true) {
+  return useQuery({
+    queryKey: monitorKeys.holdLogs(claimId),
+    queryFn: () => monitorService.listSwapHoldLogs(claimId),
+    enabled: enabled && !!claimId,
+  })
+}
+
+export function useCreateSwapHoldLog() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: SwapHoldLogInput) => monitorService.createSwapHoldLog(payload),
+    onSuccess: (_data, payload) =>
+      qc.invalidateQueries({ queryKey: monitorKeys.holdLogs(payload.claim) }),
+  })
+}
+
+// ── 결정 일지 (RECON-SWAP-0813 PART 3-BE) ──
+
+export function useDecisionJournalEntries(claimId: string, enabled = true) {
+  return useQuery({
+    queryKey: monitorKeys.journalEntries(claimId),
+    queryFn: () => monitorService.listDecisionJournalEntries(claimId),
+    enabled: enabled && !!claimId,
+  })
+}
+
+export function useCreateDecisionJournalEntry() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: DecisionJournalEntryInput) =>
+      monitorService.createDecisionJournalEntry(payload),
+    onSuccess: (_data, payload) =>
+      qc.invalidateQueries({ queryKey: monitorKeys.journalEntries(payload.claim) }),
   })
 }

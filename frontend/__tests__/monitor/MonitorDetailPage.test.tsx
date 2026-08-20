@@ -123,6 +123,19 @@ describe('MonitorDetailPage', () => {
     await waitFor(() => expect(screen.getByText('애플 감시')).toBeInTheDocument())
     expect(screen.getByTestId('claim-close-button')).toBeInTheDocument()
     expect(screen.queryByTestId('verdict-badge')).not.toBeInTheDocument()
+    // 근거 관리는 시나리오 종류와 무관하게 항상 노출(RECON-SWAP-0813 3-A).
+    expect(screen.getByTestId('claim-evidence-button')).toBeInTheDocument()
+    // 교체 검토는 hold 시나리오에서만 노출 — 기본 makeClaim()은 new_entry.
+    expect(screen.queryByTestId('claim-swap-review-link')).not.toBeInTheDocument()
+  })
+
+  it('hold 시나리오 pending Claim은 교체 검토 링크를 /monitor/{id}/swap로 보여준다', async () => {
+    useMonitorMock.mockReturnValue({ data: monitor, isLoading: false, isError: false, error: null })
+    useMonitorClaimsMock.mockReturnValue({ data: [makeClaim({ scenario_type: 'hold' })] })
+    await renderDetail()
+
+    await waitFor(() => expect(screen.getByTestId('claim-swap-review-link')).toBeInTheDocument())
+    expect(screen.getByTestId('claim-swap-review-link')).toHaveAttribute('href', '/monitor/m1/swap')
   })
 
   it('resolved Claim은 VerdictBadge를 보여주고 마감 버튼은 없다', async () => {

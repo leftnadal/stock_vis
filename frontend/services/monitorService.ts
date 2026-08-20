@@ -7,9 +7,14 @@ import type {
   AlertSummary,
   CatalogEntry,
   Claim,
+  ClaimEvidence,
+  ClaimEvidenceInput,
   CloseClaimInput,
   ClosePreview,
+  DecisionJournalEntry,
+  DecisionJournalEntryInput,
   EvaluateResult,
+  EvidenceStatusResponse,
   Monitor,
   MonitorIndicator,
   MonitorInput,
@@ -17,6 +22,8 @@ import type {
   ScenarioType,
   SnapshotSeriesResponse,
   SparklineResponse,
+  SwapHoldLog,
+  SwapHoldLogInput,
 } from '@/types/monitor'
 
 // DRF 페이지네이션 대응: {results:[...]} 또는 배열 모두 수용
@@ -178,5 +185,52 @@ export const monitorService = {
       params: { limit },
     })
     return unwrapList<AdvisorNote>(data)
+  },
+
+  // ── Claim 근거 (RECON-SWAP-0813 PART 1) ── 쓰기는 이 엔드포인트 전용
+  // (ClaimSerializer.evidences는 read-only nested, MonitorIndicatorViewSet과 동일 관례).
+  listClaimEvidences: async (claimId: string): Promise<ClaimEvidence[]> => {
+    const { data } = await authAxios.get('/monitor/claim-evidences/', {
+      params: { claim: claimId },
+    })
+    return unwrapList<ClaimEvidence>(data)
+  },
+  createClaimEvidence: async (payload: ClaimEvidenceInput): Promise<ClaimEvidence> => {
+    const { data } = await authAxios.post('/monitor/claim-evidences/', payload)
+    return data
+  },
+
+  // 근거 생사 판정(계약층, 읽기 전용 — 상태 변경 없음).
+  getEvidenceStatus: async (claimId: string, asOf?: string): Promise<EvidenceStatusResponse> => {
+    const { data } = await authAxios.get(`/monitor/claims/${claimId}/evidence-status/`, {
+      params: asOf ? { as_of: asOf } : undefined,
+    })
+    return data
+  },
+
+  // ── 교체 검토 보류 이력 (RECON-SWAP-0813 PART 3-BE) ──
+  listSwapHoldLogs: async (claimId: string): Promise<SwapHoldLog[]> => {
+    const { data } = await authAxios.get('/monitor/swap-hold-logs/', {
+      params: { claim: claimId },
+    })
+    return unwrapList<SwapHoldLog>(data)
+  },
+  createSwapHoldLog: async (payload: SwapHoldLogInput): Promise<SwapHoldLog> => {
+    const { data } = await authAxios.post('/monitor/swap-hold-logs/', payload)
+    return data
+  },
+
+  // ── 결정 일지 (RECON-SWAP-0813 PART 3-BE) ── sentence 품질 검증 없음(ADR §6).
+  listDecisionJournalEntries: async (claimId: string): Promise<DecisionJournalEntry[]> => {
+    const { data } = await authAxios.get('/monitor/decision-journal-entries/', {
+      params: { claim: claimId },
+    })
+    return unwrapList<DecisionJournalEntry>(data)
+  },
+  createDecisionJournalEntry: async (
+    payload: DecisionJournalEntryInput
+  ): Promise<DecisionJournalEntry> => {
+    const { data } = await authAxios.post('/monitor/decision-journal-entries/', payload)
+    return data
   },
 }
