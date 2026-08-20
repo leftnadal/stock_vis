@@ -1,10 +1,11 @@
 'use client'
 
 import { translate } from '@/lib/i18n/marketPulse'
-import type { RegimeCard } from '@/lib/api/marketPulseV2'
+import type { RegimeCard, StressLevelBand } from '@/lib/api/marketPulseV2'
 import { REGIME_MEANING, REGIME_TERM, REGIME_TONE, STAGE_ORDER } from '../meaning'
 import { CardShell } from './CardShell'
 import { SenseNote } from './SenseNote'
+import { StressHeroBadge } from './StressHeroBadge'
 
 /** 전체 단계 수 (STAGE_ORDER 키 개수 — 단일소스). */
 const TOTAL_STAGES = Object.keys(STAGE_ORDER).length // 5
@@ -106,17 +107,21 @@ function NextStageBlock({
  * 기존 표시(라벨·밴드·coverage·headline·SenseNote) 전부 유지.
  */
 export function RegimeCardSummary({
-  data, labels, onOpen, sense,
-}: { data: RegimeCard | null; labels?: Record<string, string>; onOpen?: () => void; sense?: string | null }) {
+  data, labels, onOpen, sense, stressBand,
+}: { data: RegimeCard | null; labels?: Record<string, string>; onOpen?: () => void; sense?: string | null; stressBand?: StressLevelBand | null }) {
   return (
     <CardShell titleEn="Market Regime" titleKo={`시장 ${REGIME_TERM}`} status={data?.status} onOpen={onOpen}>
       {!data ? (
         <p className="text-sm text-slate-400">{REGIME_TERM} 데이터 미생성</p>
       ) : (
         <div>
-          <p className="text-lg font-semibold text-slate-900">
-            {translate(`regime.${data.regime}`, labels, data.regime)}
-          </p>
+          {/* C-lite(1.6-S0): 국면 라벨 옆 스트레스 배지(가산). band 부재 시 미렌더. */}
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-lg font-semibold text-slate-900">
+              {translate(`regime.${data.regime}`, labels, data.regime)}
+            </p>
+            {stressBand ? <StressHeroBadge band={stressBand} /> : null}
+          </div>
           {/* MP-UX-S2: 단계 의미 밴드 (rules.yaml 5단계 → 의미 문구, 단계별 색). 표시만 추가. */}
           {REGIME_MEANING[data.regime] ? (
             <div className={`mt-1 rounded border px-2 py-1 text-xs ${REGIME_TONE[data.regime] ?? ''}`}>

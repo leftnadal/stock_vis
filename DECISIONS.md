@@ -8,6 +8,14 @@
 
 ---
 
+## [2026-08-20] D-P16-ENTRY — Phase 1.6 착수 = C-lite 히어로 배지 선착지 (가안) [marketpulse][frontend][process]
+
+**결정 (가안 채택)**: Phase 1.6 착수 순서 = **C-lite 선착지**(홈 히어로에 스트레스 상태 배지) → 그 위에서 플레이북 본론(체인 정의) 결정. 퀀트 4.20 > 3.50 > 3.40, 마진 0.70. 타이브레이커 = **"결정은 실측 위에서"** — C-lite를 착지시키며 플레이북 엔진 지형을 겸사 정찰해 다음 결정 사이클(체인 정의)의 실측 재료를 확보.
+
+**Why**: 플레이북 체인은 "무엇을 조건으로 삼을 수 있는가"의 엔진/신호 지형이 확정돼야 설계 가능. C-lite는 그 자체로 사용자 가치(홈 최상단 스트레스 축 인지, 스크롤 불요)이면서 착지 비용이 낮아(FE-only·백엔드 0) 정찰과 병행하기 최적. C-lite 구현 원칙 = 판단 로직 신설 0(백엔드 level_band 그대로)·색 하드코딩 0(stressAlert 토큰 재사용)·가산(기존 StressCard 무변경).
+
+**How to apply**: 배지 = `StressHeroBadge`(신규 소품) + RegimeCardSummary 옵셔널 prop `stressBand`(가산). 데이터 = page가 `useRegimeStress`(StressCard와 동일 키·react-query dedup) → 중복 fetch 0. 부재/스테일(available=false) 시 미렌더. 색·라벨 = `stressAlert`(D-MPS-COLOR/D-MPS-BAND-NAME) 재사용. 플레이북 본론(체인 정의)은 별도 결정 사이클(TASKQUEUE `P16-PLAYBOOK-CHAIN`, 정찰 재료 첨부). cf. [[project_mp_stress_track]].
+
 ## [2026-08-20] D-SCANNER-SELECT-UX — dashboard 스캐너 선별 UX 재설계 (직교 5축·정칙 v2.1·경로 ㉮) [dashboard][platform][recommendation]
 
 **결정 (목표 상태 = 정보안 C · 경로 = ㉮ 단계출시)**: dashboard 스캐너 = 추천 시스템의 핵심 선별 퍼널. 화면 원리 = **"관심 유발 = 독립(직교) 축의 합류"**. **직교 5축** = 기술(카테고리 합류·RSI·52주 위치·MA) / 가치평가(비교군 명시 상대 밸류) / 퀄리티(ROE·성장·부채) / 관계(RelationConfidence 강도 우선) / 뉴스·이력. 각 축 = 행 칩 1개 + 패널 상세 칸. **합류 정의 = 카테고리 축 단위**(원시 신호 개수 아님·tagger 6카테고리 정본) — 가격 파생 신호(P1~P4) 상관 중복 배제가 목적.
