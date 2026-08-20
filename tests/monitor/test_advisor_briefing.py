@@ -74,7 +74,7 @@ class TestBuildContext:
         from apps.monitor.services.state_machine import score_to_phase
 
         ind = make_indicator(name="momentum_12_1", source_key="momentum_12_1", window=10)
-        add_readings(ind, [float(i) for i in range(10)])
+        add_readings(ind, [float(i) for i in range(10)], base=_READINGS_BASE)
         _snap(monitor, date(2026, 8, 7), 0.1234)
         ctx = svc.build_context(monitor)
         assert ctx["state_display"] == score_to_phase(0.1234)["label"]

@@ -8,6 +8,29 @@
 
 ---
 
+## [2026-08-20] D-PRIORITY-SWAP-V0 — 차기 대형 트랙 = SWAP-REVIEW v0 확정 [monitor][swap-review][process]
+
+**결정**: 차기 대형 트랙 = **SWAP-REVIEW v0**(+지반 EOD-UNIV 재정의판 병행). 채점 프로필 A(C1 0.30/C2 0.20/C3 0.15/C4 0.15/C5 0.20)로 **⑤+① 묶음 0.845 vs ④ L-B/L-C 0.585, 마진 0.26**(동률 임계 0.05 초과) → 자동 확정. 관찰 표본 = 라이브 브리핑 약 1주치. **P5는 ⑤에 흡수, P1.5는 별도 소형 유지.**
+
+**채점표(verbatim)**:
+| 후보 | C1(수요 0.30) | C2(준비 0.20) | C3(범위 0.15) | C4(비용 0.15) | C5(전략 0.20) | 가중합 |
+|---|---|---|---|---|---|---|
+| **⑤+① 묶음(SWAP-REVIEW v0)** | 0.30 | 0.20 | 0.15 | 0.15 | 0.20 | **0.845** |
+| ④ L-B/L-C(advisor 확장) | 0.585 | | | | | **0.585** |
+마진 0.845−0.585 = **0.26 > 임계 0.05** → 재량 개입 없는 자동 결정.
+
+**Why**: ⑤(교체 검토)는 유일 실수요 실증(GEV 익절·IONQ 근거소멸)이고 RECON-SWAP-0813로 준비도 확보. ①(근거 구조 필드)은 ⑤의 계약층 전제라 묶음이 자연 단위. P5(검토 최상단 고정)는 ⑤의 v0판에 흡수. cf. [[D-SWAP-REVIEW]] §4.
+
+**How to apply**: v0 = ADR §4 v0 정의 스코프(Claim 근거 구조 필드 + 브리핑 근거 생사 라인 + 수동 2종 대결 화면). v0.5+(검토 상태기·히스테리시스·수치 게이트·통계층·기저율) 착수 금지. EOD-UNIV 재정의판은 별도 지시서.
+
+## [2026-08-20] D-FIXTURE-FIXED-BASE — 테스트 픽스처 시간 앵커는 고정 base 기본, now는 명시 opt-in [process][harness]
+
+**결정**: 테스트 픽스처의 시간 앵커는 **고정 base가 기본**, `timezone.now()` 앵커는 **명시적 opt-in**으로만 쓴다. 시계열 데이터 생성 픽스처가 now를 암묵 앵커로 쓰고 테스트가 as_of를 과거 고정값으로 두면, `asof__date__lte` 류 필터가 경과일 누적으로 데이터를 배제하는 **time-bomb**(경과일 단독 red 전환)가 발생한다.
+
+**Why**: ADV-COV-TRIAGE-0813 실증 — `add_readings`(now 앵커) ↔ 스냅샷 asof(고정 2026-08-07)의 커플링이 2026-08-13부터 coverage_n=0으로 자연 red(코드 회귀 0). 고정 base 정합으로 재발 차단(수리 `bb3a69d2`).
+
+**How to apply**: 시계열 픽스처는 `base=None` 옵션 노출(기본 now, 테스트가 스냅샷 as_of에 정합할 때 고정값 주입). 신규 픽스처·테스트는 as_of를 쓰면 readings/prices도 동일 고정 base로. cf. [[lesson_land_health_measure_in_target_tree]] 계열.
+
 ## [2026-08-20] D-MPS-OPS-APISYNC — API 런타임 스테일 = StressCard 404 근인 + ⓟ′ 병렬세션 귀속 [marketpulse][ops][governance]
 
 **결정(귀속 종결)**: MPS-2 StressCard "불러오지 못했습니다" 근인 = **API 런타임(sv-api-runtime) 스테일**. 관리이탈 고아 daphne(PID 63228, 08-13 09AM 기동, launchd 미관리)가 :18765를 점유하며 stress 라우트 없는 구코드(c9400d18)로 응답 → `/api/v2/market-pulse/regime/stress` **404** → FE 카드 에러. 08-18 14:57 worker_sync(`git checkout --detach origin/main` + `launchctl kickstart -k com.stockvis.web`) 실행으로 origin/main(bc2cb7e4) 서빙 전환·해소(authed 200, 실데이터 score −0.311/stable). **14:57 집행 귀속 = ⓟ′ 병렬 세션(ID 미명시)의 `sv sync` — 블레스드 경로 정상 실행**(병진 배제 확인). 마이그 7건 전건 기적용(worker/web 선행) → 순수 코드 배포·DB write 0.
