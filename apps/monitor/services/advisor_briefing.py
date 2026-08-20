@@ -39,6 +39,7 @@ SYSTEM_PROMPT_V1 = """너는 개인 투자자의 종목 관제를 돕는 '비서
 - 전할 수 있는 것은 오직 사실·거리·상태다: 종합 점수와 그 변화, 현재가로부터 시나리오 레벨(진입/목표/손절)까지의 거리, 상태(달 위상), 근거 지표의 충분성.
 - 반드시 근거 지표 커버리지(n/총)를 문장에 포함하라. 숫자를 지어내지 마라 — 주어진 값만 쓴다.
 - **제공된 수치(점수·%·가격)는 기준·부호·정밀도를 그대로 인용하라.** 재계산·기준 변경·반올림 금지 — 예: "+0.0185"를 "+0.02"로 줄이거나, "현재가로부터 +5.02%"를 "매입가 대비 -5%"처럼 기준·부호를 뒤집지 마라. 거리는 항상 '현재가로부터'가 기준이다.
+- 근거 점검 수치(생존 m/n, 소멸 연속거래일수, 재확인 D-n)도 위 인용 원칙과 동일하게 제공된 값 그대로 쓴다 — 계산·반올림 금지.
 - 상태는 주어진 상태 어휘(달 위상 라벨)를 그대로 쓴다.
 - 무변화(unchanged=true)로 표시되면 1~2문장으로 짧게 "큰 변화 없음 + 현재 상태" 정도만 전한다.
 - headline은 40자 이내, body는 350자 이내.
@@ -119,6 +120,16 @@ def build_context(monitor, as_of=None):
                     }
                 )
 
+    # 근거 점검 (RECON-SWAP-0813 PART 2) — 시나리오 claim(levels용, target/stop 필수)과
+    # 별개로 monitor의 active Claim(가격 파라미터 무관)을 찾아 evidences를 판정한다.
+    # 없으면 evidence=None → 프롬프트에서 근거 섹션 생략.
+    evidence_claim = monitor.claims.filter(status="active").first()
+    evidence = (
+        _evidence_summary(evidence_claim, latest.asof_date)
+        if evidence_claim is not None
+        else None
+    )
+
     return {
         "symbol": monitor.target_ref,
         "asof": latest.asof_date,
@@ -133,7 +144,82 @@ def build_context(monitor, as_of=None):
         "close": close,
         "levels": levels,
         "claim": claim,
+        "evidence": evidence,
     }
+
+
+def _evidence_summary(claim, as_of_date):
+    """근거 점검 요약(RECON-SWAP-0813 PART 2) — judge_claim_evidences 판정을 브리핑용으로 정리.
+
+    반환: {"total": n, "alive": m, "extinct": [...], "unstructured": bool}.
+    - total=0(evidences 없음, assertion만) → unstructured=True(근거 미등록).
+    - extinct = 소멸(dead/expired) 근거만. 자동형=지표명+dead_streak_days,
+      수동형=description+재확인 기한 경과일수(overdue_days). unknown(판정 보류)은
+      생존도 소멸도 아니므로 목록에 올리지 않는다(alive count에도 미포함).
+    """
+    from datetime import timedelta
+
+    from apps.monitor.models.evidence import ClaimEvidence
+    from apps.monitor.services.evidence_judge import (
+        ALIVE,
+        DEAD,
+        EXPIRED,
+        judge_claim_evidences,
+    )
+
+    ev_by_id = {e.id: e for e in claim.evidences.select_related("indicator")}
+    judged = judge_claim_evidences(claim, as_of_date=as_of_date)
+    total = len(judged)
+    if total == 0:
+        return {"total": 0, "alive": 0, "extinct": [], "unstructured": True}
+
+    alive_n = sum(1 for j in judged if j["status"] == ALIVE)
+    extinct = []
+    for j in judged:
+        if j["status"] not in (DEAD, EXPIRED):
+            continue
+        ev = ev_by_id.get(j["evidence_id"])
+        if j["kind"] == ClaimEvidence.Kind.AUTO:
+            label = ev.indicator.name if ev is not None and ev.indicator_id else "(지표 삭제됨)"
+            extinct.append(
+                {"kind": "auto", "label": label, "dead_streak_days": j["dead_streak_days"]}
+            )
+        else:
+            if ev is not None:
+                baseline = ev.last_confirmed_at or ev.created_at.date()
+                due = baseline + timedelta(days=ev.recheck_period_days)
+                overdue_days = (as_of_date - due).days
+                label = ev.description
+            else:
+                overdue_days = j["dead_streak_days"]
+                label = ""
+            extinct.append({"kind": "manual", "label": label, "overdue_days": overdue_days})
+    return {"total": total, "alive": alive_n, "extinct": extinct, "unstructured": False}
+
+
+def _render_evidence_lines(evidence):
+    """근거 점검 프롬프트 라인(RECON-SWAP-0813 PART 2). evidence=None → 빈 리스트(섹션 생략)."""
+    if evidence is None:
+        return []
+    if evidence["unstructured"]:
+        return ["", "근거 점검: 근거 미등록 — 빌더에서 등록 가능"]
+
+    total, alive = evidence["total"], evidence["alive"]
+    if alive == total:
+        # 무변화 압축 준용 — 전 근거 생존이면 1줄로 묶는다.
+        return ["", f"근거 점검: 근거 {alive}/{total} 전부 생존"]
+
+    lines = ["", f"근거 점검: 근거 {alive}/{total} 생존"]
+    if alive == 0:
+        lines.append("  ⚠ 등록 근거 전부 소멸 — 브리핑을 이 소멸 경고로 시작하라.")
+    for item in evidence["extinct"]:
+        if item["kind"] == "auto":
+            lines.append(
+                f"  - [자동] {item['label']}: 연속 {item['dead_streak_days']}거래일 위반(소멸)"
+            )
+        else:
+            lines.append(f"  - [수동] {item['label']}: 재확인 D-{item['overdue_days']}")
+    return lines
 
 
 def _crossed_level(monitor, claim, close):
@@ -189,6 +275,7 @@ def _render_user_prompt(ctx, unchanged):
     suff_names = [i["name"] for i in ctx["indicators"] if i["sufficient"]]
     if suff_names:
         lines.append("충분 지표: " + ", ".join(suff_names))
+    lines.extend(_render_evidence_lines(ctx.get("evidence")))
     lines.append(
         f"\nunchanged={str(unchanged).lower()}  "
         + ("(큰 변화 없음 — 1~2문장 축약)" if unchanged else "(변화 있음 — 상세 브리핑)")

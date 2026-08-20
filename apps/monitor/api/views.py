@@ -3,6 +3,8 @@
 user 스코프 격리: 모든 queryset은 request.user 소유로 제한(IDOR 방지).
 평가 트리거 = MonitorViewSet.evaluate action (수동). beat 주기 등록은 별도 스텝.
 """
+from datetime import date
+
 from django.db.models import (
     Case,
     Count,
@@ -16,6 +18,7 @@ from django.db.models import (
     Value,
     When,
 )
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -28,21 +31,28 @@ from apps.monitor.catalog import catalog_for
 from apps.monitor.api.serializers import (
     AdvisorNoteSerializer,
     AlertEventSerializer,
+    ClaimEvidenceSerializer,
     ClaimSerializer,
+    DecisionJournalEntrySerializer,
     IndicatorReadingSerializer,
     MonitorIndicatorSerializer,
     MonitorSerializer,
+    SwapHoldLogSerializer,
 )
 from apps.monitor.models import (
     AdvisorNote,
     AlertEvent,
     Claim,
+    ClaimEvidence,
+    DecisionJournalEntry,
     IndicatorReading,
     Monitor,
     MonitorIndicator,
     MonitorSnapshot,
+    SwapHoldLog,
 )
 from apps.monitor.services import closure
+from apps.monitor.services.evidence_judge import judge_claim_evidences
 from apps.monitor.services.pipeline import evaluate_monitor
 from apps.monitor.services.sparkline import score_series
 from apps.monitor.services.snapshot_series import snapshot_series
@@ -349,6 +359,84 @@ class ClaimViewSet(_OwnedByMonitorMixin, viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(self.get_serializer(closed).data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["get"], url_path="evidence-status")
+    def evidence_status(self, request, pk=None):
+        """근거 생사 판정 조회 (RECON-SWAP-0813 PART 3-BE, 읽기 전용) —
+        judge_claim_evidences 산출을 FE 대결 화면 계약층에 노출. DB 쓰기 없음."""
+        claim = self.get_object()  # owner 스코프 자동 적용
+
+        as_of_raw = request.query_params.get("as_of")
+        as_of = timezone.localdate()
+        if as_of_raw:
+            try:
+                as_of = date.fromisoformat(as_of_raw)
+            except ValueError:
+                return Response(
+                    {"detail": "as_of는 YYYY-MM-DD 형식이어야 합니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        results = judge_claim_evidences(claim, as_of_date=as_of)
+        evidences_by_id = {
+            ev.id: ev for ev in claim.evidences.select_related("indicator").all()
+        }
+        enriched = []
+        for r in results:
+            ev = evidences_by_id.get(r["evidence_id"])
+            enriched.append({
+                **r,
+                "indicator_name": (
+                    ev.indicator.name if ev is not None and ev.indicator_id else None
+                ),
+                "description": ev.description if ev is not None else "",
+            })
+
+        return Response({
+            "claim_id": claim.id,
+            "as_of": as_of.isoformat(),
+            "total": len(enriched),
+            "alive": sum(1 for r in enriched if r["status"] == "alive"),
+            "results": enriched,
+        })
+
+
+class SwapHoldLogViewSet(_OwnedByMonitorMixin, viewsets.ModelViewSet):
+    """교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+    동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user."""
+
+    serializer_class = SwapHoldLogSerializer
+    monitor_lookup = "claim__monitor"
+
+    def get_queryset(self):
+        qs = SwapHoldLog.objects.filter(claim__monitor__user=self.request.user)
+        claim_id = self.request.query_params.get("claim")
+        if claim_id:
+            qs = qs.filter(claim_id=claim_id)
+        return qs
+
+    def perform_create(self, serializer):
+        self._assert_owner(serializer.validated_data["claim"].monitor)
+        serializer.save()
+
+
+class DecisionJournalEntryViewSet(_OwnedByMonitorMixin, viewsets.ModelViewSet):
+    """마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+    Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립)."""
+
+    serializer_class = DecisionJournalEntrySerializer
+    monitor_lookup = "claim__monitor"
+
+    def get_queryset(self):
+        qs = DecisionJournalEntry.objects.filter(claim__monitor__user=self.request.user)
+        claim_id = self.request.query_params.get("claim")
+        if claim_id:
+            qs = qs.filter(claim_id=claim_id)
+        return qs
+
+    def perform_create(self, serializer):
+        self._assert_owner(serializer.validated_data["claim"].monitor)
+        serializer.save()
+
 
 class IndicatorReadingViewSet(_OwnedByMonitorMixin, viewsets.ModelViewSet):
     serializer_class = IndicatorReadingSerializer
@@ -360,4 +448,24 @@ class IndicatorReadingViewSet(_OwnedByMonitorMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         self._assert_owner(serializer.validated_data["indicator"].monitor)
+        serializer.save()
+
+
+class ClaimEvidenceViewSet(_OwnedByMonitorMixin, viewsets.ModelViewSet):
+    """Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+    nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례)."""
+
+    serializer_class = ClaimEvidenceSerializer
+    monitor_lookup = "claim__monitor"
+
+    def get_queryset(self):
+        qs = ClaimEvidence.objects.filter(claim__monitor__user=self.request.user)
+        # ?claim= 존중 — 특정 Claim의 근거만 조회(상세 화면 교차 표시 방지, indicators와 동일 관례).
+        claim_id = self.request.query_params.get("claim")
+        if claim_id:
+            qs = qs.filter(claim_id=claim_id)
+        return qs
+
+    def perform_create(self, serializer):
+        self._assert_owner(serializer.validated_data["claim"].monitor)
         serializer.save()

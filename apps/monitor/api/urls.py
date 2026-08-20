@@ -4,12 +4,15 @@ from rest_framework.routers import DefaultRouter
 
 from apps.monitor.api.views import (
     AlertEventViewSet,
+    ClaimEvidenceViewSet,
     ClaimViewSet,
+    DecisionJournalEntryViewSet,
     IndicatorCatalogView,
     IndicatorReadingViewSet,
     MonitorIndicatorViewSet,
     MonitorViewSet,
     ScenarioSuggestView,
+    SwapHoldLogViewSet,
 )
 
 router = DefaultRouter()
@@ -17,6 +20,11 @@ router.register(r"monitors", MonitorViewSet, basename="monitor")
 router.register(r"indicators", MonitorIndicatorViewSet, basename="monitor-indicator")
 router.register(r"readings", IndicatorReadingViewSet, basename="indicator-reading")
 router.register(r"claims", ClaimViewSet, basename="claim")
+router.register(r"claim-evidences", ClaimEvidenceViewSet, basename="claim-evidence")
+router.register(r"swap-hold-logs", SwapHoldLogViewSet, basename="swap-hold-log")
+router.register(
+    r"decision-journal-entries", DecisionJournalEntryViewSet, basename="decision-journal-entry"
+)
 router.register(r"alerts", AlertEventViewSet, basename="alert")
 
 urlpatterns = [
