@@ -11,10 +11,13 @@
 
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |----|------|-------|------------|--------|-----------|
-| NEO4J-RESTORE-P2 | **Neo4j launchd 항구화** — 타르볼용 `com.stockvis.neo4j.plist`(JAVA_HOME=openjdk@21 명기·KeepAlive·RunAtLoad) 설치. plist 초안+runbook 제작 완료(§7, `scripts/ops/launchd/`). **집행=병진 수동**(launchctl bootstrap·죽은 homebrew.mxcl.neo4j 엔트리 처리) | @infra | 병진 수동 | 🔭 등재(준비물 완료) |
+| NEO4J-RESTORE-P2 | ~~Neo4j launchd 항구화~~ **✅ 종결(OPS-SWEEP-1, 2026-08-20)**: `com.stockvis.neo4j.plist`(JAVA_HOME·KeepAlive·RunAtLoad) 병진 수동 설치 → 08-20 08:14 UTC Started·launchd status 0·bolt LISTEN·.env 인증 통과. 죽은 homebrew.mxcl.neo4j 제거. runbook 보강(mkdir 선결·운영규칙·소스정본). | @infra | 완료 | ✅ done |
 | NEO4J-SYNCEDAT-PROBE | synced_at 07-11 스탬프 경위 미해명(homebrew 04-03·타르볼 05-01 어느 쪽도 설명 불가) — `git log neo4j_sync.py` 프로브로 판별 | @backend | — | 🔭 등재(저순위) |
+| NEO4J-NODECOUNT-PROBE | 그래프 NODE 1181→1084(−97) 감소가 로그로 미설명(레거시 정리=엣지 삭제만·`_delete_edge`=DELETE r·DETACH 0). 측정 시점 상이 가능 — 필요 시 노드 델타 프로브 | @backend | — | 🔭 등재(저순위) |
 | EODDASH-TARGETDATE | `run_eod_pipeline(target_date=)` 재실행 경로가 EODDashboardSnapshot row 미생성(JSON은 bake됨) — target_date 경로에서 요약 스냅샷도 생성하도록 개선 | @backend | — | 🔭 등재(저순위) |
 | Q19-REMEASURE | sync 재개 후 Q19(co-mention 04-25 단절) 재측정 — 신규 고유 페어 관측 + 9562 지표 정의 실측 **선행** | @backend | sync 재개(done) | 🔭 등재 |
+| WORKTREE-CLEANUP-NEO4J | sess-neo4j-recon worktree/브랜치 정리(origin/main 소진 0·upstream 미설정). **삭제=병진 수동**(D-BRANCH-DELETE-MANUAL) — OPS-SWEEP-1 §3 검증된 블록 상신. `~/setpw.sh`·`~/alter.sh`·`.cypher_shell_history`(비번 흔적) 동반 제거 | @infra | 병진 수동 | 🔭 블록 상신 |
+| OBS-DESKTOP-TREE-OCCUPY | 관찰: `~/Desktop/stock_vis`가 브랜치 `sess-signal-fwd-recon` 점유·dirty 20(미커밋 docs). 해당 트랙 소유 → 본 세션 무조치. worktree-per-세션 규율상 정리/커밋은 소유 트랙 판단 | @infra | 소유 트랙 | 🔭 관찰 등재 |
 
 ## CS-P2-8K 후속 (2026-08-13, 8-K 파이프라인 랜딩 후)
 
@@ -257,7 +260,7 @@
 | TH-TNV-CHAIN | TNV 집계를 theme-heat-daily 태스크에 체이닝 — 재동결 구조적 방지 (B안) | @infra/@backend | D-TH-TNV-CHAIN | **✅ 종결 (G-obs 통과 2026-08-10, 종결선언 `9a715196`)** | 코드 `114e1c26`(+18줄 additive·3테스트)·LOGGING 수정 `8351c198`(apps 로거 propagate=True)·배포(worker-runtime 8a41c842+재기동)·**G-fire PASS**(ET18:00 08-06 발화·TNV 22:00:00→heat 22:00:45 DB입증·오류0)·**G-obs PASS**(08-07 `TNV_CHAIN` 파일기록·DB정합, 하단 GOBS 행). §C·§C′(08-04·08-05) 백필 동승. 종결선언 `th_chain_closure.md`. common-bugs #88b·#89·#90 |
 | TH-TNV-CHAIN-GOBS | (관찰·게이트 아님) 다음 발화 ET 18:00 08-07에서 `TNV_CHAIN date=2026-08-07` 로그 **파일 기록** 확인 = S1 LOGGING 수정 실증 | @infra (병진 "게이트 확인해줘") | TH-TNV-CHAIN 배포 | **✅ 통과 2026-08-10** | `TNV_CHAIN date=2026-08-07 written=3 zeroed=0` **파일 기록**(S1 실증)·DB TNV 3행 created 22:00:00 UTC·heat 6행 22:00:12~46 인접(체인 정순)·theme-heat-daily total_run **20**. heat E2 증분 로그도 파일 기록(선존갭 해소). **caveat=선존 Neo4j-down**(heat 6/11 status=warning·08-03~09 일관·G-fire에도 동일=회귀 아님→TH-HEAT-NEO4J-DOWN). 종결선언 착지 `9a715196`. §F3 롤백 폐기. 임시 스크립트 4종 정리 병진 대기 |
 | TH-HEAT-NEO4J-DOWN | (백로그·비체인) theme-heat 발화 시 Neo4j(localhost:7687) refused → `heat_score` Cypher 실패 → 섹터 6/11만 저장(status=warning) | @infra | **트리거: Neo4j 상시 기동 필요성 실증 or heat 완전화 요구** | 🔭 등재(관찰) | G-obs에서 표면화(08-03~09 일관·G-fire에도 동일=선존 정상상태·TNV_CHAIN 체인과 직교). 미저장 5섹터=Basic Materials·Comm Svc·Consumer Defensive·Real Estate·Utilities. cf. `troubleshoot_neo4j_sync_pipeline` |
-| OPS-SMTP-CRED | (백로그) `send_agent_report_task`·`send_daily_report_task` SMTP 535 BadCredentials(Gmail 자격증명 거부) → 리포트 메일 실패·retry 소진 | @infra | **트리거: 리포트 메일 필요 시** | 🔭 등재 | G-obs 발화창 관측(TNV/heat 체인과 무관·별개 태스크). Gmail 앱 비밀번호/OAuth 재설정 필요 |
+| OPS-SMTP-CRED | (백로그→진행) `send_agent_report_task`·`send_daily_report_task` SMTP 535 BadCredentials → 리포트 메일 실패. **OPS-SWEEP-1 §4 실측**: 로테이션 대상 키=**`EMAIL_HOST_PASSWORD`**(Gmail 앱비번 len16), 계정=`EMAIL_HOST_USER`, smtp.gmail.com:587 TLS. 소화 워커=**기본 큐 `com.stockvis.celery-worker`**(재기동 최소 대상). **병진 잔여**: ①Google 앱비번 신규발급 ②`.env EMAIL_HOST_PASSWORD` 교체(4×4 공백 제거) ③`smtp_verify.py` login 검증 ④default 워커 bootout+bootstrap. 검증스크립트·안내문 OPS-SWEEP-1 §4 상신 | @infra | **병진 로테이션 대기** | 🔧 진행(개입지점 A 상신) | Gmail 앱 비밀번호 재설정 필요 |
 | TH-TNV-BEAT-SPLIT | (보류) TNV 집계를 heat 태스크 체이닝(B안)에서 **독립 beat로 분리**(A안 승격) | @infra | **트리거: TNV·heat 주기 분화 필요 시** (예: TNV 일중 다회·heat 일 1회) | 💤 보류(등재만) | 현재 체이닝(D-TH-TNV-CHAIN)이 TNV→heat 순서·정합 보장. 분리 시 #28(beat drift) 재노출 — 독립 스케줄 필요성 실증 전 착수 금지. A안 미래 재개점 |
 
 > **오늘 조치(완료)**: UNREGISTERED 3 beat `enabled=False`(에러 플러드 + 깨진 C8 발화 차단). 정상 배포 beat(heat-score-daily·seed-snapshot-cleanup) 무접촉. **C8 첫 EstimateSnapshot(금 16:30 ET) 1주+ 연기** — 시한 때문에 미머지 26커밋 강행 머지 금지(최악). 재개는 TH 트랙 소유자/디렉터가 클린 머지 후.

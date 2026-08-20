@@ -189,3 +189,27 @@ lsof -nP -iTCP:7687 | grep LISTEN     # 현재: 무출력(다운)
 - 지시서: `be594bd9` · addendum/TASKQUEUE/plist: (세션 출력 말미 명시) · push 착지: (§6 후 명시)
 
 **→ 트랙 종결 진행 (§5~§8)**
+
+---
+
+# 실행 addendum (OPS-SWEEP-1, 2026-08-20)
+
+## P2 launchd 설치 완료 (병진 수동 집행·CC read-only 검증)
+- **2026-08-20 08:14:05 UTC "Started"** (`~/Library/Logs/stockvis/neo4j.err.log`) — launchd `com.stockvis.neo4j` RunAtLoad 기동.
+- `launchctl list` → **com.stockvis.neo4j pid 77030·exit status 0**(정상). bolt 7687 LISTEN(java 77043).
+- `.env` 자격증명 인증·조회 정상: RETURN 1 => 1.
+- **죽은 `homebrew.mxcl.neo4j` 엔트리 제거**(bootout+rm, 병진 수동) → LaunchAgents에 `com.stockvis.neo4j`(정본)+`com.stockvis.celery-worker-neo4j`(워커)만 잔존.
+- 근본원인(launchd 부재+JAVA_HOME 결손) **항구 해소**: KeepAlive+RunAtLoad+JAVA_HOME 내장 → 재부팅·크래시 자동 복구.
+- 설치 중 결손 발견 → runbook 보강: ①`mkdir -p ~/Library/Logs/stockvis` 선결(launchd는 로그 디렉토리 미생성) ②운영 규칙(의도적 정지=bootout, `neo4j stop`은 KeepAlive가 30초 내 무효화) ③소스 정본=origin/main(worktree 소멸 무관).
+
+## 그래프 규모 변화 (read-only 실측)
+- NODE **1181→1084**(−97) · REL **17699→18916**(+1217). 관계 증가분(+1217)은 sync(synced 14582·레거시 RELATED_TO 정리 후 재생성) 정합.
+- **노드 감소분(−97)은 로그로 설명되지 않음**: 레거시 정리 로그="edges deleted, 10582 records reset"(엣지 삭제만), `_delete_edge`=`DELETE r`(관계만), repository에 `DETACH DELETE`/노드 삭제 조작 0. → **엣지-전용 조작만 확인**됨. 두 측정 시점 상이(1181=auth 리셋 직후/1084=P2 재기동 후·sync 경유). **원인 미확정 — 관찰로만 기재**(추정 확정 금지). 필요 시 별도 프로브(저순위).
+
+## 관찰 (worktree-per-세션 규율)
+- `~/Desktop/stock_vis` = 브랜치 `sess-signal-fwd-recon` 점유·dirty 20(미커밋 docs 다수). 해당 트랙 소유 → **본 세션 무조치·관찰만**. TASKQUEUE 관찰 등재.
+
+## 커밋 해시 (OPS-SWEEP-1)
+- 지시서: `25418cf6` · runbook 보강+addendum+TASKQUEUE: (세션 출력 말미) · push 착지: (§6 후)
+
+**→ §3~§7 진행**
