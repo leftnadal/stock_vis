@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { Layers } from 'lucide-react';
 import { DIRECTION_BADGE, DIRECTION_SPINE } from '@/components/common/colorSemantics';
 import { useImpressionTracker } from '@/hooks/useImpressionTracker';
 import { recoObjectRef, SURFACE_RECO_CARD } from '@/hooks/impressionTelemetry';
+import { CONFLUENCE_MIN_AXES } from './confluence';
 import type { Recommendation } from '@/types/eod';
 
 const CONFIDENCE_LABEL: Record<Recommendation['confidence'], string> = {
@@ -22,11 +24,15 @@ const CONFIDENCE_LABEL: Record<Recommendation['confidence'], string> = {
 export function RecommendationCard({
   rec,
   tradingDate,
+  scannerAxes = 0,
 }: {
   rec: Recommendation;
   tradingDate?: string;
+  /** 스캐너 합류 축 수(추천 ∩ 합류 지도). ≥임계 시 교차 배지 점등(additive·정칙 ⑴로 미로딩 시 생략). */
+  scannerAxes?: number;
 }) {
   const isBuy = rec.composite_score >= 0;
+  const showScannerBadge = scannerAxes >= CONFLUENCE_MIN_AXES;
   const strengthPct = Math.round(Math.min(Math.abs(rec.composite_score), 1) * 100);
   const directionVerb = isBuy ? '매수' : '매도·회피';
 
@@ -80,6 +86,15 @@ export function RecommendationCard({
         <span className="text-xs text-gray-500 dark:text-gray-400">
           {CONFIDENCE_LABEL[rec.confidence]}
         </span>
+        {showScannerBadge && (
+          <span
+            className="inline-flex items-center gap-0.5 rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300"
+            title="스캐너에서 여러 직교 축에 동시 포착된 종목"
+          >
+            <Layers className="w-2.5 h-2.5" />
+            스캐너 {scannerAxes}축 포착
+          </span>
+        )}
       </div>
 
       {/* strength spine: 방향색 + |score| 길이 */}

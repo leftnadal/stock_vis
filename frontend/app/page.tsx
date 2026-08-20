@@ -3,6 +3,7 @@
 import { useState, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useEODDashboard } from '@/hooks/useEODDashboard';
+import { useConfluenceMap } from '@/components/eod/useConfluenceMap';
 import { DataFreshnessBadge } from '@/components/eod/DataFreshnessBadge';
 import { MarketSummaryBar } from '@/components/eod/MarketSummaryBar';
 import { SignalFilterTabs } from '@/components/eod/SignalFilterTabs';
@@ -24,6 +25,10 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+
+  // 전 카드 합류 지도(스캐너 축 칩·필터·추천 교차 배지). 비차단·세션 캐시(정칙 ⑴로 로딩 중 안전).
+  const cardIds = data?.signal_cards.map((c) => c.id) ?? [];
+  const { map: confluenceMap } = useConfluenceMap(cardIds, cardIds.length > 0);
 
   // URL에서 activeCategory 읽기
   const categoryParam = searchParams.get('category') ?? 'all';
@@ -97,6 +102,7 @@ function HomeContent() {
         <RecommendationCarousel
           recommendations={data.recommendations}
           tradingDate={data.trading_date}
+          confluenceMap={confluenceMap}
         />
 
         {/* Level 3: 카테고리 필터 */}
@@ -119,6 +125,7 @@ function HomeContent() {
         <SignalDetailSheet
           card={selectedCard}
           onClose={() => setSelectedCard(null)}
+          confluenceMap={confluenceMap}
         />
       )}
     </div>

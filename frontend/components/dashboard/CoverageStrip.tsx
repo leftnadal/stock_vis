@@ -12,14 +12,16 @@ function formatRate(rate: number): string {
 /**
  * 대시보드 상단 커버리지 스트립 (P2-COVERAGE-C1-FE, T1).
  *
- * 발급 N · 노출 M (율%) · 미노출 K건 — window_days=7 기본. 클릭 시 /dashboard/coverage 이동.
+ * 발급 N · 노출 M (율%) · 미노출 K건 — window_days=90 요청(D-C2-S2-FUNNEL-COV-A ⓐ-1:
+ * "놓친 추천이 창 밖으로 사라지지 않게" = 적체 비제거 철학). 클릭 시 /dashboard/coverage 이동.
+ * (전역 기본 상수는 7 유지 — /dashboard/coverage 상세의 7↔90 조인미스 대조를 보존.)
  * 스트립 자체는 impression 발신 없음(도그푸딩 지표 표시만).
  * - 로딩: 스켈레톤. 오류: 스트립 숨김(fail-quiet, 대시보드 본체 무영향).
  * - 발급 0: "이번 주 발급 없음" 문구.
  */
 export function CoverageStrip() {
   const router = useRouter()
-  const { data, isLoading, isError } = useCoverage()
+  const { data, isLoading, isError } = useCoverage(90)
 
   if (isLoading) {
     return (

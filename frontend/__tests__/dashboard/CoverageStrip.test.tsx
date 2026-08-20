@@ -7,7 +7,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
 
 const useCoverageMock = vi.fn()
 vi.mock('@/hooks/useCoverage', () => ({
-  useCoverage: () => useCoverageMock(),
+  useCoverage: (...args: unknown[]) => useCoverageMock(...args),
 }))
 
 import { CoverageStrip } from '@/components/dashboard/CoverageStrip'
@@ -37,6 +37,12 @@ beforeEach(() => {
 })
 
 describe('CoverageStrip', () => {
+  it('w90: 커버리지를 window_days=90으로 요청(D-C2-S2-FUNNEL-COV-A ⓐ-1)', () => {
+    useCoverageMock.mockReturnValue(ok())
+    render(<CoverageStrip />)
+    expect(useCoverageMock).toHaveBeenCalledWith(90)
+  })
+
   it('정상: 발급/노출/율/미노출 표시', () => {
     useCoverageMock.mockReturnValue(ok())
     render(<CoverageStrip />)

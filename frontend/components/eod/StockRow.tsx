@@ -5,11 +5,14 @@ import { ArrowUpRight, ArrowDownRight, Network } from 'lucide-react';
 import { MiniSparkline } from './MiniSparkline';
 import { NewsContextBadge } from './NewsContextBadge';
 import { ConfidenceBadge } from './ConfidenceBadge';
+import { AxisChipStrip } from './AxisChipStrip';
 import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 import type { SignalStock } from '@/types/eod';
 
 interface StockRowProps {
   stock: SignalStock;
+  /** 전 카드 합류 축 수(useConfluenceMap). 미로딩·미존재=0 → 합류 칩 생략(정칙 ⑴). */
+  axisCount?: number;
 }
 
 function formatPrice(price: number): string {
@@ -26,8 +29,19 @@ function formatVolume(volume: number): string {
   return volume.toString();
 }
 
-export function StockRow({ stock }: StockRowProps) {
+// 체급($) 압축 표기 — 시총·거래대금. 정칙 ⑸(합류 배지-체급 문맥 결박).
+function formatCompactUSD(value: number | null | undefined): string | null {
+  if (value == null || value <= 0) return null;
+  if (value >= 1_000_000_000_000) return `$${(value / 1_000_000_000_000).toFixed(1)}T`;
+  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(0)}M`;
+  return `$${(value / 1_000).toFixed(0)}K`;
+}
+
+export function StockRow({ stock, axisCount = 0 }: StockRowProps) {
   const isPositive = stock.change_percent >= 0;
+  const marketCapText = formatCompactUSD(stock.market_cap);
+  const dollarVolumeText = formatCompactUSD(stock.dollar_volume);
 
   return (
     <div className="group px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 rounded-lg transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
@@ -83,13 +97,18 @@ export function StockRow({ stock }: StockRowProps) {
         </div>
       </div>
 
-      {/* 시그널 레이블 + 거래량 */}
-      <div className="flex items-center justify-between mt-1 mb-1.5">
-        <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+      {/* 직교 축 칩 슬롯 (합류·섹터·뉴스 + 미래 축) — 데이터 없는 축은 자연 생략(정칙 ⑴) */}
+      <AxisChipStrip stock={stock} axisCount={axisCount} />
+
+      {/* 시그널 레이블 + 체급(시총·거래대금·거래량) — 정칙 ⑸ 문맥 결박 */}
+      <div className="flex items-center justify-between mt-1 mb-1.5 gap-2">
+        <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium truncate">
           {stock.signal_label}
         </span>
-        <span className="text-[11px] text-gray-400 dark:text-gray-500">
-          거래량 {formatVolume(stock.volume)}
+        <span className="text-[11px] text-gray-400 dark:text-gray-500 flex-shrink-0 flex items-center gap-1.5">
+          {marketCapText && <span title="시가총액">시총 {marketCapText}</span>}
+          {dollarVolumeText && <span title="거래대금">대금 {dollarVolumeText}</span>}
+          <span>거래량 {formatVolume(stock.volume)}</span>
         </span>
       </div>
 

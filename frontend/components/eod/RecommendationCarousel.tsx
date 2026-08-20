@@ -2,6 +2,7 @@
 
 import type { Recommendation } from '@/types/eod';
 import { RecommendationCard } from './RecommendationCard';
+import { getAxisCount, type ConfluenceMap } from './confluence';
 
 /**
  * 추천 캐러셀 (A+, D-P1-CAROUSEL / D-P1-REC-RANK).
@@ -13,9 +14,11 @@ import { RecommendationCard } from './RecommendationCard';
 export function RecommendationCarousel({
   recommendations,
   tradingDate,
+  confluenceMap,
 }: {
   recommendations?: Recommendation[];
   tradingDate?: string;
+  confluenceMap?: ConfluenceMap;
 }) {
   if (!recommendations || recommendations.length === 0) {
     return null; // 하위호환 — 표면 생략
@@ -39,7 +42,11 @@ export function RecommendationCarousel({
       >
         {sorted.map((rec) => (
           <div role="listitem" key={`${rec.rank}-${rec.ticker}`}>
-            <RecommendationCard rec={rec} tradingDate={tradingDate} />
+            <RecommendationCard
+              rec={rec}
+              tradingDate={tradingDate}
+              scannerAxes={getAxisCount(confluenceMap, rec.ticker)}
+            />
           </div>
         ))}
       </div>

@@ -4,48 +4,33 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { X, ChevronDown, TrendingUp, AlertTriangle, Layers, ArrowRight } from 'lucide-react';
 import { StockRow } from './StockRow';
+import { ScannerFilterBar } from './ScannerFilterBar';
+import { getAxisCount, type ConfluenceMap } from './confluence';
+import {
+  applyScannerFilters,
+  sortScannerStocks,
+  availableSectors,
+  DEFAULT_SCANNER_FILTERS,
+  type ScannerFilters,
+  type ScannerSort,
+} from './scannerFilters';
 import { useSignalDetail } from '@/hooks/useEODDashboard';
 import { SIGNAL_CATEGORY_COLORS, SIGNAL_CATEGORY_LABELS } from '@/types/eod';
-import type { SignalCard, SignalStock, SortOption } from '@/types/eod';
+import type { SignalCard, SignalStock } from '@/types/eod';
 
 interface SignalDetailSheetProps {
   card: SignalCard;
   onClose: () => void;
+  /** 전 카드 합류 지도(useConfluenceMap). 미로딩=undefined → 합류 칩/필터/정렬 자연 비활성(정칙 ⑴). */
+  confluenceMap?: ConfluenceMap;
 }
 
-const SORT_LABELS: Record<SortOption, string> = {
-  volume: '거래량 순',
-  return: '수익률 순',
-  market_cap: '시가총액 순',
-};
+// 정직성 한 줄(고정·D-SCANNER-SELECT-UX). 매매 암시 금지.
+const HONESTY_LINE = '신호는 주목 후보를 고르는 렌즈이며 수익을 보장하지 않습니다.';
 
-function sortStocks(
-  stocks: SignalStock[],
-  rankBy: SortOption,
-  rankByVolume: string[],
-  rankByReturn: string[],
-  rankByMarketCap: string[]
-): SignalStock[] {
-  const getRankList = (sort: SortOption): string[] => {
-    if (sort === 'volume') return rankByVolume;
-    if (sort === 'return') return rankByReturn;
-    return rankByMarketCap;
-  };
-
-  const rankList = getRankList(rankBy);
-  if (rankList.length === 0) return stocks;
-
-  const rankMap = new Map(rankList.map((sym, idx) => [sym, idx]));
-  return [...stocks].sort((a, b) => {
-    const ra = rankMap.has(a.symbol) ? rankMap.get(a.symbol)! : 9999;
-    const rb = rankMap.has(b.symbol) ? rankMap.get(b.symbol)! : 9999;
-    return ra - rb;
-  });
-}
-
-export function SignalDetailSheet({ card, onClose }: SignalDetailSheetProps) {
-  const [sortBy, setSortBy] = useState<SortOption>('volume');
-  const [showSortMenu, setShowSortMenu] = useState(false);
+export function SignalDetailSheet({ card, onClose, confluenceMap }: SignalDetailSheetProps) {
+  const [filters, setFilters] = useState<ScannerFilters>(DEFAULT_SCANNER_FILTERS);
+  const [sortBy, setSortBy] = useState<ScannerSort>('confluence');
   const [showTip, setShowTip] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -74,16 +59,20 @@ export function SignalDetailSheet({ card, onClose }: SignalDetailSheetProps) {
     if (e.target === e.currentTarget) onClose();
   };
 
-  // detail에서 정렬별 종목 가져오기 (fallback: preview_stocks)
+  // detail에서 종목/정렬 리스트 가져오기 (fallback: preview_stocks)
   const extractSymbols = (list: (string | SignalStock)[]): string[] =>
     list.map((item) => (typeof item === 'string' ? item : item.symbol));
 
   const stocks = detail?.stocks_by_score ?? card.preview_stocks;
-  const rankByVolume = extractSymbols(detail?.stocks_by_volume ?? card.rank_by_volume);
-  const rankByReturn = extractSymbols(detail?.stocks_by_return ?? card.rank_by_return);
-  const rankByMarketCap = extractSymbols(detail?.stocks_by_market_cap ?? card.rank_by_market_cap);
+  const rankLists = {
+    volume: extractSymbols(detail?.stocks_by_volume ?? card.rank_by_volume),
+    return: extractSymbols(detail?.stocks_by_return ?? card.rank_by_return),
+    market_cap: extractSymbols(detail?.stocks_by_market_cap ?? card.rank_by_market_cap),
+  };
 
-  const sortedStocks = sortStocks(stocks, sortBy, rankByVolume, rankByReturn, rankByMarketCap);
+  const sectors = availableSectors(stocks);
+  const filteredStocks = applyScannerFilters(stocks, filters, confluenceMap);
+  const sortedStocks = sortScannerStocks(filteredStocks, sortBy, confluenceMap, rankLists);
 
   return (
     <div
@@ -204,40 +193,16 @@ export function SignalDetailSheet({ card, onClose }: SignalDetailSheetProps) {
           </div>
         )}
 
-        {/* 정렬 옵션 */}
-        <div className="px-5 py-2.5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            총 {sortedStocks.length}종목
-          </span>
-          <div className="relative">
-            <button
-              onClick={() => setShowSortMenu((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              {SORT_LABELS[sortBy]}
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showSortMenu ? 'rotate-180' : ''}`} />
-            </button>
-            {showSortMenu && (
-              <div className="absolute right-0 top-full mt-1 z-20 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-                {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => { setSortBy(option); setShowSortMenu(false); }}
-                    className={`
-                      w-full text-left px-3 py-2 text-xs transition-colors
-                      ${sortBy === option
-                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }
-                    `}
-                  >
-                    {SORT_LABELS[option]}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        {/* 필터 바 + 정렬 (합류순·거래량·수익률·시총) — 총 N종목은 바 하단 표기 */}
+        <ScannerFilterBar
+          filters={filters}
+          onFiltersChange={setFilters}
+          sort={sortBy}
+          onSortChange={setSortBy}
+          sectors={sectors}
+          resultCount={sortedStocks.length}
+          totalCount={stocks.length}
+        />
 
         {/* 종목 리스트 */}
         <div className="flex-1 overflow-y-auto px-2 py-2">
@@ -247,13 +212,30 @@ export function SignalDetailSheet({ card, onClose }: SignalDetailSheetProps) {
                 <div key={i} className="h-[72px] bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
               ))}
             </div>
+          ) : sortedStocks.length === 0 ? (
+            <p className="px-4 py-8 text-center text-xs text-gray-400 dark:text-gray-500">
+              필터 조건에 맞는 종목이 없습니다.
+            </p>
           ) : (
-            <div key={sortBy} className="animate-fadeIn">
+            <div key={`${sortBy}-${filters.minAxes}-${filters.sector}`} className="animate-fadeIn">
               {sortedStocks.map((stock) => (
-                <StockRow key={stock.symbol} stock={stock} />
+                <StockRow
+                  key={stock.symbol}
+                  stock={stock}
+                  axisCount={getAxisCount(confluenceMap, stock.symbol)}
+                />
               ))}
             </div>
           )}
+        </div>
+
+        {/* 축 커버리지 명시(정칙 ⑴ 정보판) + 정직성 한 줄(고정) */}
+        <div className="px-5 py-2.5 border-t border-gray-100 dark:border-gray-700 flex-shrink-0 bg-gray-50/70 dark:bg-gray-800/50">
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
+            이 화면 축: <span className="font-medium">기술 합류 · 섹터 · 뉴스</span>
+            <span className="text-gray-400 dark:text-gray-500"> · 미커버(곧): 가치평가 · 퀄리티 · 관계</span>
+          </p>
+          <p className="mt-1 text-[10px] italic text-gray-400 dark:text-gray-500">{HONESTY_LINE}</p>
         </div>
       </div>
     </div>
