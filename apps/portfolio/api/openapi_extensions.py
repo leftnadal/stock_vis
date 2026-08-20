@@ -172,34 +172,37 @@ def _make_response_extension(
 
 
 # ── 6 request × Pydantic input 모델 매핑 ──
+# ★ target_class = serializer의 실제 __module__ 경로 = `apps.portfolio...`(apps. 접두
+#   필수, advisory_schema.py 동일 규칙). 모노레포 이전 시 `portfolio.` 잔존 = extension
+#   미매칭 → CoachE1~E6 컴포넌트 무음 드롭(D1-SCOREBOARD Part 2 재생성에서 발견·수복).
 _REQUEST_MAPPINGS: list[tuple[str, type, str]] = [
     (
-        "portfolio.api.serializers.E1RequestSerializer",
+        "apps.portfolio.api.serializers.E1RequestSerializer",
         CommentaryInputE1,
         "CoachE1Request",
     ),
     (
-        "portfolio.api.serializers.E2RequestSerializer",
+        "apps.portfolio.api.serializers.E2RequestSerializer",
         CommentaryInputE2,
         "CoachE2Request",
     ),
     (
-        "portfolio.api.serializers.E3RequestSerializer",
+        "apps.portfolio.api.serializers.E3RequestSerializer",
         CommentaryInputE3,
         "CoachE3Request",
     ),
     (
-        "portfolio.api.serializers.E4RequestSerializer",
+        "apps.portfolio.api.serializers.E4RequestSerializer",
         CommentaryInputE4,
         "CoachE4Request",
     ),
     (
-        "portfolio.api.serializers.E5RequestSerializer",
+        "apps.portfolio.api.serializers.E5RequestSerializer",
         CommentaryInputE5,
         "CoachE5Request",
     ),
     (
-        "portfolio.api.serializers.E6RequestSerializer",
+        "apps.portfolio.api.serializers.E6RequestSerializer",
         CommentaryInputE6,
         "CoachE6Request",
     ),
@@ -207,12 +210,12 @@ _REQUEST_MAPPINGS: list[tuple[str, type, str]] = [
 
 # ── 6 response × Pydantic output 모델 (wrapper로 감쌈) ──
 _RESPONSE_MAPPINGS: list[tuple[str, type, str]] = [
-    ("portfolio.api.serializers.E1ResponseSerializer", E1Output, "CoachE1Response"),
-    ("portfolio.api.serializers.E2ResponseSerializer", E2Output, "CoachE2Response"),
-    ("portfolio.api.serializers.E3ResponseSerializer", E3Output, "CoachE3Response"),
-    ("portfolio.api.serializers.E4ResponseSerializer", E4Output, "CoachE4Response"),
-    ("portfolio.api.serializers.E5ResponseSerializer", E5Output, "CoachE5Response"),
-    ("portfolio.api.serializers.E6ResponseSerializer", E6Output, "CoachE6Response"),
+    ("apps.portfolio.api.serializers.E1ResponseSerializer", E1Output, "CoachE1Response"),
+    ("apps.portfolio.api.serializers.E2ResponseSerializer", E2Output, "CoachE2Response"),
+    ("apps.portfolio.api.serializers.E3ResponseSerializer", E3Output, "CoachE3Response"),
+    ("apps.portfolio.api.serializers.E4ResponseSerializer", E4Output, "CoachE4Response"),
+    ("apps.portfolio.api.serializers.E5ResponseSerializer", E5Output, "CoachE5Response"),
+    ("apps.portfolio.api.serializers.E6ResponseSerializer", E6Output, "CoachE6Response"),
 ]
 
 # 12 확장 클래스를 모듈 레벨에 노출 (자동 등록 트리거).
