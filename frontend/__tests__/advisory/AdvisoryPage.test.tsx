@@ -30,6 +30,12 @@ vi.mock('@/services/advisoryService', () => ({
   },
 }))
 
+// 성적판 섹션(D1-SCOREBOARD)이 advisory 페이지에 편입됨 — 전역 read 서비스 mock
+// (심볼 0 → 조용한 빈 상태). advisory 기존 assertion에 무간섭.
+vi.mock('@/services/scorecardService', () => ({
+  scorecardService: { get: () => Promise.resolve({ symbols: [], board: {}, reproduction: {} }) },
+}))
+
 import AdvisoryPage from '@/app/advisory/page'
 
 function makeOutput(overrides: Partial<LatestAdvisory['output']> = {}): NonNullable<LatestAdvisory['output']> {
