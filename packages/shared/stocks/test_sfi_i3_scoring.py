@@ -145,12 +145,13 @@ def test_load_inputs_cohort_split():
     ts = datetime(2026, 1, 5, 22, 30, tzinfo=timezone.utc)
     AnalystSignalSnapshot.objects.filter(pk__in=[a1.pk, a2.pk]).update(captured_at=ts)
 
-    preds, bars, counts = sc.load_scoring_inputs(date(2026, 1, 10))
+    preds, bars, splits, counts = sc.load_scoring_inputs(date(2026, 1, 10))
     cohorts = {p.cohort for p in preds}
     assert cohorts == {"pinned", "derived"}
     derived = next(p for p in preds if p.cohort == "derived")
     assert derived.spot == Decimal("100.0000")  # DailyPrice.close 파생
     assert counts["ass_rows"] == 2 and counts["daily_price_rows"] == 1
+    assert splits == {"ZZZ": []}  # 분할 없음
 
 
 @pytest.mark.django_db
@@ -158,3 +159,87 @@ def test_score_tier1_smoke_has_header_and_cohorts():
     r = sc.score_tier1(date(2026, 1, 10))
     assert r["header"]["scoring_version"] == sc.SCORING_VERSION
     assert set(r["cohorts"]) == {"pinned", "derived"}
+    # I3-SPLIT-GUARD: 재현 헤더 additive 필드 (분할 0건 → 0 / null)
+    assert r["header"]["splits_input_rows"] == 0
+    assert r["header"]["splits_max_date"] is None
+
+
+# ── I3-SPLIT-GUARD: 분할 감지 채점 분기 (D-SPLIT-1) ──
+def test_resolve_split_in_window_is_corporate_action():
+    bars = _wk_bars(date(2026, 1, 5), [100, 101, 102, 103])
+    # capture=bars[0], h=2 → realized=bars[2]. split이 (capture, realized] 구간 = bars[1] 일자
+    split_in = [bars[1][0]]
+    status, _, _ = sc.resolve_realized(bars, bars[0][0], 2, bars[-1][0], split_in)
+    assert status == "unscoreable:corporate_action"
+
+
+def test_resolve_split_out_of_window_is_ok():
+    bars = _wk_bars(date(2026, 1, 5), [100, 101, 102, 103])
+    # split이 realized(bars[2]) 이후 = 구간 밖 → 정상 ok (IDENTICAL)
+    split_out = [bars[3][0]]
+    status, _, rclose = sc.resolve_realized(bars, bars[0][0], 2, bars[-1][0], split_out)
+    assert status == "ok" and rclose == Decimal("102")
+
+
+def test_resolve_split_boundary_capture_day_excluded_maturity_included():
+    bars = _wk_bars(date(2026, 1, 5), [100, 101, 102, 103])
+    # capture일 당일 분할 = 배타(capture < split) → 미발동, ok
+    status_cap, _, _ = sc.resolve_realized(bars, bars[0][0], 2, bars[-1][0], [bars[0][0]])
+    assert status_cap == "ok"
+    # 만기 당일 분할 = 포함(split ≤ realized) → corporate_action
+    status_mat, _, _ = sc.resolve_realized(bars, bars[0][0], 2, bars[-1][0], [bars[2][0]])
+    assert status_mat == "unscoreable:corporate_action"
+
+
+def test_resolve_empty_splits_identical_to_no_split():
+    bars = _wk_bars(date(2026, 1, 5), [100, 101, 102, 103])
+    a = sc.resolve_realized(bars, bars[0][0], 2, bars[-1][0])
+    b = sc.resolve_realized(bars, bars[0][0], 2, bars[-1][0], [])
+    c = sc.resolve_realized(bars, bars[0][0], 2, bars[-1][0], None)
+    assert a == b == c  # splits 부재/빈 = 기존 산출 IDENTICAL
+
+
+@pytest.mark.django_db
+def test_load_inputs_loads_splits_by_symbol():
+    from packages.shared.stocks.models import (
+        AnalystSignalSnapshot, DailyPrice, Stock, StockSplit,
+    )
+
+    s = Stock.objects.create(symbol="SPL", currency="USD")
+    cap = date(2026, 1, 5)
+    DailyPrice.objects.create(
+        stock=s, date=cap, open_price=99, high_price=101, low_price=98,
+        close_price=Decimal("100.0000"), volume=1000,
+    )
+    StockSplit.objects.create(
+        stock=s, date=date(2026, 1, 6), numerator=Decimal("2"), denominator=Decimal("1"),
+        split_type="stock-split",
+    )
+    a1 = AnalystSignalSnapshot.objects.create(
+        symbol="SPL", target_consensus=Decimal("110"), spot_at_capture=Decimal("100"),
+    )
+    ts = datetime(2026, 1, 5, 22, 30, tzinfo=timezone.utc)
+    AnalystSignalSnapshot.objects.filter(pk=a1.pk).update(captured_at=ts)
+
+    preds, bars, splits, counts = sc.load_scoring_inputs(date(2026, 1, 10))
+    assert splits == {"SPL": [date(2026, 1, 6)]}
+    r = sc.score_tier1(date(2026, 1, 10))
+    assert r["header"]["splits_input_rows"] == 1
+    assert r["header"]["splits_max_date"] == "2026-01-06"
+
+
+# ── I3-SPLIT-GUARD: StockSplit 모델 제약 ──
+@pytest.mark.django_db
+def test_stock_split_unique_together():
+    from django.db import IntegrityError
+
+    from packages.shared.stocks.models import Stock, StockSplit
+
+    s = Stock.objects.create(symbol="UNQ", currency="USD")
+    StockSplit.objects.create(
+        stock=s, date=date(2024, 6, 10), numerator=Decimal("10"), denominator=Decimal("1"),
+    )
+    with pytest.raises(IntegrityError):
+        StockSplit.objects.create(
+            stock=s, date=date(2024, 6, 10), numerator=Decimal("4"), denominator=Decimal("1"),
+        )

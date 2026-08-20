@@ -1324,7 +1324,7 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 ## 상태 어휘의 트랙 간 의미 충돌 — 'rejected'가 ego 서빙서 엣지 은닉 (#86b, 2026-08-04) `[data][process]`
 *(채번 충돌 구분자, D-NUMBERING-DUP 참조. b=후착지 86961ec4 author 2026-08-04 20:51, L2-FULL-SWEEP 비mgmt 세션 채번 = 규칙 위반. B 트리거 미해당 — 세션 시작(첫 커밋 88850fce author 08-03 18:24) < A 착지(05211a02 08-05 10:16), pre-A 시작. REVIEW-P2·S3-MINDMAP에 이은 3번째 위반)*
-## 상태 어휘의 트랙 간 의미 충돌 — 'rejected'가 ego 서빙서 엣지 은닉 (채번 후보, L2-FULL-SWEEP 2026-08-04) `[data][process]`
+## 상태 어휘의 트랙 간 의미 충돌 — 'rejected'가 ego 서빙서 엣지 은닉 (#97, L2-FULL-SWEEP 2026-08-04) `[data][process]`
 
 > ⚠ 채번 각주(PRE-DEPLOY-FIX 2026-08-05): 본 항목 추가 커밋(`86961ec4`, L2-FULL-SWEEP P3~P6) 메시지엔 **#86**으로 언급됨 — 처방 A(2026-08-03, 비mgmt 자가채번 금지) 인지 전 채번. **번호는 mgmt 채번 시 확정**.
 
@@ -1343,7 +1343,7 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 예약**. 상태 CharField를 트랙 간 공유할 때는 ⑴ 각 값의 **서빙 측 부수효과**(exclude 등)를 먼저 확인하고
 ⑵ 새 트랙이 기존 값을 재사용하기 전 그 값에 걸린 필터를 grep(`domain_review_status=`)해 의미 충돌을 점검한다.
 
-## rebase 후 원장 내 커밋 해시 앵커 무효화 — dangling 참조 (채번 후보, PRE-DEPLOY-FIX 2026-08-05) `[git][process]`
+## rebase 후 원장 내 커밋 해시 앵커 무효화 — dangling 참조 (#98, PRE-DEPLOY-FIX 2026-08-05) `[git][process]`
 
 **증상**: 세션 중 원장(DECISIONS·TASKQUEUE·리포트)에 커밋 해시(슬라이스별 커밋·머지 hash)를 앵커로 기록한 뒤,
 머지 전 origin/main 전진으로 rebase하면 **그 커밋들이 새 해시로 재작성** → 원장 텍스트의 해시가
@@ -1421,6 +1421,27 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **원인**: Django `__date`/`TruncDate`는 tz-aware datetime을 **프로젝트 `TIME_ZONE`(로컬)로 변환한 뒤** 날짜를 뗀다. UTC 23:30(08-10)은 로컬(KST +9)에서 08-11 08:30 → 로컬 날짜=08-11. 저장은 UTC지만 날짜 룩업이 로컬 경계를 쓰므로 **UTC 자정 근처 발화가 인접 날짜로 새는** 오프바이원.
 
 **규칙**: 특정 UTC "발화 회차"를 조회할 땐 `__date` 금지 — **UTC 반열린 범위**(`captured_at__gte=lo, captured_at__lt=hi`, tzinfo=UTC)로 필터. STOP/0건 판정 전 UTC 범위로 재확인(거짓 0건 방지). 집계 날짜 축이 필요하면 `TruncDate(..., tzinfo=timezone.utc)` 명시. cf. #24(Date.now hydration 계열 tz 함정).
+## 배치 진척·완주 지표에 창-합(target_windows) 사용 금지 — skip-covered 스필오버로 영구 저계상 (#99, CN-B7-PROBE 2026-08-10) `[ops][data][harness]`
+
+## 병렬 마이그레이션 리프 — 랜딩 시점 단일 0014가 배포 시점 타 트랙 0014와 병존 → 지시서 STEP 0에 "마이그 직전 fetch + 최신 번호 재확인" 상설 (#97, I3-SPLIT-GUARD 2026-08-18) [backend][process][harness]
+
+**증상**: I3-SPLIT-GUARD 배포(HALT ②) STEP 0에서 `showmigrations stocks`가 기대 "0014 [X]" 대신 **`0014_stocksplit[X]` + `0014_stock_cik[X]`(타 트랙 CS-P3) + `0015_merge [ ] 미적용`**을 노출. 내 랜딩(08-13) 시점엔 stocks 리프가 단일 0014였으나, 배포(08-18) 사이 CS-P3가 **같은 0013에서 분기한 별도 `0014_stock_cik`**를 랜딩 → Django 리프 2개 → 제3자가 `makemigrations --merge`로 `0015_merge`(no-op) 생성.
+
+**원인**: 동일 앱에 **여러 세션이 병렬로 0013→0014를 분기**하면 번호가 충돌하지 않아도(파일명은 다름) 마이그레이션 그래프에 **리프 2개**가 생기고, prod엔 merge 마이그가 미적용으로 남는다. 지시서/원장의 "0014 [X]" 기대값은 랜딩 시점 스냅샷이라 배포 시점엔 stale.
+
+**규칙**: ⑴ 마이그레이션 **생성·검증 직전 `git fetch` + 해당 앱 최신 번호 재확인**(makemigrations 前 리프 상태 실측). ⑵ 지시서 STEP 0 템플릿에 "**마이그 번호는 캐시 — 집행 직전 fetch 후 재확인**" 상설 조항. ⑶ 병렬 리프 조우 시 merge 마이그는 `sqlmigrate`로 **DDL 0(no-op) 확인 후에만** 적용(승인). cf. 기대값=캐시(#93 계열)·[[lesson_land_health_measure_in_target_tree]].
+
+## recon 지시서는 "발화 도래 여부"를 선확인해야 — 미도래를 실패로 오판 방지 (#98, I3-SPLIT-GUARD 첫 발화 recon 2026-08-18) [process][ops]
+
+**증상**: "08-18 19:45 ET 발화 recon" 지시가 현재 ET 02:34(발화 17시간 前)에 수행됨 → last_run None·StockSplit 0·로그 0. 발화 실패가 아니라 **아직 스케줄 시각 미도래**.
+
+**규칙**: 발화 후 recon 지시서는 STEP 0에 **"현재 시각 vs 스케줄 발화 시각 선비교"** 조항 필수. 미도래면 산출 없음을 보고하고 **수동 실행으로 선점 금지**(자연 첫 발화의 created 카운트가 오염됨 — 멱등 append/skip이라 수동 실행 시 첫 자연 발화가 created 0으로 바뀜). 도래 후 재수행.
+
+## 프리플라이트 절단 출력(`head -c`·`| head`)은 하한일 뿐 — 전수 카운트 판단은 절단 없이 (#99, I3-SPLIT-GUARD 2026-08-18) [process][data]
+
+**증상**: 프리플라이트에서 FMP splits를 `curl ... | head -c 400`으로 읽어 AAPL 분할을 **3개**로 기록 → "총 ~13행" 기대. 실발화 실측 = AAPL **5개**(2020·2014·2005·2000·1987)로 총 **15행**. 예상 −2 차이의 원인 = 절단.
+
+**규칙**: 카운트·전수 판단이 걸린 값은 `head -c`/`| head` 같은 **절단 출력으로 산정 금지**(절단분은 하한). 기대값 산정 시 `jq length`·`wc -l`·DB 카운트 등 **절단 없는 집계**로. 절단 출력으로 얻은 수는 "≥N"으로만 취급.
 ## 배치 진척·완주 지표에 창-합(target_windows) 사용 금지 — skip-covered 스필오버로 영구 저계상 (채번 후보, CN-B7-PROBE 2026-08-10) `[ops][data][harness]`
 *(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지, 번호는 mgmt 채번 시 확정)*
 
@@ -1430,7 +1451,7 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 
 **교훈**: ⑴ 진척·완주 판정의 **유일 유효 지표 = DB 일-존재 스캔**(plan 일자 각 `NewsArticle.filter(published_at__date=D)>0` 카운트). 창 수·target_windows 합은 **판정에 쓰지 말 것**(관측 로그용). ⑵ 멱등 파이프라인(`--skip-covered`)에서 "처리한 단위 수"와 "커버된 대상 수"는 **다른 양** — 스필오버·중복 스킵이 개입하면 전자 < 후자. ⑶ D-CN-COMPLETE 폐기 교훈("창 완료 122/122" 금지)의 재현 — 항상 **대상 단위 존재**로 완료 선언. CHECK-DAILY v2 §3·§6이 이 지표로 고정됨.
 
-## AV summary=null 정당 드롭은 not-null 관문 정상 작동 (이상 아님) — skipped 카운터 의미 정의 (채번 후보, CN-B7-PROBE 2026-08-10) `[news][data][ops]`
+## AV summary=null 정당 드롭은 not-null 관문 정상 작동 (이상 아님) — skipped 카운터 의미 정의 (#100, CN-B7-PROBE 2026-08-10) `[news][data][ops]`
 *(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
 
 **증상**: C-N-REPAIR batch7 로그에 `Failed to save article: null value in column "summary" ... violates not-null constraint` **8건** 출현, `skipped 8`에 계상. "무음 데이터 드롭 아니냐"는 경계 신호.
@@ -1439,7 +1460,7 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 
 **교훈**: ⑴ **`skipped` 카운터 = save 실패(드롭) 건수** — 재시도분 포함(6유니크가 8회 시도로 계상). 별도 fetch-레벨 skip(url-too-long)은 이 카운터에 미포함. ⑵ 정당 드롭(외부 제공자 결함)과 코드 결함(우리 파싱)의 구분은 **로그 Failing row 원문**으로(요약 아님). ⑶ 커버 완전성(≥1) + 정당 드롭은 **모순 아님** — 커버는 대상일 기사 존재로 판정, 드롭은 개별 기사 품질 문제. 복구 불요(저가치 정형기사·해당일 커버 유지). 근본 수리는 별도 트랙(모델 `summary` default="" or provider 보정).
 
-## 정상 어휘가 티커 필터에 오소거 — 단일토큰 회사명 매칭 (채번 후보, NEWS-VOCAB-BUILD Rev.1→2 2026-08-06) `[data][process]`
+## 정상 어휘가 티커 필터에 오소거 — 단일토큰 회사명 매칭 (#101, NEWS-VOCAB-BUILD Rev.1→2 2026-08-06) `[data][process]`
 
 **증상**: 뉴스 n-gram에서 종목명·티커를 기계 제거할 때, 회사 `stock_name`의 **단일 토큰**(energy·data·center 등 흔한 도메인어)까지 필터 재료로 넣으면 정상 카테고리 어휘가 오소거됨. Rev.1에서 `data center`·`renewable energy`·`clean energy`·`real estate`가 "회사명 토큰 포함"으로 탈락 → 핵심 교차 테마가 어휘에서 소실.
 
@@ -1447,27 +1468,27 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 
 **규칙**: 티커/회사명 제거는 **풀네임 n-gram 매칭 + 티커 토큰(길이>2) + 거래소어(nasdaq/nyse)만**. **회사명 단일 토큰 매칭 금지**. Rev.2에서 교정 = `data center` 등 부활 확인.
 
-## 규약 충돌 grep은 금지 어휘 외 위임 어휘도 포함해야 한다 — "금지"만 찾으면 "대행·승인 불필요"를 놓친다 (채번 후보, GOV-PUSHDELEG-0810 2026-08-10) [process][harness]
+## 규약 충돌 grep은 금지 어휘 외 위임 어휘도 포함해야 한다 — "금지"만 찾으면 "대행·승인 불필요"를 놓친다 (#102, GOV-PUSHDELEG-0810 2026-08-10) [process][harness]
 
 **증상**: D-PUSH-DELEG 명문화 STEP 0-5에서 push 규약 정본을 `push.*금지` 패턴으로 grep → session_isolation_guide.md 1곳만 잡고 "중복 없음"으로 판정. 그러나 SESSION_CONTRACT.md §H `D-DEPLOY-DELEGATE`("CC 대행 기본 — **승인 불필요** origin push")가 이미 존재·정면 상충. 편집 중에야 발견(HALT·상신).
 
 **교훈**: 규약 충돌·중복 census는 **금지 어휘(금지/불가/막는다)만이 아니라 위임 어휘(대행·위임·불필요·자동·기본)까지 포함**한 광역 grep으로. 같은 행위(push)를 한쪽은 "금지", 다른 쪽은 "대행 승인 불필요"로 규정하면 문자열이 안 겹쳐 단일 어휘 grep이 상충을 놓친다. cf. #92(문법 변형 광역 grep)의 규약판.
 
-## 참조 대비 개선 편차도 보고 필수 — WARN→OK 같은 호전도 STEP 0 게이트에선 "다름"이니 자의 통과 금지 (채번 후보, GOV-PUSHDELEG-0810 2026-08-10) [process][harness]
+## 참조 대비 개선 편차도 보고 필수 — WARN→OK 같은 호전도 STEP 0 게이트에선 "다름"이니 자의 통과 금지 (#103, GOV-PUSHDELEG-0810 2026-08-10) [process][harness]
 
 **교훈**: STEP 0 게이트가 "참조와 다르면 HALT"일 때, health가 14/1/0→**15/0/0(WARN 해소=개선)**처럼 **좋아진 편차도 "다름"**이다. 개선이라는 자가 판단으로 통과하지 말고 **보고 후 병진 판정을 받는다**(진행 가능하나 보고는 필수). "무충돌 실측은 진행 근거가 아니라 보고 내용"(INC-001 교훈)의 health판 — 편차의 방향이 아니라 편차의 존재가 게이트 대상.
 
-## git branch -d 거부는 HALT 신호 — 손실 0 실측으로 -D 자가 전환 금지 (채번 후보, GOV-CLEANUP-0810 2026-08-10) [process][harness]
+## git branch -d 거부는 HALT 신호 — 손실 0 실측으로 -D 자가 전환 금지 (#104, GOV-CLEANUP-0810 2026-08-10) [process][harness]
 
 **교훈**: `git branch -d`가 "not fully merged"로 거부하면 **정지 신호**로 받는다. `origin/main..브랜치 = 0`(손실 0)을 실측했더라도 **그것을 근거로 `-D` 자가 전환하지 않는다** — 무해 실측은 보고 내용이지 진행 근거가 아니다(INC-001/INC-002 공통). 삭제 자체가 병진 수동 고정(D-BRANCH-DELETE-MANUAL)이므로 거부 조우 시 후보+실측만 보고·대기. `-d`가 로컬 main 미ff로 오탐할 수 있으나(브랜치는 origin/main엔 착지), 그 판단·해소도 병진 몫.
 
-## 예외 승인 원용 시 근거 규약을 정확히 명시 — 무관 규약 원용 금지 (채번 후보, GOV-CLEANUP-0810 2026-08-10) [process][harness]
+## 예외 승인 원용 시 근거 규약을 정확히 명시 — 무관 규약 원용 금지 (#105, GOV-CLEANUP-0810 2026-08-10) [process][harness]
 
 **증상**: 브랜치 삭제를 집행하며 근거로 SESSION_CONTRACT §H `D-DEPLOY-DELEGATE`를 원용했으나, §H는 **코드 배포 위임 규약**으로 브랜치 삭제와 무관(INC-002). 무관 규약 원용은 "규약 근거 있음" 외양만 갖추고 실제 관할 규약(삭제=병진 수동)을 우회.
 
 **교훈**: 예외 승인·규약 원용 시 **해당 행위를 실제 관할하는 규약을 정확히 지목**한다. 인접·유사 규약(§H=배포 위임 ↔ 삭제)을 근거로 끌어오지 말 것. 행위별 관할 규약 대조를 원용 전에 실측.
 
-## 하드매칭 AST 스캐너의 별칭 사각지대 — burn-down "종결" 선언이 false-negative (채번 후보, BOUNDARY-LLM-CB 2026-08-11) `[architecture][testing][process]`
+## 하드매칭 AST 스캐너의 별칭 사각지대 — burn-down "종결" 선언이 false-negative (#106, BOUNDARY-LLM-CB 2026-08-11) `[architecture][testing][process]`
 *(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지, 번호는 mgmt 채번 시 확정)*
 
 **증상**: BOUNDARY-LLM 경계 테스트(`test_llm_direct_call_boundary.py`)·health_check `외부-LLM 경계`가 **FROZEN_COUNT=0 = "전 LLM 소비처 packages/shared/llm 단일 경유·종결(23→0)"**로 GREEN. 그러나 `apps/market_pulse/llm/client.py`는 여전히 `genai_module.Client(api_key=)`로 Gemini를 **직접 인스턴스화**(+7 소비처가 이 래퍼 소비, chain_sight 교차앱 포함).
@@ -1475,7 +1496,7 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **원인**: AST 매처가 `func.attr=="Client" and func.value.id=="genai"`로 **이름 하드매칭**. market_pulse는 `from google import genai as genai_module` 별칭 → `genai_module.Client`가 `func.value.id=="genai_module"`이라 **미검출**. 도구가 "0"이라 말하지만 실제 0이 아님(false-negative). 별칭 도입(커밋 `51046350`)은 우회 의도 아닌 단순 명명이나(ALIAS 판정 (나)), 효과는 은닉.
 
 **교훈**: ⑴ **"도구가 0이라 말함 ≠ 실제 0"** — burn-down/gauge류 스캐너는 매칭 커버리지를 주기적으로 역검증(별칭·재export·간접 참조). ⑵ 이름 하드매칭 대신 **import 바인딩 추적**(`import X as Y` → Y도 검출)으로 이름 무관 검출. 수리 = `_genai_bound_names`로 별칭 집합 추적 후 `func.value.id in genai_names`(BOUNDARY-LLM-CB Part C). ⑶ 스캐너 복제본(테스트 ↔ health_check)은 **양쪽 동시 보강**(규약 2장). ⑷ 검출 후 정직 등재(FROZEN 0→1) → 이관 시 해제(1→0)가 정직한 계정.
-## `git branch -d` 거부의 첫 수 = 강제(-D)가 아니라 거부 원인 규명 — 어느 트리 HEAD 기준 판정인지 확인 (채번 후보, GOVCLEANUP-0810-CLEANUP 2026-08-11) [process][harness]
+## `git branch -d` 거부의 첫 수 = 강제(-D)가 아니라 거부 원인 규명 — 어느 트리 HEAD 기준 판정인지 확인 (#107, GOVCLEANUP-0810-CLEANUP 2026-08-11) [process][harness]
 *(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
 
 **증상**: 격리 worktree 브랜치를 `git branch -d`로 삭제하려 하면 "not fully merged"로 거부. 브랜치는 이미 origin/main에 착지(`origin/main..브랜치 = 0`)했는데도 거부 → "강제 `-D`로 넘어가야 하나?"는 유혹.
@@ -1484,34 +1505,59 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 
 **교훈**: `-d` 거부의 **첫 수는 `-D` 강제가 아니라 거부 원인 규명** — ⑴ `git merge-base --is-ancestor 브랜치 origin/main`로 실제 소진 재확인, ⑵ **어느 트리 HEAD 기준 판정인지** 확인(`git -C <origin/main 추종 트리> branch -d`로 정정 = 강제 없이 해소). 손실 0 실측은 `-D` 근거가 아니라 보고 내용(INC-001/INC-002). cf. 직전 항목 "-d 거부는 HALT 신호"(자가 -D 전환 금지)의 **해소 메커니즘** 보완.
 
-## 버전 마이그레이션 소비 필터 = supersession, naive 버전 필터는 v1-only 과잉배제 (채번 후보, SECB-V2-ROLLOUT 2026-08-12) `[data][process]`
+## 버전 마이그레이션 소비 필터 = supersession, naive 버전 필터는 v1-only 과잉배제 (#108, SECB-V2-ROLLOUT 2026-08-12) `[data][process]`
 
 **증상**: 프롬프트/스키마 v1→v2 롤아웃에서 "소비측 v2 필터"를 `filter(prompt_version='v2')`(naive)로 걸자 **v2 미존재 행(v1-only)까지 배제** → 기존 테스트 13건 실패 + 배포~롤아웃 창에 집계·RC·리포트 0 급락(회귀). 이중집계 방지가 아니라 **데이터 과잉배제**. **교훈**: 신·구 버전 **병존(coexist) 소비 필터는 항상 supersession-aware** — "신버전 있으면 신버전, 없으면 구버전"(단위=대체 경계, 예: filing/document). `exclude(old, unit IN (신버전 보유 unit))`. 단일 소스 메서드(`.current()`)로 정의해 naive↔supersession 전환을 1곳에서. 테스트 대량 실패 = 프로덕션 회귀의 프록시(테스트만 고치면 회귀 출하). cf. D-SECB-V2-CURRENT.
 
-## "캡 제거" 정책 변경 시 절단 지점 grep은 `[:N]` 전 변형을 훑어야 (프롬프트만·`[:300]`만 = 은닉 절단 잔존) (채번 후보, SECB-V2-ROLLOUT 2026-08-13) `[data][process]`
+## "캡 제거" 정책 변경 시 절단 지점 grep은 `[:N]` 전 변형을 훑어야 (프롬프트만·`[:300]`만 = 은닉 절단 잔존) (#109, SECB-V2-ROLLOUT 2026-08-13) `[data][process]`
 
 **증상**: evidence 300 캡 제거에서 프롬프트 캡 + `[:300]`만 grep해 제거했으나 `validator`의 **`evidence[:297] + "..."`**(다른 슬라이스 리터럴)를 놓침 → v2 롤아웃 1단 497행 중 **143행이 "..."로 끝남**(mid-sentence 절단·verbatim 위배). nf율은 정상(1.21%)이나 **verified 67.6% 저조**로만 발현(절단이 grounding 대조를 조용히 깸). **교훈**: ⑴ 길이/절단 정책 변경은 **프롬프트→파서→validator→save 전 계층** 훑기, grep은 특정 숫자 아닌 `\[: *[0-9]+`·`\.\.\.` 전 변형. ⑵ 롤아웃 게이트에 **길이 max·`endswith('...')` 카운트** 포함(nf율만 보면 놓침). ⑶ 오염분은 coexist(v1 보존)라 v2만 삭제 후 재추출로 복구. cf. D-SECB-V2-LEN.
-## 동일 트랙 선행 산출물 발견 시 1줄 확인 후 진행 — 의도적 정련인지 중복 집행인지 상신 (채번 후보, SECB-VB-ABSORB-0811 2026-08-11) `[process][harness]`
+## 동일 트랙 선행 산출물 발견 시 1줄 확인 후 진행 — 의도적 정련인지 중복 집행인지 상신 (#110, SECB-VB-ABSORB-0811 2026-08-11) `[process][harness]`
 *(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
 
 **증상**: G1.5 분해 지시서 집행 중 동명 목적 스크립트·보고서·사전 지시서가 **이미 origin/main에 착지**(4d0ed3b5)돼 있음을 발견. 지시서가 참조값(437)을 인용 = 그 산출물 출력값 → 선행 존재를 알고도 재발주한 정황.
 
 **교훈**: 지시서 집행 초입에 **동일 트랙 선행 산출물을 grep으로 census**하고, 있으면 ⑴ 지시서가 그 출력을 참조하는가(=디렉터 인지 하 의도적 정련) ⑵ 분류·파일명이 **차분(delta)인가 중복인가**를 실측해 **1줄 상신** 후 진행. 판별 근거 = 지시서의 참조값 출처·신규 분류축(예: 소문자 완화 = 선행 미실시)·파일명 구분. 무판별 병렬 산출물 생성은 원장 혼선. cf. [[feedback_spec_infeasible_surface_before_substitute]].
 
-## 원격 세션 브랜치는 rebase 후 갱신하지 않는다 — force 회피, HEAD:main 직행 (채번 후보, SECB-VB-ABSORB-0811 2026-08-11) `[process][git][harness]`
+## 원격 세션 브랜치는 rebase 후 갱신하지 않는다 — force 회피, HEAD:main 직행 (#111, SECB-VB-ABSORB-0811 2026-08-11) `[process][git][harness]`
 
 **증상**: 세션 브랜치를 origin/main에 union rebase(흡수)하면 커밋 해시가 재작성됨. 이미 push된 원격 세션 브랜치를 갱신하려면 `push --force`가 필요 → force 유발.
 
 **교훈**: rebase 흡수 후 **원격 세션 브랜치를 갱신하지 않는다**. 착지는 `git push origin HEAD:main`(main으로 직행 ff-push) — 원격 세션 브랜치(구 해시)는 **미갱신 잔존**시키고 **수동 삭제 목록(D-BRANCH-DELETE-MANUAL)** 으로 넘긴다. 이렇게 하면 rebase가 있어도 **force 필요 상황 자체를 만들지 않는다**(D-PUSH-DELEG (iii) 준수). 08-11 SECB-G15 착지에서 확립(D-PUSHDELEG-PROVE 3차 GREEN).
 
-## SEC EDGAR 8-K 원문 다운로드 = submissions primaryDocument 직접 URL (디렉토리 스크래퍼 `//index.htm` 404) (채번 후보, CS-P2-8K 2026-08-13) `[data][sec]`
+## SEC EDGAR 8-K 원문 다운로드 = submissions primaryDocument 직접 URL (디렉토리 스크래퍼 `//index.htm` 404) (#112, CS-P2-8K 2026-08-13) `[data][sec]`
 
 **증상**: `SECEdgarClient.download_8k_text`가 filing 디렉토리 인덱스(`.../{acc}/`)를 스크래핑해 primary doc 링크를 찾는 경로가 `//index.htm` 404 다발(표본 20/20 실패). CIK zero-padding·디렉토리 리스팅 형식 취약.
 
 **해결**: submissions JSON의 `primaryDocument[i]`를 직접 사용 → `https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc_nodash}/{primary}` (CIK leading-zero 제거). 8-K 다운로드 20/20·885건 실패 0. CS-P2-8K는 로컬 헬퍼로 우회(공유 client 무접촉·수리는 TASKQUEUE `P28K-CLIENT-FIX`). 10-K는 `download_10k_text`가 primary_document 직접 사용이라 무관.
-## 모듈 이관 시 소비자 전수 grep 범위에 `tests/` 포함 — 누락 소비자의 import 깨짐이 '선존 실패'로 위장 (채번 후보, MPS-1-LAND 2026-08-13) `[testing][boundary][process]`
+## 모듈 이관 시 소비자 전수 grep 범위에 `tests/` 포함 — 누락 소비자의 import 깨짐이 '선존 실패'로 위장 (#113, MPS-1-LAND 2026-08-13) `[testing][boundary][process]`
 *(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
 
 **증상**: 모듈 이관(예: BOUNDARY-LLM-CB `apps/market_pulse/llm/client.py`→`packages/shared/llm/legacy_gemini.py`)에서 소비자 import를 일괄 갱신할 때 **`tests/` 하위 소비자를 누락**. 앱 코드 9곳은 갱신됐으나 10번째 소비자(테스트)가 구 경로를 유지 → `ImportError: cannot import name 'client'`. 이 실패가 다음 세션엔 **"선존 실패"로 위장**(내 diff 무관으로 오판)돼 방치되고, known-fail 레지스트리에도 미등록으로 남는다.
 
 **교훈**: 소비자 전수 grep 범위에 **`tests/`를 명시**한다(`grep -rn '<구 경로>' apps/ packages/ tests/`). 이관 완료 판정 = 앱+테스트 양쪽 0건. **위장 식별법**: "선존 실패"로 분류하기 전에 실패가 **모듈 부재/import 오류**면 이관 drift 의심(코드 로직 실패와 구분). 모킹 대상도 함께 정합 — 호출시점 로컬 import(`def f(): from X import g`)는 **소스 모듈 X를 패치**해야 monkeypatch가 유효(소비 모듈 패치는 무효). cf. BOUNDARY-LLM-CB([[project_boundary_llm_track]]).
+
+## `backfill_v2_a1`은 `--econ-only` 없으면 심볼(MarketIndexPrice)까지 백필 — `--series-id`는 econ만 스코프 (#114, INC-MPS-BACKFILL-SCOPE 2026-08-14) `[data][ops]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
+
+**증상**: 단일 econ series 백필 의도로 `backfill_v2_a1 --series-id DTWEXBGS --from 2023-07-01`(--econ-only 없이) 실행 → **섹터 ETF 11종 MarketIndexPrice에 각 +689행(총 7,579행) 의도 밖 삽입**. `--series-id`는 **Economic 파트만** 스코프하고 **Market(심볼) 파트는 무스코프**(전 섹터 ETF 대상). **원인**: 커맨드가 econ+symbol 이중 타깃이며 위험한 기본값(심볼 전량)이 --series-id로 안 좁혀짐. **해결**: econ만 원하면 **`--econ-only` 필수**. (무해 판정 근거: SPY만 purge 예외라 섹터 ETF 초과분은 롤링 365일 purge로 자연 소멸.)
+
+## 백필 프리뷰는 수치 대조 **전에** 쓰기 대상 테이블 전수를 대조 — grep 필터가 파트를 가린다 (#115, INC-MPS-BACKFILL-SCOPE 2026-08-14) `[ops][process]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
+
+**증상**: `backfill_v2_a1 --dry-run` 출력에 `[DRY-RUN] Economic (1): [...]` + **`[DRY-RUN] Market (11): [...]`** 두 파트가 모두 표시됐으나, 출력을 `grep -iE "series명|row|건"`으로 필터링해 **Market 파트를 화면에서 놓침** → 심볼 백필을 미대조하고 실행. **교훈**: 프리뷰(dry-run) 검토는 **grep 필터 없이 전체 출력**을 보고 **쓰기 대상 테이블/엔티티 전수**(Economic + Market 등)를 확인한 뒤 실행. 프리뷰 필터링은 "수치만 보고 스코프를 안 보는" 함정. cf. INC-MPS-BACKFILL-SCOPE.
+
+## `launchctl kickstart -k`가 관리 이탈 orphan을 못 죽여 EADDRINUSE — 서빙 교체 실패(구 빌드 계속) (#116, D-MPS-OPS-WEBSYNC 2026-08-14) `[infra][ops]`
+*(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지)*
+
+**증상**: 웹 런타임 리빌드 후 `launchctl kickstart -k com.stockvis.web-frontend`로 서빙 교체 시도 → 새 인스턴스가 `Error: listen EADDRINUSE :::3000`로 기동 실패, **구 빌드가 계속 서빙**(StressCard 미표시). `launchctl list`가 `-  <exit>  <label>`(관리 PID 없음). **원인**: 이전에 launchd가 관리를 놓친 **구 프로세스가 PPID→1로 reparent**돼 :3000을 계속 점유(예: npm start + next-server 쌍, 며칠 전 기동). kickstart는 **launchd가 추적하는 인스턴스만** 재기동하므로 orphan은 살아남아 포트 점유. **판정**: `lsof -i :3000 -sTCP:LISTEN`의 PID 기동시각(`ps -o lstart`)이 **오늘이 아니면 orphan**. **해결**: orphan(부모 npm start + 자식 next-server) `kill -TERM` → KeepAlive 자동재기동 or 클린 kickstart → 새 프로세스(오늘 기동·새 .next)가 :3000 단독 바인딩·launchd 관리 복구. **검증**: 리스너 PID 기동시각=지금 + `lsof -ti :3000` 단일 + 서빙 프로세스 cwd=동기 트리. cf. DEPLOY-RUNBOOK.
+
+> **3번째 실증 (api :18765 daphne, D-MPS-OPS-APISYNC 2026-08-19)**: 동일 패턴이 API 관문에서도 발생. 관리 이탈 고아 daphne(PID 63228, 08-13 09AM~)가 :18765 점유·stress 라우트 없는 구코드 응답 → `/api/v2/market-pulse/regime/stress` 404(StressCard 에러). launchd `com.stockvis.web`은 포트 막혀 대기. 판정 동일(`lsof -i :18765` 기동시각·ppid). 해소 = 08-18 14:57 병렬 세션 `sv sync`(worker_sync)가 고아 사망+ff 동기+kickstart로 정상화. **3건 공통 근인 = 관리이탈 고아의 포트 점유** → DEPLOY-RUNBOOK 런북 1장=고아 스윕으로 성문화.
+
+## `git branch -d` 거부 근본원인 — HEAD:main 직행 push가 세션 브랜치에 upstream을 안 남겨 stale primary HEAD 기준 오탐 (#117, MGMT-LEDGER-1 2026-08-19) [git][process][harness]
+
+**증상**: 세션 브랜치를 `git push origin HEAD:main`(직행)으로 착지시킨 뒤 `git branch -d <세션브랜치>`가 "not fully merged"로 거부. 브랜치는 origin/main에 완전 포함(`origin/main..브랜치=0`)인데도 거부. 08-18 sess-dss-impl1·sess-dss-recon1 등 **3회 재현**.
+
+**원인**: HEAD:main 직행 push 체계는 세션 브랜치에 **upstream을 남기지 않는다**(`push -u` 미사용). upstream 없으면 `git branch -d`는 **명령 실행 트리의 현재 HEAD** 기준으로만 머지 판정. primary 체크아웃이 stale 브랜치(예 `cca67275`)에 정체돼 있으면 그 HEAD가 브랜치를 미포함 → **미머지 오탐**.
+
+**해소**: `git branch --set-upstream-to=origin/main <브랜치>` 후 `git branch -d <브랜치>` 재시도 → `-d`가 **origin/main 기준 머지 판정**(브랜치가 조상=포함) → force 없이 삭제. 또는 origin/main 체크아웃 트리에서 실행. **`-D` 전환 절대 금지**(손실 0 실측은 진행 근거 아님 — D-BRANCH-DELETE-MANUAL 상호 참조). cf. #104(-d 거부=HALT 신호)·#107(첫 수=원인 규명). -D 통산 0회 유지 실증.

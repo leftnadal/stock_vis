@@ -5,11 +5,13 @@ import {
   fetchCardDetail,
   fetchOverview,
   fetchRegimeAnalog,
+  fetchRegimeStress,
   fetchRegimeZScore,
   refreshNews,
   type CardDetailEnvelope,
   type OverviewResponse,
   type RegimeAnalogPayload,
+  type RegimeStressPayload,
   type RegimeZScorePayload,
 } from '@/lib/api/marketPulseV2'
 
@@ -18,6 +20,7 @@ const CARD_DETAIL_KEY = (cardId: string) =>
   ['marketpulse-v2', 'card', cardId, 'detail'] as const
 const REGIME_ZSCORE_KEY = ['marketpulse-v2', 'regime', 'zscore'] as const
 const REGIME_ANALOG_KEY = ['marketpulse-v2', 'regime', 'analog'] as const
+const REGIME_STRESS_KEY = ['marketpulse-v2', 'regime', 'stress'] as const
 
 export function useOverview() {
   return useQuery<OverviewResponse>({
@@ -58,6 +61,17 @@ export function useRegimeAnalog(enabled: boolean = true) {
   return useQuery<CardDetailEnvelope<RegimeAnalogPayload>>({
     queryKey: REGIME_ANALOG_KEY,
     queryFn: fetchRegimeAnalog,
+    enabled,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  })
+}
+
+// MPS-2: 스트레스 스코어 카드 fetch(hero 직하 카드라 기본 enabled). BE 1h 캐시, FE 30분.
+export function useRegimeStress(enabled: boolean = true) {
+  return useQuery<CardDetailEnvelope<RegimeStressPayload>>({
+    queryKey: REGIME_STRESS_KEY,
+    queryFn: fetchRegimeStress,
     enabled,
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,

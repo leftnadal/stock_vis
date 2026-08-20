@@ -51,6 +51,27 @@ class TestEpsDiff:
     def test_none_when_anchor_absent(self):
         assert er.eps_diff_at({AS_OF - timedelta(days=56): 5.0}, AS_OF) is None
 
+    def test_default_path_identical_to_explicit_constants(self):
+        """D-DSS-LAGPARAM: 인자 생략(기본 None) ≡ 기존 56/63 상수 명시 = IDENTICAL (C8 행위보존)."""
+        eps8 = {AS_OF: 6.0, AS_OF - timedelta(days=56): 5.0}
+        eps9 = {AS_OF: 6.0, AS_OF - timedelta(days=63): 5.5}
+        epsn = {AS_OF: 6.0, AS_OF - timedelta(days=70): 5.0}
+        for eps in (eps8, eps9, epsn):
+            # 인자 생략 == 기존 상수를 순차 폴백으로 명시했을 때와 동일 결과
+            omitted = er.eps_diff_at(eps, AS_OF)
+            explicit = er.eps_diff_at(eps, AS_OF, lag_days=er.LAG_PRIMARY_DAYS)
+            if explicit is None:  # lag8 부재 시 기본 경로는 lag9로 폴백하므로 별도 확인
+                explicit = er.eps_diff_at(eps, AS_OF, lag_days=er.LAG_FALLBACK_DAYS)
+            assert omitted == explicit
+
+    def test_lag_days_param_single_lag_no_fallback(self):
+        """DSS WoW: lag_days=7 → 단일 lag, 폴백 없음."""
+        eps = {AS_OF: 6.0, AS_OF - timedelta(days=7): 5.7}
+        assert er.eps_diff_at(eps, AS_OF, lag_days=7) == pytest.approx(0.3)
+        # 7일 파트너 부재 → None (56일 있어도 폴백 안 함)
+        eps2 = {AS_OF: 6.0, AS_OF - timedelta(days=56): 5.0}
+        assert er.eps_diff_at(eps2, AS_OF, lag_days=7) is None
+
     def test_count_follows_actual_diffs_not_calendar(self):
         """중간 3주 구멍 → 그 주변 diff 미성립 → 카운트가 달력보다 작다."""
         eps = weekly_eps(AS_OF, 20, lambda i: 5.0 + i * 0.1)

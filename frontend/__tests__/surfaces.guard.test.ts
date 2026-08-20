@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import { SURFACES } from '@/constants/surfaces'
+import { SURFACES, SURFACE_KIND } from '@/constants/surfaces'
 
 /**
  * SURFACES 가드 (D-C2-S1-CONST-UNIFY ⓒ-3 · S1-B2-SHARED).
@@ -92,5 +92,30 @@ describe('SURFACES guard — surface 리터럴 단일 출처', () => {
       'dashboard_eod',
       'news_chip',
     ])
+  })
+})
+
+/**
+ * SURFACE_KIND 완비 가드 (D-C2-S2-FUNNEL-COV · S2-B1-SHARED).
+ * 전 SURFACES 표면이 organic/audit 로 분류됐는지 강제 — 미분류 표면 추가 시 FAIL.
+ * (tsc `Record<Surface, …>` 컴파일 완비와 2중 — 이쪽은 런타임/cast 우회 포착.)
+ */
+describe('SURFACE_KIND 완비 가드 — 전 표면 organic/audit 분류', () => {
+  it('SURFACES 의 모든 표면이 SURFACE_KIND 에 분류됨 (미분류 = FAIL)', () => {
+    const unclassified = SURFACE_VALUES.filter(
+      (s) => SURFACE_KIND[s] !== 'organic' && SURFACE_KIND[s] !== 'audit',
+    )
+    expect(unclassified).toEqual([])
+  })
+
+  it('SURFACE_KIND 키 = SURFACES 값 집합과 정확히 일치 (잉여 분류 = FAIL)', () => {
+    expect(Object.keys(SURFACE_KIND).sort()).toEqual([...SURFACE_VALUES].sort())
+  })
+
+  it('분류 정본 = D-C2-S2-FUNNEL-COV (coverage_detail=audit · 그 외 organic)', () => {
+    expect(SURFACE_KIND[SURFACES.COVERAGE_DETAIL]).toBe('audit')
+    expect(SURFACE_KIND[SURFACES.DASHBOARD_EOD]).toBe('organic')
+    expect(SURFACE_KIND[SURFACES.CHAIN_SIGHT]).toBe('organic')
+    expect(SURFACE_KIND[SURFACES.NEWS_CHIP]).toBe('organic')
   })
 })

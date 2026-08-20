@@ -28,6 +28,9 @@ class Stock(models.Model):
     sector = models.CharField(max_length=100, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     official_site = models.URLField(blank=True, null=True)
+    # SEC EDGAR CIK (zero-padded 10자리). 8-K 일일수집·10-K·재해소 파이프라인이 반복 사용하므로
+    # on-demand 조회 대신 영구 저장 (CS-P3-UNIVERSE, D-CS-P3). additive nullable.
+    cik = models.CharField(max_length=10, blank=True, null=True, db_index=True)
     fiscal_year_end = models.CharField(max_length=20, blank=True, null=True)
     latest_quarter = models.DateField(blank=True, null=True)
 
@@ -254,6 +257,41 @@ class DailyPrice(BasePriceData):
 
     def __str__(self):
         return f"{self.stock.symbol} Daily - {self.date}: ${self.close_price}"
+
+
+# === 액면분할·기업행위 데이터 (I3-SPLIT-GUARD, D-SPLIT-1) ===
+class StockSplit(models.Model):
+    """액면분할 이벤트 (FMP /stable/splits 원본).
+
+    범용 시장 데이터(앱 비의존) = shared 토대. 채점(analyst_scoring)이 예측~만기
+    구간 내 분할을 감지해 unscoreable:corporate_action 처리하는 데 쓰인다.
+    append-only: unique (stock, date) 기준 신규만 저장(기존 행 무수정).
+    비율 = numerator:denominator (예: 10:1 → num=10, den=1; GOOGL 999:500 대비 Decimal).
+    """
+
+    stock = models.ForeignKey(
+        "Stock", on_delete=models.CASCADE, to_field="symbol", related_name="splits"
+    )
+    date = models.DateField(help_text="분할 효력일 (FMP date, YYYY-MM-DD)")
+    numerator = models.DecimalField(max_digits=15, decimal_places=6)
+    denominator = models.DecimalField(max_digits=15, decimal_places=6)
+    split_type = models.CharField(
+        max_length=32, blank=True, default="", help_text="FMP splitType 원문"
+    )
+    source = models.CharField(max_length=16, default="fmp")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "stocks_stock_split"
+        unique_together = ("stock", "date")
+        indexes = [
+            models.Index(fields=["stock", "date"]),
+        ]
+        verbose_name = "Stock Split"
+        verbose_name_plural = "Stock Splits"
+
+    def __str__(self):
+        return f"{self.stock.symbol} split {self.date}: {self.numerator}:{self.denominator}"
 
 
 # === 주간 가격 데이터 ===

@@ -1,11 +1,16 @@
 """ADVISOR L-A 브리핑 서비스 검증 (MON-P4-LA T1). LLM은 mock."""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
+from django.utils import timezone
 
-from apps.monitor.models import AdvisorNote
+from apps.monitor.models import AdvisorNote, Claim, ClaimEvidence
 from apps.monitor.models.monitoring import MonitorSnapshot
 from apps.monitor.services import advisor_briefing as svc
+
+# readings 앵커 = 스냅샷 as_of(2026-08-07)에 정합 — now 앵커 시 asof<= 필터가
+# readings를 전량 배제해 coverage_n=0이 되는 fixture time-bomb 방지.
+_READINGS_BASE = timezone.make_aware(datetime(2026, 8, 7, 12, 0))
 
 
 class _Resp:
@@ -55,7 +60,7 @@ class TestBuildContext:
         # 지표 2개만 등록 → 분모=2 (9 하드코딩 아님)
         for k in ("momentum_12_1", "volume_ratio"):
             ind = make_indicator(name=k, source_key=k, window=10)
-            add_readings(ind, [float(i) for i in range(10)])
+            add_readings(ind, [float(i) for i in range(10)], base=_READINGS_BASE)
         _snap(monitor, date(2026, 8, 6), 0.10)
         _snap(monitor, date(2026, 8, 7), 0.12)
         ctx = svc.build_context(monitor)
@@ -69,7 +74,7 @@ class TestBuildContext:
         from apps.monitor.services.state_machine import score_to_phase
 
         ind = make_indicator(name="momentum_12_1", source_key="momentum_12_1", window=10)
-        add_readings(ind, [float(i) for i in range(10)])
+        add_readings(ind, [float(i) for i in range(10)], base=_READINGS_BASE)
         _snap(monitor, date(2026, 8, 7), 0.1234)
         ctx = svc.build_context(monitor)
         assert ctx["state_display"] == score_to_phase(0.1234)["label"]
@@ -104,7 +109,7 @@ class TestUnchanged:
 class TestGenerateBriefing:
     def _prep(self, monitor, make_indicator, add_readings):
         ind = make_indicator(name="momentum_12_1", source_key="momentum_12_1", window=10)
-        add_readings(ind, [float(i) for i in range(10)])
+        add_readings(ind, [float(i) for i in range(10)], base=_READINGS_BASE)
         _snap(monitor, date(2026, 8, 6), 0.10)
         _snap(monitor, date(2026, 8, 7), 0.30)  # Δ=0.2 변화
 
@@ -157,3 +162,144 @@ class TestGenerateBriefing:
     def test_no_snapshot_skip(self, monkeypatch, monitor, stock_aapl):
         _mock_complete(monkeypatch, '{"headline": "h", "body": "b"}')
         assert svc.generate_briefing(monitor) is None
+
+
+# RECON-SWAP-0813 PART 2 — 근거 점검(evidence) 컨텍스트/프롬프트 확장. D-FIXTURE-FIXED-BASE
+# 준수(readings는 _READINGS_BASE=2026-08-07에 정합, 스냅샷 as_of와 동일 앵커).
+@pytest.mark.django_db
+class TestEvidenceContext:
+    def _snap2(self, monitor):
+        _snap(monitor, date(2026, 8, 6), 0.10)
+        _snap(monitor, date(2026, 8, 7), 0.12)
+
+    def test_no_active_claim_evidence_none(self, monitor, stock_aapl):
+        self._snap2(monitor)
+        ctx = svc.build_context(monitor)
+        assert ctx["evidence"] is None
+
+    def test_claim_without_evidences_is_unstructured(self, monitor, stock_aapl):
+        self._snap2(monitor)
+        Claim.objects.create(monitor=monitor, assertion="근거 없는 주장")
+        ctx = svc.build_context(monitor)
+        assert ctx["evidence"] == {
+            "total": 0, "alive": 0, "extinct": [], "unstructured": True,
+        }
+
+    def test_all_alive_evidence(self, monitor, make_indicator, add_readings, stock_aapl):
+        self._snap2(monitor)
+        ind = make_indicator(name="momentum_12_1", source_key="momentum_12_1", window=10)
+        add_readings(ind, [float(i) for i in range(10)], base=_READINGS_BASE)
+        claim = Claim.objects.create(monitor=monitor, assertion="애플 강세")
+        ClaimEvidence.objects.create(
+            claim=claim, kind=ClaimEvidence.Kind.AUTO,
+            indicator=ind, operator=ClaimEvidence.Operator.GTE, threshold=0.0, grace_days=5,
+        )
+        ClaimEvidence.objects.create(
+            claim=claim, kind=ClaimEvidence.Kind.MANUAL,
+            description="테마 지속", recheck_period_days=90,
+            last_confirmed_at=date(2026, 8, 1),
+        )
+        ctx = svc.build_context(monitor)
+        ev = ctx["evidence"]
+        assert ev["total"] == 2
+        assert ev["alive"] == 2
+        assert ev["extinct"] == []
+        assert ev["unstructured"] is False
+
+    def test_dead_and_expired_listed_in_extinct(
+        self, monitor, make_indicator, add_readings, stock_aapl
+    ):
+        self._snap2(monitor)
+        ind = make_indicator(name="momentum_12_1", source_key="momentum_12_1", window=10)
+        add_readings(ind, [float(i) for i in range(10)], base=_READINGS_BASE)
+        claim = Claim.objects.create(monitor=monitor, assertion="애플 강세")
+        # threshold=999 → 실제 스코어링으로도 항상 위반(grace_days=0) → DEAD.
+        ClaimEvidence.objects.create(
+            claim=claim, kind=ClaimEvidence.Kind.AUTO,
+            indicator=ind, operator=ClaimEvidence.Operator.GTE, threshold=999.0, grace_days=0,
+        )
+        ClaimEvidence.objects.create(
+            claim=claim, kind=ClaimEvidence.Kind.MANUAL,
+            description="테마 후퇴", recheck_period_days=10,
+            last_confirmed_at=date(2026, 8, 7) - timedelta(days=100),
+        )
+        ctx = svc.build_context(monitor)
+        ev = ctx["evidence"]
+        assert ev["total"] == 2 and ev["alive"] == 0
+        assert ev["unstructured"] is False
+        kinds = {item["kind"] for item in ev["extinct"]}
+        assert kinds == {"auto", "manual"}
+        auto_item = next(i for i in ev["extinct"] if i["kind"] == "auto")
+        assert auto_item["label"] == "momentum_12_1"
+        # 실제 score_indicator_dispatch 배선(mock 없음) — 과거로 갈수록 window 부족으로
+        # is_sufficient=False가 되는 지점에서 streak 산출이 멈춘다(실측값, 가정값 아님).
+        assert auto_item["dead_streak_days"] == 6
+        manual_item = next(i for i in ev["extinct"] if i["kind"] == "manual")
+        assert manual_item["label"] == "테마 후퇴"
+        assert manual_item["overdue_days"] == 90
+
+
+@pytest.mark.django_db
+class TestRenderEvidenceLines:
+    def test_none_claim_no_section(self):
+        assert svc._render_evidence_lines(None) == []
+
+    def test_unstructured(self):
+        lines = svc._render_evidence_lines(
+            {"total": 0, "alive": 0, "extinct": [], "unstructured": True}
+        )
+        assert lines == ["", "근거 점검: 근거 미등록 — 빌더에서 등록 가능"]
+
+    def test_full_alive_one_liner(self):
+        ev = {"total": 2, "alive": 2, "extinct": [], "unstructured": False}
+        lines = svc._render_evidence_lines(ev)
+        assert lines == ["", "근거 점검: 근거 2/2 전부 생존"]
+
+    def test_zero_of_n_warns_and_lists(self):
+        ev = {
+            "total": 2, "alive": 0, "unstructured": False,
+            "extinct": [
+                {"kind": "auto", "label": "모멘텀", "dead_streak_days": 12},
+                {"kind": "manual", "label": "테마", "overdue_days": 30},
+            ],
+        }
+        lines = svc._render_evidence_lines(ev)
+        assert lines[1] == "근거 점검: 근거 0/2 생존"
+        assert "  ⚠ 등록 근거 전부 소멸 — 브리핑을 이 소멸 경고로 시작하라." in lines
+        assert "  - [자동] 모멘텀: 연속 12거래일 위반(소멸)" in lines
+        assert "  - [수동] 테마: 재확인 D-30" in lines
+
+    def test_partial_alive_no_warning_directive(self):
+        ev = {
+            "total": 3, "alive": 2, "unstructured": False,
+            "extinct": [{"kind": "auto", "label": "모멘텀", "dead_streak_days": 7}],
+        }
+        lines = svc._render_evidence_lines(ev)
+        assert lines[1] == "근거 점검: 근거 2/3 생존"
+        assert not any("소멸 경고로 시작" in ln for ln in lines)
+
+
+@pytest.mark.django_db
+class TestRenderUserPromptEvidenceIntegration:
+    def test_prompt_includes_evidence_section(
+        self, monitor, make_indicator, add_readings, stock_aapl
+    ):
+        ind = make_indicator(name="momentum_12_1", source_key="momentum_12_1", window=10)
+        add_readings(ind, [float(i) for i in range(10)], base=_READINGS_BASE)
+        _snap(monitor, date(2026, 8, 6), 0.10)
+        _snap(monitor, date(2026, 8, 7), 0.12)
+        claim = Claim.objects.create(monitor=monitor, assertion="애플 강세")
+        ClaimEvidence.objects.create(
+            claim=claim, kind=ClaimEvidence.Kind.AUTO,
+            indicator=ind, operator=ClaimEvidence.Operator.GTE, threshold=0.0, grace_days=5,
+        )
+        ctx = svc.build_context(monitor)
+        prompt = svc._render_user_prompt(ctx, False)
+        assert "근거 점검: 근거 1/1 전부 생존" in prompt
+
+    def test_prompt_omits_evidence_section_without_claim(self, monitor, stock_aapl):
+        _snap(monitor, date(2026, 8, 6), 0.10)
+        _snap(monitor, date(2026, 8, 7), 0.12)
+        ctx = svc.build_context(monitor)
+        prompt = svc._render_user_prompt(ctx, False)
+        assert "근거 점검" not in prompt

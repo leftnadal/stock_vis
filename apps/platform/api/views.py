@@ -243,6 +243,23 @@ class CoverageView(APIView):
         # in-window 발급에 귀속 안 되는 사용자 노출(창밖 발급·grain 불일치 등) — exposed 에 세지 않고 보고만.
         join_misses = len(imp_refs - issued_refs)
 
+        # audit(점검) 층 — coverage_detail 표면 관측 집계(D-C2-S2-FUNNEL-COV 2계열 organic/audit).
+        # additive 읽기 집계만: 스키마 무변경, 본판정(exposed/unexposed) 수치 불변.
+        # audit 표면은 COVERAGE_SURFACES(유기)와 직교 → 본판정 격리 유지.
+        audit_refs = set(
+            ImpressionLog.objects.filter(
+                user_id=request.user.id,
+                event_type=ImpressionLog.EVENT_IMPRESSION,
+                surface=ImpressionLog.SURFACE_COVERAGE_DETAIL,
+            ).values_list("object_ref", flat=True)
+        )
+        # 본판정과 동일 창(issued_refs) 스코프로 귀속 — 창밖 audit 관측은 세지 않음(join 대칭).
+        audit_in_window = audit_refs & issued_refs
+        audit_observed_uniq = len(audit_in_window)
+        audit_overlap = len(audit_in_window & exposed_refs)  # 점검·유기 양쪽 관측
+        # 점검 관측했으나 유기 미노출 = "점검됨" 배지 대상 총수(응답 표시 상한과 무관, 전 unexposed 대상).
+        audit_only_unexposed = len(audit_in_window & unexposed_refs)
+
         unexposed_items = sorted(
             (issued_map[r] for r in unexposed_refs),
             key=lambda i: i.signal_date,
@@ -255,6 +272,11 @@ class CoverageView(APIView):
                 "signal_date": i.signal_date.isoformat(),
                 "signal_tag": i.signal_tag,
                 "days_since_issue": (to_date - i.signal_date).days,
+                # additive — 점검(coverage_detail) 관측 여부. "점검됨" 배지 단위 정보(S2-B1-FE 소비).
+                "audited": (
+                    f"{i.stock_id}:{i.signal_date.isoformat()}:{i.signal_tag}"
+                    in audit_refs
+                ),
             }
             for i in unexposed_items
         ]
@@ -273,6 +295,14 @@ class CoverageView(APIView):
                     "exposed": exposed,
                     "exposure_rate": exposure_rate,
                     "unexposed_count": unexposed_count,
+                },
+                # audit 층(점검) — 본판정(summary)과 분리된 2계열. additive·본판정 수치 불변.
+                # 불변식: observed_uniq == overlap + audit_only_unexposed.
+                "audit": {
+                    "surface": COVERAGE_DETAIL_SURFACE,
+                    "observed_uniq": audit_observed_uniq,
+                    "audit_only_unexposed": audit_only_unexposed,
+                    "overlap": audit_overlap,
                 },
                 "unexposed": unexposed,
                 "meta": {

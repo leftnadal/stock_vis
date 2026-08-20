@@ -11,6 +11,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard'
 import { CloseModal } from '@/components/monitor/CloseModal'
 import { SlimStrip } from '@/components/monitor/SlimStrip'
 import { VerdictBadge } from '@/components/monitor/VerdictBadge'
+import { EvidenceModal } from '@/components/monitor/evidence/EvidenceModal'
 import { JournalFeed } from '@/components/monitor/journal/JournalFeed'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -34,12 +35,16 @@ function formatDate(iso: string | null): string {
 
 function ClaimRow({
   claim,
+  monitorId,
   judgeUsername,
   onCloseClick,
+  onEvidenceClick,
 }: {
   claim: Claim
+  monitorId: string
   judgeUsername?: string | null
   onCloseClick: (claim: Claim) => void
+  onEvidenceClick: (claim: Claim) => void
 }) {
   const pending = claim.outcome === 'pending'
   return (
@@ -89,6 +94,25 @@ function ClaimRow({
         {!pending && claim.retro_memo && (
           <p className="mt-1 text-xs italic text-gray-400">&ldquo;{claim.retro_memo}&rdquo;</p>
         )}
+        <div className="mt-1.5 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onEvidenceClick(claim)}
+            data-testid="claim-evidence-button"
+            className="text-xs text-gray-400 underline-offset-2 hover:text-gray-600 hover:underline dark:hover:text-gray-200"
+          >
+            근거 관리
+          </button>
+          {pending && claim.scenario_type === 'hold' && (
+            <Link
+              href={`/monitor/${monitorId}/swap`}
+              data-testid="claim-swap-review-link"
+              className="text-xs text-gray-400 underline-offset-2 hover:text-gray-600 hover:underline dark:hover:text-gray-200"
+            >
+              교체 검토
+            </Link>
+          )}
+        </div>
       </div>
       {pending ? (
         <button
@@ -130,6 +154,7 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
   )
 
   const [closingClaim, setClosingClaim] = useState<Claim | null>(null)
+  const [evidenceClaim, setEvidenceClaim] = useState<Claim | null>(null)
 
   if (isLoading) {
     return (
@@ -201,8 +226,10 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
               <ClaimRow
                 key={c.id}
                 claim={c}
+                monitorId={monitorId}
                 judgeUsername={user?.username}
                 onCloseClick={setClosingClaim}
+                onEvidenceClick={setEvidenceClaim}
               />
             ))}
           </div>
@@ -214,6 +241,15 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
           monitorId={monitorId}
           claimId={closingClaim.id}
           onClose={() => setClosingClaim(null)}
+        />
+      )}
+
+      {evidenceClaim && (
+        <EvidenceModal
+          claimId={evidenceClaim.id}
+          monitorId={monitorId}
+          targetRef={monitor.target_ref}
+          onClose={() => setEvidenceClaim(null)}
         />
       )}
     </div>

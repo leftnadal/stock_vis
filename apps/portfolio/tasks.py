@@ -126,3 +126,76 @@ def ingest_analyst_signals(self):
     summary["universe"] = len(symbols)
     logger.info("ingest_analyst_signals: %s", summary)
     return summary
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    name="apps.portfolio.tasks.ingest_stock_splits",
+)
+def ingest_stock_splits(self):
+    """coach 유니버스 액면분할 이력 nightly 수집 (I3-SPLIT-GUARD, D-SPLIT-1).
+
+    유니버스(보유∪관심, `_coach_universe` 재사용) 순회 → FMP /stable/splits →
+    StockSplit **append/skip**(unique (stock,date) 기준 get_or_create, 기존 행 무수정).
+    채점(analyst_scoring)이 예측~만기 구간 분할을 unscoreable:corporate_action 처리하는 원료.
+    심볼별 격리(1종목 실패 계속). beat 미등록(병진 수동, sync_stock_splits_beat).
+    """
+    from datetime import date as _date
+
+    from django.conf import settings
+    from django.db import connections
+
+    connections.close_all()  # fork 후 DB 연결 정리 (macOS SIGSEGV, 버그 #25)
+
+    from packages.shared.stocks.models import Stock, StockSplit
+
+    symbols = _coach_universe()
+    if not symbols:
+        logger.info("ingest_stock_splits: 유니버스 비어있음 — skip")
+        return {"symbols": 0, "fetched": 0, "created": 0, "skipped": 0, "errors": {}}
+
+    client = FMPClient(api_key=settings.FMP_API_KEY)
+    fetched = created = skipped = 0
+    errors: dict = {}
+    for sym in symbols:
+        try:
+            rows = client.get_stock_splits(sym)
+            stock = Stock.objects.filter(symbol=sym.upper()).first()
+            if stock is None:
+                skipped += len(rows)
+                continue
+            for r in rows:
+                fetched += 1
+                try:
+                    d = _date.fromisoformat(str(r["date"])[:10])
+                except (KeyError, ValueError, TypeError):
+                    skipped += 1
+                    continue
+                _, was_created = StockSplit.objects.get_or_create(
+                    stock=stock,
+                    date=d,
+                    defaults={
+                        "numerator": r.get("numerator"),
+                        "denominator": r.get("denominator"),
+                        "split_type": r.get("splitType") or "",
+                        "source": "fmp",
+                    },
+                )
+                if was_created:
+                    created += 1
+                else:
+                    skipped += 1  # 기존 행 무수정(append-only)
+        except Exception as e:  # noqa: BLE001 — 심볼별 격리
+            logger.exception("ingest_stock_splits 실패 %s", sym)
+            errors[sym] = str(e)
+
+    summary = {
+        "symbols": len(symbols),
+        "fetched": fetched,
+        "created": created,
+        "skipped": skipped,
+        "errors": errors,
+    }
+    logger.info("ingest_stock_splits: %s", summary)
+    return summary

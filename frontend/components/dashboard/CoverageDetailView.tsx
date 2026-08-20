@@ -1,5 +1,5 @@
 import { useImpressionTracker } from '@/hooks/useImpressionTracker'
-import type { CoverageResponse, CoverageUnexposedItem } from '@/types/coverage'
+import type { CoverageAudit, CoverageResponse, CoverageUnexposedItem } from '@/types/coverage'
 import { SURFACES } from '@/constants/surfaces'
 
 /**
@@ -34,7 +34,7 @@ export function CoverageDetailView({
   /** w90 기준 imp_uniq(= exposed + join_misses). 교차창 정합(항등식) 검증용. */
   w90ImpUniq?: number
 }) {
-  const { window, summary, unexposed, meta } = data
+  const { window, summary, unexposed, meta, audit } = data
 
   return (
     <div data-testid="coverage-detail">
@@ -42,13 +42,16 @@ export function CoverageDetailView({
         발급 창 {window.from} ~ {window.to} ({window.days}일)
       </div>
 
-      {/* summary 카드 */}
+      {/* summary 카드 (본판정) */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <SummaryCard label="발급" value={summary.issued} />
         <SummaryCard label="노출" value={summary.exposed} />
         <SummaryCard label="노출율" value={formatRate(summary.exposure_rate)} />
         <SummaryCard label="미노출" value={summary.unexposed_count} />
       </div>
+
+      {/* 점검 층 — audit 존재 시만(구형 서빙 응답엔 생략, audit-absent 강건). */}
+      {audit && <AuditLayer audit={audit} />}
 
       {/* 미노출 리스트 */}
       <h2 className="mb-2 text-lg font-medium text-gray-900">미노출 발급</h2>
@@ -143,7 +146,18 @@ function CoverageUnexposedRow({ item }: { item: CoverageUnexposedItem }) {
       ref={ref}
       className="flex items-center justify-between px-4 py-3 text-sm"
     >
-      <span className="font-medium text-gray-900">{item.ticker}</span>
+      <span className="flex items-center gap-2 font-medium text-gray-900">
+        {item.ticker}
+        {/* "점검됨" 배지 — audited true만. 항목·정렬·개수 무변(적체 비제거, 배지만). */}
+        {item.audited === true && (
+          <span
+            data-testid="audited-badge"
+            className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-normal text-slate-500"
+          >
+            점검됨
+          </span>
+        )}
+      </span>
       <span className="text-gray-500">{item.signal_tag}</span>
       <span className="text-gray-500">{item.signal_date}</span>
       <span className="text-gray-400">{item.days_since_issue}일 경과</span>
@@ -156,6 +170,43 @@ function SummaryCard({ label, value }: { label: string; value: number | string }
     <div className="rounded-lg bg-white p-4 shadow">
       <div className="text-xs text-gray-500">{label}</div>
       <div className="mt-1 text-2xl font-semibold text-gray-900">{value}</div>
+    </div>
+  )
+}
+
+/**
+ * 점검 층 (D-C2-S2-FUNNEL-COV 2계열 — audit) — 본판정(summary)과 시각 위계 분리.
+ * 빗금(해칭) + 저채도 = 본선과 분리된 점검 계열임을 시각적으로 표기.
+ * 창-불가지론: 응답 audit 블록을 그대로 렌더(수치 하드코딩 없음). 창이 며칠이든 응답값 표시.
+ * 불변식(observed_uniq === overlap + audit_only_unexposed)은 BE 보장 — FE는 표시만.
+ */
+function AuditLayer({ audit }: { audit: CoverageAudit }) {
+  return (
+    <div
+      data-testid="coverage-audit-layer"
+      className="mb-6 rounded-lg border border-dashed border-slate-300 p-4"
+      style={{
+        backgroundImage:
+          'repeating-linear-gradient(45deg, rgba(148,163,184,0.10) 0, rgba(148,163,184,0.10) 6px, transparent 6px, transparent 12px)',
+      }}
+    >
+      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+        점검 층 · 본판정 제외
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <AuditStat label="점검 관측" value={audit.observed_uniq} />
+        <AuditStat label="점검됨·미노출" value={audit.audit_only_unexposed} />
+        <AuditStat label="노출·점검 중복" value={audit.overlap} />
+      </div>
+    </div>
+  )
+}
+
+function AuditStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="text-xs text-slate-400">{label}</div>
+      <div className="mt-0.5 text-xl font-semibold text-slate-500">{value}</div>
     </div>
   )
 }

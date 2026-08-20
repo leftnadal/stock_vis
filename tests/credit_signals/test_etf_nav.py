@@ -287,3 +287,98 @@ class TestNoImpactRegression:
         assert "LQD_NAV_DISCOUNT" in results
         # LQD 원장 없음 → None(상태 미생성)
         assert results["LQD_NAV_DISCOUNT"] is None
+
+
+@pytest.mark.django_db
+class TestNonTradingDayPubGuard:
+    """P2a-1d — 비거래일(주말·미국 휴장일) 게시 가드.
+
+    FMP가 비거래일에 게시하는 잔존값 이월분은 새 strike가 아니므로 create·revise를
+    원천 차단한다(기존행 무접촉). 가드 키 = 게시일(updatedAt의 ET 날짜)이지 발화일이
+    아니다 — 거래일 게시의 클린 create/revise 경로는 그대로 보존(08-16 오귀속 재발 방지).
+    """
+
+    def _client(self, upd, nav, eod, prev_close=None):
+        q = {"symbol": "HYG"}
+        if prev_close is not None:
+            q["previousClose"] = prev_close
+        return _FakeClient(
+            quote=q, info={"symbol": "HYG", "nav": nav, "updatedAt": upd}, eod=eod
+        )
+
+    def test_saturday_pub_blocks_create(self, caplog):
+        """T1 — pub=토(08-15) → create 시도 차단 + skip 로그 (08-16 오귀속 재현).
+
+        가드 없으면 prev_trading_day(08-15)=금 08-14 행이 create된다. 가드가 봉쇄.
+        """
+        c = self._client(
+            "2026-08-15T20:14:30-04:00", 79.63,
+            [{"date": "2026-08-14", "close": 79.71}],
+        )
+        with caplog.at_level("WARNING"):
+            r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 15))
+        assert r["result"] == "skipped" and r["reason"] == "non_trading_day_pub"
+        assert not EtfNavHistory.objects.exists()  # create 원천 차단
+        assert "비거래일 게시" in caplog.text
+
+    def test_sunday_pub_blocks_create(self):
+        """T2 — pub=일(08-16) → 동일 차단 (08-17 재현)."""
+        c = self._client(
+            "2026-08-16T20:57:10-04:00", 79.63,
+            [{"date": "2026-08-14", "close": 79.71}],
+        )
+        r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 16))
+        assert r["result"] == "skipped" and r["reason"] == "non_trading_day_pub"
+        assert not EtfNavHistory.objects.exists()
+
+    def test_friday_pub_allows_create(self):
+        """T3 — pub=금(08-14, 거래일) + 신규 → create 허용 (08-15 클린 경로).
+
+        발화일 키였다면 이 클린 create까지 오차단됐을 것 — 게시일 키가 정답임을 증명.
+        """
+        c = self._client(
+            "2026-08-14T20:24:40-04:00", 79.63,
+            [{"date": "2026-08-13", "close": 79.79}],
+        )
+        r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 14))
+        assert r["result"] == "created" and r["trade_date"] == "2026-08-13"
+        assert EtfNavHistory.objects.get(
+            symbol="HYG", date=date(2026, 8, 13)
+        ).nav == _D("79.63")
+
+    def test_monday_pub_allows_revise(self):
+        """T4 — pub=월(08-17, 거래일) + 기존행 값 상이 → revise 허용 (08-18 교정 경로)."""
+        # 기존 08-14 행(오귀속 잔재값 79.63)을 seed → 월 게시가 79.57로 교정.
+        upsert_etf_nav("HYG", date(2026, 8, 14), _D("79.63"), _D("79.71"))
+        c = self._client(
+            "2026-08-17T20:53:20-04:00", 79.57,
+            [{"date": "2026-08-14", "close": 79.71}],
+        )
+        r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 17))
+        assert r["result"] == "updated" and r["trade_date"] == "2026-08-14"
+        assert EtfNavHistory.objects.get(
+            symbol="HYG", date=date(2026, 8, 14)
+        ).nav == _D("79.57")
+
+    def test_holiday_pub_blocks_create(self):
+        """T5 — pub=미국 휴장일(Labor Day 2026-09-07 월) → 차단."""
+        c = self._client(
+            "2026-09-07T20:00:00-04:00", 79.50,
+            [{"date": "2026-09-04", "close": 79.60}],
+        )
+        r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 9, 7))
+        assert r["result"] == "skipped" and r["reason"] == "non_trading_day_pub"
+        assert not EtfNavHistory.objects.exists()
+
+    def test_trading_day_pub_same_value_already_ok(self):
+        """T6 — pub=거래일(금 08-14) + 동일값 기존행 → no-change(멱등) 불변, 가드 무간섭."""
+        upsert_etf_nav("HYG", date(2026, 8, 13), _D("79.63"), _D("79.79"))
+        c = self._client(
+            "2026-08-14T20:24:40-04:00", 79.63,
+            [{"date": "2026-08-13", "close": 79.79}],
+        )
+        r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 14))
+        assert r["result"] == "skipped"  # no-change = already_ok
+        assert EtfNavHistory.objects.get(
+            symbol="HYG", date=date(2026, 8, 13)
+        ).revised_at is None  # 불변

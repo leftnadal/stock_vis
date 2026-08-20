@@ -510,3 +510,47 @@ class EtfDailyBar(models.Model):
 
     def __str__(self):
         return f"EtfDailyBar({self.symbol}, {self.date})"
+
+
+class SymbolDemandSignal(models.Model):
+    """
+    DSS(재무 지지 점수) 종목 원장 (DSS-IMPL-1, 설계서 §6.2 수요 축).
+
+    주간(금요일 anchor) WoW EPS 컨센서스 방향 신호. 동일-FY(차기) 조인으로 산출하며
+    (D-DSS-FY-MATCH), 컨센서스 구성 변화(|Δnum_analysts|≥2)·FY 미스매치·지난주 부재는
+    excluded로 격리(D-DSS-ANALYST-FILTER). direction = sign(Δeps)(D-DSS-SIGNAL 2-A).
+    섹터 breadth 집계의 원자 원장. append-only(INSERT), 기존 행 UPDATE/DELETE 금지.
+    """
+
+    EXCLUDE_FY_MISMATCH = "fy_mismatch"
+    EXCLUDE_ANALYST_DELTA = "analyst_delta"
+    EXCLUDE_MISSING_PREV = "missing_prev"
+
+    symbol = models.CharField(max_length=16, db_index=True)
+    anchor_date = models.DateField(db_index=True, help_text="이번 주 금요일 스냅샷(WoW 앵커).")
+    fiscal_year = models.SmallIntegerField(help_text="조인 기준 FY(차기 = anchor.year+1).")
+    eps_prev = models.DecimalField(
+        max_digits=12, decimal_places=4, null=True, blank=True, help_text="지난주 동일-FY eps_avg."
+    )
+    eps_curr = models.DecimalField(
+        max_digits=12, decimal_places=4, null=True, blank=True, help_text="이번주 eps_avg."
+    )
+    direction = models.SmallIntegerField(
+        null=True, blank=True, help_text="sign(Δeps): +1 상향/−1 하향/0 불변. excluded 시 NULL."
+    )
+    num_analysts_prev = models.IntegerField(null=True, blank=True)
+    num_analysts_curr = models.IntegerField(null=True, blank=True)
+    excluded = models.BooleanField(default=False, help_text="가드 제외 여부(유효분모에서 빠짐).")
+    exclude_reason = models.CharField(
+        max_length=32, blank=True, default="", help_text="fy_mismatch/analyst_delta/missing_prev."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("symbol", "anchor_date")]
+        ordering = ["-anchor_date", "symbol"]
+        indexes = [models.Index(fields=["anchor_date"], name="dss_signal_anchor_idx")]
+
+    def __str__(self):
+        d = self.exclude_reason if self.excluded else f"dir={self.direction}"
+        return f"SymbolDemandSignal({self.symbol}, {self.anchor_date}, {d})"

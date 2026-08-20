@@ -217,6 +217,16 @@ class FMPClient:
             return data[0]
         return {}
 
+    def get_stock_splits(self, symbol: str) -> List[Dict[str, Any]]:
+        """
+        액면분할 이력 조회 (I3-SPLIT-GUARD, D-SPLIT-1).
+
+        Returns: [{symbol, date, numerator, denominator, splitType}, ...] (없으면 []).
+        API: GET /stable/splits?symbol={symbol}
+        """
+        data = self._make_request("/stable/splits", {"symbol": symbol.upper()})
+        return data if isinstance(data, list) else []
+
     def get_etf_shares_float(self, symbol: str) -> Dict[str, Any]:
         """
         ETF 발행주식수(현재 스냅샷) 조회 — C4 원료(TH-7c).

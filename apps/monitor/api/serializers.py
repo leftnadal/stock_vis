@@ -5,10 +5,13 @@ from apps.monitor.models import (
     AdvisorNote,
     AlertEvent,
     Claim,
+    ClaimEvidence,
     ClosureSnapshot,
+    DecisionJournalEntry,
     IndicatorReading,
     Monitor,
     MonitorIndicator,
+    SwapHoldLog,
 )
 from apps.monitor.services.scope_resolver import ScopeResolutionError, resolve
 
@@ -49,6 +52,67 @@ class IndicatorReadingSerializer(serializers.ModelSerializer):
     class Meta:
         model = IndicatorReading
         fields = ["id", "indicator", "value", "asof", "validation_status", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+
+class ClaimEvidenceSerializer(serializers.ModelSerializer):
+    """Claim 근거(자동형/수동형, RECON-SWAP-0813 PART 1). 쓰기는 별도 엔드포인트
+    (/api/v1/monitor/claim-evidences/)에서 — ClaimSerializer.evidences는 read-only nested."""
+
+    class Meta:
+        model = ClaimEvidence
+        fields = [
+            "id", "claim", "kind",
+            "indicator", "operator", "threshold", "grace_days",
+            "description", "recheck_period_days", "last_confirmed_at",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def validate(self, attrs):
+        kind = attrs.get("kind", getattr(self.instance, "kind", None))
+        indicator = attrs.get("indicator", getattr(self.instance, "indicator", None))
+        operator = attrs.get("operator", getattr(self.instance, "operator", None))
+        threshold = attrs.get("threshold", getattr(self.instance, "threshold", None))
+        description = attrs.get("description", getattr(self.instance, "description", ""))
+
+        if kind == ClaimEvidence.Kind.AUTO:
+            missing = {}
+            if indicator is None:
+                missing["indicator"] = "자동형 근거는 indicator가 필요합니다."
+            if not operator:
+                missing["operator"] = "자동형 근거는 operator가 필요합니다."
+            if threshold is None:
+                missing["threshold"] = "자동형 근거는 threshold가 필요합니다."
+            if missing:
+                raise serializers.ValidationError(missing)
+        elif kind == ClaimEvidence.Kind.MANUAL:
+            if not description:
+                raise serializers.ValidationError(
+                    {"description": "수동형 근거는 description이 필요합니다."}
+                )
+        return attrs
+
+
+class SwapHoldLogSerializer(serializers.ModelSerializer):
+    """교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). 쓰기는
+    /api/v1/monitor/swap-hold-logs/에서 — 횟수·누적일수는 조회 측(FE)이 이 로그를 집계."""
+
+    class Meta:
+        model = SwapHoldLog
+        fields = ["id", "claim", "held_at", "candidate_ref", "hold_price", "candidate_price", "note"]
+        read_only_fields = ["id", "held_at"]
+
+    def validate_candidate_ref(self, value):
+        return value.upper() if value else value
+
+
+class DecisionJournalEntrySerializer(serializers.ModelSerializer):
+    """마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). sentence 품질 검증 없음(ADR §6)."""
+
+    class Meta:
+        model = DecisionJournalEntry
+        fields = ["id", "claim", "kind", "sentence", "created_at"]
         read_only_fields = ["id", "created_at"]
 
 
@@ -201,6 +265,9 @@ class ClaimSerializer(serializers.ModelSerializer):
     closure_snapshot = serializers.SerializerMethodField()
     # 가격 구간축 표시 메타 (BE 완결 단일 소스 — FE 재계산 금지). 가격 없으면 null.
     zone_display = serializers.SerializerMethodField()
+    # 근거 목록 (읽기 전용 nested — 쓰기는 /monitor/claim-evidences/ 별도 엔드포인트,
+    # RECON-SWAP-0813 PART 1, MonitorIndicatorViewSet과 동일 관례).
+    evidences = ClaimEvidenceSerializer(many=True, read_only=True)
 
     class Meta:
         model = Claim
@@ -213,7 +280,7 @@ class ClaimSerializer(serializers.ModelSerializer):
             "fair_value_low", "fair_value_high",
             # 구간축 (read-only — 파이프라인 소유) + 표시 메타
             "last_price_zone", "entry_reached_at", "zone_display",
-            "closure_snapshot", "created_at", "resolved_at",
+            "closure_snapshot", "evidences", "created_at", "resolved_at",
         ]
         # 마감 회고 + 파이프라인 소유 필드는 직접 CRUD로 쓰지 못하게 read-only
         read_only_fields = [

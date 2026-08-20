@@ -28,6 +28,7 @@ from ..constants import (
 )
 from ..models import EtfNavHistory
 from ..trading_calendar import (
+    is_trading_day,
     next_trading_day,
     previous_trading_day,
     warn_if_coverage_expiring,
@@ -157,6 +158,21 @@ def resolve_and_upsert_one(client, symbol: str, today_et: date | None = None) ->
     warn_if_coverage_expiring(today_et)
 
     nav_pub_date = nav_dt.date()  # updatedAt(ET)의 게시 날짜 D
+
+    # 가드(P2a-1d) — 비거래일 게시: 게시일이 미국 거래일이 아니면(주말·휴장일) FMP가
+    # 내놓은 값은 직전 거래일치 잔존값 이월분이지 새 strike가 아니다. create·revise를
+    # 원천 차단하고 기존행은 무접촉(대조만) 한다. 키 = 게시일(updatedAt의 ET 날짜)이지
+    # 발화일이 아니다 — 거래일 게시의 클린 create/revise 경로는 그대로 살린다.
+    # (08-16 오귀속: 토·일 게시가 prev_trading_day=금요일 행을 잔존값으로 조기 생성.)
+    if not is_trading_day(nav_pub_date):
+        logger.warning(
+            "etf_nav skip(비거래일 게시): pub=%s — create 차단", nav_pub_date
+        )
+        return {
+            "symbol": symbol, "result": "skipped", "reason": "non_trading_day_pub",
+            "nav_updated_at": nav_dt.isoformat(),
+        }
+
     # 게이트 — 피드 정체: 게시 날짜가 오늘 기준 N거래일 이상 과거면 skip(nav_stale).
     if nav_pub_date < today_et:
         gap = _trading_days_between(nav_pub_date, today_et)

@@ -370,3 +370,96 @@ export interface AdvisorNote {
   prompt_version: string
   created_at: string
 }
+
+// ── Claim 근거 (RECON-SWAP-0813 PART 1, /monitor/claim-evidences/) ──
+// BE ClaimEvidence 미러 — 자동형(kind=auto, 지표 z 임계 대조)·수동형(kind=manual, 서술+재확인) 단일 테이블.
+export type EvidenceKind = 'auto' | 'manual'
+export type EvidenceOperator = 'gte' | 'lte' | 'gt' | 'lt'
+
+export interface ClaimEvidence {
+  id: string
+  claim: string
+  kind: EvidenceKind
+  // 자동형 전용(수동형은 전부 null)
+  indicator: string | null
+  operator: EvidenceOperator | null
+  threshold: number | null
+  grace_days: number
+  // 수동형 전용(자동형은 description=''·recheck_period_days=기본값)
+  description: string
+  recheck_period_days: number
+  last_confirmed_at: string | null
+  created_at: string
+}
+
+// POST /monitor/claim-evidences/ 요청 바디(모드별 필수값은 BE validate가 최종 판정).
+export interface ClaimEvidenceInput {
+  claim: string
+  kind: EvidenceKind
+  indicator?: string | null
+  operator?: EvidenceOperator | null
+  threshold?: number | null
+  grace_days?: number
+  description?: string
+  recheck_period_days?: number
+  last_confirmed_at?: string | null
+}
+
+// GET /monitor/claims/{id}/evidence-status/?as_of= — 근거 생사 판정(계약층, 읽기 전용·상태변경 없음).
+export type EvidenceLifeStatus = 'alive' | 'dead' | 'expired' | 'unknown'
+
+export interface EvidenceStatusResult {
+  evidence_id: string
+  kind: EvidenceKind
+  status: EvidenceLifeStatus
+  dead_streak_days: number
+  indicator_name: string | null
+  description: string
+}
+
+export interface EvidenceStatusResponse {
+  claim_id: string
+  as_of: string
+  total: number
+  alive: number
+  results: EvidenceStatusResult[]
+}
+
+// ── 교체 검토 보류 이력 (RECON-SWAP-0813 PART 3-BE, /monitor/swap-hold-logs/) ──
+// 횟수·누적일수는 이 로그를 조회 측(FE)이 집계한다 — 별도 카운터 없음(BE 단일 소스=로그).
+export interface SwapHoldLog {
+  id: string
+  claim: string
+  held_at: string
+  candidate_ref: string | null
+  // 보류 시점 가격 스냅샷 (P-1 성과 앵커, DRF Decimal→문자열). 구 기록(스냅샷 신설 이전)은 null.
+  hold_price: string | null
+  candidate_price: string | null
+  note: string
+}
+
+export interface SwapHoldLogInput {
+  claim: string
+  candidate_ref?: string | null
+  hold_price?: string | null
+  candidate_price?: string | null
+  note?: string
+}
+
+// ── 결정 일지 (RECON-SWAP-0813 PART 3-BE, /monitor/decision-journal-entries/) ──
+// 마감/재커밋 실행 시 강제되는 1문장. sentence 품질 검증 없음(ADR §6 — 최소 글자수 등 FE도 금지).
+export type DecisionJournalKind = 'close' | 'recommit' | 'hold'
+
+export interface DecisionJournalEntry {
+  id: string
+  claim: string
+  kind: DecisionJournalKind
+  sentence: string
+  created_at: string
+}
+
+export interface DecisionJournalEntryInput {
+  claim: string
+  kind: DecisionJournalKind
+  sentence: string
+}

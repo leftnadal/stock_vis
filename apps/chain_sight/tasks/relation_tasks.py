@@ -440,3 +440,27 @@ def apply_upward_learning_task(self, period=None):
         f"streak={streak_up} skipped={skipped}"
     )
     return result
+
+
+@shared_task(
+    bind=True,
+    name="chainsight-sync-strength-weekly",
+    max_retries=1,
+    soft_time_limit=3600,
+    time_limit=3660,
+)
+def recompute_sync_strength_weekly(self):
+    """연결강도(초과수익 90거래일 상관) 주 1회 재계산 (CS-P4-OPS Slice1).
+
+    주기 근거: 초과수익 윈도우 특성상 일 단위 재계산은 비용 대비 무의미하며,
+    신규 종목은 이력 누적 후 자동 편입되는 구조와 정합(주 1회 제안). evidence 계층만·
+    QuerySet.update() (D-CS-P1B). 순수 재사용 = compute_relation_sync_strength --apply.
+    """
+    from io import StringIO
+
+    from django.core.management import call_command
+
+    out = StringIO()
+    call_command("compute_relation_sync_strength", "--apply", stdout=out)
+    logger.info("sync-strength-weekly 완주: %s", out.getvalue()[-400:])
+    return {"status": "ok"}
