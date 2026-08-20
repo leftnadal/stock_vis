@@ -4,8 +4,9 @@ ETF NAV·시장가 수집 서비스 (P2a-1 → P2a-1c C″).
 FMP 채권 ETF etf/info nav = 전일(T-1) 종가 NAV를 익일 오전(~11:3x ET) 또는 당일
 저녁(~17:1x ET)에 게시(iShares 역산 2/2 확정). 따라서 quote 정본거래일에 nav를
 묶으면 항상 1일 밀린 혼합이 된다. C″ 귀속 규칙:
-  - nav_trade_date = updatedAt(ET) 날짜의 직전 미국 거래일(D-1, 휴장·주말 자동 skip)
-  - price = EOD 이력(/stable/historical-price-eod/full)의 D-1 종가 (주 소스 ⓑ)
+  - nav_trade_date = updatedAt(ET) 날짜 당일 (P2a-1e T-0: fix 08-14 후 저녁 스윕 =
+    당일 확정 NAV, iShares 교차검증. 비거래일 pub은 가드 P2a-1d가 선차단.)
+  - price = EOD 이력(/stable/historical-price-eod/full)의 당일 종가 (주 소스 ⓑ)
     · quote.previousClose 확보 시 교차검증(ⓐ), 불일치는 행 생성 + mismatch 플래그(ⓑ 우선)
   - 게이트: 마감시각(C′) 폐기 → 피드 정체 게이트. updatedAt 날짜가 오늘(ET) 기준
     ETF_NAV_STALE_TRADING_DAYS 거래일 이상 과거면 skip(nav_stale).
@@ -30,7 +31,6 @@ from ..models import EtfNavHistory
 from ..trading_calendar import (
     is_trading_day,
     next_trading_day,
-    previous_trading_day,
     warn_if_coverage_expiring,
 )
 
@@ -187,8 +187,13 @@ def resolve_and_upsert_one(client, symbol: str, today_et: date | None = None) ->
                 "nav_updated_at": nav_dt.isoformat(), "today_et": today_et.isoformat(),
             }
 
-    # C″ 귀속: nav_trade_date = 게시 날짜 D의 직전 거래일 (전일 종가 NAV).
-    nav_trade_date = previous_trading_day(nav_pub_date)
+    # 귀속(P2a-1e T-0): nav_trade_date = 게시 날짜 D 당일 (당일 확정 NAV).
+    # fix(08-14) 이후 FMP 저녁 스윕(20:1x~20:5x ET)이 당일 확정 NAV를 게시 —
+    # iShares 공식치 양 ETF 교차검증. T-1(전일 귀속)은 로테이션 시절 오전 파싱의
+    # 부산물로 소멸. 비거래일 pub은 위 가드(P2a-1d)가 선차단하므로 여기 도달하는
+    # 것은 거래일 pub뿐 = nav_trade_date는 항상 거래일. price 페어링이 '당일 nav
+    # vs 당일 EOD'로 정렬되어 ⓐ/ⓑ mismatch 판별력 회복.
+    nav_trade_date = nav_pub_date
 
     # price = EOD 이력의 nav_trade_date 종가 (주 소스 ⓑ).
     price = _eod_close(client, symbol, nav_trade_date)
