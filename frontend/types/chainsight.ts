@@ -207,3 +207,86 @@ export interface ThemeHeatCard {
   eta_days?: number | null;
   blocked?: { reason: string; since: string | null; days_stale: number | null };
 }
+
+// ── Mindmap 카드 (CS-P5-FE-CARD, D1 업종 2단 + D-CARD-GATE) ──
+
+/** 트리 카드 요약 — GET /api/v1/chainsight/mindmap/tree/ 내 industries[].cards[] 항목 */
+export interface MindmapCardSummary {
+  ticker: string;
+  name: string;
+  /** 게이트 통과 연결 수(evidence AND SEC4종) */
+  gate_conn_count: number;
+  /** 같은 그룹(CO_MENTIONED) 신호 수 — 연결 아님 */
+  group_signal_count: number;
+}
+
+/** 레벨2 — industry 버킷("미분류" 포함 가능) */
+export interface MindmapIndustry {
+  industry: string;
+  stock_count: number;
+  cards: MindmapCardSummary[];
+}
+
+/** 레벨1 — sector 버킷("미분류" 버킷 포함) */
+export interface MindmapSector {
+  sector: string;
+  stock_count: number;
+  industry_count: number;
+  industries: MindmapIndustry[];
+}
+
+/** GET /api/v1/chainsight/mindmap/tree/ 응답 */
+export interface MindmapTreeResponse {
+  stock_total: number;
+  sector_count: number;
+  gate_definition: string;
+  sectors: MindmapSector[];
+}
+
+/** SEC 4종 게이트 통과 관계 유형 */
+export type MindmapRelationType =
+  | 'COMPETES_WITH'
+  | 'PARTNER_WITH'
+  | 'SUPPLIES_TO'
+  | 'DEPENDS_ON';
+
+export type MindmapDirection = 'in' | 'out' | 'both';
+
+/** 카드 상세 — "확인된 연결" 항목 */
+export interface MindmapConnection {
+  other: string;
+  other_name: string;
+  relation_type: MindmapRelationType;
+  direction: MindmapDirection;
+  sync_strength: number | null;
+  contract_date: string | null;
+  truth_score: number;
+  status: string;
+  basis: string;
+}
+
+/** 카드 상세 — ACQUIRED 방향 구조(현재 데이터 0 = 빈 상태 정상) */
+export interface MindmapAcquired {
+  other: string;
+  other_name: string;
+  role: 'acquirer' | 'target';
+}
+
+/** 카드 상세 — "같은 그룹"(CO_MENTIONED, 연결 아님) */
+export interface MindmapGroup {
+  other: string;
+  other_name: string;
+  co_mention_count: number;
+}
+
+/** GET /api/v1/chainsight/mindmap/card/{symbol}/ 응답 */
+export interface MindmapCardResponse {
+  symbol: string;
+  name: string;
+  connection_count: number;
+  connections: MindmapConnection[];
+  acquired: MindmapAcquired[];
+  groups: MindmapGroup[];
+  group_total: number;
+  group_capped: boolean;
+}
