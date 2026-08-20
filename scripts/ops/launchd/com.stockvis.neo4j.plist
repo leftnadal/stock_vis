@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.stockvis.neo4j</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/byeongjinjeong/neo4j/bin/neo4j</string>
+        <string>console</string>
+    </array>
+
+    <!-- JAVA_HOME 필수: 시스템 PATH에 java 미노출(openjdk@21 keg-only) → 명기 없으면 기동 실패 -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>JAVA_HOME</key>
+        <string>/opt/homebrew/opt/openjdk@21</string>
+    </dict>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/byeongjinjeong/neo4j</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/byeongjinjeong/Library/Logs/stockvis/neo4j.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/byeongjinjeong/Library/Logs/stockvis/neo4j.err.log</string>
+
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+</dict>
+</plist>

@@ -5,6 +5,17 @@
 
 ---
 
+## NEO4J-CLOSE-1 후속 (2026-08-20, sync 재활성화·트랙 종결 후)
+
+> 출처: NEO4J-CLOSE-1(지시서 `be594bd9`). GRAPH-NEO4J-SYNC-DEACTIVATE 종결(위)·OPS-SMTP-CRED 선존(line 235 참조).
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| NEO4J-RESTORE-P2 | **Neo4j launchd 항구화** — 타르볼용 `com.stockvis.neo4j.plist`(JAVA_HOME=openjdk@21 명기·KeepAlive·RunAtLoad) 설치. plist 초안+runbook 제작 완료(§7, `scripts/ops/launchd/`). **집행=병진 수동**(launchctl bootstrap·죽은 homebrew.mxcl.neo4j 엔트리 처리) | @infra | 병진 수동 | 🔭 등재(준비물 완료) |
+| NEO4J-SYNCEDAT-PROBE | synced_at 07-11 스탬프 경위 미해명(homebrew 04-03·타르볼 05-01 어느 쪽도 설명 불가) — `git log neo4j_sync.py` 프로브로 판별 | @backend | — | 🔭 등재(저순위) |
+| EODDASH-TARGETDATE | `run_eod_pipeline(target_date=)` 재실행 경로가 EODDashboardSnapshot row 미생성(JSON은 bake됨) — target_date 경로에서 요약 스냅샷도 생성하도록 개선 | @backend | — | 🔭 등재(저순위) |
+| Q19-REMEASURE | sync 재개 후 Q19(co-mention 04-25 단절) 재측정 — 신규 고유 페어 관측 + 9562 지표 정의 실측 **선행** | @backend | sync 재개(done) | 🔭 등재 |
+
 ## CS-P2-8K 후속 (2026-08-13, 8-K 파이프라인 랜딩 후)
 
 > 출처: CS-P2-8K 종결(랜딩 `16060620`, DECISIONS `D-CS-P2-8K`). 착지 15관계·미해소 375·증거 549 보존.
@@ -737,7 +748,7 @@
 | GRAPH-EGO-NEO4J-REEVAL | Neo4j 거취 재평가 — **동결 중**(D-GRAPH-EGO-BACKEND). **트리거**: 멀티홉(2+hop)·커뮤니티탐지(GDS)·대규모 순회가 제품 요구로 발생 시 Neo4j 재가동+dirty 270 재동기 재평가. 그 전엔 PG 네이티브 ego로 충분 | @backend/@infra | 트리거 충족 시 | 💤 동결 |
 | GRAPH-TRUTHSCORE-NORM | truth_score 정규화(0~85 미정규화 → 0~1 또는 0~100). **ego 화면이 소비자가 됨**(truth_score를 굵기/불투명도로 렌더) → 우선순위 상향 후보. 별도 트랙(ego API·기존 소비처 동시 영향, 행위보존 회귀 필요). **★요구사항 추가(S3-LAND, 3순위 사후분석): 재산출 시 산식 버전 + 입력 스냅샷을 기록**(gate_audit·rationale와 동형 감사추적 — "왜 이 점수" 재현 가능하게). | @backend | ego 화면 land 후 | 🆕 후보(상향) |
 | GRAPH-CHOICES-0ROW | 0행 choices(`HAS_THEME`·`HELD_BY_SAME_FUND`) 제거 — **파괴적**(choices 제거 시 기존 데이터 유입 경로 확인 필요, migration DDL 가능성). 보고만, 착수 전 영향분석 | @backend | 영향분석 후 | 🆕 후보(보류) |
-| GRAPH-NEO4J-SYNC-DEACTIVATE | neo4j sync 태스크 3종(`chainsight-neo4j-dirty-sync`·`sync-profiles-neo4j`·`sync-relations-neo4j`) 전부 enabled이나 Neo4j DOWN → dirty 270 재동기 실패 반복(무효 가동). **비활성 후보**(에러 누적 차단). beat 변경=병진 수동. Neo4j 재가동 결정(GRAPH-EGO-NEO4J-REEVAL)과 연동 | @infra | 병진 결정 | 🆕 후보(보고만) |
+| GRAPH-NEO4J-SYNC-DEACTIVATE | ~~neo4j sync 3종 Neo4j DOWN → dirty 재동기 실패 반복 → 비활성~~ **✅ 종결(NEO4J-CLOSE-1, 2026-08-20)**: Neo4j 복구·인증 정상화로 조건 충족 → 3종 재활성화(`.save()`+`update_changed()`)·`sync_relations_to_neo4j.delay()` = **synced 14582·dirty 0·neo4j_synced_at 07-11→08-20 06:32 전진**. 레거시 RELATED_TO 정리 1회 발동(10582 reset, 설계된 재생성). | @infra | 완료 | ✅ done |
 | CS-TEST | EventBoard/Ranking 테스트 5건 404(`theme_tags` 플래그 OFF ↔ EventGroup 보드 기대, 라우트는 등록됨) | chain_sight 트랙 직접 | 동일(chain_sight 실작업 슬라이스) | 🆕 보류 |
 
 ---

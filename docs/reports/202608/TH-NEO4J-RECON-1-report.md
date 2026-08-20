@@ -150,3 +150,42 @@ lsof -nP -iTCP:7687 | grep LISTEN     # 현재: 무출력(다운)
 - 본 보고서: (커밋 후 세션 출력 말미에 명시)
 
 **→ HALT (상신 종료)**
+
+---
+
+# 실행 addendum (NEO4J-CLOSE-1, 2026-08-20)
+
+> 정찰(recon) 이후 실행·복구·종결 경위. 지시서 NEO4J-CLOSE-1(`be594bd9`) 위임 집행.
+
+## 사건 서사 최종본
+1. **타르볼 Neo4j 05-01 12:05 UTC 정지** — 정상 shutdown. 재기동 실패의 근원 = **launchd 부재(타르볼용 없음)** + **JAVA_HOME 결손**(openjdk@21 미노출). 유일 launchd(`homebrew.mxcl.neo4j`)는 04-03 제거된 바이너리를 가리키는 무효 엔트리.
+2. **07-13 sync 3종 의도적 비활성** — Neo4j 다운으로 dirty 재동기 반복 실패(무효 가동)를 차단하려 `chainsight-sync-{relations,profiles}-neo4j`·`chainsight-neo4j-dirty-sync`를 enabled=False. **기록 있음**(git `a95c9c05` ⑰-M 결정①·TASKQUEUE GRAPH-NEO4J-SYNC-DEACTIVATE·PROGRESS D2-LEDGER-PROBE). 재가동 시 재활성화가 예정된 수순.
+3. **08월 복구 시도 중 비번 미상화** — .env 로테이션값(-S9h…)과 타르볼 auth(구 stockvis123) 불일치 발견. 병진 수동 변경 시 **클립보드 오염**(83자 'pbpa…' 붙여넣기)으로 비번이 미상 값으로 바뀜 + 워커 폭주로 인증 잠금.
+4. **auth-off 결정론적 리셋** — auth_enabled=false로 임시 기동→.env값 ALTER→auth 원복. 현재 비번 불요·잠금 우회. `.env` 자격증명 인증 성공(1181노드/17699관계).
+5. **celery 15.8h 정지(08-18 08:55~08-19 00:46 UTC)** — 폭주 차단 위해 celery bootout. **유일 실손 원인 = 시한 가드 미집행**(정지 상태를 되돌릴 알람/소유자 부재). 이 구간의 저녁 일일 배치 전량 미발화.
+6. **08-18 결번 확정 + EOD 재생성** — GAP-AUDIT-0818로 미발화 실측. `run_eod_pipeline(target_date=2026-08-18)` 병진 enqueue → EODSignal 333종목 복구(커버리지 정상).
+7. **재활성화·게이트(본 addendum)** — sync 3종 재활성화 + `sync_relations_to_neo4j.delay()` → **synced=14582·dirty 0·neo4j_synced_at 07-11→2026-08-20 06:32 전진**. 게이트 PASS.
+
+## (b)가설 반증
+- homebrew neo4j = 04-03 이후 무활동(`/opt/homebrew/var/log/neo4j.log` mtime Apr 3·`brew list neo4j` 미설치). **07-11/13과 무관**.
+- **synced_at 07-11 스탬프 경위 = 미해명**(homebrew·타르볼 어느 인스턴스로도 설명 불가). 역사적 의문, `git log neo4j_sync.py` 프로브로 판별 가능 — **저순위**.
+
+## known-gaps (08-18 결번, 영구 or 조건부)
+- **영구 결번(실행일 앵커)**: MonitorSnapshot · PortfolioSnapshot · AdvisoryRun · advisor 브리핑 · 일집계(breadth/sector/sentiment/concentration/brief) · agent/daily 리포트(발송분) · heat(소급 금지).
+- **EODDashboardSnapshot 08-18 = row 미생성**(target_date 재실행 경로가 요약 스냅샷 미bake·JSON 359파일은 정상). 개선 저순위.
+- **인트라데이 5분 샘플 희소**(장중 미발화분, 재구성 불가·경미).
+- backfill-signal-accuracy 08-18 = 다음 발화(08-20 23:00)에서 커버 예정(EOD 재생성 선행 완료).
+
+## §3 시간 조건부(미도래)
+- machine clock 06:32 UTC < 23:10 UTC → **차기 확인 항목**: 08-20 23:00 UTC backfill-signal-accuracy 발화 후 **SignalAccuracy signal_date=2026-08-18 row 존부** 확인.
+
+## common-bugs 등재 4건 (본 addendum에 기재 — 세션 write allowlist상 common-bugs.md 직편집 제외)
+1. **시크릿 클립보드 경유 금지** — 비번 등은 `.env` 직독 스크립트로만 주입. 클립보드 붙여넣기는 오염(엉뚱한 명령문 83자)으로 auth 미상화 유발. argv/history/env 미노출.
+2. **시간 가드는 소유자(알람) 지정 없이는 무효** — "임시 정지 후 복구" 결정에 되돌릴 알람/소유자가 없으면 15.8h 방치. 정지성 조치엔 복구 트리거를 함께 지정.
+3. **row 0 ≠ 미발화** — 감사 시 no-op 설계 태스크(regime `transitioned:False`, alerts 0건 등)를 먼저 소거. beat 인큐·워커 성공 로그로 발화 여부를 판정(DB row 부재만으로 미발화 단정 금지).
+4. **celery 로그 = KST** — 감사 전 타임존 앵커를 실측(예: co-mentions 14:00 UTC→로그 23:00). UTC 가정 시 정전 경계 오판.
+
+## 커밋 해시 (NEO4J-CLOSE-1)
+- 지시서: `be594bd9` · addendum/TASKQUEUE/plist: (세션 출력 말미 명시) · push 착지: (§6 후 명시)
+
+**→ 트랙 종결 진행 (§5~§8)**
