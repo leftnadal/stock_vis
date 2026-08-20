@@ -8,6 +8,14 @@
 
 ---
 
+## [2026-08-20] D-MPS-OPS-APISYNC — API 런타임 스테일 = StressCard 404 근인 + ⓟ′ 병렬세션 귀속 [marketpulse][ops][governance]
+
+**결정(귀속 종결)**: MPS-2 StressCard "불러오지 못했습니다" 근인 = **API 런타임(sv-api-runtime) 스테일**. 관리이탈 고아 daphne(PID 63228, 08-13 09AM 기동, launchd 미관리)가 :18765를 점유하며 stress 라우트 없는 구코드(c9400d18)로 응답 → `/api/v2/market-pulse/regime/stress` **404** → FE 카드 에러. 08-18 14:57 worker_sync(`git checkout --detach origin/main` + `launchctl kickstart -k com.stockvis.web`) 실행으로 origin/main(bc2cb7e4) 서빙 전환·해소(authed 200, 실데이터 score −0.311/stable). **14:57 집행 귀속 = ⓟ′ 병렬 세션(ID 미명시)의 `sv sync` — 블레스드 경로 정상 실행**(병진 배제 확인). 마이그 7건 전건 기적용(worker/web 선행) → 순수 코드 배포·DB write 0.
+
+**Why**: 스테일 런타임 **3번째 실증**(worker·web에 이어 api). 3건 공통 근인 = **관리이탈 고아 프로세스의 포트 점유** — launchd 관리본이 바인딩 못 함. 메커니즘 3중 물증 특정: reflog checkout(14:57:14) + daphne 재기동 배너(14:57:15) + `check_daphne_health` 프로브 `GET /api/v1/chainsight/ 401`(14:57:20). worker_sync는 블레스드·**수동 진입점(`sv sync`)**이며 자동 스케줄러 부재 → 재기동 cadence 불규칙(세션 구동 이벤트 상시). 병렬 세션이 공유 prod 런타임을 정상 경로로 갱신 = 무해 실증(ff 동기).
+
+**How to apply**: DEPLOY-RUNBOOK(TASKQUEUE)에 api 런타임 편입 + 런북 1장=고아 스윕·2장=동기 절차·3장=집행 감사. 감사 배선 = SYNC-AUDIT-LOG(TASKQUEUE 소형 하드닝, worker_sync.sh에 시각·pid·ppid·호출 컨텍스트 1줄). cf. [[feedback_deploy_approval_explicit_quote]]·[[lesson_origin_main_advance_union_rebase]]·전례 D-MPS-OPS-SYNC(worker)·D-MPS-OPS-WEBSYNC(web).
+
 ## [2026-08-19] D-DSS-EPSILON — ε 노이즈 임계 도입 보류 (정상 주간 누적 후 판정) [theme-heat][dss]
 
 **결정(보류)**: ε 노이즈 임계 도입 여부는 정상 주간 WoW 6쌍 누적 시 Δ분포 재산출 후 판정(08-14 이상 주간 오염 표본 배제). 초판 = 임계 없음(D-DSS-SIGNAL 2-A 유지).

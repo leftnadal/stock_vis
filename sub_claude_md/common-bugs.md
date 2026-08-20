@@ -1552,6 +1552,8 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 
 **증상**: 웹 런타임 리빌드 후 `launchctl kickstart -k com.stockvis.web-frontend`로 서빙 교체 시도 → 새 인스턴스가 `Error: listen EADDRINUSE :::3000`로 기동 실패, **구 빌드가 계속 서빙**(StressCard 미표시). `launchctl list`가 `-  <exit>  <label>`(관리 PID 없음). **원인**: 이전에 launchd가 관리를 놓친 **구 프로세스가 PPID→1로 reparent**돼 :3000을 계속 점유(예: npm start + next-server 쌍, 며칠 전 기동). kickstart는 **launchd가 추적하는 인스턴스만** 재기동하므로 orphan은 살아남아 포트 점유. **판정**: `lsof -i :3000 -sTCP:LISTEN`의 PID 기동시각(`ps -o lstart`)이 **오늘이 아니면 orphan**. **해결**: orphan(부모 npm start + 자식 next-server) `kill -TERM` → KeepAlive 자동재기동 or 클린 kickstart → 새 프로세스(오늘 기동·새 .next)가 :3000 단독 바인딩·launchd 관리 복구. **검증**: 리스너 PID 기동시각=지금 + `lsof -ti :3000` 단일 + 서빙 프로세스 cwd=동기 트리. cf. DEPLOY-RUNBOOK.
 
+> **3번째 실증 (api :18765 daphne, D-MPS-OPS-APISYNC 2026-08-19)**: 동일 패턴이 API 관문에서도 발생. 관리 이탈 고아 daphne(PID 63228, 08-13 09AM~)가 :18765 점유·stress 라우트 없는 구코드 응답 → `/api/v2/market-pulse/regime/stress` 404(StressCard 에러). launchd `com.stockvis.web`은 포트 막혀 대기. 판정 동일(`lsof -i :18765` 기동시각·ppid). 해소 = 08-18 14:57 병렬 세션 `sv sync`(worker_sync)가 고아 사망+ff 동기+kickstart로 정상화. **3건 공통 근인 = 관리이탈 고아의 포트 점유** → DEPLOY-RUNBOOK 런북 1장=고아 스윕으로 성문화.
+
 ## `git branch -d` 거부 근본원인 — HEAD:main 직행 push가 세션 브랜치에 upstream을 안 남겨 stale primary HEAD 기준 오탐 (#117, MGMT-LEDGER-1 2026-08-19) [git][process][harness]
 
 **증상**: 세션 브랜치를 `git push origin HEAD:main`(직행)으로 착지시킨 뒤 `git branch -d <세션브랜치>`가 "not fully merged"로 거부. 브랜치는 origin/main에 완전 포함(`origin/main..브랜치=0`)인데도 거부. 08-18 sess-dss-impl1·sess-dss-recon1 등 **3회 재현**.
