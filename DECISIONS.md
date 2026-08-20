@@ -6702,3 +6702,17 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **검증**: alias Marvell→DIS 0 / →MRVL 1·SCE3451→MRVL·FTNT→MRVL evidence 1·FTNT→DIS excluded·evidence self-loop 0·evidence 총계 3356→3343(−14 excluded +1 신규)·excluded 14. pytest 7 GREEN(self-loop 가드 4 + backfill 하드닝 3).
 
 **R-2 잔여 RC 스윕 부기 (2026-08-20, CS-P5 LAND 번들)**: 위 R-2/A-1은 SCE `current()` target-set만 대조 → **supersession 전 이미 선착지된 RC evidence 행(잔존 오염)을 미대조**한 사각. CS-P5 화면 검증 중 `ORCL→INCY`(Epic Systems→INCY) 노출로 발견. **한정 재감사·집행**: fuzzy-era 오매칭 pair 유래 RC evidence SEC4종 17후보 → **backing SCE 최대유사도**로 정밀화(전 백킹 오매칭=clear vs legit 백킹 존재=ambiguous) → **clear 15행 비파괴 excluded**(evidence 3343→3328·excluded 14→29), **ambiguous 2행 보호**(`FTNT↔MU`=Micron 정당 백킹 sim100·v2 current). 근본 교훈: **오염 sweep은 SCE 현재값이 아니라 선착지 RC 잔존까지 대조**(pair-match만으론 legit 오탐 → backing 유사도 이중검증 필수). 스코프 밖 신규 오염 클래스 0(HALT 없음). 잔존 완전제거는 [[CS-RESIDUAL-RC-POLLUTION-SWEEP]] done.
+
+## [2026-08-20] D-COACH-FE-1 — 애널리스트 성적판 (D1-SCOREBOARD) 3결정 [portfolio/coach]
+
+> 트랙: D1-SCOREBOARD(실행 세션·마이그 0·beat 0·prod-write 0). worktree `monorepo/sess-coach-scb` base origin/main `f6d0d51b`(작업트리 sess-signal-fwd-recon는 503커밋 분기·analyst 코드 부재라 미사용). 커밋 스택 `761bda33`(Part1 BE)·`eb73d47f`(Part2 계약)·`0bbc089a`(Part3 FE).
+
+- **① 2층 계약 + A 표현(증거 바·판정 문장)**: 성적판 = board(집계층) + symbols[].signals[](신호별 상세층). 신호마다 증거 바(포착가·실현가·목표가 눈금) + 판정 문장 템플릿(예 "하락 전망이었으나 +6.3% 상승"). 스트레스 테스트 7시나리오 근거로 A(문장형) 채택.
+- **② advisory 편입 + 자립 컴포넌트**: ScorecardSection을 advisory 페이지에 얇게 편입(전역 read, advisory 상태와 독립). 단 컴포넌트는 자립(types/service/hook/present 자립 네임스페이스) — 5-metric 착수 시 전용 라우트 승격 이사 전제([[SCB-BOARD-PROMOTE]]).
+- **③ 나안 TTL 캐시**: 캐시 키 = {SCORING_VERSION, h, 입력 최신일 3좌표(snapshot·DailyPrice·StockSplit max date)} + TTL 24h. 데이터 갱신 시 키 회전 → stale 구조적 불가. **병진 override 명기**: 디렉터 추천 가(precompute) 4.30 대비 나(TTL) 4.15, 마진 −0.15 수용. 사유 = 지연 상한 선확보(compute miss 실측 285ms → hit 무시가능·TTL로 재계산 억제). 계산 비대 시 다안 재평가([[SCB-PRECOMPUTE-REEVAL]]).
+
+**BE**: build_scorecard 순수 함수를 analyst_scoring에 additive(기존 score_tier1 무접촉 = command 산출 byte-IDENTICAL·GATE 1a). GET /api/v1/coach/analyst-scorecard/?h=21(전역 read·IsAuthenticated). 판정 어휘 = 채점 코어 정의 일치(hold=방향 판정 대상 아님·무목표가=진행률 제외·바 강등).
+
+**부대 발견 D-COACH-SCHEMA-EXT-PATH**: 계약 재생성 중 CoachE1~E6 컴포넌트 무음 드롭 발견 → 근인 = `openapi_extensions.py` target_class가 pre-monorepo 경로(`portfolio.api.serializers.*`, 실제=`apps.portfolio...`). advisory_schema.py는 이미 `apps.` 접두 사용·정상. 12건 수복 → 재생성 비파괴 전환(E1~E6 복원 + advisory + scorecard 유입 = stale 해소). 규칙: **spectacular target_class = serializer 실제 __module__(모노레포 `apps.` 접두 필수)**. common-bugs 등재.
+
+**Why**: 채점(Tier1) REST 표면이 command-only였음 → derived-render 슬라이스는 BE compute-on-read API 신설 선행 필수. 신규 테이블/마이그 0(D-I3-1 파생 계산). GATE 전건 GREEN(1a byte-identical·1b blast 748·makemigrations clean / 2 tsc0·vitest989 / 3 tsc0·lint0·vitest1015).

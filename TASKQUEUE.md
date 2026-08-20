@@ -1419,3 +1419,9 @@
 - **CS-SAMEGROUP-REFRESH 같은 그룹 갱신 경로 재정의** — CS-P1A가 PEER_OF 착지 루프 제거(Neo4j 유일소스·그래프 동결) → "같은 그룹"(peer+ETF, D1) 관계의 **갱신 경로가 부재**. 기존 PEER_OF 9,365는 무접촉 보존되나 신규/갱신 미발생. Postgres-native 소스(FMP peer 재조달 or ETF 공동편입)로 갱신 경로 재설계 필요. 참조: [[DECISIONS]] D1·D-CS-P1A-RELANDING.
 - **VOCAB-TAU-PIPELINE 구축** — Slice3 종목↔카테고리 τ 매칭이 코드·종목별 share 데이터 repo 부재로 미수행. vocab_v1(46카테고리) 배정 로직(D-NEWS-VOCAB Rev.3, τ=4.6% share 매칭)을 코드로 구현 + 종목별 테마 share 재계산. D1 하위결정 ②(슬롯 승격 기준) 재료.
 - **NEO4J-QUEUE-WORKER-RETIRE 검토(병진 수동)** — neo4j 큐 전용 워커(`-Q neo4j --pool=solo`, PID 17일 구동)가 worker_sync 재기동 대상 밖. 그래프 동결 상태라 neo4j sync 태스크 비활성 → 은퇴 검토. 재기동/종료는 launchd 서비스 접촉(병진 수동).
+
+## D1-SCOREBOARD 후속 (등재, 2026-08-20)
+- **I3-DERIVED-RENDER** — `done`. 본 슬라이스(D1-SCOREBOARD)로 흡수 완결(BE compute-on-read API `761bda33` + FE 성적판 `0bbc089a`).
+- 💤 **SCB-BOARD-PROMOTE** — 5-metric(Tier2 포함) 착수 시 성적판을 advisory 편입에서 전용 라우트로 승격 이사. 자립 컴포넌트(types/service/hook/components/scorecard) 그대로 이동. 트리거 = 5-metric 스코프 확정.
+- 💤 **SCB-PRECOMPUTE-REEVAL** — 계산 비대(심볼/신호 급증·compute miss 지연 상승) 시 나안 TTL 캐시 → 다안(precompute 배치) 재평가. 현 실측 miss 285ms(139신호). 트리거 = miss 지연 임계 초과 or 심볼 대량 확장.
+- 🕒 **SCB-CARD-REUSE** — SignalCard(증거 바 + 판정 문장)를 stock 상세의 AnalystConsensusPanel에 재사용하는 미니 슬라이스. 트리거 = 개별 종목 화면에서 성적 노출 요구 시.
