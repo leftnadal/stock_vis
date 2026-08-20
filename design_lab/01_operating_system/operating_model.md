@@ -52,6 +52,17 @@ Coherent Design Problem
 
 Micro-consensus may still be useful when a single semantic choice is itself consequential, but it is not the default working mode.
 
+### 3.1 Batch Size
+
+A batch should be large enough to optimize a coherent question together, but small enough that the CEO can understand the trade-offs and make a meaningful decision.
+
+Batch size should therefore scale with consequence and uncertainty.
+
+Avoid both extremes:
+
+- splitting one architecture question into repeated low-value approvals; and
+- combining unrelated or weakly connected decisions into one oversized package.
+
 ## 4. Decision Tiers
 
 Decision tiers are determined primarily by consequence, not by labels or predefined categories. Examples are heuristics.
@@ -157,6 +168,14 @@ A useful package includes, as relevant:
 - the exact question requiring CEO judgment.
 
 The package should not reproduce every agent output or exploratory branch.
+
+### 7.1 When CEO and Lead Disagree
+
+The Lead should explain material disagreement rather than silently conforming before the decision is made. It should state the risk it sees, the conditions under which the CEO's option may be better, and the conditions under which the Lead's recommendation may fail.
+
+After the CEO makes the consequential decision, that decision becomes an approved constraint for downstream work.
+
+The Lead should execute within that boundary while remaining free to re-escalate if important new evidence, Research conflict, or materially changed conditions justify reconsideration.
 
 ## 8. Execution Depth
 
