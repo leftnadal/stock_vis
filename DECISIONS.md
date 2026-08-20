@@ -704,6 +704,7 @@ Gemini 무료 7일 분할($0) vs 유료 단일 세션(~$4.4·추정). 착수 직
 - **S2-B1-SHARED** (`30f038b1`, shared): `SURFACE_KIND`(organic/audit) 상수 + **2중 완비**(Record<Surface,SurfaceKind> 컴파일 타임 + `surfaces.guard.test.ts` 런타임 가드).
 - **⚠ 구분(혼동 금지)**: **SURFACE_KIND 분류(organic/audit) ≠ 퍼널 멤버십**. 본판정 포함 정본 = BE `COVERAGE_SURFACES=(dashboard_eod,)` **불변**. `news_chip`은 **분류상 organic**이되 **D-C2-S1-NEWSCHIP 퍼널 영구 제외**(키스페이스 직교·안건 ⓒ 소관) 유지 — SURFACE_KIND는 계열 분류일 뿐 퍼널 편입 근거 아님.
 - **잔여**: 서빙 트리(web·api) 구형 → 배포/재시작(#62 사용자 일괄) 후 라이브 점등 · 안건 ⓐ 기본 창(days) 산정(입력 확보).
+- 📎 **정정·종결 (2026-08-20, MGMT-BATCH-34)**: 위 "서빙 트리 web·api **모두 구형**"은 **오기**(DEPLOY-PRECHECK 실측). 실상 = **api는 08-18 I3-SPLIT 배포로 audit 층 기라이브**(서빙 트리 bc2cb7e4 ⊇ BE·FE), **실 갭은 web 빌드 스테일뿐**. **배포 완료(08-20)**: web 리빌드(BUILD_ID `RVYOYI4MufVYHW9xKggsu`·번들 audit 렌더 4마커 확증)+서빙 교체(HTTP 200)+시각 점등 사용자 확인 → **ⓑ 라이브**. **실증**: additive 계약 **양방향 안전** — 설계는 FE-first 창 대비였으나 실제 **API-first 창**에서 구형 FE가 신설 필드 무해 무시(audit-absent 강건과 대칭). 마이그레이션 델타 0(DB 무변).
 
 ## [2026-08-06] D-C2-GATE-SPLIT — C-2 게이트 = 분할 개시 (C안) [dashboard] [platform]
 
