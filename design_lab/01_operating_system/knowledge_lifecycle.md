@@ -20,7 +20,18 @@ Design Lab documents may reference Research Knowledge and study its design impli
 
 The Design Lab knowledge lifecycle governs Design-side learning: user experience, information representation, interaction, design interpretation, design methods, patterns, failure modes, and other reusable Design knowledge.
 
-## 3. Default Knowledge States
+## 3. Minimal Document Status
+
+During bootstrap, the Design Lab uses a deliberately small document-status vocabulary unless stronger lifecycle states become necessary.
+
+- **Working** — usable as the current operating or design baseline, but intentionally open to revision through further work and evidence.
+- **Approved** — explicitly accepted by the Project Owner as a durable authoritative Design Lab commitment within its stated scope.
+
+A Working document may be approved for operational use without its underlying concepts becoming final Approved Design Knowledge. Operational permission and epistemic or governance maturity are different questions.
+
+Additional states such as Superseded, Deprecated, or Retired should be introduced only when real lifecycle needs justify them.
+
+## 4. Default Knowledge States
 
 A useful minimal lifecycle is:
 
@@ -64,7 +75,7 @@ A Principle or Standard should be created only when a finding requires durable c
 
 Principles and Standards should not be created simply because a statement sounds broadly reasonable.
 
-## 4. Workstreams as the Default Exploration Container
+## 5. Workstreams as the Default Exploration Container
 
 New Design problems should normally begin as workstreams rather than as Foundation, Principles, or Standards.
 
@@ -85,7 +96,7 @@ Workstream content is Working by default unless a stronger status is explicitly 
 
 The repository does not need a workstream directory before the first real workstream creates demand for one.
 
-## 5. Knowledge Promotion
+## 6. Knowledge Promotion
 
 Promotion is a deliberate judgment, not an automatic result of repetition or agent consensus.
 
@@ -100,7 +111,7 @@ Before promoting a Working Finding, the Lead should ask:
 
 When those questions cannot yet be answered well, the finding should remain Working.
 
-## 6. Knowledge and Decisions Are Different
+## 7. Knowledge and Decisions Are Different
 
 Design Knowledge describes what the Design Lab has learned.
 
@@ -110,7 +121,7 @@ For example, a reusable finding about how users interpret uncertainty may become
 
 Consequential decisions with durable downstream dependency should be captured in a Decision Record when the need arises. Minor reversible decisions normally should not be recorded as formal Decision Records.
 
-## 7. Revision and Retirement
+## 8. Revision and Retirement
 
 Design Knowledge must remain revisable.
 
@@ -126,7 +137,7 @@ Material semantic change should remain explicit and traceable rather than silent
 
 If a Design concept becomes cross-Lab or begins to overlap with governed Research terminology, the authority boundary should be reviewed rather than resolved through local renaming alone.
 
-## 8. Documentation Economy
+## 9. Documentation Economy
 
 > **Save what future agents need to know; do not archive every thought.**
 
@@ -139,7 +150,7 @@ Use the lightest appropriate level of documentation:
 
 Documentation should reduce future reasoning and coordination cost. If documentation creates more maintenance cost than learning value, the structure should be reconsidered.
 
-## 9. Connection to Lab Evolution
+## 10. Connection to Lab Evolution
 
 The knowledge lifecycle applies to Design work, while `evolution.md` governs learning about the Design Lab's own operating system.
 
