@@ -7,6 +7,7 @@ from .centrality_views import CentralityTopView
 from .ego_views import EgoGraphView
 from .event_views import EventBoardView, EventRankingView
 from .heat_views import ThemeHeatBarView, ThemeHeatCardView
+from .mindmap_views import MindmapCardView, MindmapTreeView
 from .views import (
     ChainSightGraphView,
     ChainSightSuggestionView,
@@ -40,6 +41,9 @@ urlpatterns = [
     path("ego/<str:symbol>/", EgoGraphView.as_view(), name="chainsight-ego"),
     # 중심성 상위 조회 (⑲ S3, S-C — 화면 노출은 ⑳)
     path("centrality/top/", CentralityTopView.as_view(), name="chainsight-centrality-top"),
+    # CS-P5 마인드맵 카드 (D1·D-CARD-GATE, 고정 프리픽스 — 동적 symbol 경로와 분리)
+    path("mindmap/tree/", MindmapTreeView.as_view(), name="chainsight-mindmap-tree"),
+    path("mindmap/card/<str:symbol>/", MindmapCardView.as_view(), name="chainsight-mindmap-card"),
     # 동적 경로 (symbol 기반)
     path(
         "<str:symbol>/neighbors/",

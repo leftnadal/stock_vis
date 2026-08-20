@@ -18,6 +18,8 @@ import type {
   EventRankingItem,
   EgoGraphResponse,
   CentralityTopResponse,
+  MindmapTreeResponse,
+  MindmapCardResponse,
 } from '@/types/chainsight';
 
 export async function fetchGraph(symbol: string, depth: number = 1): Promise<GraphResponse> {
@@ -167,6 +169,22 @@ export async function fetchThemeHeatBar(): Promise<ThemeHeatBarItem[]> {
 export async function fetchThemeHeatCard(theme: string): Promise<ThemeHeatCard> {
   const { data } = await authAxios.get<ThemeHeatCard>(
     `/chainsight/theme-heat/${encodeURIComponent(theme)}/`,
+  );
+  return data;
+}
+
+// ── Mindmap 카드 API (CS-P5-FE-CARD B2, AllowAny GET) ──
+
+/** GET /chainsight/mindmap/tree/ — 업종 2단(sector→industry) + 종목 카드 요약. */
+export async function fetchMindmapTree(): Promise<MindmapTreeResponse> {
+  const { data } = await authAxios.get<MindmapTreeResponse>('/chainsight/mindmap/tree/');
+  return data;
+}
+
+/** GET /chainsight/mindmap/card/{symbol}/ — 카드 상세(확인된 연결 + 같은 그룹 + ACQUIRED). */
+export async function fetchMindmapCard(symbol: string): Promise<MindmapCardResponse> {
+  const { data } = await authAxios.get<MindmapCardResponse>(
+    `/chainsight/mindmap/card/${symbol.toUpperCase()}/`,
   );
   return data;
 }

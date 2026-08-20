@@ -6634,3 +6634,5 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **Why**: D-CARD-GATE(evidence AND SEC4종) 연결선 오염 제거 = P5 카드층 클리어 전제. 비파괴(excluded/계층변경) 우선·하드삭제는 alias 시드 2행 한정(승인). MRVL 재적 확인(NASDAQ·cik 0001835632) → 오염 무효화가 아니라 **정상 관계 회수**(FTNT→MRVL)까지 달성.
 
 **검증**: alias Marvell→DIS 0 / →MRVL 1·SCE3451→MRVL·FTNT→MRVL evidence 1·FTNT→DIS excluded·evidence self-loop 0·evidence 총계 3356→3343(−14 excluded +1 신규)·excluded 14. pytest 7 GREEN(self-loop 가드 4 + backfill 하드닝 3).
+
+**R-2 잔여 RC 스윕 부기 (2026-08-20, CS-P5 LAND 번들)**: 위 R-2/A-1은 SCE `current()` target-set만 대조 → **supersession 전 이미 선착지된 RC evidence 행(잔존 오염)을 미대조**한 사각. CS-P5 화면 검증 중 `ORCL→INCY`(Epic Systems→INCY) 노출로 발견. **한정 재감사·집행**: fuzzy-era 오매칭 pair 유래 RC evidence SEC4종 17후보 → **backing SCE 최대유사도**로 정밀화(전 백킹 오매칭=clear vs legit 백킹 존재=ambiguous) → **clear 15행 비파괴 excluded**(evidence 3343→3328·excluded 14→29), **ambiguous 2행 보호**(`FTNT↔MU`=Micron 정당 백킹 sim100·v2 current). 근본 교훈: **오염 sweep은 SCE 현재값이 아니라 선착지 RC 잔존까지 대조**(pair-match만으론 legit 오탐 → backing 유사도 이중검증 필수). 스코프 밖 신규 오염 클래스 0(HALT 없음). 잔존 완전제거는 [[CS-RESIDUAL-RC-POLLUTION-SWEEP]] done.
