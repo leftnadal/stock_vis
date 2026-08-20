@@ -1422,6 +1422,27 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 
 **규칙**: 특정 UTC "발화 회차"를 조회할 땐 `__date` 금지 — **UTC 반열린 범위**(`captured_at__gte=lo, captured_at__lt=hi`, tzinfo=UTC)로 필터. STOP/0건 판정 전 UTC 범위로 재확인(거짓 0건 방지). 집계 날짜 축이 필요하면 `TruncDate(..., tzinfo=timezone.utc)` 명시. cf. #24(Date.now hydration 계열 tz 함정).
 ## 배치 진척·완주 지표에 창-합(target_windows) 사용 금지 — skip-covered 스필오버로 영구 저계상 (#99, CN-B7-PROBE 2026-08-10) `[ops][data][harness]`
+
+## 병렬 마이그레이션 리프 — 랜딩 시점 단일 0014가 배포 시점 타 트랙 0014와 병존 → 지시서 STEP 0에 "마이그 직전 fetch + 최신 번호 재확인" 상설 (#97, I3-SPLIT-GUARD 2026-08-18) [backend][process][harness]
+
+**증상**: I3-SPLIT-GUARD 배포(HALT ②) STEP 0에서 `showmigrations stocks`가 기대 "0014 [X]" 대신 **`0014_stocksplit[X]` + `0014_stock_cik[X]`(타 트랙 CS-P3) + `0015_merge [ ] 미적용`**을 노출. 내 랜딩(08-13) 시점엔 stocks 리프가 단일 0014였으나, 배포(08-18) 사이 CS-P3가 **같은 0013에서 분기한 별도 `0014_stock_cik`**를 랜딩 → Django 리프 2개 → 제3자가 `makemigrations --merge`로 `0015_merge`(no-op) 생성.
+
+**원인**: 동일 앱에 **여러 세션이 병렬로 0013→0014를 분기**하면 번호가 충돌하지 않아도(파일명은 다름) 마이그레이션 그래프에 **리프 2개**가 생기고, prod엔 merge 마이그가 미적용으로 남는다. 지시서/원장의 "0014 [X]" 기대값은 랜딩 시점 스냅샷이라 배포 시점엔 stale.
+
+**규칙**: ⑴ 마이그레이션 **생성·검증 직전 `git fetch` + 해당 앱 최신 번호 재확인**(makemigrations 前 리프 상태 실측). ⑵ 지시서 STEP 0 템플릿에 "**마이그 번호는 캐시 — 집행 직전 fetch 후 재확인**" 상설 조항. ⑶ 병렬 리프 조우 시 merge 마이그는 `sqlmigrate`로 **DDL 0(no-op) 확인 후에만** 적용(승인). cf. 기대값=캐시(#93 계열)·[[lesson_land_health_measure_in_target_tree]].
+
+## recon 지시서는 "발화 도래 여부"를 선확인해야 — 미도래를 실패로 오판 방지 (#98, I3-SPLIT-GUARD 첫 발화 recon 2026-08-18) [process][ops]
+
+**증상**: "08-18 19:45 ET 발화 recon" 지시가 현재 ET 02:34(발화 17시간 前)에 수행됨 → last_run None·StockSplit 0·로그 0. 발화 실패가 아니라 **아직 스케줄 시각 미도래**.
+
+**규칙**: 발화 후 recon 지시서는 STEP 0에 **"현재 시각 vs 스케줄 발화 시각 선비교"** 조항 필수. 미도래면 산출 없음을 보고하고 **수동 실행으로 선점 금지**(자연 첫 발화의 created 카운트가 오염됨 — 멱등 append/skip이라 수동 실행 시 첫 자연 발화가 created 0으로 바뀜). 도래 후 재수행.
+
+## 프리플라이트 절단 출력(`head -c`·`| head`)은 하한일 뿐 — 전수 카운트 판단은 절단 없이 (#99, I3-SPLIT-GUARD 2026-08-18) [process][data]
+
+**증상**: 프리플라이트에서 FMP splits를 `curl ... | head -c 400`으로 읽어 AAPL 분할을 **3개**로 기록 → "총 ~13행" 기대. 실발화 실측 = AAPL **5개**(2020·2014·2005·2000·1987)로 총 **15행**. 예상 −2 차이의 원인 = 절단.
+
+**규칙**: 카운트·전수 판단이 걸린 값은 `head -c`/`| head` 같은 **절단 출력으로 산정 금지**(절단분은 하한). 기대값 산정 시 `jq length`·`wc -l`·DB 카운트 등 **절단 없는 집계**로. 절단 출력으로 얻은 수는 "≥N"으로만 취급.
+## 배치 진척·완주 지표에 창-합(target_windows) 사용 금지 — skip-covered 스필오버로 영구 저계상 (채번 후보, CN-B7-PROBE 2026-08-10) `[ops][data][harness]`
 *(D-NUMBERING-DUP 처방 A 준수 — 비mgmt 자가채번 금지, 번호는 mgmt 채번 시 확정)*
 
 **증상**: C-N-REPAIR 8배치 완료 시점 아침 점검이 진척을 **158/192**로 보고했으나, 8배치×20일=160 기대 대비 2일 부족으로 오인. 실제 DB 커버는 **160/160**(구멍 0).
