@@ -8,6 +8,22 @@
 
 ---
 
+## [2026-08-20] D-RB-1 — 런타임 스테일/고아 자동 감지 (감지는 자동, 집행은 사람) [ops][runbook][governance]
+
+**결정 (다안 = 자동 감지)**: `scripts/runtime_check.py`(100% read-only) + launchd 주기 job(`com.stockvis.runtime-check`, StartInterval 3600)으로 런타임 3종 상시 감지 — ⑴ 고아 스윕(포트 리스너 pid가 launchd 관리 pid 자신/자손 아니면 ORPHAN) ⑵ 드리프트(트리 HEAD vs origin/main behind, 24h 지속=WARN) ⑶ launchd 상태. **알림은 기록·표면화만, 자동 집행(kill·kickstart·checkout) 절대 없음.** 퀀트 4.45.
+
+**Why**: 스테일 런타임 3건(worker 24커밋·web :3000 고아 Aug10·api :18765 고아 daphne Aug13) 모두 본질이 "**수일간 무감지**". 타이브레이커 = 3건 전부 사람 트리거 감지(우연)에 의존했다는 실증 반증 → 상시 자동 감지가 근본 재료. read-only 경계는 불변(감지·판정·기록만; 집행은 사람이 런북 절차대로).
+
+**How to apply**: 인벤토리 단일 출처 = `runtime_check.py::RUNTIME_INVENTORY`(런북 부록은 참조만). health_check.py가 runtime_check.log 최근 24h 이상을 표면화(판정 재구현 금지). 알림 = celery-watchdog `notify_mail`(Gmail SMTP) 재사용(신규 의존 0). neo4j = 알려진 예외(OPS-NEO4J-TREE). cf. [[project_mp_stress_track]]·common-bugs #116/#45.
+
+## [2026-08-20] D-RB-2 — 랜딩 세션 DoD = 런타임 동기 (야간 자동 동기 기각) [ops][runbook][governance]
+
+**결정 (나안 = 랜딩 DoD 동기)**: 런타임 동기는 **랜딩 세션의 완결 동작**으로 규약화 — `sv sync` + 가드레일 표준(롤백 포인트 → migrate --plan 프리뷰 → web은 빌드 먼저·실패 시 구 빌드 유지 → 재기동 → 스모크 → 고아 단독 리스너 확인) + 집행 감사로그(`sync-audit.log`). 절차 정본 = `docs/runbook/DEPLOY.md` 2장, 규약은 포인터만(SESSION_CONTRACT §H). **야간 자동 동기 도입 안 함.** 퀀트 4.20.
+
+**Why**: 타이브레이커 = "동기는 랜딩의 완결 동작"(main 전진 순간이 유일한 동기 필요 시점). 야간 자동 동기는 랜딩 없는 날 무의미하고 무감독 집행 리스크만 추가. D-RB-1(감지)과 상보: 랜딩 없는 기간 고아는 감지가, 감지 사이 드리프트는 랜딩 규약이 잡는다.
+
+**How to apply**: `worker_sync.sh`가 worker/api 재기동은 커버하나 **web 프로덕션 리빌드는 미커버**(re-detach만·"next dev 핫리로드"는 prod 빌드엔 거짓) → 런북 2.2 수동 절차 + TASKQUEUE `SYNC-COVERAGE` 후속. SYNC-AUDIT-LOG 소화(worker_sync 실행 최초 지점 감사 1줄·행위보존).
+
 ## [2026-08-20] D-PRIORITY-SWAP-V0 — 차기 대형 트랙 = SWAP-REVIEW v0 확정 [monitor][swap-review][process]
 
 **결정**: 차기 대형 트랙 = **SWAP-REVIEW v0**(+지반 EOD-UNIV 재정의판 병행). 채점 프로필 A(C1 0.30/C2 0.20/C3 0.15/C4 0.15/C5 0.20)로 **⑤+① 묶음 0.845 vs ④ L-B/L-C 0.585, 마진 0.26**(동률 임계 0.05 초과) → 자동 확정. 관찰 표본 = 라이브 브리핑 약 1주치. **P5는 ⑤에 흡수, P1.5는 별도 소형 유지.**

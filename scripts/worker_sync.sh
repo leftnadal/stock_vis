@@ -110,6 +110,24 @@ if [ "$DRY_RUN" = "1" ]; then
     exit 0
 fi
 
+# ── 집행 감사 로그 (SYNC-AUDIT-LOG / D-RB-1) — 비차단 ──────────────────
+# 실행 최초 지점에서 "누가·언제·어디서" 1줄 기록 → 미귀속 동기의 사후 특정 비용 소거
+# (08-18 14:57 귀속을 reflog+web.log+프로세스 포렌식 3중 대조로 특정한 비용 제거).
+# 기록 실패가 동기 실행을 막지 않는다(|| true).
+audit_log() {
+    local f="$HOME/Library/Logs/stockvis/sync-audit.log"
+    local ppid_name; ppid_name="$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ')"
+    local mytty; mytty="$(tty 2>/dev/null || echo 'not-a-tty')"
+    local wh; wh="$(git -C "$WORKER_TREE" rev-parse --short HEAD 2>/dev/null || echo '?')"
+    local eh; eh="$(git -C "$WEB_TREE"    rev-parse --short HEAD 2>/dev/null || echo '?')"
+    local ah; ah="$(git -C "$API_TREE"    rev-parse --short HEAD 2>/dev/null || echo '?')"
+    mkdir -p "$(dirname "$f")" 2>/dev/null || true
+    printf '%s invoked pid=%s ppid=%s(%s) tty=%s before[worker=%s web=%s api=%s]\n' \
+        "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$$" "$PPID" "${ppid_name:-?}" "$mytty" "$wh" "$eh" "$ah" \
+        >> "$f" 2>/dev/null || true
+}
+audit_log || true
+
 # ── 가드: signals 심링크 ∧ 타겟 실존 (worker 판 + web 판) ─────────────
 # 심링크가 깨졌거나 실디렉토리로 되돌아가면 서빙이 조용히 단절되므로 사전 차단.
 guard_symlink() {

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.stockvis.runtime-check — 런타임 3종 read-only 감지 주기 job (RB-1 / D-RB-1)
+
+  StartInterval 3600(1시간) 시작점. 조정법 = docs/runbook/DEPLOY.md 부록 "감지 주기 조정".
+  ProgramArguments 경로 = 런타임 트리(origin/main 정합, Desktop 아님·#47 stale 사본 방지).
+  이 job은 read-only 감지 스크립트의 스케줄러일 뿐 — 집행(kill/kickstart/checkout) 없음.
+
+  설치(자기적용 동기로 스크립트가 런타임 트리 안착 후):
+    cp docs/operations/com.stockvis.runtime-check.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.stockvis.runtime-check.plist
+    launchctl kickstart -k gui/$(id -u)/com.stockvis.runtime-check   # 1회 실증
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.stockvis.runtime-check</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/byeongjinjeong/worktrees/sv-worker-runtime/scripts/runtime-check.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/byeongjinjeong/worktrees/sv-worker-runtime</string>
+
+    <key>StartInterval</key>
+    <integer>3600</integer>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/byeongjinjeong/Library/Logs/stockvis/runtime-check.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/byeongjinjeong/Library/Logs/stockvis/runtime-check-error.log</string>
+</dict>
+</plist>

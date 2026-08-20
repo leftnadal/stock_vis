@@ -1014,6 +1014,65 @@ def check_stale_pending_backannotation() -> CheckResult:
     return evaluate_stale_pending(progress, tq, datetime.now().date())
 
 
+def check_runtime_check_log() -> CheckResult:
+    """runtime_check.log 최근 24h 이상 유무 표면화 (RB-1 / D-RB-1).
+
+    **판정은 하지 않는다** — runtime_check.py가 기록한 'overall' 상태(0/1/2)를 읽어
+    최근 24h 내 최악값만 표면화한다(판정 단일 출처 = runtime_check). 로그 부재/오프라인
+    = OK-skip(감지 job 미설치 초기 상태 허용).
+    """
+    name = "런타임 감지 로그(runtime_check)"
+    log_path = Path.home() / "Library" / "Logs" / "stockvis" / "runtime_check.log"
+    if not log_path.exists():
+        return CheckResult(name=name, status=OK, detail="runtime_check.log 부재 — 감지 job 미설치(초기)로 간주, skip")
+    now = datetime.now(timezone.utc)
+    worst = OK
+    worst_ts = None
+    recent = 0
+    try:
+        for line in log_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            ts = rec.get("ts")
+            overall = rec.get("overall")
+            if ts is None or overall is None:
+                continue
+            try:
+                ts_dt = datetime.fromisoformat(ts)
+            except (ValueError, TypeError):
+                continue
+            if ts_dt.tzinfo is None:
+                ts_dt = ts_dt.replace(tzinfo=timezone.utc)
+            if (now - ts_dt).total_seconds() > 86400:
+                continue
+            recent += 1
+            if int(overall) > worst:
+                worst = int(overall)
+                worst_ts = ts
+    except OSError as e:
+        return CheckResult(name=name, status=OK, detail=f"로그 판독 불가(skip): {e}")
+    if recent == 0:
+        return CheckResult(name=name, status=OK, detail="최근 24h 감지 기록 없음(skip)")
+    if worst >= ERROR:
+        return CheckResult(
+            name=name, status=WARN,  # health_check는 표면화(WARN)까지 — 집행은 사람
+            detail=f"runtime_check 최근 24h ERROR 기록 존재(@{worst_ts}) — 런북 1장 고아 스윕 확인",
+            evidence=[f"runs_24h={recent}", "정본 판정=runtime_check.log", str(log_path)],
+        )
+    if worst >= WARN:
+        return CheckResult(
+            name=name, status=WARN,
+            detail=f"runtime_check 최근 24h WARN 기록(@{worst_ts}) — 드리프트 24h+ 등, 랜딩 동기 확인",
+            evidence=[f"runs_24h={recent}"],
+        )
+    return CheckResult(name=name, status=OK, detail=f"runtime_check 최근 24h 정상({recent}회 실행, 이상 0)")
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -1033,6 +1092,7 @@ CHECKS = [
     check_execution_tree_alignment,
     check_monitor_refresh_freshness,
     check_stale_pending_backannotation,
+    check_runtime_check_log,
 ]
 
 
