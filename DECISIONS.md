@@ -8,6 +8,48 @@
 
 ---
 
+## [2026-08-20] D-SCANNER-SELECT-UX — dashboard 스캐너 선별 UX 재설계 (직교 5축·정칙 v2.1·경로 ㉮) [dashboard][platform][recommendation]
+
+**결정 (목표 상태 = 정보안 C · 경로 = ㉮ 단계출시)**: dashboard 스캐너 = 추천 시스템의 핵심 선별 퍼널. 화면 원리 = **"관심 유발 = 독립(직교) 축의 합류"**. **직교 5축** = 기술(카테고리 합류·RSI·52주 위치·MA) / 가치평가(비교군 명시 상대 밸류) / 퀄리티(ROE·성장·부채) / 관계(RelationConfidence 강도 우선) / 뉴스·이력. 각 축 = 행 칩 1개 + 패널 상세 칸. **합류 정의 = 카테고리 축 단위**(원시 신호 개수 아님·tagger 6카테고리 정본) — 가격 파생 신호(P1~P4) 상관 중복 배제가 목적.
+
+**가중합 기록**: 정보안 **B 4.65 / A 4.10 / C 3.65**(마진 0.55 → 사용자 확인 08-20) · 경로 **㉮ 단계출시 4.40 / ㉯ 직행 2.65**(마진 1.75 → 자동 결정). 최종 = 목표 상태 **C** · 경로 **㉮**(① FE → ② shared BE 보강 → ③ 관계·이력).
+
+**렌더링 정칙 v2.1 (7건·스트레스 테스트 NVDA/IREN류 가정 산출)**:
+- ⑴ **결측 정칙** — 데이터 없는 축은 칩 조용히 생략, 패널에만 "미커버" 명시. 결측을 '나쁨'으로 렌더 금지(audit-absent 강건성 원칙의 정보판).
+- ⑵ **서술 비처방** — 지표 라벨은 상태 서술만("RSI 72 · 과열권"), 매매 암시 금지.
+- ⑶ **비교군 명시** — 상대 밸류는 비교군 문구 동반("반도체 중앙값 38 대비 +37%"), industry 우선·표본 부족 시 sector 폴백(표기).
+- ⑷ **상태어 전환** — 음수 베이스 성장률 % 숨김("흑자 전환"/"적자 지속"), 적자 시 PER 대신 "적자 · PSR" 폴백.
+- ⑸ **합류 배지-체급 문맥 결박** — 배지는 거래대금·시총과 동일 시야 강제, 필터에 거래대금 하한 기본 제공, ②단계 변동성 칩 추가.
+- ⑹ **관계 축 강도 우선** — "상위 truth_score · 건수" 순(허브 편향 방어).
+- ⑺ **체급 티어 내 백분위** — ②단계 BE 계약 결정 사안으로 위임.
+
+**정직성 한 줄(고정·사용자 승인)**: 패널 하단 "신호는 주목 후보를 고르는 렌즈이며 수익을 보장하지 않음".
+
+**Why**: 스캐너 "너무 많고 정보 부족" 피드백(RECON-SCANNER-UX-R1)의 근본 = 가격 파생 신호(P1~P4) 상관 중복이 관심 축을 부풀림. 직교 축 합류 = 독립 정보의 수렴만 배지화 → 노이즈 감소. 경로 ㉮(FE 선행, 마진 1.75 자동)는 shared BE 보강 전에 보유 데이터로 즉시 화면 개선 가능.
+
+**How to apply**: 목업 정본 = 본 결정의 칩·문구 명세(텍스트). 시각 목업은 디렉터 스레드(08-20) 렌더 2종 = 참조 기록만. 스캐너 루트 = `app/page.tsx`(D-OWN-HOME 정합). 슬라이스 분해 = TASKQUEUE SCAN-B1-FE~SCAN-B3 + SIGNAL-HITRATE(예약). cf. [[project_scanner_ux_recon]]·D-C2-S2-FUNNEL-COV(w90 정합).
+
+## [2026-08-20] D-C2-S2-FUNNEL-COV-A — 안건 ⓐ 분할 (w90 확정 · 퍼널 튜닝 보류) [dashboard][platform]
+
+**결정 (D-C2-S2-FUNNEL-COV 안건 ⓐ 백-어노 분할)**:
+- **ⓐ-1 coverage 기본 창 w90 = 확정**(사용자 08-20) — "적체 비제거"와 동일 철학: 놓친 추천이 창 밖으로 사라지지 않게. 구현 = SCAN-B1-FE 편입.
+- **ⓐ-2 퍼널 상수 튜닝 = 보류** — 유기 노출 표본 부족 → 스캐너 개편·계측(SCAN-TELEM-*)으로 데이터 성장 후 재개.
+
+**Why**: 안건 ⓐ("퍼널 상수 튜닝")는 창 산정과 상수 튜닝 두 결이 섞여 있었음. 창(w90)은 데이터 무관 원칙 결정이라 즉시 확정 가능하나, 상수 튜닝은 유기 노출 표본이 성장해야 근거가 생김 → 분리. ⓐ-1을 SCAN-B1-FE에 편입해 스캐너 개편과 동반 착지.
+
+**How to apply**: ⓐ-1 = SCAN-B1-FE(w90 렌더). ⓐ-2 = SCAN-TELEM-* 계측 성숙 후 C2-S2-REGATE ⓐ로 재개. cf. D-C2-S2-FUNNEL-COV·C2-S2-REGATE(TASKQUEUE).
+
+## [2026-08-20] D-SCANNER-RECON-OBS — 스캐너 recon 관찰 3건 (기록만·착수 아님) [dashboard][platform][observation]
+
+**관찰 (RECON-SCANNER-UX-R1 부산, 등재만·착수 아님)**:
+- ⑴ **스캐너 = 미계측 표면** — impression/click emit 없음(R7). 계측 = SCAN-TELEM-SHARED→SCAN-TELEM-FE로 신설.
+- ⑵ **선존 계약 드리프트 3건**: `PipelineMeta` 타입 · `vix_regime` enum(elevated 미발생·`vix>25` 하드컷) · `chain_sight_cta` 항상 `False`. (수리 = 별도 트랙, 본 배치 등재만.)
+- ⑶ **스캐너 루트 = `app/page.tsx`** — D-OWN-HOME 정합 재확인.
+
+**Why**: recon에서 발견된 사실을 소실 없이 장부에 고정(착수는 별도 결정). 특히 ⑵ 드리프트 3건은 스캐너 개편이 신호/축 데이터에 의존하므로 후속 슬라이스가 밟기 전 기록 필요.
+
+**How to apply**: 등재만 — 착수 트리거는 각 후속 슬라이스(SCAN-TELEM-*·SCAN-B2-BE 계약)에서. cf. [[project_scanner_ux_recon]].
+
 ## [2026-08-20] D-RB-1 — 런타임 스테일/고아 자동 감지 (감지는 자동, 집행은 사람) [ops][runbook][governance]
 
 **결정 (다안 = 자동 감지)**: `scripts/runtime_check.py`(100% read-only) + launchd 주기 job(`com.stockvis.runtime-check`, StartInterval 3600)으로 런타임 3종 상시 감지 — ⑴ 고아 스윕(포트 리스너 pid가 launchd 관리 pid 자신/자손 아니면 ORPHAN) ⑵ 드리프트(트리 HEAD vs origin/main behind, 24h 지속=WARN) ⑶ launchd 상태. **알림은 기록·표면화만, 자동 집행(kill·kickstart·checkout) 절대 없음.** 퀀트 4.45.
