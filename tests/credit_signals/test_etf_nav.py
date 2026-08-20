@@ -153,8 +153,13 @@ class TestUpsertNavUpdatedAt:
 
 
 @pytest.mark.django_db
-class TestCPrimePrimeAttribution:
-    """C″ — 전일(T-1) 귀속 + EOD 페어링 + 정체 게이트 + mismatch."""
+class TestAttributionEdgeCases:
+    """P2a-1e T-0 — 당일 귀속 + EOD 페어링 + 정체 게이트 + mismatch (엣지케이스).
+
+    (구 TestCPrimePrimeAttribution: T-1 귀속. T-0 전환으로 개명·당일화. 기본 당일
+    create/revise/멱등은 TestT0Attribution E1~E5, 여기는 DST·정체·price·mismatch·
+    주말/휴장 무소급 회귀방지.)
+    """
 
     def _client(self, upd, nav, eod, prev_close=None):
         q = {"symbol": "HYG"}
@@ -162,31 +167,23 @@ class TestCPrimePrimeAttribution:
             q["previousClose"] = prev_close
         return _FakeClient(quote=q, info={"symbol": "HYG", "nav": nav, "updatedAt": upd}, eod=eod)
 
-    def test_attribute_to_prev_trading_day(self):
-        """08-06 17:11 ET 게시 → 08-05 귀속, price=EOD 08-05 종가(nav 유지)."""
-        c = self._client("2026-08-06T21:11:00Z", 79.37, [{"date": "2026-08-05", "close": 79.52}])
-        r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 7))
-        assert r["result"] == "created" and r["trade_date"] == "2026-08-05"
-        row = EtfNavHistory.objects.get(symbol="HYG", date=date(2026, 8, 5))
-        assert row.nav == _D("79.37") and row.price == _D("79.52")
-
-    def test_monday_publish_attributes_friday(self):
-        """월요일 게시 → 금요일 귀속(주말 자동 skip). 08-03 → 07-31."""
-        c = self._client("2026-08-03T17:55:00Z", 79.26, [{"date": "2026-07-31", "close": 79.48}])
+    def test_monday_pub_attributes_same_day_not_friday(self):
+        """회귀방지(T-0): 월요일 게시 → 당일(월) 귀속, 주말 소급 없음. pub 08-03(월)→08-03."""
+        c = self._client("2026-08-03T17:55:00Z", 79.26, [{"date": "2026-08-03", "close": 79.48}])
         r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 3))
-        assert r["trade_date"] == "2026-07-31"
+        assert r["result"] == "created" and r["trade_date"] == "2026-08-03"
 
-    def test_holiday_boundary_attribution(self):
-        """MLK(2026-01-19 월) 다음날 화 01-20 게시 → 직전 거래일 금 01-16 귀속."""
-        c = self._client("2026-01-20T22:00:00Z", 79.0, [{"date": "2026-01-16", "close": 79.1}])
+    def test_post_holiday_pub_attributes_same_day_not_prior_friday(self):
+        """회귀방지(T-0): MLK(01-19 월) 다음날 화 01-20 게시 → 당일 01-20 귀속, 휴장 소급 없음."""
+        c = self._client("2026-01-20T22:00:00Z", 79.0, [{"date": "2026-01-20", "close": 79.1}])
         r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 1, 20))
-        assert r["trade_date"] == "2026-01-16"
+        assert r["result"] == "created" and r["trade_date"] == "2026-01-20"
 
     def test_dst_winter_attribution(self):
-        """겨울 EST: 화 01-06 09:00 EST 게시 → 직전 거래일 월 01-05 귀속."""
-        c = self._client("2026-01-06T14:00:00Z", 79.0, [{"date": "2026-01-05", "close": 79.1}])
+        """겨울 EST: 화 01-06 09:00 EST 게시 → 당일 01-06 귀속(ET 날짜 추출 DST 정상)."""
+        c = self._client("2026-01-06T14:00:00Z", 79.0, [{"date": "2026-01-06", "close": 79.1}])
         r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 1, 6))
-        assert r["trade_date"] == "2026-01-05"
+        assert r["trade_date"] == "2026-01-06"
 
     def test_nav_stale_skip(self):
         """게시 08-03, 오늘 08-05 → 2거래일 정체 → skip nav_stale, 원장 미기록."""
@@ -196,10 +193,10 @@ class TestCPrimePrimeAttribution:
         assert not EtfNavHistory.objects.filter(symbol="HYG").exists()
 
     def test_one_day_lag_not_stale(self):
-        """게시 08-05, 오늘 08-06 → 1거래일 → 정상 귀속(08-04)."""
-        c = self._client("2026-08-05T15:32:00Z", 79.40, [{"date": "2026-08-04", "close": 79.55}])
+        """게시 08-05, 오늘 08-06 → 1거래일 → 정상 당일 귀속(08-05)."""
+        c = self._client("2026-08-05T15:32:00Z", 79.40, [{"date": "2026-08-05", "close": 79.55}])
         r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 6))
-        assert r["result"] == "created" and r["trade_date"] == "2026-08-04"
+        assert r["result"] == "created" and r["trade_date"] == "2026-08-05"
 
     def test_price_unavailable_skip(self):
         """EOD 종가 미확보 → skip price_unavailable."""
@@ -209,17 +206,17 @@ class TestCPrimePrimeAttribution:
         assert not EtfNavHistory.objects.filter(symbol="HYG").exists()
 
     def test_price_mismatch_flag(self):
-        """previousClose vs EOD 종가 불일치(>tol) → created + price_mismatch(ⓑ 우선)."""
+        """previousClose vs 당일 EOD 종가 불일치(>tol) → created + price_mismatch(ⓑ 우선)."""
         c = self._client("2026-08-06T21:11:00Z", 79.37,
-                         [{"date": "2026-08-05", "close": 79.52}], prev_close=79.20)
+                         [{"date": "2026-08-06", "close": 79.52}], prev_close=79.20)
         r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 7))
         assert r["result"] == "created" and r["price_mismatch"] is True
-        assert EtfNavHistory.objects.get(symbol="HYG", date=date(2026, 8, 5)).price == _D("79.52")
+        assert EtfNavHistory.objects.get(symbol="HYG", date=date(2026, 8, 6)).price == _D("79.52")
 
     def test_price_mismatch_within_tol_no_flag(self):
         """오차 내(≤tol) → mismatch 아님."""
         c = self._client("2026-08-06T21:11:00Z", 79.37,
-                         [{"date": "2026-08-05", "close": 79.52}], prev_close=79.54)
+                         [{"date": "2026-08-06", "close": 79.52}], prev_close=79.54)
         r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 7))
         assert r["price_mismatch"] is False
 
@@ -228,7 +225,7 @@ class TestCPrimePrimeAttribution:
         c = _FakeClient(
             quote={"symbol": "HYG", "price": 999, "previousClose": 79.52},
             info={"symbol": "HYG", "nav": 79.37, "updatedAt": "2026-08-06T21:11:00Z"},
-            eod=[{"date": "2026-08-05", "close": 79.52}],
+            eod=[{"date": "2026-08-06", "close": 79.52}],
         )
         r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 7))
         assert r["price"] == 79.52
@@ -240,10 +237,10 @@ class TestCPrimePrimeAttribution:
 
     def test_resolve_populates_nav_updated_at(self):
         """귀속 행에 nav_updated_at(게시 시각) 저장 유지."""
-        c = self._client("2026-08-06T21:11:00Z", 79.37, [{"date": "2026-08-05", "close": 79.52}])
+        c = self._client("2026-08-06T21:11:00Z", 79.37, [{"date": "2026-08-06", "close": 79.52}])
         r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 7))
         assert r["result"] == "created"
-        row = EtfNavHistory.objects.get(symbol="HYG", date=date(2026, 8, 5))
+        row = EtfNavHistory.objects.get(symbol="HYG", date=date(2026, 8, 6))
         assert row.nav_updated_at.astimezone(ZoneInfo("America/New_York")).hour == 17
 
 
@@ -332,32 +329,32 @@ class TestNonTradingDayPubGuard:
         assert not EtfNavHistory.objects.exists()
 
     def test_friday_pub_allows_create(self):
-        """T3 — pub=금(08-14, 거래일) + 신규 → create 허용 (08-15 클린 경로).
+        """T3 — pub=금(08-14, 거래일) + 신규 → 당일 08-14 create 허용 (게시일 키·T-0).
 
         발화일 키였다면 이 클린 create까지 오차단됐을 것 — 게시일 키가 정답임을 증명.
         """
         c = self._client(
             "2026-08-14T20:24:40-04:00", 79.63,
-            [{"date": "2026-08-13", "close": 79.79}],
+            [{"date": "2026-08-14", "close": 79.79}],
         )
         r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 14))
-        assert r["result"] == "created" and r["trade_date"] == "2026-08-13"
+        assert r["result"] == "created" and r["trade_date"] == "2026-08-14"
         assert EtfNavHistory.objects.get(
-            symbol="HYG", date=date(2026, 8, 13)
+            symbol="HYG", date=date(2026, 8, 14)
         ).nav == _D("79.63")
 
     def test_monday_pub_allows_revise(self):
-        """T4 — pub=월(08-17, 거래일) + 기존행 값 상이 → revise 허용 (08-18 교정 경로)."""
-        # 기존 08-14 행(오귀속 잔재값 79.63)을 seed → 월 게시가 79.57로 교정.
-        upsert_etf_nav("HYG", date(2026, 8, 14), _D("79.63"), _D("79.71"))
+        """T4 — pub=월(08-17, 거래일) + 기존 당일행 값 상이 → revise 허용 (T-0)."""
+        # 기존 08-17 당일행(구값 79.63)을 seed → 월 게시가 79.57로 교정.
+        upsert_etf_nav("HYG", date(2026, 8, 17), _D("79.63"), _D("79.71"))
         c = self._client(
             "2026-08-17T20:53:20-04:00", 79.57,
-            [{"date": "2026-08-14", "close": 79.71}],
+            [{"date": "2026-08-17", "close": 79.71}],
         )
         r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 17))
-        assert r["result"] == "updated" and r["trade_date"] == "2026-08-14"
+        assert r["result"] == "updated" and r["trade_date"] == "2026-08-17"
         assert EtfNavHistory.objects.get(
-            symbol="HYG", date=date(2026, 8, 14)
+            symbol="HYG", date=date(2026, 8, 17)
         ).nav == _D("79.57")
 
     def test_holiday_pub_blocks_create(self):
@@ -371,14 +368,99 @@ class TestNonTradingDayPubGuard:
         assert not EtfNavHistory.objects.exists()
 
     def test_trading_day_pub_same_value_already_ok(self):
-        """T6 — pub=거래일(금 08-14) + 동일값 기존행 → no-change(멱등) 불변, 가드 무간섭."""
-        upsert_etf_nav("HYG", date(2026, 8, 13), _D("79.63"), _D("79.79"))
+        """T6 — pub=거래일(08-14) + 동일값 당일행 → no-change(멱등) 불변, 가드 무간섭 (T-0).
+
+        정면 재작성: seed·pub·eod 모두 당일(08-14)로 정렬 → upsert가 진짜 no-change로
+        skip하는 경로를 검증(구판은 08-13 seed로 price_unavailable 우연통과였음).
+        """
+        upsert_etf_nav("HYG", date(2026, 8, 14), _D("79.63"), _D("79.79"))
         c = self._client(
             "2026-08-14T20:24:40-04:00", 79.63,
-            [{"date": "2026-08-13", "close": 79.79}],
+            [{"date": "2026-08-14", "close": 79.79}],
         )
         r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 14))
-        assert r["result"] == "skipped"  # no-change = already_ok
+        assert r["result"] == "skipped" and r["trade_date"] == "2026-08-14"
+        assert "reason" not in r  # no-change 정상 경로(price_unavailable 등 아님)
         assert EtfNavHistory.objects.get(
-            symbol="HYG", date=date(2026, 8, 13)
+            symbol="HYG", date=date(2026, 8, 14)
         ).revised_at is None  # 불변
+
+
+@pytest.mark.django_db
+class TestT0Attribution:
+    """P2a-1e — 귀속 규칙 T-0 전환.
+
+    fix(08-14) 이후 FMP 저녁 스윕(20:1x~20:5x ET)이 당일 확정 NAV를 게시(iShares
+    공식치 양 ETF 교차검증) → nav_trade_date = 게시일 당일(D-1 제거). 비거래일 pub은
+    가드(P2a-1d)가 선차단하므로 T-0에 도달하는 것은 거래일 pub뿐. price 페어링이
+    '당일 nav vs 당일 EOD'로 정렬되어 mismatch 게이트 판별력 회복.
+    """
+
+    def _client(self, upd, nav, eod, prev_close=None):
+        q = {"symbol": "HYG"}
+        if prev_close is not None:
+            q["previousClose"] = prev_close
+        return _FakeClient(
+            quote=q, info={"symbol": "HYG", "nav": nav, "updatedAt": upd}, eod=eod
+        )
+
+    def test_e1_trading_day_pub_attributes_same_day(self):
+        """E1 — pub=거래일(화 08-18 저녁) → 당일 08-18 귀속 create (D-1 아님)."""
+        c = self._client(
+            "2026-08-18T20:18:10-04:00", 79.43,
+            [{"date": "2026-08-18", "close": 79.61}],
+        )
+        r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 18))
+        assert r["result"] == "created" and r["trade_date"] == "2026-08-18"
+        row = EtfNavHistory.objects.get(symbol="HYG", date=date(2026, 8, 18))
+        assert row.nav == _D("79.43") and row.price == _D("79.61")
+
+    def test_e2_same_day_value_differs_revises(self):
+        """E2 — pub=거래일 + 기존 당일행 값 상이 → revise."""
+        upsert_etf_nav("HYG", date(2026, 8, 18), _D("79.00"), _D("79.61"))
+        c = self._client(
+            "2026-08-18T20:18:10-04:00", 79.43,
+            [{"date": "2026-08-18", "close": 79.61}],
+        )
+        r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 18))
+        assert r["result"] == "updated" and r["trade_date"] == "2026-08-18"
+        assert EtfNavHistory.objects.get(
+            symbol="HYG", date=date(2026, 8, 18)
+        ).nav == _D("79.43")
+
+    def test_e3_same_day_same_value_idempotent(self):
+        """E3 — pub=거래일 + 동일값 → no-change 멱등(already_ok)."""
+        upsert_etf_nav("HYG", date(2026, 8, 18), _D("79.43"), _D("79.61"))
+        c = self._client(
+            "2026-08-18T20:18:10-04:00", 79.43,
+            [{"date": "2026-08-18", "close": 79.61}],
+        )
+        r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 18))
+        assert r["result"] == "skipped" and r["trade_date"] == "2026-08-18"
+        assert "reason" not in r  # no-change(정상 경로), price_unavailable 등 아님
+
+    def test_e4_guard_regression_non_trading_pub_blocked(self):
+        """E4 — 가드 회귀: 토·일·휴장일 pub → 차단 불변(T-0 전환 후에도)."""
+        for upd, label in [
+            ("2026-08-15T20:14:30-04:00", "토"),
+            ("2026-08-16T20:57:10-04:00", "일"),
+            ("2026-09-07T20:00:00-04:00", "LaborDay"),
+        ]:
+            c = self._client(upd, 79.50, [{"date": "2026-08-14", "close": 79.71}])
+            r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 18))
+            assert r["result"] == "skipped" and r["reason"] == "non_trading_day_pub", label
+        assert not EtfNavHistory.objects.exists()
+
+    def test_e5_mismatch_pairs_same_day_nav_and_eod(self):
+        """E5 — mismatch: 당일 nav vs 당일 EOD close 페어링(price=당일 EOD)."""
+        c = self._client(
+            "2026-08-18T20:18:10-04:00", 79.43,
+            [{"date": "2026-08-18", "close": 79.61}], prev_close=79.40,
+        )
+        r = resolve_and_upsert_one(c, "HYG", today_et=date(2026, 8, 18))
+        assert r["result"] == "created" and r["price_mismatch"] is True
+        # price는 당일(08-18) EOD 종가여야 한다.
+        assert r["price"] == 79.61
+        assert EtfNavHistory.objects.get(
+            symbol="HYG", date=date(2026, 8, 18)
+        ).price == _D("79.61")
