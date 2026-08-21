@@ -18,6 +18,12 @@ The Design Lab exists to study and improve how Stock_vis supports better investm
 4. [`01_operating_system/knowledge_lifecycle.md`](01_operating_system/knowledge_lifecycle.md)
 5. [`01_operating_system/evolution.md`](01_operating_system/evolution.md)
 
+## Active Workstream
+
+- [`Workstream 001 — Investment Judgment Experience Foundation`](02_workstreams/001_investment_judgment_experience/brief.md)
+
+Workstream material is Working by default and does not become approved Design Knowledge or product architecture automatically.
+
 ## Growth Model
 
 The Design Lab starts with the minimum structure required to operate. New workstream, knowledge, decision, evaluation, terminology, or design-system structures are added only when real work creates a recurring need for them.
