@@ -11,7 +11,8 @@ The Design Lab exists to study and improve how Stock_vis supports better investm
 - Research concepts and Research Knowledge are governed by [`research_lab/`](../research_lab/).
 - Design Lab purpose, operating knowledge, Design Knowledge, workstreams, and Design decisions are governed within `design_lab/` according to their approved authority.
 - Design Lab documents must not silently redefine Research Lab concepts.
-- Korean companion documents are review translations of the English source documents and do not create separate semantic authority.
+- English files are the canonical repository documents. Korean companion files are review translations and do not create separate semantic authority.
+- If English and Korean wording diverge, the conflict must be resolved against the relevant CEO-approved semantic intent and authoritative Design or Research decision. English wording does not override an approved meaning merely because it is the canonical file.
 
 ## Bootstrap Reading Order
 
