@@ -2,13 +2,15 @@
 
 > **한국어 Companion 문서**  
 > 원문: [`agent_protocol.md`](agent_protocol.md)  
-> 이 문서는 영어 원문의 의미를 빠르게 검토하기 위한 한국어 companion이다. 독립적인 authority를 만들지 않으며, 의미 차이가 있을 경우 영어 원문을 기준으로 해소한다.
+> 이 문서는 영어 원문의 의미를 빠르게 검토하기 위한 한국어 companion이다. 독립적인 authority를 만들지 않는다. 영어와 한국어 사이에 의미 차이가 생기면 관련 CEO-approved semantic intent와 authoritative Design / Research decision을 기준으로 두 문서를 다시 정합시킨다.
 
 **Status:** Working  
 **Version:** 0.1  
-**Last Updated:** 2026-08-20  
+**Source Version:** 0.1  
+**Source Synced:** 2026-08-22  
+**Last Updated:** 2026-08-22  
 **Owner:** Stock_vis Design Lab  
-**Operational Use:** 2026-08-20 Project Owner가 working bootstrap baseline으로 운영 사용 승인
+**Use Status:** Active Working Baseline (Project Owner가 운영 사용 허용)
 
 ## 1. Purpose
 
@@ -76,7 +78,7 @@ Specialist Agent는 전체 Design Lab을 다시 해석하지 않고도 독립적
 - **Problem** — 무엇을 이해하거나 설계하거나 challenge해야 하는가
 - **Context** — 필요한 최소 Stock_vis / Research / Design / user / product context
 - **Goal** — agent가 만들어야 할 구체적인 결과
-- **Constraints** — approved Purpose, Principles, authority boundaries, scope limits, requirements
+- **Constraints** — approved 또는 active Working Purpose, Principles, authority boundaries, scope limits, requirements
 - **Authority References** — semantic precision이 필요한 경우 관련 `research_lab/` 또는 `design_lab/` source
 - **Expected Output** — Lead synthesis에 유용한 결과의 형식과 깊이
 
