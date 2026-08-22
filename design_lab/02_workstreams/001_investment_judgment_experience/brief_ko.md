@@ -2,10 +2,12 @@
 
 > **한국어 Companion 문서**  
 > 원문: [`brief.md`](brief.md)  
-> 이 문서는 영어 원문의 의미를 빠르게 검토하기 위한 한국어 companion이다. 독립적인 authority를 만들지 않으며, 의미 차이가 있을 경우 영어 원문을 기준으로 해소한다.
+> 이 문서는 영어 원문의 의미를 빠르게 검토하기 위한 한국어 companion이다. 독립적인 authority를 만들지 않는다. 영어와 한국어 사이에 의미 차이가 생기면 관련 CEO-approved semantic intent와 authoritative Design / Research decision을 기준으로 두 문서를 다시 정합시킨다.
 
 **Status:** Working  
 **Version:** 0.1  
+**Source Version:** 0.1  
+**Source Synced:** 2026-08-22  
 **Started:** 2026-08-21  
 **Owner:** Stock_vis Design Lab  
 **Decision Tier:** Tier 2 Workstream. 작업 중 Tier 1 issue가 발견되면 escalation
