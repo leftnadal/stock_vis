@@ -2,13 +2,15 @@
 
 > **한국어 Companion 문서**  
 > 원문: [`knowledge_lifecycle.md`](knowledge_lifecycle.md)  
-> 이 문서는 영어 원문의 의미를 빠르게 검토하기 위한 한국어 companion이다. 독립적인 authority를 만들지 않으며, 의미 차이가 있을 경우 영어 원문을 기준으로 해소한다.
+> 이 문서는 영어 원문의 의미를 빠르게 검토하기 위한 한국어 companion이다. 독립적인 authority를 만들지 않는다. 영어와 한국어 사이에 의미 차이가 생기면 관련 CEO-approved semantic intent와 authoritative Design / Research decision을 기준으로 두 문서를 다시 정합시킨다.
 
 **Status:** Working  
 **Version:** 0.1  
-**Last Updated:** 2026-08-20  
+**Source Version:** 0.1  
+**Source Synced:** 2026-08-22  
+**Last Updated:** 2026-08-22  
 **Owner:** Stock_vis Design Lab  
-**Operational Use:** 2026-08-20 Project Owner가 working bootstrap baseline으로 운영 사용 승인
+**Use Status:** Active Working Baseline (Project Owner가 운영 사용 허용)
 
 ## 1. Purpose
 
@@ -31,7 +33,7 @@ Bootstrap 단계에서는 더 강한 lifecycle state가 실제로 필요해질 �
 - **Working** — 현재 operating 또는 design baseline으로 사용할 수 있지만 추가 작업과 evidence를 통해 의도적으로 수정 가능
 - **Approved** — 명시된 scope 안에서 Project Owner가 durable authoritative Design Lab commitment로 명시적으로 승인
 
-Working 문서는 그 개념 자체가 final Approved Design Knowledge가 되지 않은 상태에서도 운영 사용을 승인받을 수 있다. **Operational permission과 epistemic / governance maturity는 다른 문제다.**
+Working 문서는 개념 자체가 final Approved Design Knowledge가 아니어도 **운영상 active하게 사용할 수 있다.** Operational permission과 epistemic / governance maturity는 다른 문제다. 혼동을 줄이기 위해 문서 자체가 Approved status가 아닌 경우 operational-use metadata에서는 `Approved`를 status label처럼 사용하지 않는다.
 
 Superseded, Deprecated, Retired 같은 추가 상태는 실제 lifecycle 필요가 생길 때만 도입한다.
 
