@@ -2,9 +2,9 @@
 
 **Status:** Working  
 **Version:** 0.1  
-**Last Updated:** 2026-08-20  
+**Last Updated:** 2026-08-22  
 **Owner:** Stock_vis Design Lab  
-**Operational Use:** Approved as a working bootstrap baseline by Project Owner on 2026-08-20
+**Use Status:** Active Working Baseline (authorized for operational use by Project Owner)
 
 ## 1. Purpose
 
@@ -72,7 +72,7 @@ A useful brief includes, as relevant:
 - **Problem** — what needs to be understood, designed, or challenged;
 - **Context** — the minimum Stock_vis, Research, Design, user, or product context needed;
 - **Goal** — the specific result the agent should produce;
-- **Constraints** — approved Purpose, Principles, authority boundaries, scope limits, or requirements;
+- **Constraints** — approved or active Working Purpose, Principles, authority boundaries, scope limits, or requirements;
 - **Authority References** — relevant `research_lab/` or `design_lab/` sources when semantic precision matters;
 - **Expected Output** — the form and depth useful for Lead synthesis.
 
