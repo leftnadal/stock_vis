@@ -2,9 +2,9 @@
 
 **Status:** Working  
 **Version:** 0.1  
-**Last Updated:** 2026-08-20  
+**Last Updated:** 2026-08-22  
 **Owner:** Stock_vis Design Lab  
-**Operational Use:** Approved as a working bootstrap baseline by Project Owner on 2026-08-20
+**Use Status:** Active Working Baseline (authorized for operational use by Project Owner)
 
 ## 1. Purpose
 
@@ -64,7 +64,7 @@ A change to a repeated working pattern that is likely to improve multiple future
 
 Examples may include changing the Agent Output Contract, moving critique earlier in a recurring workflow, clarifying workstream write-back, or adjusting the default composition of agents for a recurring task class.
 
-The Lead may implement reversible Operating Improvements within approved authority, while recording or documenting them when future agents need the changed rule.
+The Lead may implement reversible Operating Improvements within approved or active Working authority, while recording or documenting them when future agents need the changed rule.
 
 If the improvement materially changes authority, semantics, or long-term dependency, it should be reclassified as Structural Change.
 
@@ -106,7 +106,7 @@ These signals should prompt diagnosis rather than automatic structural change.
 
 ## 6. Delegation Reversal Conditions
 
-The Design Lab currently favors delegated exploration and autonomous execution under approved boundaries.
+The Design Lab currently favors delegated exploration and autonomous execution under approved or active Working boundaries.
 
 Delegation should be narrowed or restructured if evidence shows repeated failures such as:
 
