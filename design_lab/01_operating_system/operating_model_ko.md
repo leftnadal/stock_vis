@@ -2,13 +2,15 @@
 
 > **한국어 Companion 문서**  
 > 원문: [`operating_model.md`](operating_model.md)  
-> 이 문서는 영어 원문의 의미를 빠르게 검토하기 위한 한국어 companion이다. 독립적인 authority를 만들지 않으며, 의미 차이가 있을 경우 영어 원문을 기준으로 해소한다.
+> 이 문서는 영어 원문의 의미를 빠르게 검토하기 위한 한국어 companion이다. 독립적인 authority를 만들지 않는다. 영어와 한국어 사이에 의미 차이가 생기면 관련 CEO-approved semantic intent와 authoritative Design / Research decision을 기준으로 두 문서를 다시 정합시킨다.
 
 **Status:** Working  
 **Version:** 0.1  
-**Last Updated:** 2026-08-20  
+**Source Version:** 0.1  
+**Source Synced:** 2026-08-22  
+**Last Updated:** 2026-08-22  
 **Owner:** Stock_vis Design Lab  
-**Operational Use:** 2026-08-20 Project Owner가 working bootstrap baseline으로 운영 사용 승인
+**Use Status:** Active Working Baseline (Project Owner가 운영 사용 허용)
 
 ## 1. Core Operating Principle
 
@@ -26,7 +28,7 @@ CEO에게는 정리되지 않은 중간 탐색 결과가 아니라 준비된 Dec
 
 ### Design Lab Lead / AI Co-researcher
 
-Design Lab Lead는 문제를 framing하고, 작업을 분해하고, specialist perspective를 선택하고, exploration을 위임하고, alternative를 비교하고, counterargument를 검토하고, Research consistency를 확인하고, finding을 통합하고, decision consequence를 판단하고, 필요한 경우 escalation하며, 승인된 boundary 안에서 자율적으로 실행한다.
+Design Lab Lead는 문제를 framing하고, 작업을 분해하고, specialist perspective를 선택하고, exploration을 위임하고, alternative를 비교하고, counterargument를 검토하고, Research consistency를 확인하고, finding을 통합하고, decision consequence를 판단하고, 필요한 경우 escalation하며, 현재 활성화된 boundary 안에서 자율적으로 실행한다.
 
 Lead는 자신의 최초 제안을 방어할 의무가 없다. Evidence나 critique가 더 나은 대안을 지지하면 기존 제안을 수정하거나 교체한다.
 
@@ -106,7 +108,9 @@ Lead가 관련된 결정을 하나의 coherent Decision Package로 통합한다.
 
 ### Tier 3 — Delegated Decision
 
-승인된 Purpose, Principles, architecture, guardrail에서 자연스럽게 파생되는 reversible choice에 사용한다.
+현재 활성화된 Purpose, Principles, architecture, guardrail에서 자연스럽게 파생되는 reversible choice에 사용한다.
+
+Bootstrap 단계에서는 일부 upstream constraint 자체가 아직 Approved가 아니라 Working일 수 있다. **Active Working Baseline**은 reversible exploration과 execution을 안내하는 데 사용할 수 있지만, durable semantic authority로 취급하거나 irreversible / high-dependency commitment를 정당화하는 근거로 사용해서는 안 된다. Local choice가 이런 commitment를 만들기 시작하면 재분류하고 escalation한다.
 
 Lead가 반복적으로 승인을 요청하지 않고 결정하고 진행한다.
 
@@ -153,6 +157,26 @@ Escalation 판단에는 다음 요소를 고려한다.
 - Failure / Reversal Conditions
 
 Strength는 새로운 evidence에 따라 변경될 수 있다.
+
+### 6.1 Recommendation Strength와 CEO Criticality는 독립된 축이다
+
+Recommendation Strength는 현재 evidence와 constraint 아래에서 Lead가 특정 안을 얼마나 강하게 선호하는지를 나타낸다. CEO Criticality는 consequence, authority, 가치 trade-off, long-term dependency 때문에 CEO의 직접적인 judgment가 얼마나 필요한지를 나타낸다.
+
+둘을 같은 축으로 취급해서는 안 된다.
+
+예:
+
+- **Very Strong** recommendation이라도 reversible하고 기존 constraint에서 거의 자연스럽게 파생되면 Tier 3 / AI-owned일 수 있다.
+- **Moderate** recommendation이라도 high-consequence 또는 value-laden decision이면 CEO의 깊은 검토가 필요할 수 있다.
+- Purpose나 major authority boundary에 대한 **Very Strong** recommendation도 consequence가 높기 때문에 CEO decision이 필요하다.
+
+CEO-facing batch communication에서는 다음을 구분한다.
+
+- **Batch Consensus** — package 단위 review에 적합한 integrated recommendation
+- **CEO Critical Decision** — Lead가 CEO에게 직접 깊이 검토하기를 권장하는 genuinely consequential item. 보통 한 batch당 0~3개로 제한
+- **Deferred / AI-owned** — Lead가 계속 자율적으로 탐색하거나 실행할 reversible detail
+
+CEO Critical Decision이 없다면 그것도 명시한다.
 
 ## 7. Decision Package
 
