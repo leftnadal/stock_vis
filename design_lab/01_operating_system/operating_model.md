@@ -2,9 +2,9 @@
 
 **Status:** Working  
 **Version:** 0.1  
-**Last Updated:** 2026-08-20  
+**Last Updated:** 2026-08-22  
 **Owner:** Stock_vis Design Lab  
-**Operational Use:** Approved as a working bootstrap baseline by Project Owner on 2026-08-20
+**Use Status:** Active Working Baseline (authorized for operational use by Project Owner)
 
 ## 1. Core Operating Principle
 
@@ -102,7 +102,9 @@ The Lead explores and integrates the related decisions into one coherent Decisio
 
 ### Tier 3 — Delegated Decision
 
-Use Tier 3 for reversible choices that naturally follow from approved Purpose, Principles, architecture, and guardrails.
+Use Tier 3 for reversible choices that naturally follow from the currently active Purpose, Principles, architecture, and guardrails.
+
+During bootstrap, some of those upstream constraints may themselves remain Working rather than Approved. An **Active Working Baseline** may guide reversible exploration and execution, but it must not be treated as durable semantic authority or used to justify an irreversible or high-dependency commitment. If a local choice begins to create such a commitment, it must be reclassified and escalated.
 
 The Lead decides and proceeds without requesting repeated approval.
 
@@ -149,6 +151,26 @@ Important recommendations should normally state:
 - Failure / Reversal Conditions.
 
 Strength may change as evidence changes.
+
+### 6.1 Recommendation Strength and CEO Criticality Are Independent
+
+Recommendation Strength expresses how strongly the Lead prefers a recommendation under current evidence and constraints. CEO Criticality expresses how much direct Project Owner judgment a decision deserves because of consequence, authority, value trade-offs, or long-term dependency.
+
+They must not be treated as the same axis.
+
+Examples:
+
+- a **Very Strong** recommendation may still be Tier 3 and AI-owned if it is reversible and largely implied by existing constraints;
+- a **Moderate** recommendation may require deep CEO review if the decision is high-consequence or value-laden;
+- a **Very Strong** recommendation about Purpose or a major authority boundary still requires CEO decision because the consequence is high.
+
+For CEO-facing batch communication, the Lead should distinguish:
+
+- **Batch Consensus** — integrated recommendations suitable for package-level review;
+- **CEO Critical Decision** — genuinely consequential items the Lead recommends the CEO examine directly and deeply, normally limited to 0–3 per batch;
+- **Deferred / AI-owned** — reversible details the Lead will continue to explore or execute autonomously.
+
+If a batch contains no CEO Critical Decision, the Lead should state that explicitly.
 
 ## 7. Decision Package
 
