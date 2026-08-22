@@ -1,7 +1,9 @@
 # Stock_vis Design Lab
 
 > **한국어 Companion 문서**  
-> 이 문서는 [`README.md`](README.md)의 한국어 companion이다. 운영 및 의미 기준은 영어 원문과 동일하게 유지하며, 두 문서 사이에 의미 차이가 발견되면 원문을 기준으로 차이를 해소하고 한국어 문서를 갱신한다. 한국어 companion 자체가 별도의 독립 authority를 만들지는 않는다.
+> 이 문서는 [`README.md`](README.md)의 한국어 companion이다. 영어 파일은 canonical repository document로 유지하지만, 영어 문구 자체가 승인된 의미보다 우선하지는 않는다. 영어와 한국어 사이에 의미 차이가 발견되면 관련 CEO-approved semantic intent와 authoritative Design / Research decision을 기준으로 두 문서를 다시 정합시킨다. 한국어 companion 자체가 별도의 독립 authority를 만들지는 않는다.
+
+**Source Synced:** 2026-08-22
 
 이 디렉터리는 Stock_vis Design Lab의 공식 지식 및 운영 라이브러리다.
 
@@ -12,6 +14,8 @@ Design Lab은 Stock_vis의 더 넓은 목적인 **Better Investment Decisions**�
 - Research 개념과 Research Knowledge는 [`research_lab/`](../research_lab/)에서 관리한다.
 - Design Lab의 Purpose, 운영 지식, Design Knowledge, Workstream, Design Decision은 각각 승인된 authority에 따라 `design_lab/`에서 관리한다.
 - Design Lab 문서는 Research Lab 개념을 암묵적으로 재정의해서는 안 된다.
+- 영어 파일은 repository의 canonical document이며, 한국어 companion은 빠른 검토를 위한 번역본이다.
+- 번역 불일치가 생기면 영어 문구가 자동으로 승리하는 것이 아니라, 관련 CEO-approved intent와 authoritative decision을 기준으로 두 버전을 수정한다.
 
 ## Bootstrap 읽기 순서
 
@@ -43,7 +47,8 @@ Design Lab의 구조 자체도 사용, 관찰, consequential한 경우의 명시
 
 사용자의 빠른 검토를 위해 핵심 Design Lab 문서는 영어 원문과 한국어 companion을 함께 유지한다.
 
-- 영어 원문은 semantic source로 유지한다.
+- 영어 원문은 canonical repository document로 유지한다.
 - 한국어 companion은 가능한 한 구조와 의미를 1:1로 보존한다.
 - 영어 원문이 materially 변경되면 한국어 companion도 함께 갱신한다.
-- 번역 차이는 새로운 Design 개념이나 별도 결정으로 취급하지 않는다.
+- 한국어 companion에는 가능하면 source version / sync date를 표시한다.
+- 번역 차이는 새로운 Design 개념이나 별도 결정으로 취급하지 않으며, 관련 승인된 semantic intent를 기준으로 해소한다.
