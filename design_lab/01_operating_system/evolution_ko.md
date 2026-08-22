@@ -2,13 +2,15 @@
 
 > **한국어 Companion 문서**  
 > 원문: [`evolution.md`](evolution.md)  
-> 이 문서는 영어 원문의 의미를 빠르게 검토하기 위한 한국어 companion이다. 독립적인 authority를 만들지 않으며, 의미 차이가 있을 경우 영어 원문을 기준으로 해소한다.
+> 이 문서는 영어 원문의 의미를 빠르게 검토하기 위한 한국어 companion이다. 독립적인 authority를 만들지 않는다. 영어와 한국어 사이에 의미 차이가 생기면 관련 CEO-approved semantic intent와 authoritative Design / Research decision을 기준으로 두 문서를 다시 정합시킨다.
 
 **Status:** Working  
 **Version:** 0.1  
-**Last Updated:** 2026-08-20  
+**Source Version:** 0.1  
+**Source Synced:** 2026-08-22  
+**Last Updated:** 2026-08-22  
 **Owner:** Stock_vis Design Lab  
-**Operational Use:** 2026-08-20 Project Owner가 working bootstrap baseline으로 운영 사용 승인
+**Use Status:** Active Working Baseline (Project Owner가 운영 사용 허용)
 
 ## 1. Purpose
 
@@ -68,7 +70,7 @@ Design Lab Lead가 formal governance나 CEO approval 없이 즉시 적용할 수
 
 예: Agent Output Contract 변경, 반복 workflow에서 critique를 더 앞당기기, workstream write-back 명확화, 특정 recurring task class의 default agent composition 조정.
 
-Lead는 승인된 authority 안에서 reversible Operating Improvement를 적용할 수 있고, future agent가 알아야 하는 persistent change라면 관련 문서를 갱신한다.
+Lead는 approved 또는 active Working authority 안에서 reversible Operating Improvement를 적용할 수 있고, future agent가 알아야 하는 persistent change라면 관련 문서를 갱신한다.
 
 Authority, semantics, long-term dependency를 실질적으로 바꾸면 Structural Change로 재분류한다.
 
@@ -110,7 +112,7 @@ Repeated friction, cross-workstream recurrence, high-consequence failure가 form
 
 ## 6. Delegation Reversal Conditions
 
-현재 Design Lab은 delegated exploration과 approved boundary 아래의 autonomous execution을 선호한다.
+현재 Design Lab은 delegated exploration과 approved 또는 active Working boundary 아래의 autonomous execution을 선호한다.
 
 다음 failure가 반복되면 delegation 범위를 줄이거나 재구성해야 한다.
 
