@@ -2,9 +2,9 @@
 
 **Status:** Working  
 **Version:** 0.1  
-**Last Updated:** 2026-08-20  
+**Last Updated:** 2026-08-22  
 **Owner:** Stock_vis Design Lab  
-**Operational Use:** Approved as a working bootstrap baseline by Project Owner on 2026-08-20
+**Use Status:** Active Working Baseline (authorized for operational use by Project Owner)
 
 ## 1. Purpose
 
@@ -27,7 +27,7 @@ During bootstrap, the Design Lab uses a deliberately small document-status vocab
 - **Working** — usable as the current operating or design baseline, but intentionally open to revision through further work and evidence.
 - **Approved** — explicitly accepted by the Project Owner as a durable authoritative Design Lab commitment within its stated scope.
 
-A Working document may be approved for operational use without its underlying concepts becoming final Approved Design Knowledge. Operational permission and epistemic or governance maturity are different questions.
+A Working document may be **active for operational use** without its underlying concepts becoming final Approved Design Knowledge. Operational permission and epistemic or governance maturity are different questions. To reduce ambiguity, operational-use metadata should avoid using `Approved` as a status label unless the document itself has Approved status.
 
 Additional states such as Superseded, Deprecated, or Retired should be introduced only when real lifecycle needs justify them.
 
