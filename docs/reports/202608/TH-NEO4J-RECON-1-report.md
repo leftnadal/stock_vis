@@ -213,3 +213,11 @@ lsof -nP -iTCP:7687 | grep LISTEN     # 현재: 무출력(다운)
 - 지시서: `25418cf6` · runbook 보강+addendum+TASKQUEUE: (세션 출력 말미) · push 착지: (§6 후)
 
 **→ §3~§7 진행**
+
+## §5 시간 게이트 결과 (2026-08-24 재개, machine clock 08-24 00:15 UTC)
+- **§5-1 SignalAccuracy signal_date=2026-08-18 = 536행** ✅ (08-19 0→백필 재커버 완료. (a) 자연회복 실증: EOD 08-18 재생성 후 후속 backfill 발화가 소급. 추세 08-17=508·08-18=536·08-19=725·08-20=532).
+- **§5-2 리포트 SMTP 발송 = 복구** ✅ (08-24 발화 5/5 succeeded·`status: sent`·recipient jinie545@gmail.com — agent data/backend/qa/design + daily. 신규 리포트 535=0. 535 텍스트 언급은 08-21 ~60→08-24 ~3 급감=drained retry 백로그/error-digest 본문, 현재 발송 실패 아님).
+- **§3 위생 = 종결** ✅ (08-24 병진 실행: worktree/브랜치/헬퍼/cypher_shell_history 제거·검증).
+- **OPS-SMTP-CRED·NEO4J-RESTORE-P2·WORKTREE-CLEANUP-NEO4J = 전부 종결.** NEO4J 사건 사후 위생·SMTP·정리 **전 구간 완료**.
+
+**→ OPS-SWEEP-1 종결**
