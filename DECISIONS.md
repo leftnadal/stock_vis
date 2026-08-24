@@ -38,6 +38,21 @@
 **Why**: "Stock 모델에 다 있으니 순수 조회" 통념이 실측에서 반증됨(OVERVIEW 싱크 사망). 파생만이 유일 실행로이며, live FMP(screener passthrough=debt_eq/current_ratio 원천)는 rate-limit로 베이커 부적합.
 
 **How to apply**: payload +30%(cards 4배열 증폭) 수용 — symbol-ref 축약 리팩터는 **선택·보류**. 슬라이스 = SCAN-B2-TECH-BE(선행)→FUND-BE(후행), TASKQUEUE. cf. [[project_scanner_ux_recon]] R1 절.
+## [2026-08-24] D-P16-ENGINE — Macro Playbook = anomaly와 별도 모듈 (evaluator 준용·분리) [marketpulse][playbook][governance]
+
+**결정 (가안 = 별도 모듈)**: `apps/market_pulse/playbook/`(chains.yaml + engine) 신설 — anomaly 엔진 *패턴 준용*(선언 YAML + evaluator 순회)하되 코드·파일 완전 분리. 저장 = **compute-on-read**(stress 관례·스냅샷 모델·마이그레이션 0). 퀀트 4.50 > 다(공용 리팩터) 4.05 > 가(in-place 확장) 3.15, 마진 0.45. 타이브레이커 = 행위보존 최우선 + 리팩터는 고통 실증 후.
+
+**Why**: anomaly(단일 지표 boolean 발화)와 chain(다신호 합류의 부분 점등 n/m + 서사)은 의미가 다르다 — 섞으면 anomaly 회귀 위험. 별도 모듈이 anomaly 무접촉(diff 0)을 보장. 공용 evaluator는 실제 drift 버그가 실증될 때 수렴(선제 추상화 = γ 위반). compute-on-read = §5 prod 마이그레이션 게이트 회피(makemigrations "No changes detected" 실증).
+
+**How to apply**: 신호 재료 = 기존 수집분만(외부 API 0) — z(load_inputs+to_z 14성분)·anomaly build_context 4종·IndicatorValue/MacroSeriesHistory 추세. 공용 evaluator 수렴 트리거 = TASKQUEUE `EVALUATOR-CONVERGE`(drift 버그 발생 시). cf. [[project_phase16_playbook.md]].
+
+## [2026-08-24] D-P16-CHAIN — 체인 로스터 = 전량 8종 (다안, 디렉터 7종 오버라이드) [marketpulse][playbook][governance]
+
+**결정 (다안 = 전량 8종)**: risk_off·credit_stress·rate_shock·vol_term_inversion·concentration_fragility·curve_shift·dollar_squeeze·financial_tightening. **병진 결정 = 디렉터 추천(나안 7종) 오버라이드.** 퀀트 가(8종) 4.30 = 나(7종) 4.30 > 다 3.60 병기(마진 0.00 → 병진 입력 규칙 발동). 다안 약점 2건 = 설계 완화책으로 흡수.
+
+**Why**: 마진 0.00 동률 → 병진 입력이 타이브레이커. 다안 약점 흡수: ⑴ dollar_squeeze **weekly 케이던스/원자재 다리 부재** → data_as_of 정직 표기 + 원자재 다리 v0.2 이연(GLD·SLV 미수집). ⑵ financial_tightening **stress fin_conditions축과 중복** → **추세·변화 방향**으로만 정의("조여 있다"=StressCard / "조임 진행 중"=체인). 문턱 = v0.1 잠정(z 인프라 기준 산정, chains.yaml `# 잠정` 명기) — S4-REBASE 재산정 대상(Analog 문턱 락 동형).
+
+**How to apply**: 조건은 부분 점등(lit_count/total) → state(dormant/partial/active/pending). 신호 부재 = pending(오판정 렌더 금지, FE "데이터 대기"). 후속 = TASKQUEUE `PLAYBOOK-DOLLAR-V02`(원자재 다리)·`PLAYBOOK-THRESH-REBASE`(S4-REBASE 문턱). 서사 = 조건 서술형(카피 게이트 "위기" 금지).
 
 ## [2026-08-20] D-P16-ENTRY — Phase 1.6 착수 = C-lite 히어로 배지 선착지 (가안) [marketpulse][frontend][process]
 

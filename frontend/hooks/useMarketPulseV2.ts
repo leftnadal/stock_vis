@@ -4,12 +4,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchCardDetail,
   fetchOverview,
+  fetchPlaybook,
   fetchRegimeAnalog,
   fetchRegimeStress,
   fetchRegimeZScore,
   refreshNews,
   type CardDetailEnvelope,
   type OverviewResponse,
+  type PlaybookPayload,
   type RegimeAnalogPayload,
   type RegimeStressPayload,
   type RegimeZScorePayload,
@@ -21,6 +23,7 @@ const CARD_DETAIL_KEY = (cardId: string) =>
 const REGIME_ZSCORE_KEY = ['marketpulse-v2', 'regime', 'zscore'] as const
 const REGIME_ANALOG_KEY = ['marketpulse-v2', 'regime', 'analog'] as const
 const REGIME_STRESS_KEY = ['marketpulse-v2', 'regime', 'stress'] as const
+const PLAYBOOK_KEY = ['marketpulse-v2', 'playbook'] as const
 
 export function useOverview() {
   return useQuery<OverviewResponse>({
@@ -72,6 +75,17 @@ export function useRegimeStress(enabled: boolean = true) {
   return useQuery<CardDetailEnvelope<RegimeStressPayload>>({
     queryKey: REGIME_STRESS_KEY,
     queryFn: fetchRegimeStress,
+    enabled,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  })
+}
+
+// 1.6-S1: 거시 플레이북 카드 fetch(그리드 카드). BE 5분 캐시, FE 30분.
+export function usePlaybook(enabled: boolean = true) {
+  return useQuery<CardDetailEnvelope<PlaybookPayload>>({
+    queryKey: PLAYBOOK_KEY,
+    queryFn: fetchPlaybook,
     enabled,
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,

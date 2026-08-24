@@ -21,6 +21,7 @@ from apps.market_pulse.api.views.health import HealthView
 from apps.market_pulse.api.views.i18n import I18nView
 from apps.market_pulse.api.views.news_refresh import NewsRefreshView
 from apps.market_pulse.api.views.overview import OverviewView
+from apps.market_pulse.api.views.playbook import PlaybookView
 
 app_name = "marketpulse_api_v2"
 
@@ -31,6 +32,7 @@ urlpatterns = [
     path("regime/zscore", RegimeZScoreView.as_view(), name="regime-zscore"),
     path("regime/analog", RegimeAnalogView.as_view(), name="regime-analog"),
     path("regime/stress", RegimeStressView.as_view(), name="regime-stress"),
+    path("playbook", PlaybookView.as_view(), name="playbook"),
     path("news/refresh", NewsRefreshView.as_view(), name="news-refresh"),
     path("i18n", I18nView.as_view(), name="i18n"),
     path("health", HealthView.as_view(), name="health"),

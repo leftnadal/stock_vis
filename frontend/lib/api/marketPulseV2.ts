@@ -272,6 +272,16 @@ export async function fetchRegimeStress(): Promise<
   return data
 }
 
+// 1.6-S1: 거시 플레이북 카드 전용 엔드포인트(compute-on-read). 봉투 동일.
+export async function fetchPlaybook(): Promise<
+  CardDetailEnvelope<PlaybookPayload>
+> {
+  const { data } = await client.get<CardDetailEnvelope<PlaybookPayload>>(
+    '/playbook',
+  )
+  return data
+}
+
 export async function refreshNews(): Promise<{
   _meta: { generated_at: string; count: number; pool_size: number; seen_count: number }
   items: NewsItem[]
@@ -425,6 +435,36 @@ export interface RegimeStressPayload {
     population?: number
     band_thresholds?: { low: number; high: number }
     band_provisional?: boolean // 내부 메타 — 카드 미표시(파싱만 보존)
+  }
+}
+
+// 1.6-S1 Macro Playbook: 다신호 합류 체인. 상태·서사·점등 전부 BE 판정(FE 재판정 0).
+export type PlaybookState = 'dormant' | 'partial' | 'active' | 'pending'
+
+export interface PlaybookCondition {
+  label: string
+  lit: boolean | null // null = 데이터 대기(오판정 금지)
+}
+
+export interface PlaybookChain {
+  id: string
+  name: string
+  narrative: string
+  cadence: 'daily' | 'weekly'
+  lit_count: number
+  total: number
+  state: PlaybookState
+  data_as_of: string | null
+  conditions?: PlaybookCondition[]
+}
+
+export interface PlaybookPayload {
+  chains: PlaybookChain[]
+  summary: {
+    total: number
+    total_lit: number
+    top_chain: { id: string; name: string } | null
+    evaluated_at?: string
   }
 }
 

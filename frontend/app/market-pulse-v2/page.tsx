@@ -16,6 +16,7 @@ import { ConcentrationCardSummary } from './cards/ConcentrationCardSummary'
 import { DeltaCard } from './cards/DeltaCard'
 import { RegimeCardSummary } from './cards/RegimeCardSummary'
 import { SectorHeatmap } from './cards/SectorHeatmap'
+import { PlaybookCardContainer } from './cards/PlaybookCardContainer'
 import { StressCardContainer } from './cards/StressCardContainer'
 import { AnalogCardContainer } from './details/AnalogCard'
 import { CardDetailContainer } from './details/CardDetailContainer'
@@ -108,6 +109,11 @@ export default function MarketPulseV2Page() {
 
         {/* ④ Anomaly Panel — 위계 2번 */}
         <AnomalyPanel data={overview.anomaly} labels={labels} />
+
+        {/* ④a Macro Playbook — 다신호 합류 체인 (1.6-S1). anomaly와 구분(합류 부분점등). */}
+        <div className="mt-4">
+          <PlaybookCardContainer />
+        </div>
 
         {/* ⑤ Sector 히트맵 (full-width) — 위계 3번 */}
         <SectorHeatmap labels={labels} onOpen={() => openSector(undefined)} sense={selectSense(translations, 'sector')} />

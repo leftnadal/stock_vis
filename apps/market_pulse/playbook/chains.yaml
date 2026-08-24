@@ -1,0 +1,79 @@
+# Macro Playbook 체인 로스터 v0.1 (1.6-S1 / D-P16-CHAIN 다안 = 전량 8종)
+#
+# 의미: anomaly(단일 지표 boolean 발화)와 구분되는 **다신호 합류 체인**. 각 체인은 조건들의
+#   부분 점등(lit_count/total)으로 상태를 갖는다(dormant/partial/active/pending).
+# signal = playbook/context.py build_context가 산출하는 파생 신호 키. op/threshold로 판정.
+# ⚠ threshold 전부 **v0.1 잠정** — 기존 z 인프라(z-score) 기준 이 세션 산정. S4-REBASE 재산정 대상.
+# narrative = 조건 서술형(원인 단정·"위기" 프레이밍 금지). cadence = daily|weekly(기준일 표기).
+
+chains:
+  - id: risk_off
+    name: 위험회피
+    narrative: "변동성 급등 · 하이일드 스프레드 확대 · 주식 하락이 겹치는 위험회피 국면"
+    cadence: daily
+    conditions:
+      - { signal: vix_z, op: ">=", threshold: 1.5, label: "VIX z≥1.5" }        # 잠정
+      - { signal: hy_oas_z, op: ">=", threshold: 1.0, label: "HY OAS z≥1.0" }    # 잠정
+      - { signal: return_1d_z, op: "<=", threshold: -1.5, label: "일간수익 z≤-1.5" }  # 잠정
+
+  - id: credit_stress
+    name: 신용경색
+    narrative: "하이일드와 투자등급 스프레드가 함께 벌어지고 신용 축이 상승하는 국면"
+    cadence: daily
+    conditions:
+      - { signal: hy_oas_z, op: ">=", threshold: 1.0, label: "HY OAS z≥1.0" }       # 잠정
+      - { signal: ig_oas_chg5d, op: ">=", threshold: 0.10, label: "IG OAS 5일 +0.10%p" }  # 잠정
+      - { signal: credit_axis_z, op: ">=", threshold: 1.0, label: "신용축 z≥1.0" }    # 잠정
+
+  - id: rate_shock
+    name: 금리충격
+    narrative: "채권 변동성 급등 · 장기금리 급변 · 섹터 압박이 겹치는 금리 충격 국면"
+    cadence: daily
+    conditions:
+      - { signal: move_z, op: ">=", threshold: 1.5, label: "MOVE z≥1.5" }            # 잠정
+      - { signal: dgs10_chg1d_abs, op: ">=", threshold: 0.15, label: "10Y 1일 |Δ|≥0.15%p" }  # 잠정
+      - { signal: max_abs_sector_z, op: ">=", threshold: 2.5, label: "섹터 |z|≥2.5" }  # 잠정
+
+  - id: vol_term_inversion
+    name: 변동성 기간역전
+    narrative: "단기 변동성이 장기(VIX3M)를 역전하고 VIX가 오르는 국면"
+    cadence: daily
+    conditions:
+      - { signal: vix_term_ratio, op: "<", threshold: 1.0, label: "VIX3M/VIX<1" }
+      - { signal: vix_z, op: ">=", threshold: 0.5, label: "VIX z≥0.5" }            # 잠정
+
+  - id: concentration_fragility
+    name: 쏠림 취약
+    narrative: "상위 집중도 극단 · 섹터 분산 급등이 겹치는 쏠림 취약 국면"
+    cadence: daily
+    conditions:
+      - { signal: top10_weight, op: ">=", threshold: 0.40, label: "상위10 비중≥40%" }  # 잠정
+      - { signal: cross_dispersion, op: ">=", threshold: 1.5, label: "섹터 분산≥1.5" }  # 잠정
+
+  - id: curve_shift
+    name: 커브 전환
+    narrative: "장단기 금리차가 방향을 틀어 지속되는 커브 전환 국면"
+    cadence: daily
+    persistence: 2
+    conditions:
+      - { signal: t10y2y_chg5d_abs, op: ">=", threshold: 0.15, label: "2s10s 5일 |Δ|≥0.15%p" }  # 잠정
+      - { signal: t10y2y_persist, op: ">=", threshold: 1.0, label: "2일 방향 지속" }
+
+  - id: dollar_squeeze
+    name: 달러 압박
+    # v0.1 축소 정의: 원자재 다리(달러↑→원자재↓)는 GLD·SLV 미수집으로 제외(→ TASKQUEUE v0.2).
+    narrative: "달러 강세가 이어지고 위험자산이 약세인 달러 압박 국면 (원자재 다리는 v0.2)"
+    cadence: daily
+    conditions:
+      - { signal: dtwexbgs_chg5d, op: ">=", threshold: 0.50, label: "달러지수 5일 +0.5%" }  # 잠정
+      - { signal: return_1d_z, op: "<=", threshold: -0.5, label: "일간수익 z≤-0.5" }      # 잠정
+
+  - id: financial_tightening
+    name: 금융환경 긴축
+    # 방향성 정의: stress의 financial_conditions(수위)와 구분 — "지금 조여 있다"가 아니라
+    #   "조임이 **진행 중**"(추세·변화 방향)만 본다. weekly(NFCI·STLFSI 갱신 주기).
+    narrative: "금융환경 지수(NFCI·STLFSI)가 상승 추세로 조임이 진행 중인 국면"
+    cadence: weekly
+    conditions:
+      - { signal: nfci_chg4w, op: ">=", threshold: 0.05, label: "NFCI 4주 상승≥0.05" }   # 잠정
+      - { signal: stlfsi_chg4w, op: ">=", threshold: 0.05, label: "STLFSI 4주 상승≥0.05" }  # 잠정
