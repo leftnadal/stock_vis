@@ -201,31 +201,84 @@ class EODSignalTagger:
                 except (ValueError, TypeError):
                     market_cap_val = None
 
-            results.append(
-                {
-                    "stock_id": row["symbol"],
-                    "signals": signals,
-                    "tag_details": tag_details,
-                    "signal_count": len(signals),
-                    "bullish_count": bullish_count,
-                    "bearish_count": bearish_count,
-                    "composite_score": composite_score,
-                    "close": float(row["close"]) if not pd.isna(row["close"]) else 0.0,
-                    "change_pct": float(row["change_pct"])
-                    if not pd.isna(row.get("change_pct", float("nan")))
-                    else 0.0,
-                    "volume": int(row["volume"]) if not pd.isna(row["volume"]) else 0,
-                    "dollar_volume": float(row.get("dollar_volume", 0.0))
-                    if not pd.isna(row.get("dollar_volume", float("nan")))
-                    else 0.0,
-                    "sector": str(row.get("sector", "")),
-                    "industry": str(row.get("industry", "")),
-                    "market_cap": market_cap_val,
-                }
-            )
+            item = {
+                "stock_id": row["symbol"],
+                "signals": signals,
+                "tag_details": tag_details,
+                "signal_count": len(signals),
+                "bullish_count": bullish_count,
+                "bearish_count": bearish_count,
+                "composite_score": composite_score,
+                "close": float(row["close"]) if not pd.isna(row["close"]) else 0.0,
+                "change_pct": float(row["change_pct"])
+                if not pd.isna(row.get("change_pct", float("nan")))
+                else 0.0,
+                "volume": int(row["volume"]) if not pd.isna(row["volume"]) else 0,
+                "dollar_volume": float(row.get("dollar_volume", 0.0))
+                if not pd.isna(row.get("dollar_volume", float("nan")))
+                else 0.0,
+                "sector": str(row.get("sector", "")),
+                "industry": str(row.get("industry", "")),
+                "market_cap": market_cap_val,
+            }
+            # 기술 축 필드(SCAN-B2-TECH-BE) — 결측 지표는 키 생략(정칙 ⑴). additive.
+            tech = self._build_technical(row)
+            if tech:
+                item["technical"] = tech
+            results.append(item)
 
         logger.info(f"[EODSignalTagger] 태깅 완료: {len(results)}종목")
         return results
+
+    @staticmethod
+    def _build_technical(row: pd.Series) -> dict | None:
+        """
+        캘큘레이터가 이미 산출한 기술 지표를 스캐너 기술 축용으로 서피스합니다
+        (SCAN-B2-TECH-BE · D-SCANNER-SELECT-UX ②-1). **재계산 없음** — 통과만.
+
+        - 결측 지표는 키 자체를 생략(정칙 ⑴, null/0/"N/A" 채움 금지).
+        - 상태어는 사실 구간 enum(매매 암시 금지·정칙 ⑵) — FE가 표시어로 렌더:
+          rsi_state: oversold(과매도)/overbought(과매수)/neutral(중립)
+          ma_state:  golden_cross(골든크로스)/dead_cross(데드크로스)/above(정배열)/below(역배열)
+        - 지표 전건 결측이면 None 반환(호출부가 technical 키 자체를 생략).
+        """
+
+        def _ok(v) -> bool:
+            return v is not None and not pd.isna(v)
+
+        tech: dict = {}
+
+        # RSI (rsi_14) + 사실 구간
+        rsi = row.get("rsi_14")
+        if _ok(rsi):
+            rsi = float(rsi)
+            tech["rsi"] = round(rsi, 1)
+            tech["rsi_state"] = (
+                "oversold" if rsi < 30 else "overbought" if rsi > 70 else "neutral"
+            )
+
+        # 52주 고점 대비 위치(%) = close / high_52w * 100 (P5와 동일 산식)
+        high_52w = row.get("high_52w")
+        close = row.get("close")
+        if _ok(high_52w) and float(high_52w) > 0 and _ok(close):
+            tech["dist_52w_high_pct"] = round(float(close) / float(high_52w) * 100, 1)
+
+        # MA 상태(SMA50 vs SMA200 + 당일 교차)
+        sma50, sma200 = row.get("sma_50"), row.get("sma_200")
+        psma50, psma200 = row.get("prev_sma_50"), row.get("prev_sma_200")
+        if all(_ok(v) for v in (sma50, sma200, psma50, psma200)):
+            sma50, sma200 = float(sma50), float(sma200)
+            psma50, psma200 = float(psma50), float(psma200)
+            if sma50 > sma200 and psma50 <= psma200:
+                tech["ma_state"] = "golden_cross"
+            elif sma50 < sma200 and psma50 >= psma200:
+                tech["ma_state"] = "dead_cross"
+            elif sma50 > sma200:
+                tech["ma_state"] = "above"
+            else:
+                tech["ma_state"] = "below"
+
+        return tech or None
 
     def _build_signal_list(self, row: pd.Series) -> list[dict]:
         """
