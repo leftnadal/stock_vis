@@ -1183,8 +1183,9 @@
 - 선행 정찰 = DSS-RECON-1(`7b4775d2`). Slice 1(lag 파라미터화·회귀)→2(SymbolDemandSignal+migrate)→3(계산·적재)→4(백필·검산·Δ분포). A-매칭 성립(99.8%≥95%).
 - **HONA no_data 관찰 종결(2026-08-14)**: 07-17~08-07 estimates no_data 지속하던 HONA가 08-14 회차부터 유입(2 FY행) — no_data 해소 확인(TH 관찰 게이트 중계분).
 
-## DSS-FLAT-OBS — 08-14 near-flat 주간 관찰 (등재, MGMT-LEDGER-1 2026-08-19) [theme-heat][dss]
+## ✅ DSS-FLAT-OBS — 08-14 near-flat 주간 관찰 (종결, DSS-FLAT-OBS-1 2026-08-24) [theme-heat][dss]
 - 08-21(금) 7회차 발화 시 flat 비율 1수치 중계. 재차 ~99%면 FMP 컨센서스 갱신 주기 read-only 정찰 발부, 정상 분포 복귀 시 08-14를 저신호 주간으로 기록 종결. **게이트일 08-21.**
+- **판정(2026-08-24, DSS-FLAT-OBS-1)**: 08-21 7회차 발화(EstimateSnapshot rows=1005·syms=503). anchor 08-21 적재(SymbolDemandSignal 502 + ThemeDemandScore 11, date-scoped invariant PASS·append-only). **flat_ratio: 08-14 = 498/500 = 99.60% → 08-21 = 35/467 = 7.49%** (<60% → [정상 복귀]). **08-14 = 저신호 주간(원인: FMP 해당 주 무갱신 추정·재발 없음) 기록 종결.** FMP 0회(§3 미발동). HONA @08-21 missing_prev 아님(dir=−1) 확인.
 
 ## TH-HISTORY-MARKER — heat 이력 방법론 변경 마커 (등재 백로그, TH-16 2026-07-13, 우선순위 하)
 - 상태: **등재(백로그)**. 사전 개정일(h2_v1→h2_v2 등)·산식 개정 전후로 delta/history 구분 마커. 우선순위 하.

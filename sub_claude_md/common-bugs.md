@@ -1577,3 +1577,10 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **원인**: LAND 세션은 **메타 4종 변경 금지**(코드 착지 전용)이므로 PROGRESS stale을 **수리할 수 없다**. 절대값 0/0 요구는 "LAND가 못 고치는 검사"를 게이트에 넣어 **구조적 교착**을 만든다. 유사 검사: DECISIONS 갱신일·PROGRESS stale 등 시간 임계 기반 전부 동일 위험.
 
 **해소**: LAND health DoD = **절대값 아닌 세션 시작 기준선 대비 델타 0**. LAND 양식 STEP 0에 health 기준선 측정을 추가하고, STEP 4는 "신규 FAIL/WARN 0(= 착지가 새 결함을 만들지 않음)"으로 판정. 시간 부패형 FAIL은 착지 무관으로 명시·soncan(mgmt PROGRESS 갱신)에 회부. cf. [[lesson_land_health_measure_in_target_tree]] · MGMT-BATCH-36이 본 stale 해소.
+## health WARN 유형 판정 기준 — 환경·동기화 신호성=보고 후 진행 / 신규 발생 WARN·FAIL=명목 HALT (채번 후보, DSS-FLAT-OBS-1 2026-08-24) [harness][process][ops]
+
+health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 미푸시 세션 상태로 인한 sync 계열)은 보고 후 진행 가능. (ii) 시스템 검사에서 신규 발생한 WARN/FAIL은 명목 HALT. STEP 0 보고에 유형 구분을 명시한다. 실증: MGMT-LEDGER-1 STEP 0-2 (08-19).
+
+## 비-mgmt 세션 지시서의 common-bugs #NN 사전 지정 금지 — '채번 후보'로 작성, 번호는 mgmt 배치 실측+1 (채번 후보, DSS-FLAT-OBS-1 2026-08-24) [harness][process][git]
+
+비-mgmt 세션 지시서에 common-bugs #NN 번호 사전 지정 금지. 비-mgmt 세션은 '채번 후보'로 작성하고 번호 부여는 mgmt 배치에서 실측+1로 수행(D-NUMBERING-MGMT-ONLY·훅 가드 준수). 실증: DSS-FLAT-OBS-1 커밋 2 훅 차단 (08-24).

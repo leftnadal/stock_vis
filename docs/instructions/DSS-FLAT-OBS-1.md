@@ -88,6 +88,7 @@ push 대기 블록(behind/ahead, D-PUSH-DELEG 가드 재확인 문언).
 - 08-14 = 저신호 주간(원인: FMP 해당 주 무갱신 추정·재발 없음) **기록 종결**. FMP 0회, §3 미발동.
 
 ### §4 장부 편승
-- B-1 = common-bugs **#118** (문안 확정본 verbatim).
+- B-1 = common-bugs **채번 후보**(문안 확정본 verbatim). ⚠️ 당초 #118 채번 지시했으나 pre-commit 훅(D-NUMBERING-MGMT-ONLY)이 비-mgmt 세션 #NN 채번 차단 → [[feedback_spec_infeasible_surface_before_substitute]] 상신 → 디렉터 1안 승인(채번 후보 강등, 번호는 차기 mgmt 배치 실측+1).
 - B-2 = DECISIONS D-BRANCH-DELETE-MANUAL 부기 1줄.
+- B-3(디렉터 편승 추가) = common-bugs **채번 후보**: "비-mgmt 세션 지시서의 #NN 사전 지정 금지 — 채번 후보 작성, 번호는 mgmt 배치 실측+1". 실증: 본 세션 커밋 2 훅 차단.
 - TASKQUEUE DSS-FLAT-OBS 종결 기입.

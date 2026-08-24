@@ -447,6 +447,7 @@ current() = exclude(prompt_version='v1', source_document IN (v2 보유 filing))
 - **선택지·가중합**: **A(수동 고정) 4.45** / B(D-PUSH-DELEG 동형 조건부 위임) 3.30 — **마진 1.15 > 1.00 → 자동 결정 A**.
 - **Why**: push(고빈도·가역)와 삭제(저빈도·비가역)는 **위험-마찰 교환비가 반대**. push는 위임 실익(마찰↓)이 위험을 넘지만, 삭제는 저빈도라 위임 마찰 절감이 미미하고 비가역 위험만 남는다 → **동형 규칙(D-PUSH-DELEG)을 복제하지 않고 작업 성격별로 판정**. 예외 승인의 "승인 실체"와 "집행 주체 위임"은 별개 층위(승인이 있어도 집행은 병진).
 - **How to apply**: 정본=session_isolation_guide §D-BRANCH-DELETE-MANUAL / 인시던트=INCIDENTS.md INC-002 / 적용 1호=TASKQUEUE GOVCLEANUP-0810 정리. D-PUSH-DELEG와 대비 쌍.
+- **위임 불가 실증**: 디렉터 경유 명령에도 CC 자발 보류·상신 (08-19, MGMT-LEDGER-1).
 
 ## [2026-08-10] D-MON-P4-LA — ADVISOR L-A 정기 브리핑 [monitor]
 
