@@ -51,3 +51,78 @@ export function sectorMatchesQuery(sector: MindmapSector, query: string): boolea
   if (!query.trim()) return true;
   return sector.industries.some((ind) => industryMatchesQuery(ind, query));
 }
+
+// ── R1 Phase C-1: 카드 필터·정렬 (트리 화면) ──
+
+/** 연결 유무 필터. all=전체, has_conn=gate_conn_count>0, no_conn=gate_conn_count===0. */
+export type MindmapFilterMode = 'all' | 'has_conn' | 'no_conn';
+
+/** 정렬 키. none=기존 순서(ticker), conn_*=gate_conn_count, group_*=group_signal_count. */
+export type MindmapSortKey = 'none' | 'conn_desc' | 'conn_asc' | 'group_desc' | 'group_asc';
+
+export const MINDMAP_FILTER_OPTIONS: { value: MindmapFilterMode; label: string }[] = [
+  { value: 'all', label: '전체' },
+  { value: 'has_conn', label: '연결 있음' },
+  { value: 'no_conn', label: '연결 없음' },
+];
+
+export const MINDMAP_SORT_OPTIONS: { value: MindmapSortKey; label: string }[] = [
+  { value: 'none', label: '기본순' },
+  { value: 'conn_desc', label: '연결 많은순' },
+  { value: 'conn_asc', label: '연결 적은순' },
+  { value: 'group_desc', label: '그룹 많은순' },
+  { value: 'group_asc', label: '그룹 적은순' },
+];
+
+/** 카드 필터 매칭 — 연결 유무 토글. */
+export function cardMatchesFilter(card: MindmapCardSummary, filterMode: MindmapFilterMode): boolean {
+  if (filterMode === 'has_conn') return card.gate_conn_count > 0;
+  if (filterMode === 'no_conn') return card.gate_conn_count === 0;
+  return true;
+}
+
+/** 검색+필터 동시 매칭 — 트리 화면 카드 가시성 단일 판정. */
+export function cardVisible(
+  card: MindmapCardSummary,
+  query: string,
+  filterMode: MindmapFilterMode,
+): boolean {
+  return cardMatchesQuery(card, query) && cardMatchesFilter(card, filterMode);
+}
+
+export function industryHasVisibleCard(
+  industry: MindmapIndustry,
+  query: string,
+  filterMode: MindmapFilterMode,
+): boolean {
+  return industry.cards.some((c) => cardVisible(c, query, filterMode));
+}
+
+export function sectorHasVisibleCard(
+  sector: MindmapSector,
+  query: string,
+  filterMode: MindmapFilterMode,
+): boolean {
+  return sector.industries.some((ind) => industryHasVisibleCard(ind, query, filterMode));
+}
+
+/** 카드 정렬 — 'none'은 입력 순서(기존 ticker 순) 그대로 반환, 그 외는 안정 정렬 신규 배열. */
+export function sortCards(cards: MindmapCardSummary[], sortKey: MindmapSortKey): MindmapCardSummary[] {
+  if (sortKey === 'none') return cards;
+  const sorted = [...cards];
+  switch (sortKey) {
+    case 'conn_desc':
+      sorted.sort((a, b) => b.gate_conn_count - a.gate_conn_count);
+      break;
+    case 'conn_asc':
+      sorted.sort((a, b) => a.gate_conn_count - b.gate_conn_count);
+      break;
+    case 'group_desc':
+      sorted.sort((a, b) => b.group_signal_count - a.group_signal_count);
+      break;
+    case 'group_asc':
+      sorted.sort((a, b) => a.group_signal_count - b.group_signal_count);
+      break;
+  }
+  return sorted;
+}

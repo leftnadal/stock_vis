@@ -30,6 +30,7 @@ function tree(): MindmapTreeResponse {
     stock_total: 3,
     sector_count: 2,
     gate_definition: 'serving_layer=evidence AND relation_type∈SEC4종',
+    recent_new_connections_7d: 4,
     sectors: [
       {
         sector: 'TECHNOLOGY',
@@ -40,8 +41,14 @@ function tree(): MindmapTreeResponse {
             industry: 'Semiconductors',
             stock_count: 2,
             cards: [
-              { ticker: 'NVDA', name: 'NVIDIA', gate_conn_count: 5, group_signal_count: 2 },
-              { ticker: 'AMD', name: 'Advanced Micro Devices', gate_conn_count: 0, group_signal_count: 0 },
+              { ticker: 'NVDA', name: 'NVIDIA', gate_conn_count: 5, group_signal_count: 2, new_conn_7d: 3 },
+              {
+                ticker: 'AMD',
+                name: 'Advanced Micro Devices',
+                gate_conn_count: 0,
+                group_signal_count: 0,
+                new_conn_7d: 0,
+              },
             ],
           },
         ],
@@ -54,7 +61,9 @@ function tree(): MindmapTreeResponse {
           {
             industry: '미분류',
             stock_count: 1,
-            cards: [{ ticker: 'ZZZ', name: 'Zzz Corp', gate_conn_count: 1, group_signal_count: 0 }],
+            cards: [
+              { ticker: 'ZZZ', name: 'Zzz Corp', gate_conn_count: 1, group_signal_count: 0, new_conn_7d: 0 },
+            ],
           },
         ],
       },
@@ -125,5 +134,63 @@ describe('MindmapTreeBoard (CS-P5-FE-CARD B3)', () => {
     render(<MindmapTreeBoard />);
     fireEvent.click(screen.getByText('다시 시도'));
     expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  // R1 Phase C-2: 관측성 배지 + 요약 스트립
+  it('요약 스트립에 recent_new_connections_7d 표시', () => {
+    render(<MindmapTreeBoard />);
+    expect(screen.getByText('최근 7일 신규 연결 4건')).toBeInTheDocument();
+  });
+
+  it('recent_new_connections_7d=0이면 "없음" 문구', () => {
+    treeResult = { data: { ...tree(), recent_new_connections_7d: 0 }, isLoading: false, isError: false, refetch: vi.fn() };
+    render(<MindmapTreeBoard />);
+    expect(screen.getByText('최근 7일 신규 연결 없음')).toBeInTheDocument();
+  });
+
+  it('new_conn_7d>0 카드에 신규 배지 표시, 0이면 미표시', () => {
+    render(<MindmapTreeBoard />);
+    fireEvent.click(screen.getByText('TECHNOLOGY'));
+    fireEvent.click(screen.getByText('Semiconductors'));
+    expect(screen.getByText('新 +3')).toBeInTheDocument(); // NVDA
+    expect(screen.queryByText(/新 \+0/)).not.toBeInTheDocument(); // AMD는 미표시
+  });
+
+  // R1 Phase C-1: 필터·정렬 (fixture: NVDA conn=5, AMD conn=0, ZZZ conn=1)
+  it('필터 "연결 있음" → gate_conn_count=0 카드(AMD) 숨김 + 자동 펼침', () => {
+    render(<MindmapTreeBoard />);
+    fireEvent.click(screen.getByRole('button', { name: '연결 있음' }));
+    expect(screen.getByText('NVDA')).toBeInTheDocument();
+    expect(screen.getByText('ZZZ')).toBeInTheDocument();
+    expect(screen.queryByText('AMD')).not.toBeInTheDocument();
+  });
+
+  it('필터 "연결 없음" → gate_conn_count>0 카드(NVDA/ZZZ) 숨김, AMD만 노출', () => {
+    render(<MindmapTreeBoard />);
+    fireEvent.click(screen.getByRole('button', { name: '연결 없음' }));
+    expect(screen.getByText('AMD')).toBeInTheDocument();
+    expect(screen.queryByText('NVDA')).not.toBeInTheDocument();
+    expect(screen.queryByText('ZZZ')).not.toBeInTheDocument();
+  });
+
+  it('정렬 "연결 적은순" 선택 시 카드 순서가 오름차순으로 재배열', () => {
+    render(<MindmapTreeBoard />);
+    fireEvent.click(screen.getByText('TECHNOLOGY'));
+    fireEvent.click(screen.getByText('Semiconductors'));
+    fireEvent.change(screen.getByLabelText('카드 정렬'), { target: { value: 'conn_asc' } });
+    const tickers = screen.getAllByText(/^(NVDA|AMD)$/).map((el) => el.textContent);
+    expect(tickers).toEqual(['AMD', 'NVDA']); // AMD(0) → NVDA(5)
+  });
+
+  // R1 Phase C-3: sector 한글화(매핑 없으면 영문 원문 fallback)
+  it('매핑된 sector는 한글 라벨로 표시(fallback 아닌 값)', () => {
+    treeResult = {
+      data: { ...tree(), sectors: [{ ...tree().sectors[0], sector: 'Technology' }] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    };
+    render(<MindmapTreeBoard />);
+    expect(screen.getByText('기술')).toBeInTheDocument();
   });
 });

@@ -64,3 +64,13 @@ class TestMindmapGate:
         conn = d["connections"][0]
         assert conn["relation_type"] == "SUPPLIES_TO"
         assert conn["direction"] == "out"  # AAA=symbol_a, a→b
+
+    def test_tree_new_conn_7d_observability(self):
+        # C-2: 최근 7일 신규 게이트 연결 카운트(first_observed_at auto_now_add) 노출
+        self._seed()  # 방금 생성 = 7일 이내
+        d = Client().get("/api/v1/chainsight/mindmap/tree/").json()
+        assert "recent_new_connections_7d" in d
+        assert d["recent_new_connections_7d"] >= 1  # SUPPLIES_TO AAA→BBB 신규
+        cards = {c["ticker"]: c for s in d["sectors"] for i in s["industries"] for c in i["cards"]}
+        if cards:
+            assert "new_conn_7d" in next(iter(cards.values()))

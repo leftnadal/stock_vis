@@ -8,7 +8,10 @@ D-CARD-GATE(재정의): 연결 표시 = serving_layer='evidence' AND relation_ty
 
 from collections import defaultdict
 
+from datetime import timedelta
+
 from django.apps import apps
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -35,7 +38,15 @@ def _comention_qs():
 
 
 def _degree_maps():
-    """게이트 연결 수 / CO_MENTIONED 그룹 수를 종목별로 집계(무방향 degree)."""
+    """게이트 연결 수 / CO_MENTIONED 그룹 수 / 최근 7일 신규 게이트 연결(관측성) 집계.
+
+    C-2 신규 배지: 게이트 통과 연결의 first_observed_at 기준 최근 7일 이내 생성 카운트.
+    스키마 변경 없음(기존 first_observed_at=auto_now_add 재사용).
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone
+
     gate_deg = defaultdict(int)
     for a, b in _gate_qs().values_list("symbol_a", "symbol_b"):
         gate_deg[a] += 1
@@ -44,7 +55,12 @@ def _degree_maps():
     for a, b in _comention_qs().values_list("symbol_a", "symbol_b"):
         grp_deg[a] += 1
         grp_deg[b] += 1
-    return gate_deg, grp_deg
+    new_deg = defaultdict(int)
+    since = timezone.now() - timedelta(days=7)
+    for a, b in _gate_qs().filter(first_observed_at__gte=since).values_list("symbol_a", "symbol_b"):
+        new_deg[a] += 1
+        new_deg[b] += 1
+    return gate_deg, grp_deg, new_deg
 
 
 class MindmapTreeView(APIView):
@@ -59,7 +75,7 @@ class MindmapTreeView(APIView):
 
     def get(self, request):
         Stock = apps.get_model("stocks", "Stock")
-        gate_deg, grp_deg = _degree_maps()
+        gate_deg, grp_deg, new_deg = _degree_maps()
 
         rows = list(Stock.objects.values("symbol", "stock_name", "sector", "industry"))
 
@@ -89,6 +105,7 @@ class MindmapTreeView(APIView):
                     "name": r["stock_name"] or sym,
                     "gate_conn_count": gate_deg.get(sym, 0),
                     "group_signal_count": grp_deg.get(sym, 0),
+                    "new_conn_7d": new_deg.get(sym, 0),
                 }
             )
 
@@ -111,12 +128,18 @@ class MindmapTreeView(APIView):
                 }
             )
 
+        # C-2 관측성: 최근 7일 신규 게이트 연결 총건수(무방향 degree 합/2 = 엣지 수 근사).
+        recent_new_edges = _gate_qs().filter(
+            first_observed_at__gte=timezone.now() - timedelta(days=7)
+        ).count()
+
         return Response(
             {
                 "gate_definition": "serving_layer=evidence AND relation_type∈"
                 + "/".join(SEC4_TYPES),
                 "stock_total": len(rows),
                 "sector_count": len(sectors),
+                "recent_new_connections_7d": recent_new_edges,
                 "sectors": sectors,
             }
         )
