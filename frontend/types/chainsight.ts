@@ -218,6 +218,8 @@ export interface MindmapCardSummary {
   gate_conn_count: number;
   /** 같은 그룹(CO_MENTIONED) 신호 수 — 연결 아님 */
   group_signal_count: number;
+  /** R1 Phase C: 최근 7일 신규 게이트 연결 수(관측성 배지) */
+  new_conn_7d: number;
 }
 
 /** 레벨2 — industry 버킷("미분류" 포함 가능) */
@@ -240,6 +242,8 @@ export interface MindmapTreeResponse {
   stock_total: number;
   sector_count: number;
   gate_definition: string;
+  /** R1 Phase C: 최근 7일 신규 게이트 연결 총 엣지 수(관측성 요약 스트립) */
+  recent_new_connections_7d: number;
   sectors: MindmapSector[];
 }
 
