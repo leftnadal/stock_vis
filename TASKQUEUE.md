@@ -472,7 +472,7 @@
 |----|------|-------|------------|--------|-----------------|
 | IT-1 | iron-trading daily-context 라이브 검증 세션 (read-only): 서버 기동 → 실측 200 응답 1건 → 동봉 샘플(`docs/trading_bot_api/samples/200_daily_context_2026-05-22.json`)과 필드 대조(captured_at·snapshot_id 제외) → 에러 샘플(404/400/503) 확인 | orchestrator | - | todo | 검증 로그 (경로 미정) |
 | IT-2 | `docs/trading_bot_api/handoff_codex.md` 옛 경로(`iron_trading/`) + 옛 commit(`8c21a52`) → 현재 경로(`integrations/iron_trading/`)로 정리. **수정 전 STEP 0로 실제 경로·commit 재확인(휘발성 — 베이크 금지)** | @backend | - | todo | `docs/trading_bot_api/handoff_codex.md` |
-| IT-3 | [보류] 엔드포인트 보강 — 봇이 실제로 필요로 할 때까지 착수 금지. 후보: (a) `exchange` 매핑(현재 광범위 null), (b) `earnings_within_14d` 정확화(현재 `latest_quarter + 90일` 휴리스틱 → 실적 캘린더 기반), (c) `themes[].tone` 활성화(현재 `"neutral"` 하드코딩 → `CompanyNarrativeTag.narrative_sentiment` 매핑), (d) 다중 유니버스(`us_total` 등, 현재 `us_core`만) | @backend | - | hold | - |
+| IT-3 | [보류] 엔드포인트 보강 — 봇이 실제로 필요로 할 때까지 착수 금지. 후보: (a) `exchange` 매핑(현재 광범위 null), (b) `earnings_within_14d` 정확화(현재 `latest_quarter + 90일` 휴리스틱 → 실적 캘린더 기반 — **CalendarEvent(EARNINGS) 소비로 해소 예정, EVT 트랙 참조**), (c) `themes[].tone` 활성화(현재 `"neutral"` 하드코딩 → `CompanyNarrativeTag.narrative_sentiment` 매핑), (d) 다중 유니버스(`us_total` 등, 현재 `us_core`만) | @backend | - | hold | - |
 
 ---
 
@@ -1386,7 +1386,7 @@
 ## SPLIT-CALENDAR-PREVIEW — 예정 분할 선반영 검토 (등재, 2026-08-13) [stocks][portfolio]
 - 내용: FMP `/stable/splits-calendar`(사전 예고, preflight A3 가용 확인)로 **예정 분할을 사후가 아닌 사전에** unscoreable 선반영할지 검토. 현 I3-SPLIT-GUARD는 발효(사후) 분할만 감지 — 예정 분할이 만기 구간에 걸리는 예측을 미리 표시하면 채점 대기 중 사용자 오해 감소.
 - 트리거: I3-SPLIT-GUARD 첫 발화 후 예정 분할 실사례 발생 시. 유니버스 9종은 현재 예정 창(2026-08~10) 0건.
-- 상태: 💤 등재(트리거 게이트).
+- 상태: **EVT 흡수(2026-08-24)** — 예정 분할 = `CalendarEvent(event_type=SPLIT)`로 EVT 트랙이 제공(설계 앵커 `docs/design/event_calendar_design.md` §1·§2). I3-SPLIT-GUARD 소비 계약은 본 원장이 공급, 발효(사후) 분할 기존 경로(StockSplit ← portfolio task) 불변.
 
 ## BRANCH-REF-SWEEP — 로컬 브랜치 ref 소진 분류·정리 (등재, 2026-08-13) [harness][ops]
 - 내용: 로컬 브랜치 ref **~155개**(대부분 worktree 없는 과거 nightly/세션 ref). `cleanup_worktrees_20260812.sh` 패턴 재사용해 **worktree 없는 소진 브랜치 전용** 정리 스크립트 생성(생성만·집행 병진 수동, D-BRANCH-DELETE-MANUAL). origin/main `merge-base --is-ancestor` 소진 재검증 후 `-d`(거부 시 skip), 활성/미소진 제외.
@@ -1433,3 +1433,9 @@
 - 💤 **SCB-BOARD-PROMOTE** — 5-metric(Tier2 포함) 착수 시 성적판을 advisory 편입에서 전용 라우트로 승격 이사. 자립 컴포넌트(types/service/hook/components/scorecard) 그대로 이동. 트리거 = 5-metric 스코프 확정.
 - 💤 **SCB-PRECOMPUTE-REEVAL** — 계산 비대(심볼/신호 급증·compute miss 지연 상승) 시 나안 TTL 캐시 → 다안(precompute 배치) 재평가. 현 실측 miss 285ms(139신호). 트리거 = miss 지연 임계 초과 or 심볼 대량 확장.
 - 🕒 **SCB-CARD-REUSE** — SignalCard(증거 바 + 판정 문장)를 stock 상세의 AnalystConsensusPanel에 재사용하는 미니 슬라이스. 트리거 = 개별 종목 화면에서 성적 노출 요구 시.
+
+## EVT 트랙 — 이벤트 캘린더 (등재 2026-08-24, 설계 앵커 `docs/design/event_calendar_design.md` v1.1)
+- ✅ **EVT-IMPL-1** — 거버넌스 번들 + CalendarEvent 원장 토대 + FMP 래퍼 3종 + 캡 감지 유틸 (본 세션). 범위 밖(2호 이후)=수집 태스크·beat·연합 읽기·FE.
+- 💤 **[EVT-P2] Phase 2 백로그** (상세=앵커 §7): P2-i 컨센서스 리비전×어닝 · P2-ii 어닝 반응 히스토리 · P2-iii 어닝콜 AI 요약 · P2-iv 주간 이벤트 브리핑 · P2-v 이벤트행 뉴스 밀도 배지. 진입 게이트 = **G-EVT-2 프로브**(read-only ~6콜: ①transcript ②M&A latest/search ③어닝 서프라이즈 이력 EP).
+- 💤 **[EVT-CHAIN] Phase 2 관계망 이벤트 타임라인** (상세=앵커 §6): 시드+RelationConfidence 1-hop 이웃 이벤트, Postgres 단독 조인. v1 파라미터(truth_score≥85·confirmed·top-k10·EARNINGS만·부호중립) 확정=D-EVT-CHAIN-THRESH(실데이터 관찰 게이트). 원장 재작업 0(Phase 1 스키마 충족).
+- 💤 **[OPS] FMP 영속 예산 원장 부재** — 현재 in-memory 카운터(`get_rate_limit_status`)뿐, DB 영속 원장 없음. 캘린더 수집 확대 시 일일 소비 추적 재료 부족 → 영속 예산 원장 신설 검토 (백로그).
