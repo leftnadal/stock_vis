@@ -5,6 +5,35 @@ info:
   description: Market Pulse v2 Phase 1 — 시장 레짐 + 시장 폭 + 섹터 흐름 + 집중도 + LLM 브리핑 + 이상
     신호. JWT Bearer 인증. 응답 본체는 영문 키 (한글은 /i18n endpoint).
 paths:
+  /api/credit-signals/strip/:
+    get:
+      operationId: api_credit_signals_strip_retrieve
+      description: 크레딧 신호 스트립 (as_of + raw 6 + 파생 2 signal + spark).
+      summary: 크레딧 신호 스트립 (Dashboard)
+      tags:
+      - Credit Signals
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/dashboard/news-strip/:
+    get:
+      operationId: api_dashboard_news_strip_retrieve
+      description: |-
+        GET /api/dashboard/news-strip — 홈 상단 뉴스 축 응축 스트립.
+
+        인증 필수(user 스코프 = 보유·관심 티어). 읽기 전용. 응답 실패·빈 데이터도 200
+        (빈 items 배열) — FE 실패 격리와 짝.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/admin/providers/cache/:
     get:
       operationId: admin_providers_cache_retrieve
@@ -157,6 +186,150 @@ paths:
                 type: object
                 additionalProperties: {}
           description: Provider quote 테스트 결과
+  /api/v1/advisory/knobs/:
+    get:
+      operationId: advisory_knobs_retrieve
+      description: |-
+        손잡이 5종 + 목표 수익률.
+
+        GET   현재값(읽기).
+        POST  목표 생성(SLICE20BF2) — target·horizon 필수, risk·손잡이 선택. 이미 존재 시 409.
+              생성 단일 경로(D-f2-1), PATCH는 수정 전용(upsert 아님).
+        PATCH 부분 수정(SLICE20B) — 목표 수익률 + 손잡이 5종. **서버측 검증기 강제**:
+              UserGoal.full_clean()이 필드 validators + KNOB_RANGES(clean)를 실행,
+              범위 밖은 400(프론트 검증만으로 대체 금지). 저장은 사용자 명시 요청만 —
+              엔진/시스템 자동 조정 경로 아님. **저장 ≠ 진단 실행**(D2, [지금 진단] 별도).
+      tags:
+      - portfolio-advisory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnobsRead'
+          description: ''
+    post:
+      operationId: advisory_knobs_create
+      description: |-
+        손잡이 5종 + 목표 수익률.
+
+        GET   현재값(읽기).
+        POST  목표 생성(SLICE20BF2) — target·horizon 필수, risk·손잡이 선택. 이미 존재 시 409.
+              생성 단일 경로(D-f2-1), PATCH는 수정 전용(upsert 아님).
+        PATCH 부분 수정(SLICE20B) — 목표 수익률 + 손잡이 5종. **서버측 검증기 강제**:
+              UserGoal.full_clean()이 필드 validators + KNOB_RANGES(clean)를 실행,
+              범위 밖은 400(프론트 검증만으로 대체 금지). 저장은 사용자 명시 요청만 —
+              엔진/시스템 자동 조정 경로 아님. **저장 ≠ 진단 실행**(D2, [지금 진단] 별도).
+      tags:
+      - portfolio-advisory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GoalCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GoalCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnobsRead'
+          description: ''
+    patch:
+      operationId: advisory_knobs_partial_update
+      description: |-
+        손잡이 5종 + 목표 수익률.
+
+        GET   현재값(읽기).
+        POST  목표 생성(SLICE20BF2) — target·horizon 필수, risk·손잡이 선택. 이미 존재 시 409.
+              생성 단일 경로(D-f2-1), PATCH는 수정 전용(upsert 아님).
+        PATCH 부분 수정(SLICE20B) — 목표 수익률 + 손잡이 5종. **서버측 검증기 강제**:
+              UserGoal.full_clean()이 필드 validators + KNOB_RANGES(clean)를 실행,
+              범위 밖은 400(프론트 검증만으로 대체 금지). 저장은 사용자 명시 요청만 —
+              엔진/시스템 자동 조정 경로 아님. **저장 ≠ 진단 실행**(D2, [지금 진단] 별도).
+      tags:
+      - portfolio-advisory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedKnobsUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedKnobsUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedKnobsUpdateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnobsRead'
+          description: ''
+  /api/v1/advisory/latest/:
+    get:
+      operationId: advisory_latest_retrieve
+      description: 최신 권유(최근 AdvisoryRun). 없으면 available=False.
+      tags:
+      - portfolio-advisory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LatestAdvisory'
+          description: ''
+  /api/v1/advisory/run/:
+    post:
+      operationId: advisory_run_create
+      description: 수동 진단 실행(trigger=manual 기록) 후 최신 권유 봉투 반환.
+      tags:
+      - portfolio-advisory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LatestAdvisory'
+          description: ''
+  /api/v1/advisory/summary/:
+    get:
+      operationId: advisory_summary_retrieve
+      description: 자산 요약(최근 스냅샷) + 진행/배치 갭 + 모드. 스냅샷 없으면 available=False.
+      tags:
+      - portfolio-advisory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetSummary'
+          description: ''
   /api/v1/chainsight/{symbol}/graph/:
     get:
       operationId: chainsight_graph_retrieve
@@ -240,6 +413,148 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/chainsight/centrality/top/:
+    get:
+      operationId: chainsight_centrality_top_retrieve
+      description: 일별 중심성 상위 N 조회.
+      tags:
+      - chainsight
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/chainsight/ego/{symbol}/:
+    get:
+      operationId: chainsight_ego_retrieve
+      description: GET /api/v1/chainsight/ego/<symbol>/ — PG 네이티브 1-hop ego 그래프.
+      parameters:
+      - in: path
+        name: symbol
+        schema:
+          type: string
+        required: true
+      tags:
+      - chainsight
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/chainsight/events/:
+    get:
+      operationId: chainsight_events_retrieve
+      description: |-
+        GET /api/v1/chainsight/events/
+
+        theme_tags 기반 이벤트 그룹 목록 (평균 관심도 내림차순).
+        멤버 < 3 그룹 제외.
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+        description: '조회 날짜 (YYYY-MM-DD). 기본값: 최신 스냅샷 날짜.'
+      tags:
+      - Chain Sight
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/chainsight/events/{theme}/stocks/:
+    get:
+      operationId: chainsight_events_stocks_retrieve
+      description: |-
+        GET /api/v1/chainsight/events/<theme>/stocks/
+
+        테마 소속 종목 score 내림차순 랭킹.
+        없는 테마: 404.
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+        description: '조회 날짜 (YYYY-MM-DD). 기본값: 최신 스냅샷 날짜.'
+      - in: path
+        name: theme
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: window
+        schema:
+          type: integer
+        description: '주도주 지표 윈도우(20 또는 120). 기본값: 20. 그 외 값은 20으로 폴백.'
+      tags:
+      - Chain Sight
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/chainsight/mindmap/card/{symbol}/:
+    get:
+      operationId: chainsight_mindmap_card_retrieve
+      description: |-
+        GET /api/v1/chainsight/mindmap/card/<symbol>/
+
+        카드 상세: 게이트 통과 연결(상대·유형·방향·강도·계약일) + '같은 그룹'(CO_MENTIONED)
+        분리 배열 + ACQUIRED 방향 구조(현재 0=빈 상태 정상). excluded 미노출.
+      parameters:
+      - in: path
+        name: symbol
+        schema:
+          type: string
+        required: true
+      tags:
+      - chainsight
+      responses:
+        '200':
+          description: No response body
+  /api/v1/chainsight/mindmap/tree/:
+    get:
+      operationId: chainsight_mindmap_tree_retrieve
+      description: |-
+        GET /api/v1/chainsight/mindmap/tree/
+
+        업종 2단(sector→industry) 트리 + 종목 카드 요약. 755종목 전량(D1).
+        sector 없음 → '미분류' 버킷. sector 케이싱 중복은 최다 표기로 정규화.
+      tags:
+      - chainsight
+      responses:
+        '200':
+          description: No response body
   /api/v1/chainsight/sector/{sector}/graph/:
     get:
       operationId: chainsight_sector_graph_retrieve
@@ -298,6 +613,54 @@ paths:
       - cookieAuth: []
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/chainsight/theme-heat/:
+    get:
+      operationId: chainsight_theme_heat_retrieve
+      description: GET /api/v1/chainsight/theme-heat/ — 버튼바. computed(score desc)→accumulating(days
+        desc).
+      tags:
+      - Chain Sight
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/chainsight/theme-heat/{theme}/:
+    get:
+      operationId: chainsight_theme_heat_retrieve_2
+      description: GET /api/v1/chainsight/theme-heat/{theme}/ — 카드. 미존재 테마 404.
+      parameters:
+      - in: path
+        name: theme
+        schema:
+          type: string
+        required: true
+      tags:
+      - Chain Sight
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
           content:
             application/json:
               schema:
@@ -573,6 +936,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/SavedPathDetail'
           description: ''
+  /api/v1/coach/analyst-scorecard/:
+    get:
+      operationId: coach_analyst_scorecard_retrieve
+      description: |-
+        애널리스트 성적판(전역 read). `?h=` 거래일 지평(기본 21).
+
+        스코프: **전역**(모든 신호) — user 필터 없음(#95: 스코프는 선언). 모든 인증
+        사용자에게 동일 산출. compute-on-read(DB 쓰기 0) + 나안 TTL 캐시.
+      tags:
+      - portfolio-advisory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/coach/e1/:
     post:
       operationId: coach_e1_create
@@ -604,7 +983,6 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -641,7 +1019,6 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -681,7 +1058,6 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -718,7 +1094,6 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -754,7 +1129,6 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -790,7 +1164,6 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -810,67 +1183,60 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/v1/macro/calendar/:
+  /api/v1/iron-trading/daily-context:
     get:
-      operationId: macro_calendar_retrieve
-      description: 경제 캘린더 데이터 반환
+      operationId: iron_trading_daily_context_retrieve
+      description: |-
+        GET /api/v1/iron-trading/daily-context
+
+        read-only. iron_trading 외부 봇이 일별 결정보드 입력을 받기 위해 호출.
       tags:
-      - macro
+      - iron-trading
       security:
-      - jwtAuth: []
-      - cookieAuth: []
       - {}
       responses:
         '200':
           description: No response body
-  /api/v1/macro/fear-greed/:
+  /api/v1/iron-trading/daily-context/:
     get:
-      operationId: macro_fear_greed_retrieve
-      description: 공포/탐욕 지수 반환
+      operationId: iron_trading_daily_context_retrieve_2
+      description: |-
+        GET /api/v1/iron-trading/daily-context
+
+        read-only. iron_trading 외부 봇이 일별 결정보드 입력을 받기 위해 호출.
       tags:
-      - macro
+      - iron-trading
       security:
-      - jwtAuth: []
-      - cookieAuth: []
       - {}
       responses:
         '200':
           description: No response body
-  /api/v1/macro/global-markets/:
+  /api/v1/iron-trading/latest-trading-date:
     get:
-      operationId: macro_global_markets_retrieve
-      description: 글로벌 시장 데이터 반환
+      operationId: iron_trading_latest_trading_date_retrieve
+      description: |-
+        GET /api/v1/iron-trading/latest-trading-date
+
+        read-only. daily-context 200을 보장하는 "지금 조회 가능한 최신 미국장 거래일"을 반환.
+        iron_trading 봇이 local fixture 날짜 대신 실제 제공 가능 최신일을 자동으로 쓰게 한다.
       tags:
-      - macro
+      - iron-trading
       security:
-      - jwtAuth: []
-      - cookieAuth: []
       - {}
       responses:
         '200':
           description: No response body
-  /api/v1/macro/inflation/:
+  /api/v1/iron-trading/latest-trading-date/:
     get:
-      operationId: macro_inflation_retrieve
-      description: 인플레이션/고용 대시보드 데이터 반환
+      operationId: iron_trading_latest_trading_date_retrieve_2
+      description: |-
+        GET /api/v1/iron-trading/latest-trading-date
+
+        read-only. daily-context 200을 보장하는 "지금 조회 가능한 최신 미국장 거래일"을 반환.
+        iron_trading 봇이 local fixture 날짜 대신 실제 제공 가능 최신일을 자동으로 쓰게 한다.
       tags:
-      - macro
+      - iron-trading
       security:
-      - jwtAuth: []
-      - cookieAuth: []
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /api/v1/macro/interest-rates/:
-    get:
-      operationId: macro_interest_rates_retrieve
-      description: 금리 대시보드 데이터 반환
-      tags:
-      - macro
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
       - {}
       responses:
         '200':
@@ -879,19 +1245,6 @@ paths:
     get:
       operationId: macro_pulse_retrieve
       description: 전체 대시보드 데이터 반환
-      tags:
-      - macro
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /api/v1/macro/sectors/:
-    get:
-      operationId: macro_sectors_retrieve
-      description: 섹터 성과 데이터 반환
       tags:
       - macro
       security:
@@ -926,18 +1279,1387 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/v1/macro/vix/:
+  /api/v1/monitor/alerts/:
     get:
-      operationId: macro_vix_retrieve
-      description: VIX 지수 반환
+      operationId: monitor_alerts_list
+      description: 전이 알림 — 인앱 패널·헤더 벨 (user 스코프, 읽기 + 읽음 처리 action).
       tags:
-      - macro
+      - monitor
       security:
       - jwtAuth: []
       - cookieAuth: []
-      - {}
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlertEvent'
+          description: ''
+  /api/v1/monitor/alerts/{id}/:
+    get:
+      operationId: monitor_alerts_retrieve
+      description: 전이 알림 — 인앱 패널·헤더 벨 (user 스코프, 읽기 + 읽음 처리 action).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertEvent'
+          description: ''
+  /api/v1/monitor/alerts/{id}/read/:
+    post:
+      operationId: monitor_alerts_read_create
+      description: 개별 알림 읽음 처리.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertEvent'
+          description: ''
+  /api/v1/monitor/alerts/read_all/:
+    post:
+      operationId: monitor_alerts_read_all_create
+      description: 미확인 알림 일괄 읽음 처리.
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertEvent'
+          description: ''
+  /api/v1/monitor/alerts/summary/:
+    get:
+      operationId: monitor_alerts_summary_retrieve
+      description: 헤더 벨 배지용 — 미확인 악화 알림 수(악화만 카운트, 결정 1-C).
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertEvent'
+          description: ''
+  /api/v1/monitor/catalog/:
+    get:
+      operationId: monitor_catalog_retrieve
+      description: scope별 지표 카탈로그 (빌더 3단계). GET /monitor/catalog/?scope=stock.
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/monitor/claim-evidences/:
+    get:
+      operationId: monitor_claim_evidences_list
+      description: |-
+        Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+        nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClaimEvidence'
+          description: ''
+    post:
+      operationId: monitor_claim_evidences_create
+      description: |-
+        Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+        nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimEvidenceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClaimEvidenceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClaimEvidenceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimEvidence'
+          description: ''
+  /api/v1/monitor/claim-evidences/{id}/:
+    get:
+      operationId: monitor_claim_evidences_retrieve
+      description: |-
+        Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+        nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimEvidence'
+          description: ''
+    put:
+      operationId: monitor_claim_evidences_update
+      description: |-
+        Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+        nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimEvidenceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClaimEvidenceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClaimEvidenceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimEvidence'
+          description: ''
+    patch:
+      operationId: monitor_claim_evidences_partial_update
+      description: |-
+        Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+        nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedClaimEvidenceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedClaimEvidenceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedClaimEvidenceRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimEvidence'
+          description: ''
+    delete:
+      operationId: monitor_claim_evidences_destroy
+      description: |-
+        Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+        nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/monitor/claims/:
+    get:
+      operationId: monitor_claims_list
+      description: monitor__user 소유 검증 공통 로직.
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Claim'
+          description: ''
+    post:
+      operationId: monitor_claims_create
+      description: monitor__user 소유 검증 공통 로직.
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+          description: ''
+  /api/v1/monitor/claims/{id}/:
+    get:
+      operationId: monitor_claims_retrieve
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+          description: ''
+    put:
+      operationId: monitor_claims_update
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+          description: ''
+    patch:
+      operationId: monitor_claims_partial_update
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedClaimRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedClaimRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedClaimRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+          description: ''
+    delete:
+      operationId: monitor_claims_destroy
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/monitor/claims/{id}/close/:
+    post:
+      operationId: monitor_claims_close_create
+      description: 가설 마감 (원자적) — 판정·회고·지표별 결과·동결 스냅샷.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+          description: ''
+  /api/v1/monitor/claims/{id}/close-preview/:
+    get:
+      operationId: monitor_claims_close_preview_retrieve
+      description: 마감 모달 프리필 — 제안 판정·종합점수·지표 목록 (상태 변경 없음).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+          description: ''
+  /api/v1/monitor/claims/{id}/evidence-status/:
+    get:
+      operationId: monitor_claims_evidence_status_retrieve
+      description: |-
+        근거 생사 판정 조회 (RECON-SWAP-0813 PART 3-BE, 읽기 전용) —
+        judge_claim_evidences 산출을 FE 대결 화면 계약층에 노출. DB 쓰기 없음.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+          description: ''
+  /api/v1/monitor/decision-journal-entries/:
+    get:
+      operationId: monitor_decision_journal_entries_list
+      description: |-
+        마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+        Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionJournalEntry'
+          description: ''
+    post:
+      operationId: monitor_decision_journal_entries_create
+      description: |-
+        마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+        Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionJournalEntryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DecisionJournalEntryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DecisionJournalEntryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionJournalEntry'
+          description: ''
+  /api/v1/monitor/decision-journal-entries/{id}/:
+    get:
+      operationId: monitor_decision_journal_entries_retrieve
+      description: |-
+        마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+        Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionJournalEntry'
+          description: ''
+    put:
+      operationId: monitor_decision_journal_entries_update
+      description: |-
+        마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+        Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionJournalEntryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DecisionJournalEntryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DecisionJournalEntryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionJournalEntry'
+          description: ''
+    patch:
+      operationId: monitor_decision_journal_entries_partial_update
+      description: |-
+        마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+        Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDecisionJournalEntryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDecisionJournalEntryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDecisionJournalEntryRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionJournalEntry'
+          description: ''
+    delete:
+      operationId: monitor_decision_journal_entries_destroy
+      description: |-
+        마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+        Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/monitor/indicators/:
+    get:
+      operationId: monitor_indicators_list
+      description: monitor__user 소유 검증 공통 로직.
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MonitorIndicator'
+          description: ''
+    post:
+      operationId: monitor_indicators_create
+      description: monitor__user 소유 검증 공통 로직.
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitorIndicatorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MonitorIndicatorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MonitorIndicatorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorIndicator'
+          description: ''
+  /api/v1/monitor/indicators/{id}/:
+    get:
+      operationId: monitor_indicators_retrieve
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorIndicator'
+          description: ''
+    put:
+      operationId: monitor_indicators_update
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitorIndicatorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MonitorIndicatorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MonitorIndicatorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorIndicator'
+          description: ''
+    patch:
+      operationId: monitor_indicators_partial_update
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMonitorIndicatorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMonitorIndicatorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMonitorIndicatorRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorIndicator'
+          description: ''
+    delete:
+      operationId: monitor_indicators_destroy
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/monitor/monitors/:
+    get:
+      operationId: monitor_monitors_list
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Monitor'
+          description: ''
+    post:
+      operationId: monitor_monitors_create
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MonitorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MonitorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+          description: ''
+  /api/v1/monitor/monitors/{id}/:
+    get:
+      operationId: monitor_monitors_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+          description: ''
+    put:
+      operationId: monitor_monitors_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MonitorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MonitorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+          description: ''
+    patch:
+      operationId: monitor_monitors_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMonitorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMonitorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMonitorRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+          description: ''
+    delete:
+      operationId: monitor_monitors_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/monitor/monitors/{id}/advisor_notes/:
+    get:
+      operationId: monitor_monitors_advisor_notes_retrieve
+      description: |-
+        ADVISOR L-A 브리핑 목록 (MON-P4-LA T3) — 일지 advisor kind 소스.
+
+        단일 모델 조회(aggregate 창설 아님). 최신순, surface=L-A 한정.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+          description: ''
+  /api/v1/monitor/monitors/{id}/evaluate/:
+    post:
+      operationId: monitor_monitors_evaluate_create
+      description: 지표 스코어 → 집계 → 스냅샷 → 상태 판정 파이프라인 실행(수동 트리거).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MonitorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MonitorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+          description: ''
+  /api/v1/monitor/monitors/{id}/snapshots/:
+    get:
+      operationId: monitor_monitors_snapshots_retrieve
+      description: |-
+        점수 정본 시계열 — MonitorSnapshot(동결 기록) 기반 {asof, score, delta} (MON-P2B T1).
+
+        스트립 델타·일지 스냅샷의 단일 원천. sparkline(추세 곡선, 재산출)과 별개 —
+        여기는 '그날 실제로 기록한 값'만 담아 로직 변경에도 과거 불변.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+          description: ''
+  /api/v1/monitor/monitors/{id}/sparkline/:
+    get:
+      operationId: monitor_monitors_sparkline_retrieve
+      description: 상태밴드 스파크라인 데이터 — 최근 N거래일 score 시계열 + 밴드 + 전이 표식.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+          description: ''
+  /api/v1/monitor/readings/:
+    get:
+      operationId: monitor_readings_list
+      description: monitor__user 소유 검증 공통 로직.
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IndicatorReading'
+          description: ''
+    post:
+      operationId: monitor_readings_create
+      description: monitor__user 소유 검증 공통 로직.
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndicatorReadingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IndicatorReadingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IndicatorReadingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndicatorReading'
+          description: ''
+  /api/v1/monitor/readings/{id}/:
+    get:
+      operationId: monitor_readings_retrieve
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndicatorReading'
+          description: ''
+    put:
+      operationId: monitor_readings_update
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndicatorReadingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IndicatorReadingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IndicatorReadingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndicatorReading'
+          description: ''
+    patch:
+      operationId: monitor_readings_partial_update
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedIndicatorReadingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedIndicatorReadingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedIndicatorReadingRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndicatorReading'
+          description: ''
+    delete:
+      operationId: monitor_readings_destroy
+      description: monitor__user 소유 검증 공통 로직.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/monitor/scenario-suggest/:
+    get:
+      operationId: monitor_scenario_suggest_retrieve
+      description: |-
+        L계열 가격 제안 (빌더 4단계, 읽기 전용). GET /monitor/scenario-suggest/?symbol=AAPL.
+
+        DailyPrice에서 지지선(스윙 저점)·ATR×2 손절 폭 산출(서버측 — 3년 OHLC 클라 전송 금지).
+        확정은 항상 사용자(3-B). 히스토리 부족 시 available=False.
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/monitor/swap-hold-logs/:
+    get:
+      operationId: monitor_swap_hold_logs_list
+      description: |-
+        교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+        동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SwapHoldLog'
+          description: ''
+    post:
+      operationId: monitor_swap_hold_logs_create
+      description: |-
+        교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+        동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwapHoldLogRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SwapHoldLogRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SwapHoldLogRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwapHoldLog'
+          description: ''
+  /api/v1/monitor/swap-hold-logs/{id}/:
+    get:
+      operationId: monitor_swap_hold_logs_retrieve
+      description: |-
+        교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+        동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwapHoldLog'
+          description: ''
+    put:
+      operationId: monitor_swap_hold_logs_update
+      description: |-
+        교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+        동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwapHoldLogRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SwapHoldLogRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SwapHoldLogRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwapHoldLog'
+          description: ''
+    patch:
+      operationId: monitor_swap_hold_logs_partial_update
+      description: |-
+        교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+        동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSwapHoldLogRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSwapHoldLogRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSwapHoldLogRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwapHoldLog'
+          description: ''
+    delete:
+      operationId: monitor_swap_hold_logs_destroy
+      description: |-
+        교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+        동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - monitor
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
           description: No response body
   /api/v1/news/:
     get:
@@ -1109,6 +2831,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -1180,6 +2903,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -1281,6 +3005,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -1792,6 +3517,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -1982,6 +3708,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -2093,6 +3820,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -4182,6 +5910,12 @@ paths:
 
         GET /api/v1/serverless/thesis/{thesis_id}
 
+        접근 정책 (전수조사 SEAM-DEBT #1 — IDOR-read 차단):
+          - 공개 테제(is_public=True): 누구나 조회 (공유 기능 보존).
+          - 비공개 테제: 소유자만. 비소유/미인증은 존재를 숨기기 위해 404.
+        ※ authentication_classes([]) 제거 — 토큰이 있으면 인증되어 소유 판정이 가능해진다
+           (없으면 AnonymousUser; AllowAny라 공개 테제는 무인증 조회 허용).
+
         Response:
             {
                     "id": 1,
@@ -4198,6 +5932,8 @@ paths:
       tags:
       - serverless
       security:
+      - jwtAuth: []
+      - cookieAuth: []
       - {}
       responses:
         '200':
@@ -4282,6 +6018,24 @@ paths:
       - jwtAuth: []
       - cookieAuth: []
       - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/stocks/api/analyst-signals/{symbol}/:
+    get:
+      operationId: stocks_api_analyst_signals_retrieve
+      description: GET /api/v1/stocks/api/analyst-signals/<symbol>/ — 최신 스냅샷 1건.
+      parameters:
+      - in: path
+        name: symbol
+        schema:
+          type: string
+        required: true
+      tags:
+      - stocks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
       responses:
         '200':
           description: No response body
@@ -4950,727 +6704,42 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/v1/thesis/:
+  /api/v1/telemetry/coverage:
     get:
-      operationId: thesis_list
+      operationId: telemetry_coverage_retrieve
       description: |-
-        가설 CRUD + close 액션.
-        list   → GET /              내 가설 목록
-        create → POST /             가설 직접 생성
-        retrieve → GET /{id}/       가설 상세
-        partial_update → PATCH /{id}/ 가설 수정
-        close  → POST /{id}/close/  가설 마감
+        GET /api/v1/telemetry/coverage — 발급 대비 유기 노출 커버리지(요청 사용자 스코프).
+
+        - IssuanceLog(발급, user-agnostic day-1) 를 window_days(발급 signal_date 기준 창) 로 집계 = issued.
+        - 그 중 요청 사용자가 유기 표면(COVERAGE_SURFACES, coverage_detail 제외)에서 impression 한 건 = exposed.
+        - 미노출(issued − exposed) 리스트는 signal_date desc, 상한 UNEXPOSED_RESPONSE_LIMIT.
+        - 사용자 impression 이나 in-window 발급 grain 에 매칭 안 되는 건 = meta.join_misses(침묵 유실 금지).
       tags:
-      - thesis
+      - telemetry
       security:
       - jwtAuth: []
       - cookieAuth: []
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ThesisList'
-          description: ''
+          description: No response body
+  /api/v1/telemetry/impressions:
     post:
-      operationId: thesis_create
+      operationId: telemetry_impressions_create
       description: |-
-        가설 CRUD + close 액션.
-        list   → GET /              내 가설 목록
-        create → POST /             가설 직접 생성
-        retrieve → GET /{id}/       가설 상세
-        partial_update → PATCH /{id}/ 가설 수정
-        close  → POST /{id}/close/  가설 마감
+        POST /api/v1/telemetry/impressions — impression/click 배치 수신.
+
+        payload = 이벤트 배열 `[{surface, object_ref, event_type, session_id}, ...]`(sendBeacon 계약).
+        - impression: (user_id, surface, object_ref) partial-unique upsert → seen_count += 1,
+          first_seen_at 최초 고정(이후 불변). click: 무조건 append.
+        - 유효 항목만 처리 + 거부 건수 응답(배치 유실 최소화). 배열 상한 MAX_IMPRESSION_BATCH.
+        - 인증 필수(익명 거부). user_id = request.user.id (모델의 nullable user_id 는 예약, 미사용).
+        - **per-item 격리(PLATFORM-INGEST-DB-ISOLATE)**: 각 항목을 개별 savepoint(transaction.atomic)로
+          감싸 구조적 DB 오류(IntegrityError/DataError 등)가 **항목 단위로만** 실패하도록 한다.
+          정상 항목은 전량 수신되고, 실패 항목만 rejected(db_error)로 집계 — 배치 전체 500 없음.
+        - 응답 봉투 = {received(=accepted), rejected, rejected_reasons{code: count}}.
+          배치가 비거나 전 항목 실패여도 500이 아닌 정상 2xx로 rejected 전량 보고.
       tags:
-      - thesis
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ThesisCreateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ThesisCreateRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ThesisCreateRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisCreate'
-          description: ''
-  /api/v1/thesis/{id}/:
-    get:
-      operationId: thesis_retrieve
-      description: |-
-        가설 CRUD + close 액션.
-        list   → GET /              내 가설 목록
-        create → POST /             가설 직접 생성
-        retrieve → GET /{id}/       가설 상세
-        partial_update → PATCH /{id}/ 가설 수정
-        close  → POST /{id}/close/  가설 마감
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: thesis을 식별하는 UUID 문자열.
-        required: true
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisDetail'
-          description: ''
-    patch:
-      operationId: thesis_partial_update
-      description: |-
-        가설 CRUD + close 액션.
-        list   → GET /              내 가설 목록
-        create → POST /             가설 직접 생성
-        retrieve → GET /{id}/       가설 상세
-        partial_update → PATCH /{id}/ 가설 수정
-        close  → POST /{id}/close/  가설 마감
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: thesis을 식별하는 UUID 문자열.
-        required: true
-      tags:
-      - thesis
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedThesisDetailRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedThesisDetailRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedThesisDetailRequest'
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisDetail'
-          description: ''
-  /api/v1/thesis/{id}/close/:
-    post:
-      operationId: thesis_close_create
-      description: 가설 마감 + ValidityRecord + InvestorDNA 갱신.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: thesis을 식별하는 UUID 문자열.
-        required: true
-      tags:
-      - thesis
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ThesisDetailRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ThesisDetailRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ThesisDetailRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisDetail'
-          description: ''
-  /api/v1/thesis/{thesis_id}/dashboard/:
-    get:
-      operationId: thesis_dashboard_retrieve
-      description: |-
-        GET /{thesis_id}/dashboard/
-        관제실 대시보드 데이터 (설계 문서 6.2).
-        Phase 1: 실시간 계산 (캐싱 없음).
-      parameters:
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          description: No response body
-  /api/v1/thesis/{thesis_id}/indicators/:
-    get:
-      operationId: thesis_indicators_list
-      description: |-
-        부모: thesis/{thesis_id}/indicators/
-        + auto_recommend: POST /indicators/auto/
-      parameters:
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ThesisIndicator'
-          description: ''
-    post:
-      operationId: thesis_indicators_create
-      description: |-
-        부모: thesis/{thesis_id}/indicators/
-        + auto_recommend: POST /indicators/auto/
-      parameters:
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ThesisIndicatorRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ThesisIndicatorRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ThesisIndicatorRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisIndicator'
-          description: ''
-  /api/v1/thesis/{thesis_id}/indicators/{indicator_id}/readings/:
-    get:
-      operationId: thesis_indicators_readings_retrieve
-      description: GET /{thesis_id}/indicators/{indicator_id}/readings/?days=14
-      parameters:
-      - in: path
-        name: indicator_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          description: No response body
-  /api/v1/thesis/{thesis_id}/indicators/{id}/:
-    get:
-      operationId: thesis_indicators_retrieve
-      description: |-
-        부모: thesis/{thesis_id}/indicators/
-        + auto_recommend: POST /indicators/auto/
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: thesis indicator을 식별하는 UUID 문자열.
-        required: true
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisIndicator'
-          description: ''
-    put:
-      operationId: thesis_indicators_update
-      description: |-
-        부모: thesis/{thesis_id}/indicators/
-        + auto_recommend: POST /indicators/auto/
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: thesis indicator을 식별하는 UUID 문자열.
-        required: true
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ThesisIndicatorRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ThesisIndicatorRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ThesisIndicatorRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisIndicator'
-          description: ''
-    patch:
-      operationId: thesis_indicators_partial_update
-      description: |-
-        부모: thesis/{thesis_id}/indicators/
-        + auto_recommend: POST /indicators/auto/
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: thesis indicator을 식별하는 UUID 문자열.
-        required: true
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedThesisIndicatorRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedThesisIndicatorRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedThesisIndicatorRequest'
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisIndicator'
-          description: ''
-    delete:
-      operationId: thesis_indicators_destroy
-      description: |-
-        부모: thesis/{thesis_id}/indicators/
-        + auto_recommend: POST /indicators/auto/
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: thesis indicator을 식별하는 UUID 문자열.
-        required: true
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/thesis/{thesis_id}/indicators/auto/:
-    post:
-      operationId: thesis_indicators_auto_create
-      description: AI 자동 지표 추천.
-      parameters:
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ThesisIndicatorRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ThesisIndicatorRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ThesisIndicatorRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisIndicator'
-          description: ''
-  /api/v1/thesis/{thesis_id}/premises/:
-    get:
-      operationId: thesis_premises_list
-      description: '부모: thesis/{thesis_id}/premises/'
-      parameters:
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ThesisPremise'
-          description: ''
-    post:
-      operationId: thesis_premises_create
-      description: '부모: thesis/{thesis_id}/premises/'
-      parameters:
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ThesisPremiseRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ThesisPremiseRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ThesisPremiseRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisPremise'
-          description: ''
-  /api/v1/thesis/{thesis_id}/premises/{id}/:
-    get:
-      operationId: thesis_premises_retrieve
-      description: '부모: thesis/{thesis_id}/premises/'
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: thesis premise을 식별하는 UUID 문자열.
-        required: true
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisPremise'
-          description: ''
-    put:
-      operationId: thesis_premises_update
-      description: '부모: thesis/{thesis_id}/premises/'
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: thesis premise을 식별하는 UUID 문자열.
-        required: true
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ThesisPremiseRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ThesisPremiseRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ThesisPremiseRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisPremise'
-          description: ''
-    patch:
-      operationId: thesis_premises_partial_update
-      description: '부모: thesis/{thesis_id}/premises/'
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: thesis premise을 식별하는 UUID 문자열.
-        required: true
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedThesisPremiseRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedThesisPremiseRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedThesisPremiseRequest'
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ThesisPremise'
-          description: ''
-    delete:
-      operationId: thesis_premises_destroy
-      description: '부모: thesis/{thesis_id}/premises/'
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: thesis premise을 식별하는 UUID 문자열.
-        required: true
-      - in: path
-        name: thesis_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/thesis/alerts/:
-    get:
-      operationId: thesis_alerts_retrieve
-      description: GET /alerts/ → 내 알림 목록 (미읽음 우선, 최대 50개)
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          description: No response body
-  /api/v1/thesis/alerts/{aid}/read/:
-    patch:
-      operationId: thesis_alerts_read_partial_update
-      description: PATCH /alerts/{aid}/read/ → 읽음 처리
-      parameters:
-      - in: path
-        name: aid
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          description: No response body
-  /api/v1/thesis/conversation/news-issues/:
-    get:
-      operationId: thesis_conversation_news_issues_retrieve
-      description: GET /conversation/news-issues/ → 최근 뉴스를 한국어 이슈로 변환.
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          description: No response body
-  /api/v1/thesis/conversation/respond/:
-    post:
-      operationId: thesis_conversation_respond_create
-      description: POST /conversation/respond/ → 사용자 응답 처리.
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          description: No response body
-  /api/v1/thesis/conversation/start/:
-    post:
-      operationId: thesis_conversation_start_create
-      description: POST /conversation/start/ → 대화 시작.
-      tags:
-      - thesis
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          description: No response body
-  /api/v1/thesis/conversation/suggest/:
-    post:
-      operationId: thesis_conversation_suggest_create
-      description: POST /conversation/suggest/ → 뉴스 이슈에서 bullish/bearish 가설 2개 자동
-        제안.
-      tags:
-      - thesis
+      - telemetry
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -6548,6 +7617,135 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/v1/wallet/cash/:
+    get:
+      operationId: wallet_cash_retrieve
+      description: 현금 목록(GET) / 통화별 upsert(PUT) / 통화별 삭제(DELETE ?currency=).
+      tags:
+      - portfolio-wallet
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: wallet_cash_update
+      description: 현금 목록(GET) / 통화별 upsert(PUT) / 통화별 삭제(DELETE ?currency=).
+      tags:
+      - portfolio-wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CashUpsertRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CashUpsertRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CashUpsertRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: wallet_cash_destroy
+      description: 현금 목록(GET) / 통화별 upsert(PUT) / 통화별 삭제(DELETE ?currency=).
+      tags:
+      - wallet
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/wallet/holdings/:
+    get:
+      operationId: wallet_holdings_retrieve
+      description: 보유 목록(GET) / 추가(POST). user 스코프 wallet__user.
+      tags:
+      - portfolio-wallet
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: wallet_holdings_create
+      description: 보유 목록(GET) / 추가(POST). user 스코프 wallet__user.
+      tags:
+      - portfolio-wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoldingCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HoldingCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HoldingCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          description: No response body
+  /api/v1/wallet/holdings/{id}/:
+    patch:
+      operationId: wallet_holdings_partial_update
+      description: 보유 수정(PATCH) / 삭제(DELETE). 타 user 미접근(wallet__user 스코프).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - portfolio-wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHoldingUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedHoldingUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedHoldingUpdateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: wallet_holdings_destroy
+      description: 보유 수정(PATCH) / 삭제(DELETE). 타 user 미접근(wallet__user 스코프).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - portfolio-wallet
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v2/market-pulse/cards/{card_id}/detail:
     get:
       operationId: market_pulse_cards_detail_retrieve
@@ -6561,7 +7759,7 @@ paths:
           enum:
           - breadth
           - brief
-          - flow
+          - concentration
           - regime
           - sector
         required: true
@@ -6688,6 +7886,85 @@ paths:
               schema:
                 $ref: '#/components/schemas/OverviewResponse'
           description: ''
+  /api/v2/market-pulse/regime/analog:
+    get:
+      operationId: market_pulse_regime_analog_retrieve
+      description: 유사 국면 카드 결정론 코어. 오늘 z-벡터 가족가중 최근접(②C) + 이웃 SPY 선도수익 지평별 정직 팬(①C).
+        뉴스·LLM 무의존. label 슬롯 null(Slice C). 1h 캐시.
+      summary: Regime analog card (Slice B)
+      tags:
+      - Market Pulse v2
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v2/market-pulse/regime/stress:
+    get:
+      operationId: market_pulse_regime_stress_retrieve
+      description: 연속 스트레스 스코어(14지표 가족 균등가중 z 평균) + 카테고리 서브스코어 + 자기역사 백분위 + 방향 2종(스트레스
+        Δ5d·Δ20d / SPY vs MA20·MA60). baseline = 소급 모집단(고정 잣대) μ·σ. serve-time·미저장,
+        1h 캐시. **regime 판정 무접촉**. level_band 잠정(S4-REBASE 재산정 대상).
+      summary: Regime stress score (MPS-1)
+      tags:
+      - Market Pulse v2
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v2/market-pulse/regime/zscore:
+    get:
+      operationId: market_pulse_regime_zscore_retrieve
+      description: 국면 성분 z-이상도 시계열. baseline = 소급 모집단(고정 잣대) μ·σ(표본). z는 serve-time·미저장.
+        24h 캐시. 다운샘플(최근 90영업일 일간 + 이전 주간).
+      summary: Regime z-anomaly (S4)
+      tags:
+      - Market Pulse v2
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
 components:
   schemas:
     ActionTypeEnum:
@@ -6706,6 +7983,74 @@ components:
         * `recheck` - Recheck
         * `archive` - Archive
         * `resolve` - Resolve
+    AlertEvent:
+      type: object
+      description: 전이 알림 — 인앱 패널 행(상태색/라벨 파생 포함).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        monitor:
+          type: string
+          format: uuid
+          readOnly: true
+        monitor_name:
+          type: string
+          readOnly: true
+        target_ref:
+          type: string
+          readOnly: true
+        from_state:
+          allOf:
+          - $ref: '#/components/schemas/CurrentStateEnum'
+          readOnly: true
+        to_state:
+          allOf:
+          - $ref: '#/components/schemas/CurrentStateEnum'
+          readOnly: true
+        from_label:
+          type: string
+          readOnly: true
+        to_label:
+          type: string
+          readOnly: true
+        asof:
+          type: string
+          format: date
+          readOnly: true
+        score:
+          type: number
+          format: double
+          readOnly: true
+        is_deterioration:
+          type: boolean
+          readOnly: true
+        is_suppressed:
+          type: boolean
+          readOnly: true
+        read:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - asof
+      - created_at
+      - from_label
+      - from_state
+      - id
+      - is_deterioration
+      - is_suppressed
+      - monitor
+      - monitor_name
+      - read
+      - score
+      - target_ref
+      - to_label
+      - to_state
     AnomalyItem:
       type: object
       properties:
@@ -6749,6 +8094,62 @@ components:
       - overview
       - portfolio_action
       - sector_highlight
+    AssetSummary:
+      description: GET 자산 요약 — 최근 PortfolioSnapshot + 진행/배치 갭 + 모드.
+      properties:
+        available:
+          title: Available
+          type: boolean
+        date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Date
+        total_krw:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Total Krw
+        by_currency:
+          additionalProperties: true
+          default: {}
+          title: By Currency
+          type: object
+        price_as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Price As Of
+        progress_gap:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Progress Gap
+        allocation_gap:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Allocation Gap
+        mode:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Mode
+      required:
+      - available
+      title: AssetSummaryContract
+      type: object
+    BlankEnum:
+      enum:
+      - ''
     BreadthCard:
       type: object
       properties:
@@ -6811,9 +8212,9 @@ components:
           allOf:
           - $ref: '#/components/schemas/SectorCard'
           nullable: true
-        flow:
+        concentration:
           allOf:
-          - $ref: '#/components/schemas/FlowCard'
+          - $ref: '#/components/schemas/ConcentrationCard'
           nullable: true
         brief:
           allOf:
@@ -6822,9 +8223,384 @@ components:
       required:
       - breadth
       - brief
-      - flow
+      - concentration
       - regime
       - sector
+    CashUpsertRequest:
+      type: object
+      properties:
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - currency
+    Claim:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        monitor:
+          type: string
+          format: uuid
+        assertion:
+          type: string
+          description: 주장
+        deadline:
+          type: string
+          format: date
+          nullable: true
+          description: 마감
+        status:
+          $ref: '#/components/schemas/ClaimStatusEnum'
+        outcome:
+          $ref: '#/components/schemas/OutcomeEnum'
+        proposed_verdict:
+          readOnly: true
+          nullable: true
+          description: |-
+            시스템 제안 판정 (마감 전 없음)
+
+            * `validated` - Validated
+            * `partial` - Partial
+            * `invalidated` - Invalidated
+            * `expired` - 기한만료
+          oneOf:
+          - $ref: '#/components/schemas/ProposedVerdictEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        resolved_by:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: 마감 주체
+        factor_tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/FactorTagsEnum'
+          readOnly: true
+          description: 회고 요인 태그(고정 enum)
+        retro_memo:
+          type: string
+          readOnly: true
+          description: 회고 선택 한 줄
+        scenario_type:
+          allOf:
+          - $ref: '#/components/schemas/ScenarioTypeEnum'
+          description: |-
+            시나리오 모드(신규 매수/보유 관리/추가 매수)
+
+            * `new_entry` - 신규 매수
+            * `hold` - 보유 관리
+            * `add_on` - 추가 매수
+        entry_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 진입가
+        target_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 목표가(익절)
+        stop_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 손절가
+        purchase_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 매입가(확정 사실)
+        purchase_date:
+          type: string
+          format: date
+          nullable: true
+          description: 매입일(보유 기간 원천)
+        fair_value_low:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 적정가 하단
+        fair_value_high:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 적정가 상단
+        last_price_zone:
+          readOnly: true
+          nullable: true
+          description: |-
+            직전 가격 구간(전이 감지용)
+
+            * `exited` - 이탈
+            * `entry` - 진입 구간
+            * `approach` - 접근
+            * `waiting` - 관망
+            * `overheated` - 과열
+          oneOf:
+          - $ref: '#/components/schemas/LastPriceZoneEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        entry_reached_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: 진입 구간 최초 도달 시각(1회 기록)
+        zone_display:
+          type: string
+          readOnly: true
+        closure_snapshot:
+          type: string
+          readOnly: true
+        evidences:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimEvidence'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - assertion
+      - closure_snapshot
+      - created_at
+      - entry_reached_at
+      - evidences
+      - factor_tags
+      - id
+      - last_price_zone
+      - monitor
+      - proposed_verdict
+      - resolved_at
+      - resolved_by
+      - retro_memo
+      - zone_display
+    ClaimEvidence:
+      type: object
+      description: |-
+        Claim 근거(자동형/수동형, RECON-SWAP-0813 PART 1). 쓰기는 별도 엔드포인트
+        (/api/v1/monitor/claim-evidences/)에서 — ClaimSerializer.evidences는 read-only nested.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        claim:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/ClaimEvidenceKindEnum'
+        indicator:
+          type: string
+          format: uuid
+          nullable: true
+          description: 자동형 대상 지표
+        operator:
+          nullable: true
+          description: |-
+            자동형 비교 연산자(raw_z 대상)
+
+            * `gte` - >=
+            * `lte` - <=
+            * `gt` - >
+            * `lt` - <
+          oneOf:
+          - $ref: '#/components/schemas/OperatorEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        threshold:
+          type: number
+          format: double
+          nullable: true
+          description: 자동형 임계값(raw_z 대상)
+        grace_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: 자동형 유예 거래일 수(연속 위반 허용 한도)
+        description:
+          type: string
+          description: 수동형 서술
+        recheck_period_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: 수동형 재확인 주기(일)
+        last_confirmed_at:
+          type: string
+          format: date
+          nullable: true
+          description: 수동형 마지막 확인일
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - claim
+      - created_at
+      - id
+      - kind
+    ClaimEvidenceKindEnum:
+      enum:
+      - auto
+      - manual
+      type: string
+      description: |-
+        * `auto` - 자동(지표)
+        * `manual` - 수동(서술)
+    ClaimEvidenceRequest:
+      type: object
+      description: |-
+        Claim 근거(자동형/수동형, RECON-SWAP-0813 PART 1). 쓰기는 별도 엔드포인트
+        (/api/v1/monitor/claim-evidences/)에서 — ClaimSerializer.evidences는 read-only nested.
+      properties:
+        claim:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/ClaimEvidenceKindEnum'
+        indicator:
+          type: string
+          format: uuid
+          nullable: true
+          description: 자동형 대상 지표
+        operator:
+          nullable: true
+          description: |-
+            자동형 비교 연산자(raw_z 대상)
+
+            * `gte` - >=
+            * `lte` - <=
+            * `gt` - >
+            * `lt` - <
+          oneOf:
+          - $ref: '#/components/schemas/OperatorEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        threshold:
+          type: number
+          format: double
+          nullable: true
+          description: 자동형 임계값(raw_z 대상)
+        grace_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: 자동형 유예 거래일 수(연속 위반 허용 한도)
+        description:
+          type: string
+          description: 수동형 서술
+        recheck_period_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: 수동형 재확인 주기(일)
+        last_confirmed_at:
+          type: string
+          format: date
+          nullable: true
+          description: 수동형 마지막 확인일
+      required:
+      - claim
+      - kind
+    ClaimRequest:
+      type: object
+      properties:
+        monitor:
+          type: string
+          format: uuid
+        assertion:
+          type: string
+          minLength: 1
+          description: 주장
+        deadline:
+          type: string
+          format: date
+          nullable: true
+          description: 마감
+        status:
+          $ref: '#/components/schemas/ClaimStatusEnum'
+        outcome:
+          $ref: '#/components/schemas/OutcomeEnum'
+        scenario_type:
+          allOf:
+          - $ref: '#/components/schemas/ScenarioTypeEnum'
+          description: |-
+            시나리오 모드(신규 매수/보유 관리/추가 매수)
+
+            * `new_entry` - 신규 매수
+            * `hold` - 보유 관리
+            * `add_on` - 추가 매수
+        entry_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 진입가
+        target_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 목표가(익절)
+        stop_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 손절가
+        purchase_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 매입가(확정 사실)
+        purchase_date:
+          type: string
+          format: date
+          nullable: true
+          description: 매입일(보유 기간 원천)
+        fair_value_low:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 적정가 하단
+        fair_value_high:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 적정가 상단
+      required:
+      - assertion
+      - monitor
+    ClaimStatusEnum:
+      enum:
+      - active
+      - resolved
+      type: string
+      description: |-
+        * `active` - Active
+        * `resolved` - Resolved
     CoachE1RequestRequest:
       additionalProperties: false
       description: E1 GARP 스코어링 input.
@@ -7974,6 +9750,30 @@ components:
       - output
       - llm_metadata
       description: E6Output wrapper — E*ResponseSerializer.to_representation 출력 형태.
+    ConcentrationCard:
+      type: object
+      properties:
+        universe:
+          type: string
+        top5_weight:
+          type: number
+          format: double
+        top10_weight:
+          type: number
+          format: double
+        hhi:
+          type: number
+          format: double
+        top_holdings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConcentrationHolding'
+      required:
+      - hhi
+      - top10_weight
+      - top5_weight
+      - top_holdings
+      - universe
     ConcentrationHolding:
       type: object
       properties:
@@ -7985,6 +9785,14 @@ components:
       required:
       - symbol
       - weight
+    CurrencyEnum:
+      enum:
+      - USD
+      - KRW
+      type: string
+      description: |-
+        * `USD` - USD
+        * `KRW` - KRW
     CurrentStateEnum:
       enum:
       - warming_up
@@ -7992,19 +9800,19 @@ components:
       - strengthening
       - weakening
       - critical
-      - expired
       - needs_review
+      - expired
       - paused
       type: string
       description: |-
-        * `warming_up` - Warming Up
-        * `active` - Active
-        * `strengthening` - Strengthening
-        * `weakening` - Weakening
-        * `critical` - Critical
-        * `expired` - Expired
-        * `needs_review` - Needs Review
-        * `paused` - Paused
+        * `warming_up` - 데이터 수집 중
+        * `active` - 활성 관제 중
+        * `strengthening` - 강화 추세
+        * `weakening` - 약화 추세
+        * `critical` - 주의 필요
+        * `needs_review` - 점검 필요
+        * `expired` - 기간 만료
+        * `paused` - 일시정지
     CustomTokenObtainPairRequest:
       type: object
       description: 커스텀 JWT 토큰 시리얼라이저 - 토큰에 추가 정보 포함
@@ -8020,32 +9828,61 @@ components:
       required:
       - password
       - username
-    DataSourceEnum:
+    DecisionJournalEntry:
+      type: object
+      description: 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). sentence 품질 검증 없음(ADR
+        §6).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        claim:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/DecisionJournalEntryKindEnum'
+        sentence:
+          type: string
+          description: 결정 한 줄(검증 없음 — ADR §6)
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - claim
+      - created_at
+      - id
+      - kind
+      - sentence
+    DecisionJournalEntryKindEnum:
       enum:
-      - fmp
-      - fred
-      - news_sentiment
-      - metrics
-      - manual
-      - custom
+      - close
+      - recommit
+      - hold
       type: string
       description: |-
-        * `fmp` - FMP
-        * `fred` - FRED
-        * `news_sentiment` - News Sentiment
-        * `metrics` - Metrics
-        * `manual` - Manual
-        * `custom` - Custom
-    DirectionEnum:
-      enum:
-      - bearish
-      - bullish
-      - neutral
-      type: string
-      description: |-
-        * `bearish` - Bearish
-        * `bullish` - Bullish
-        * `neutral` - Neutral
+        * `close` - 마감
+        * `recommit` - 재커밋
+        * `hold` - 보류
+    DecisionJournalEntryRequest:
+      type: object
+      description: 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). sentence 품질 검증 없음(ADR
+        §6).
+      properties:
+        claim:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/DecisionJournalEntryKindEnum'
+        sentence:
+          type: string
+          minLength: 1
+          description: 결정 한 줄(검증 없음 — ADR §6)
+      required:
+      - claim
+      - kind
+      - sentence
     EntityHighlight:
       type: object
       description: 엔티티 하이라이트 Serializer
@@ -8086,44 +9923,128 @@ components:
         * `cryptocurrency` - Cryptocurrency
         * `currency` - Currency
         * `mutualfund` - Mutual Fund
-    EntrySourceEnum:
+    FactorTagsEnum:
       enum:
-      - news
-      - free_input
-      - popular
-      - template
-      - chainsight
+      - timing
+      - ext_shock
+      - indicator_noise
+      - luck
       type: string
       description: |-
-        * `news` - Today Issue
-        * `free_input` - Free Input
-        * `popular` - Popular Thesis
-        * `template` - Template
-        * `chainsight` - Chain Sight
-    FlowCard:
+        * `timing` - 타이밍
+        * `ext_shock` - 외부 충격
+        * `indicator_noise` - 지표 노이즈
+        * `luck` - 운
+    GoalCreateRequest:
+      type: object
+      description: |-
+        목표 생성 요청(SLICE20BF2, POST). target·horizon 필수, risk·손잡이 선택.
+
+        범위 강제는 모델 계층(UserGoal.full_clean → validators + KNOB_RANGES)이 진실 소스 —
+        여기 선언은 스키마 앵커·형변환. 생성 단일 경로(D-f2-1), 중복 시 409(뷰).
+      properties:
+        target_return_pct:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        horizon_months:
+          type: integer
+          minimum: 1
+        risk_tolerance:
+          allOf:
+          - $ref: '#/components/schemas/RiskToleranceEnum'
+          default: moderate
+        aggressiveness_offset:
+          type: integer
+        growth_boost:
+          type: integer
+        diversification_weight:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+        concentration_limit:
+          type: integer
+        exploration_ratio:
+          type: integer
+      required:
+      - horizon_months
+      - target_return_pct
+    HoldingCreateRequest:
       type: object
       properties:
-        universe:
+        symbol:
           type: string
-        top5_weight:
-          type: number
-          format: double
-        top10_weight:
-          type: number
-          format: double
-        hhi:
-          type: number
-          format: double
-        top_holdings:
-          type: array
-          items:
-            $ref: '#/components/schemas/ConcentrationHolding'
+          minLength: 1
+          maxLength: 20
+        shares:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+        avg_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+        first_bought_at:
+          type: string
+          format: date
+          nullable: true
+        investment_thesis:
+          type: string
+        acquisition_fx_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+          nullable: true
       required:
-      - hhi
-      - top10_weight
-      - top5_weight
-      - top_holdings
-      - universe
+      - avg_cost
+      - shares
+      - symbol
+    IndicatorReading:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        indicator:
+          type: string
+          format: uuid
+        value:
+          type: number
+          format: double
+          nullable: true
+        asof:
+          type: string
+          format: date-time
+        validation_status:
+          $ref: '#/components/schemas/ValidationStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - asof
+      - created_at
+      - id
+      - indicator
+    IndicatorReadingRequest:
+      type: object
+      properties:
+        indicator:
+          type: string
+          format: uuid
+        value:
+          type: number
+          format: double
+          nullable: true
+        asof:
+          type: string
+          format: date-time
+        validation_status:
+          $ref: '#/components/schemas/ValidationStatusEnum'
+      required:
+      - asof
+      - indicator
     IndicatorTypeEnum:
       enum:
       - market_data
@@ -8133,11 +10054,289 @@ components:
       - custom
       type: string
       description: |-
-        * `market_data` - Market Data
-        * `macro` - Macro Economic
-        * `sentiment` - News Sentiment
-        * `technical` - Technical
-        * `custom` - Custom
+        * `market_data` - 시장 데이터
+        * `macro` - 거시경제
+        * `sentiment` - 뉴스 심리
+        * `technical` - 기술적 분석
+        * `custom` - 사용자 정의
+    KnobsRead:
+      description: GET 손잡이 현재값 — UserGoal 5종 (읽기 전용, 쓰기는 20b).
+      properties:
+        available:
+          title: Available
+          type: boolean
+        aggressiveness_offset:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Aggressiveness Offset
+        growth_boost:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Growth Boost
+        diversification_weight:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Diversification Weight
+        concentration_limit:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Concentration Limit
+        exploration_ratio:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Exploration Ratio
+      required:
+      - available
+      title: KnobsReadContract
+      type: object
+    LastPriceZoneEnum:
+      enum:
+      - exited
+      - entry
+      - approach
+      - waiting
+      - overheated
+      type: string
+      description: |-
+        * `exited` - 이탈
+        * `entry` - 진입 구간
+        * `approach` - 접근
+        * `waiting` - 관망
+        * `overheated` - 과열
+    LatestAdvisory:
+      description: GET 최신 권유 — 최근 AdvisoryRun 산출 전문 + trigger + 실행 시각.
+      properties:
+        available:
+          title: Available
+          type: boolean
+        trigger:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Trigger
+        run_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Run At
+        output:
+          anyOf:
+          - properties:
+              mode:
+                title: Mode
+                type: string
+              summary:
+                additionalProperties: true
+                properties:
+                  goal_target_return_pct:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                    default: null
+                    title: Goal Target Return Pct
+                  numeraire:
+                    title: Numeraire
+                    type: string
+                  cost_basis_note:
+                    title: Cost Basis Note
+                    type: string
+                  dial:
+                    properties:
+                      dd:
+                        title: Dd
+                        type: string
+                      a:
+                        title: A
+                        type: string
+                      buffer:
+                        title: Buffer
+                        type: string
+                      is_new_high:
+                        title: Is New High
+                        type: boolean
+                      headroom_frac:
+                        title: Headroom Frac
+                        type: string
+                      deployable_krw_total:
+                        title: Deployable Krw Total
+                        type: string
+                      frozen:
+                        title: Frozen
+                        type: boolean
+                      window_days:
+                        title: Window Days
+                        type: integer
+                      by_currency:
+                        additionalProperties:
+                          properties:
+                            cash_krw:
+                              title: Cash Krw
+                              type: string
+                            buffer_share_krw:
+                              title: Buffer Share Krw
+                              type: string
+                            deployable_krw:
+                              title: Deployable Krw
+                              type: string
+                            headroom_ratio:
+                              title: Headroom Ratio
+                              type: string
+                          required:
+                          - cash_krw
+                          - buffer_share_krw
+                          - deployable_krw
+                          - headroom_ratio
+                          title: DialByCurrencyContract
+                          type: object
+                        title: By Currency
+                        type: object
+                    required:
+                    - dd
+                    - a
+                    - buffer
+                    - is_new_high
+                    - headroom_frac
+                    - deployable_krw_total
+                    - frozen
+                    - window_days
+                    - by_currency
+                    title: DialContract
+                    type: object
+                  knobs:
+                    properties:
+                      A:
+                        title: A
+                        type: integer
+                      G:
+                        title: G
+                        type: integer
+                      w:
+                        title: W
+                        type: string
+                      L:
+                        title: L
+                        type: integer
+                      E:
+                        title: E
+                        type: integer
+                    required:
+                    - A
+                    - G
+                    - w
+                    - L
+                    - E
+                    title: KnobsContract
+                    type: object
+                  max_concentration:
+                    anyOf:
+                    - properties:
+                        symbol:
+                          title: Symbol
+                          type: string
+                        currency:
+                          title: Currency
+                          type: string
+                        weight:
+                          title: Weight
+                          type: string
+                      required:
+                      - symbol
+                      - currency
+                      - weight
+                      title: MaxConcentrationContract
+                      type: object
+                    - type: 'null'
+                    default: null
+                  notes:
+                    items:
+                      type: string
+                    title: Notes
+                    type: array
+                  progress_gap:
+                    additionalProperties: true
+                    title: Progress Gap
+                    type: object
+                  allocation_gap:
+                    additionalProperties: true
+                    title: Allocation Gap
+                    type: object
+                  fx_context:
+                    additionalProperties: true
+                    title: Fx Context
+                    type: object
+                required:
+                - numeraire
+                - cost_basis_note
+                - dial
+                - knobs
+                - notes
+                - progress_gap
+                - allocation_gap
+                - fx_context
+                title: SummaryContract
+                type: object
+              recommendations:
+                items:
+                  properties:
+                    action:
+                      title: Action
+                      type: string
+                    symbol:
+                      title: Symbol
+                      type: string
+                    currency:
+                      title: Currency
+                      type: string
+                    score:
+                      anyOf:
+                      - type: string
+                      - type: 'null'
+                      default: null
+                      title: Score
+                    lane:
+                      title: Lane
+                      type: string
+                    rationale:
+                      title: Rationale
+                      type: string
+                  required:
+                  - action
+                  - symbol
+                  - currency
+                  - lane
+                  - rationale
+                  title: RecommendationContract
+                  type: object
+                title: Recommendations
+                type: array
+              disclaimer:
+                title: Disclaimer
+                type: string
+            required:
+            - mode
+            - summary
+            - recommendations
+            - disclaimer
+            title: AdvisoryOutputContract
+            type: object
+          - type: 'null'
+          default: null
+      required:
+      - available
+      title: LatestAdvisoryContract
+      type: object
     LocationEnum:
       enum:
       - title
@@ -8168,6 +10367,222 @@ components:
       - latency_ms
       - status
       - status_reason
+    Monitor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        scope:
+          $ref: '#/components/schemas/ScopeEnum'
+        target_ref:
+          type: string
+          maxLength: 64
+        name:
+          type: string
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/MonitorStatusEnum'
+        current_state:
+          allOf:
+          - $ref: '#/components/schemas/CurrentStateEnum'
+          readOnly: true
+        target_date_end:
+          type: string
+          format: date
+          nullable: true
+        resolved_label:
+          type: string
+          readOnly: true
+        latest_score:
+          type: string
+          readOnly: true
+        display:
+          type: string
+          readOnly: true
+        indicator_count:
+          type: string
+          readOnly: true
+        indicator_coverage:
+          type: string
+          readOnly: true
+        next_deadline:
+          type: string
+          readOnly: true
+        has_claim:
+          type: string
+          readOnly: true
+        close_suggested:
+          type: boolean
+          readOnly: true
+        danger_streak:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - close_suggested
+      - created_at
+      - current_state
+      - danger_streak
+      - display
+      - has_claim
+      - id
+      - indicator_count
+      - indicator_coverage
+      - latest_score
+      - name
+      - next_deadline
+      - resolved_label
+      - scope
+      - target_ref
+      - updated_at
+    MonitorIndicator:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        monitor:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+        indicator_type:
+          $ref: '#/components/schemas/IndicatorTypeEnum'
+        support_direction:
+          $ref: '#/components/schemas/SupportDirectionEnum'
+        weight:
+          type: number
+          format: double
+        source_key:
+          type: string
+          maxLength: 40
+        epsilon:
+          type: number
+          format: double
+          nullable: true
+        window:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        decay:
+          type: number
+          format: double
+          nullable: true
+        is_active:
+          type: boolean
+        is_paused:
+          type: boolean
+        override_score:
+          type: number
+          format: double
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - indicator_type
+      - monitor
+      - name
+      - updated_at
+    MonitorIndicatorRequest:
+      type: object
+      properties:
+        monitor:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        indicator_type:
+          $ref: '#/components/schemas/IndicatorTypeEnum'
+        support_direction:
+          $ref: '#/components/schemas/SupportDirectionEnum'
+        weight:
+          type: number
+          format: double
+        source_key:
+          type: string
+          maxLength: 40
+        epsilon:
+          type: number
+          format: double
+          nullable: true
+        window:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        decay:
+          type: number
+          format: double
+          nullable: true
+        is_active:
+          type: boolean
+        is_paused:
+          type: boolean
+        override_score:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - indicator_type
+      - monitor
+      - name
+    MonitorRequest:
+      type: object
+      properties:
+        scope:
+          $ref: '#/components/schemas/ScopeEnum'
+        target_ref:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/MonitorStatusEnum'
+        target_date_end:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - name
+      - scope
+      - target_ref
+    MonitorStatusEnum:
+      enum:
+      - setting_up
+      - active
+      - paused
+      - archived
+      type: string
+      description: |-
+        * `setting_up` - Setting Up
+        * `active` - Active
+        * `paused` - Paused
+        * `archived` - Archived
     NewsArticleDetail:
       type: object
       description: 뉴스 상세용 Serializer
@@ -8582,16 +10997,34 @@ components:
     NullEnum:
       enum:
       - null
-    OutcomeEnum:
+    OperatorEnum:
       enum:
-      - correct
-      - incorrect
-      - neutral
+      - gte
+      - lte
+      - gt
+      - lt
       type: string
       description: |-
-        * `correct` - Correct
-        * `incorrect` - Incorrect
-        * `neutral` - Neutral
+        * `gte` - >=
+        * `lte` - <=
+        * `gt` - >
+        * `lt` - <
+    OutcomeEnum:
+      enum:
+      - pending
+      - validated
+      - partial
+      - invalidated
+      - inconclusive
+      - expired
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `validated` - Validated
+        * `partial` - Partial
+        * `invalidated` - Invalidated
+        * `inconclusive` - Inconclusive
+        * `expired` - 기한만료
     OverviewResponse:
       type: object
       properties:
@@ -8611,6 +11044,10 @@ components:
           $ref: '#/components/schemas/AnomalySection'
         cards:
           $ref: '#/components/schemas/Cards'
+        translations:
+          allOf:
+          - $ref: '#/components/schemas/Translations'
+          nullable: true
       required:
       - _meta
       - anomaly
@@ -8640,88 +11077,289 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/NewsArticleList'
-    PatchedThesisDetailRequest:
+    PatchedClaimEvidenceRequest:
       type: object
+      description: |-
+        Claim 근거(자동형/수동형, RECON-SWAP-0813 PART 1). 쓰기는 별도 엔드포인트
+        (/api/v1/monitor/claim-evidences/)에서 — ClaimSerializer.evidences는 read-only nested.
       properties:
-        title:
+        claim:
           type: string
-          minLength: 1
-          maxLength: 200
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/ClaimEvidenceKindEnum'
+        indicator:
+          type: string
+          format: uuid
+          nullable: true
+          description: 자동형 대상 지표
+        operator:
+          nullable: true
+          description: |-
+            자동형 비교 연산자(raw_z 대상)
+
+            * `gte` - >=
+            * `lte` - <=
+            * `gt` - >
+            * `lt` - <
+          oneOf:
+          - $ref: '#/components/schemas/OperatorEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        threshold:
+          type: number
+          format: double
+          nullable: true
+          description: 자동형 임계값(raw_z 대상)
+        grace_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: 자동형 유예 거래일 수(연속 위반 허용 한도)
         description:
           type: string
-        direction:
-          $ref: '#/components/schemas/DirectionEnum'
-        target:
-          type: string
-          minLength: 1
-          maxLength: 100
-        target_type:
-          $ref: '#/components/schemas/TargetTypeEnum'
-        expected_timeframe:
-          type: string
-          maxLength: 50
-        expected_magnitude:
-          type: string
-          maxLength: 50
-        target_date_start:
+          description: 수동형 서술
+        recheck_period_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: 수동형 재확인 주기(일)
+        last_confirmed_at:
           type: string
           format: date
           nullable: true
-        target_date_end:
-          type: string
-          format: date
-          nullable: true
-        thesis_type:
-          $ref: '#/components/schemas/ThesisTypeEnum'
-        entry_source:
-          $ref: '#/components/schemas/EntrySourceEnum'
-    PatchedThesisIndicatorRequest:
+          description: 수동형 마지막 확인일
+    PatchedClaimRequest:
       type: object
       properties:
+        monitor:
+          type: string
+          format: uuid
+        assertion:
+          type: string
+          minLength: 1
+          description: 주장
+        deadline:
+          type: string
+          format: date
+          nullable: true
+          description: 마감
+        status:
+          $ref: '#/components/schemas/ClaimStatusEnum'
+        outcome:
+          $ref: '#/components/schemas/OutcomeEnum'
+        scenario_type:
+          allOf:
+          - $ref: '#/components/schemas/ScenarioTypeEnum'
+          description: |-
+            시나리오 모드(신규 매수/보유 관리/추가 매수)
+
+            * `new_entry` - 신규 매수
+            * `hold` - 보유 관리
+            * `add_on` - 추가 매수
+        entry_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 진입가
+        target_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 목표가(익절)
+        stop_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 손절가
+        purchase_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 매입가(확정 사실)
+        purchase_date:
+          type: string
+          format: date
+          nullable: true
+          description: 매입일(보유 기간 원천)
+        fair_value_low:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 적정가 하단
+        fair_value_high:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 적정가 상단
+    PatchedDecisionJournalEntryRequest:
+      type: object
+      description: 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). sentence 품질 검증 없음(ADR
+        §6).
+      properties:
+        claim:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/DecisionJournalEntryKindEnum'
+        sentence:
+          type: string
+          minLength: 1
+          description: 결정 한 줄(검증 없음 — ADR §6)
+    PatchedHoldingUpdateRequest:
+      type: object
+      properties:
+        shares:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+        avg_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+        first_bought_at:
+          type: string
+          format: date
+        investment_thesis:
+          type: string
+        acquisition_fx_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+          nullable: true
+    PatchedIndicatorReadingRequest:
+      type: object
+      properties:
+        indicator:
+          type: string
+          format: uuid
+        value:
+          type: number
+          format: double
+          nullable: true
+        asof:
+          type: string
+          format: date-time
+        validation_status:
+          $ref: '#/components/schemas/ValidationStatusEnum'
+    PatchedKnobsUpdateRequest:
+      type: object
+      description: |-
+        손잡이 5종 + 목표 수익률 부분 수정 요청(SLICE20B). 전부 optional(partial).
+
+        검증은 모델 계층(UserGoal.full_clean → validators + KNOB_RANGES)이 진실 소스 —
+        여기 선언은 스키마 앵커일 뿐, 범위 강제는 뷰에서 full_clean 경유(프론트 검증 대체 금지).
+      properties:
+        target_return_pct:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        aggressiveness_offset:
+          type: integer
+        growth_boost:
+          type: integer
+        diversification_weight:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+        concentration_limit:
+          type: integer
+        exploration_ratio:
+          type: integer
+    PatchedMonitorIndicatorRequest:
+      type: object
+      properties:
+        monitor:
+          type: string
+          format: uuid
         name:
           type: string
           minLength: 1
-          maxLength: 100
+          maxLength: 200
         indicator_type:
           $ref: '#/components/schemas/IndicatorTypeEnum'
-        data_source:
-          $ref: '#/components/schemas/DataSourceEnum'
-        data_params: {}
         support_direction:
           $ref: '#/components/schemas/SupportDirectionEnum'
         weight:
           type: number
           format: double
-        is_active:
-          type: boolean
-        is_paused:
-          type: boolean
-        premise:
+        source_key:
           type: string
-          format: uuid
-          nullable: true
-        recommendation_reason:
-          type: string
-          description: 이 지표가 가설에 추천된 이유
-    PatchedThesisPremiseRequest:
-      type: object
-      properties:
-        content:
-          type: string
-          minLength: 1
-        category:
-          $ref: '#/components/schemas/ThesisPremiseCategoryEnum'
-        weight:
+          maxLength: 40
+        epsilon:
           type: number
           format: double
+          nullable: true
+        window:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        decay:
+          type: number
+          format: double
+          nullable: true
         is_active:
           type: boolean
         is_paused:
           type: boolean
-        order:
-          type: integer
-          maximum: 2147483647
-          minimum: 0
+        override_score:
+          type: number
+          format: double
+          nullable: true
+    PatchedMonitorRequest:
+      type: object
+      properties:
+        scope:
+          $ref: '#/components/schemas/ScopeEnum'
+        target_ref:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/MonitorStatusEnum'
+        target_date_end:
+          type: string
+          format: date
+          nullable: true
+    PatchedSwapHoldLogRequest:
+      type: object
+      description: |-
+        교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). 쓰기는
+        /api/v1/monitor/swap-hold-logs/에서 — 횟수·누적일수는 조회 측(FE)이 이 로그를 집계.
+      properties:
+        claim:
+          type: string
+          format: uuid
+        candidate_ref:
+          type: string
+          nullable: true
+          description: 검토 대상 후보 종목 심볼(대문자)
+          maxLength: 20
+        hold_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 보류 시점 보유 종목 가격(성과 앵커)
+        candidate_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 보류 시점 후보 종목 가격(성과 앵커)
+        note:
+          type: string
     PathAction:
       type: object
       properties:
@@ -8757,6 +11395,18 @@ components:
       - growth
       - factor
       type: string
+    ProposedVerdictEnum:
+      enum:
+      - validated
+      - partial
+      - invalidated
+      - expired
+      type: string
+      description: |-
+        * `validated` - Validated
+        * `partial` - Partial
+        * `invalidated` - Invalidated
+        * `expired` - 기한만료
     RegimeCard:
       type: object
       properties:
@@ -8782,6 +11432,16 @@ components:
       - regime
       - status
       - transitioned
+    RiskToleranceEnum:
+      enum:
+      - conservative
+      - moderate
+      - aggressive
+      type: string
+      description: |-
+        * `conservative` - conservative
+        * `moderate` - moderate
+        * `aggressive` - aggressive
     SavedPathCreate:
       type: object
       properties:
@@ -8953,6 +11613,30 @@ components:
         * `active` - Active
         * `archived` - Archived
         * `resolved` - Resolved
+    ScenarioTypeEnum:
+      enum:
+      - new_entry
+      - hold
+      - add_on
+      type: string
+      description: |-
+        * `new_entry` - 신규 매수
+        * `hold` - 보유 관리
+        * `add_on` - 추가 매수
+    ScopeEnum:
+      enum:
+      - market
+      - sector
+      - theme
+      - fund
+      - stock
+      type: string
+      description: |-
+        * `market` - Market
+        * `sector` - Sector
+        * `theme` - Theme
+        * `fund` - Fund
+        * `stock` - Stock
     SectorCard:
       type: object
       properties:
@@ -9025,555 +11709,79 @@ components:
       - negative
       type: string
       description: |-
-        * `positive` - Positive
-        * `negative` - Negative
-    TargetTypeEnum:
-      enum:
-      - index
-      - stock
-      - sector
-      - macro
-      type: string
+        * `positive` - 정방향(값↑ = 지지)
+        * `negative` - 역방향(값↓ = 지지)
+    SwapHoldLog:
+      type: object
       description: |-
-        * `index` - Index
-        * `stock` - Stock
-        * `sector` - Sector
-        * `macro` - Macro
-    ThesisCreate:
-      type: object
-      properties:
-        title:
-          type: string
-          maxLength: 200
-        description:
-          type: string
-        direction:
-          $ref: '#/components/schemas/DirectionEnum'
-        target:
-          type: string
-          maxLength: 100
-        target_type:
-          $ref: '#/components/schemas/TargetTypeEnum'
-        expected_timeframe:
-          type: string
-          maxLength: 50
-        expected_magnitude:
-          type: string
-          maxLength: 50
-        target_date_start:
-          type: string
-          format: date
-          nullable: true
-        target_date_end:
-          type: string
-          format: date
-          nullable: true
-        thesis_type:
-          $ref: '#/components/schemas/ThesisTypeEnum'
-        entry_source:
-          $ref: '#/components/schemas/EntrySourceEnum'
-      required:
-      - direction
-      - entry_source
-      - target
-      - target_type
-      - thesis_type
-      - title
-    ThesisCreateRequest:
-      type: object
-      properties:
-        title:
-          type: string
-          minLength: 1
-          maxLength: 200
-        description:
-          type: string
-        direction:
-          $ref: '#/components/schemas/DirectionEnum'
-        target:
-          type: string
-          minLength: 1
-          maxLength: 100
-        target_type:
-          $ref: '#/components/schemas/TargetTypeEnum'
-        expected_timeframe:
-          type: string
-          maxLength: 50
-        expected_magnitude:
-          type: string
-          maxLength: 50
-        target_date_start:
-          type: string
-          format: date
-          nullable: true
-        target_date_end:
-          type: string
-          format: date
-          nullable: true
-        thesis_type:
-          $ref: '#/components/schemas/ThesisTypeEnum'
-        entry_source:
-          $ref: '#/components/schemas/EntrySourceEnum'
-      required:
-      - direction
-      - entry_source
-      - target
-      - target_type
-      - thesis_type
-      - title
-    ThesisDetail:
-      type: object
+        교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). 쓰기는
+        /api/v1/monitor/swap-hold-logs/에서 — 횟수·누적일수는 조회 측(FE)이 이 로그를 집계.
       properties:
         id:
           type: string
           format: uuid
           readOnly: true
-        title:
+        claim:
           type: string
-          maxLength: 200
-        description:
-          type: string
-        direction:
-          $ref: '#/components/schemas/DirectionEnum'
-        target:
-          type: string
-          maxLength: 100
-        target_type:
-          $ref: '#/components/schemas/TargetTypeEnum'
-        expected_timeframe:
-          type: string
-          maxLength: 50
-        expected_magnitude:
-          type: string
-          maxLength: 50
-        target_date_start:
-          type: string
-          format: date
-          nullable: true
-        target_date_end:
-          type: string
-          format: date
-          nullable: true
-        thesis_type:
-          $ref: '#/components/schemas/ThesisTypeEnum'
-        entry_source:
-          $ref: '#/components/schemas/EntrySourceEnum'
-        status:
-          allOf:
-          - $ref: '#/components/schemas/ThesisStatusEnum'
-          readOnly: true
-        current_state:
-          allOf:
-          - $ref: '#/components/schemas/CurrentStateEnum'
-          readOnly: true
-        current_score:
-          type: number
-          format: double
-          readOnly: true
-          nullable: true
-        outcome:
-          readOnly: true
-          nullable: true
-          oneOf:
-          - $ref: '#/components/schemas/OutcomeEnum'
-          - $ref: '#/components/schemas/NullEnum'
-        outcome_note:
-          type: string
-          readOnly: true
-        premises:
-          type: array
-          items:
-            $ref: '#/components/schemas/ThesisPremiseInline'
-          readOnly: true
-        indicator_count:
-          type: integer
-          readOnly: true
-        days_active:
-          type: integer
-          readOnly: true
-        created_at:
+          format: uuid
+        held_at:
           type: string
           format: date-time
           readOnly: true
-        updated_at:
+          description: 보류 클릭 시각
+        candidate_ref:
           type: string
-          format: date-time
-          readOnly: true
-        closed_at:
-          type: string
-          format: date-time
-          readOnly: true
           nullable: true
+          description: 검토 대상 후보 종목 심볼(대문자)
+          maxLength: 20
+        hold_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 보류 시점 보유 종목 가격(성과 앵커)
+        candidate_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 보류 시점 후보 종목 가격(성과 앵커)
+        note:
+          type: string
       required:
-      - closed_at
-      - created_at
-      - current_score
-      - current_state
-      - days_active
-      - direction
-      - entry_source
+      - claim
+      - held_at
       - id
-      - indicator_count
-      - outcome
-      - outcome_note
-      - premises
-      - status
-      - target
-      - target_type
-      - thesis_type
-      - title
-      - updated_at
-    ThesisDetailRequest:
+    SwapHoldLogRequest:
       type: object
-      properties:
-        title:
-          type: string
-          minLength: 1
-          maxLength: 200
-        description:
-          type: string
-        direction:
-          $ref: '#/components/schemas/DirectionEnum'
-        target:
-          type: string
-          minLength: 1
-          maxLength: 100
-        target_type:
-          $ref: '#/components/schemas/TargetTypeEnum'
-        expected_timeframe:
-          type: string
-          maxLength: 50
-        expected_magnitude:
-          type: string
-          maxLength: 50
-        target_date_start:
-          type: string
-          format: date
-          nullable: true
-        target_date_end:
-          type: string
-          format: date
-          nullable: true
-        thesis_type:
-          $ref: '#/components/schemas/ThesisTypeEnum'
-        entry_source:
-          $ref: '#/components/schemas/EntrySourceEnum'
-      required:
-      - direction
-      - entry_source
-      - target
-      - target_type
-      - thesis_type
-      - title
-    ThesisIndicator:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        name:
-          type: string
-          maxLength: 100
-        indicator_type:
-          $ref: '#/components/schemas/IndicatorTypeEnum'
-        data_source:
-          $ref: '#/components/schemas/DataSourceEnum'
-        data_params: {}
-        support_direction:
-          $ref: '#/components/schemas/SupportDirectionEnum'
-        weight:
-          type: number
-          format: double
-        is_active:
-          type: boolean
-        is_paused:
-          type: boolean
-        current_score:
-          type: number
-          format: double
-          readOnly: true
-          nullable: true
-        current_degree:
-          type: number
-          format: double
-          readOnly: true
-          nullable: true
-        current_color:
-          type: string
-          readOnly: true
-        current_label:
-          type: string
-          readOnly: true
-        premise:
-          type: string
-          format: uuid
-          nullable: true
-        override_score:
-          type: number
-          format: double
-          readOnly: true
-          nullable: true
-        window:
-          type: integer
-          readOnly: true
-        decay:
-          type: number
-          format: double
-          readOnly: true
-        epsilon:
-          type: number
-          format: double
-          readOnly: true
-        recommendation_reason:
-          type: string
-          description: 이 지표가 가설에 추천된 이유
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-      required:
-      - created_at
-      - current_color
-      - current_degree
-      - current_label
-      - current_score
-      - data_source
-      - decay
-      - epsilon
-      - id
-      - indicator_type
-      - name
-      - override_score
-      - support_direction
-      - window
-    ThesisIndicatorRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 100
-        indicator_type:
-          $ref: '#/components/schemas/IndicatorTypeEnum'
-        data_source:
-          $ref: '#/components/schemas/DataSourceEnum'
-        data_params: {}
-        support_direction:
-          $ref: '#/components/schemas/SupportDirectionEnum'
-        weight:
-          type: number
-          format: double
-        is_active:
-          type: boolean
-        is_paused:
-          type: boolean
-        premise:
-          type: string
-          format: uuid
-          nullable: true
-        recommendation_reason:
-          type: string
-          description: 이 지표가 가설에 추천된 이유
-      required:
-      - data_source
-      - indicator_type
-      - name
-      - support_direction
-    ThesisList:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        title:
-          type: string
-          maxLength: 200
-        direction:
-          $ref: '#/components/schemas/DirectionEnum'
-        target:
-          type: string
-          maxLength: 100
-        target_type:
-          $ref: '#/components/schemas/TargetTypeEnum'
-        status:
-          $ref: '#/components/schemas/ThesisStatusEnum'
-        current_state:
-          $ref: '#/components/schemas/CurrentStateEnum'
-        current_score:
-          type: number
-          format: double
-          nullable: true
-        thesis_type:
-          $ref: '#/components/schemas/ThesisTypeEnum'
-        entry_source:
-          $ref: '#/components/schemas/EntrySourceEnum'
-        days_active:
-          type: integer
-          readOnly: true
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
-      required:
-      - created_at
-      - days_active
-      - direction
-      - entry_source
-      - id
-      - target
-      - target_type
-      - thesis_type
-      - title
-      - updated_at
-    ThesisPremise:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        content:
-          type: string
-        category:
-          $ref: '#/components/schemas/ThesisPremiseCategoryEnum'
-        weight:
-          type: number
-          format: double
-        is_active:
-          type: boolean
-        is_paused:
-          type: boolean
-        order:
-          type: integer
-          maximum: 2147483647
-          minimum: 0
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-      required:
-      - category
-      - content
-      - created_at
-      - id
-    ThesisPremiseCategoryEnum:
-      enum:
-      - macro
-      - sector
-      - company
-      - technical
-      - sentiment
-      - custom
-      type: string
       description: |-
-        * `macro` - Macro
-        * `sector` - Sector
-        * `company` - Company
-        * `technical` - Technical
-        * `sentiment` - Sentiment
-        * `custom` - Custom
-    ThesisPremiseInline:
-      type: object
+        교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). 쓰기는
+        /api/v1/monitor/swap-hold-logs/에서 — 횟수·누적일수는 조회 측(FE)이 이 로그를 집계.
       properties:
-        id:
+        claim:
           type: string
           format: uuid
-          readOnly: true
-        content:
+        candidate_ref:
           type: string
-        category:
-          $ref: '#/components/schemas/ThesisPremiseCategoryEnum'
-        weight:
-          type: number
-          format: double
-        is_active:
-          type: boolean
-        is_paused:
-          type: boolean
-        order:
-          type: integer
-          maximum: 2147483647
-          minimum: 0
-      required:
-      - category
-      - content
-      - id
-    ThesisPremiseInlineRequest:
-      type: object
-      properties:
-        content:
+          nullable: true
+          description: 검토 대상 후보 종목 심볼(대문자)
+          maxLength: 20
+        hold_price:
           type: string
-          minLength: 1
-        category:
-          $ref: '#/components/schemas/ThesisPremiseCategoryEnum'
-        weight:
-          type: number
-          format: double
-        is_active:
-          type: boolean
-        is_paused:
-          type: boolean
-        order:
-          type: integer
-          maximum: 2147483647
-          minimum: 0
-      required:
-      - category
-      - content
-    ThesisPremiseRequest:
-      type: object
-      properties:
-        content:
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 보류 시점 보유 종목 가격(성과 앵커)
+        candidate_price:
           type: string
-          minLength: 1
-        category:
-          $ref: '#/components/schemas/ThesisPremiseCategoryEnum'
-        weight:
-          type: number
-          format: double
-        is_active:
-          type: boolean
-        is_paused:
-          type: boolean
-        order:
-          type: integer
-          maximum: 2147483647
-          minimum: 0
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,4})?$
+          nullable: true
+          description: 보류 시점 후보 종목 가격(성과 앵커)
+        note:
+          type: string
       required:
-      - category
-      - content
-    ThesisStatusEnum:
-      enum:
-      - setting_up
-      - active
-      - closed
-      - paused
-      type: string
-      description: |-
-        * `setting_up` - Setting Up
-        * `active` - Active
-        * `closed` - Closed
-        * `paused` - Paused
-    ThesisTypeEnum:
-      enum:
-      - event
-      - trend
-      - comparison
-      - divergence
-      - custom
-      type: string
-      description: |-
-        * `event` - Event-driven
-        * `trend` - Trend
-        * `comparison` - Comparison
-        * `divergence` - Divergence
-        * `custom` - Custom
+      - claim
     TickerItem:
       type: object
       properties:
@@ -9614,6 +11822,42 @@ components:
           minLength: 1
       required:
       - refresh
+    Translations:
+      type: object
+      description: |-
+        Phase 1.5 S4 — 카드별 감각 유추(senses) envelope. cards와 별개 동렬 블록.
+
+        senses 키 = cards 키(regime/breadth/sector/concentration) 중 생성된 것만.
+        블록 자체가 null = 미생성, senses={} = 생성됐으나 0개(FE가 둘 다 '밴드만'으로 수렴).
+      properties:
+        senses:
+          type: object
+          additionalProperties:
+            type: string
+        model_version:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+      required:
+      - generated_at
+      - model_version
+      - senses
+      - status
+    ValidationStatusEnum:
+      enum:
+      - ok
+      - extreme_jump_allowed
+      - rejected
+      - pending
+      type: string
+      description: |-
+        * `ok` - 정상
+        * `extreme_jump_allowed` - 극단 점프 허용
+        * `rejected` - 기각
+        * `pending` - 대기
   securitySchemes:
     cookieAuth:
       type: apiKey

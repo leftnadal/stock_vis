@@ -4,6 +4,48 @@
  */
 
 export interface paths {
+    "/api/credit-signals/strip/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 크레딧 신호 스트립 (Dashboard)
+         * @description 크레딧 신호 스트립 (as_of + raw 6 + 파생 2 signal + spark).
+         */
+        get: operations["api_credit_signals_strip_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/news-strip/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/dashboard/news-strip — 홈 상단 뉴스 축 응축 스트립.
+         *
+         *     인증 필수(user 스코프 = 보유·관심 티어). 읽기 전용. 응답 실패·빈 데이터도 200
+         *     (빈 items 배열) — FE 실패 격리와 짝.
+         */
+        get: operations["api_dashboard_news_strip_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/providers/cache/": {
         parameters: {
             query?: never;
@@ -112,6 +154,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/advisory/knobs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description 손잡이 5종 + 목표 수익률.
+         *
+         *     GET   현재값(읽기).
+         *     POST  목표 생성(SLICE20BF2) — target·horizon 필수, risk·손잡이 선택. 이미 존재 시 409.
+         *           생성 단일 경로(D-f2-1), PATCH는 수정 전용(upsert 아님).
+         *     PATCH 부분 수정(SLICE20B) — 목표 수익률 + 손잡이 5종. **서버측 검증기 강제**:
+         *           UserGoal.full_clean()이 필드 validators + KNOB_RANGES(clean)를 실행,
+         *           범위 밖은 400(프론트 검증만으로 대체 금지). 저장은 사용자 명시 요청만 —
+         *           엔진/시스템 자동 조정 경로 아님. **저장 ≠ 진단 실행**(D2, [지금 진단] 별도).
+         */
+        get: operations["advisory_knobs_retrieve"];
+        put?: never;
+        /**
+         * @description 손잡이 5종 + 목표 수익률.
+         *
+         *     GET   현재값(읽기).
+         *     POST  목표 생성(SLICE20BF2) — target·horizon 필수, risk·손잡이 선택. 이미 존재 시 409.
+         *           생성 단일 경로(D-f2-1), PATCH는 수정 전용(upsert 아님).
+         *     PATCH 부분 수정(SLICE20B) — 목표 수익률 + 손잡이 5종. **서버측 검증기 강제**:
+         *           UserGoal.full_clean()이 필드 validators + KNOB_RANGES(clean)를 실행,
+         *           범위 밖은 400(프론트 검증만으로 대체 금지). 저장은 사용자 명시 요청만 —
+         *           엔진/시스템 자동 조정 경로 아님. **저장 ≠ 진단 실행**(D2, [지금 진단] 별도).
+         */
+        post: operations["advisory_knobs_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description 손잡이 5종 + 목표 수익률.
+         *
+         *     GET   현재값(읽기).
+         *     POST  목표 생성(SLICE20BF2) — target·horizon 필수, risk·손잡이 선택. 이미 존재 시 409.
+         *           생성 단일 경로(D-f2-1), PATCH는 수정 전용(upsert 아님).
+         *     PATCH 부분 수정(SLICE20B) — 목표 수익률 + 손잡이 5종. **서버측 검증기 강제**:
+         *           UserGoal.full_clean()이 필드 validators + KNOB_RANGES(clean)를 실행,
+         *           범위 밖은 400(프론트 검증만으로 대체 금지). 저장은 사용자 명시 요청만 —
+         *           엔진/시스템 자동 조정 경로 아님. **저장 ≠ 진단 실행**(D2, [지금 진단] 별도).
+         */
+        patch: operations["advisory_knobs_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/advisory/latest/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 최신 권유(최근 AdvisoryRun). 없으면 available=False. */
+        get: operations["advisory_latest_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/advisory/run/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description 수동 진단 실행(trigger=manual 기록) 후 최신 권유 봉투 반환. */
+        post: operations["advisory_run_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/advisory/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 자산 요약(최근 스냅샷) + 진행/배치 갭 + 모드. 스냅샷 없으면 available=False. */
+        get: operations["advisory_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/chainsight/{symbol}/graph/": {
         parameters: {
             query?: never;
@@ -163,6 +305,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/chainsight/centrality/top/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 일별 중심성 상위 N 조회. */
+        get: operations["chainsight_centrality_top_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chainsight/ego/{symbol}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/v1/chainsight/ego/<symbol>/ — PG 네이티브 1-hop ego 그래프. */
+        get: operations["chainsight_ego_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chainsight/events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/v1/chainsight/events/
+         *
+         *     theme_tags 기반 이벤트 그룹 목록 (평균 관심도 내림차순).
+         *     멤버 < 3 그룹 제외.
+         */
+        get: operations["chainsight_events_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chainsight/events/{theme}/stocks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/v1/chainsight/events/<theme>/stocks/
+         *
+         *     테마 소속 종목 score 내림차순 랭킹.
+         *     없는 테마: 404.
+         */
+        get: operations["chainsight_events_stocks_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chainsight/mindmap/card/{symbol}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/v1/chainsight/mindmap/card/<symbol>/
+         *
+         *     카드 상세: 게이트 통과 연결(상대·유형·방향·강도·계약일) + '같은 그룹'(CO_MENTIONED)
+         *     분리 배열 + ACQUIRED 방향 구조(현재 0=빈 상태 정상). excluded 미노출.
+         */
+        get: operations["chainsight_mindmap_card_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chainsight/mindmap/tree/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/v1/chainsight/mindmap/tree/
+         *
+         *     업종 2단(sector→industry) 트리 + 종목 카드 요약. 755종목 전량(D1).
+         *     sector 없음 → '미분류' 버킷. sector 케이싱 중복은 최다 표기로 정규화.
+         */
+        get: operations["chainsight_mindmap_tree_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/chainsight/sector/{sector}/graph/": {
         parameters: {
             query?: never;
@@ -206,6 +470,40 @@ export interface paths {
         };
         /** @description 글로벌 chain flow + 새 chain 추천. */
         get: operations["chainsight_signals_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chainsight/theme-heat/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/v1/chainsight/theme-heat/ — 버튼바. computed(score desc)→accumulating(days desc). */
+        get: operations["chainsight_theme_heat_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/chainsight/theme-heat/{theme}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/v1/chainsight/theme-heat/{theme}/ — 카드. 미존재 테마 404. */
+        get: operations["chainsight_theme_heat_retrieve_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -337,6 +635,28 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["chainsight_watchlist_resolve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/analyst-scorecard/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description 애널리스트 성적판(전역 read). `?h=` 거래일 지평(기본 21).
+         *
+         *     스코프: **전역**(모든 신호) — user 필터 없음(#95: 스코프는 선언). 모든 인증
+         *     사용자에게 동일 산출. compute-on-read(DB 쓰기 0) + 나안 TTL 캐시.
+         */
+        get: operations["coach_analyst_scorecard_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -519,15 +839,19 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/macro/calendar/": {
+    "/api/v1/iron-trading/daily-context": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** @description 경제 캘린더 데이터 반환 */
-        get: operations["macro_calendar_retrieve"];
+        /**
+         * @description GET /api/v1/iron-trading/daily-context
+         *
+         *     read-only. iron_trading 외부 봇이 일별 결정보드 입력을 받기 위해 호출.
+         */
+        get: operations["iron_trading_daily_context_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -536,15 +860,19 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/macro/fear-greed/": {
+    "/api/v1/iron-trading/daily-context/": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** @description 공포/탐욕 지수 반환 */
-        get: operations["macro_fear_greed_retrieve"];
+        /**
+         * @description GET /api/v1/iron-trading/daily-context
+         *
+         *     read-only. iron_trading 외부 봇이 일별 결정보드 입력을 받기 위해 호출.
+         */
+        get: operations["iron_trading_daily_context_retrieve_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -553,15 +881,20 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/macro/global-markets/": {
+    "/api/v1/iron-trading/latest-trading-date": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** @description 글로벌 시장 데이터 반환 */
-        get: operations["macro_global_markets_retrieve"];
+        /**
+         * @description GET /api/v1/iron-trading/latest-trading-date
+         *
+         *     read-only. daily-context 200을 보장하는 "지금 조회 가능한 최신 미국장 거래일"을 반환.
+         *     iron_trading 봇이 local fixture 날짜 대신 실제 제공 가능 최신일을 자동으로 쓰게 한다.
+         */
+        get: operations["iron_trading_latest_trading_date_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -570,32 +903,20 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/macro/inflation/": {
+    "/api/v1/iron-trading/latest-trading-date/": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** @description 인플레이션/고용 대시보드 데이터 반환 */
-        get: operations["macro_inflation_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/macro/interest-rates/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description 금리 대시보드 데이터 반환 */
-        get: operations["macro_interest_rates_retrieve"];
+        /**
+         * @description GET /api/v1/iron-trading/latest-trading-date
+         *
+         *     read-only. daily-context 200을 보장하는 "지금 조회 가능한 최신 미국장 거래일"을 반환.
+         *     iron_trading 봇이 local fixture 날짜 대신 실제 제공 가능 최신일을 자동으로 쓰게 한다.
+         */
+        get: operations["iron_trading_latest_trading_date_retrieve_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -613,23 +934,6 @@ export interface paths {
         };
         /** @description 전체 대시보드 데이터 반환 */
         get: operations["macro_pulse_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/macro/sectors/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description 섹터 성과 데이터 반환 */
-        get: operations["macro_sectors_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -672,21 +976,573 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/macro/vix/": {
+    "/api/v1/monitor/alerts/": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** @description VIX 지수 반환 */
-        get: operations["macro_vix_retrieve"];
+        /** @description 전이 알림 — 인앱 패널·헤더 벨 (user 스코프, 읽기 + 읽음 처리 action). */
+        get: operations["monitor_alerts_list"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/alerts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 전이 알림 — 인앱 패널·헤더 벨 (user 스코프, 읽기 + 읽음 처리 action). */
+        get: operations["monitor_alerts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/alerts/{id}/read/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description 개별 알림 읽음 처리. */
+        post: operations["monitor_alerts_read_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/alerts/read_all/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description 미확인 알림 일괄 읽음 처리. */
+        post: operations["monitor_alerts_read_all_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/alerts/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 헤더 벨 배지용 — 미확인 악화 알림 수(악화만 카운트, 결정 1-C). */
+        get: operations["monitor_alerts_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/catalog/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description scope별 지표 카탈로그 (빌더 3단계). GET /monitor/catalog/?scope=stock. */
+        get: operations["monitor_catalog_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/claim-evidences/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+         *     nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+         */
+        get: operations["monitor_claim_evidences_list"];
+        put?: never;
+        /**
+         * @description Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+         *     nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+         */
+        post: operations["monitor_claim_evidences_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/claim-evidences/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+         *     nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+         */
+        get: operations["monitor_claim_evidences_retrieve"];
+        /**
+         * @description Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+         *     nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+         */
+        put: operations["monitor_claim_evidences_update"];
+        post?: never;
+        /**
+         * @description Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+         *     nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+         */
+        delete: operations["monitor_claim_evidences_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Claim 근거 CRUD (RECON-SWAP-0813 PART 1). ClaimSerializer.evidences는 읽기 전용
+         *     nested — 생성/수정은 여기서(MonitorIndicatorViewSet과 동일 관례).
+         */
+        patch: operations["monitor_claim_evidences_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/monitor/claims/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description monitor__user 소유 검증 공통 로직. */
+        get: operations["monitor_claims_list"];
+        put?: never;
+        /** @description monitor__user 소유 검증 공통 로직. */
+        post: operations["monitor_claims_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/claims/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description monitor__user 소유 검증 공통 로직. */
+        get: operations["monitor_claims_retrieve"];
+        /** @description monitor__user 소유 검증 공통 로직. */
+        put: operations["monitor_claims_update"];
+        post?: never;
+        /** @description monitor__user 소유 검증 공통 로직. */
+        delete: operations["monitor_claims_destroy"];
+        options?: never;
+        head?: never;
+        /** @description monitor__user 소유 검증 공통 로직. */
+        patch: operations["monitor_claims_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/monitor/claims/{id}/close/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description 가설 마감 (원자적) — 판정·회고·지표별 결과·동결 스냅샷. */
+        post: operations["monitor_claims_close_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/claims/{id}/close-preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 마감 모달 프리필 — 제안 판정·종합점수·지표 목록 (상태 변경 없음). */
+        get: operations["monitor_claims_close_preview_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/claims/{id}/evidence-status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description 근거 생사 판정 조회 (RECON-SWAP-0813 PART 3-BE, 읽기 전용) —
+         *     judge_claim_evidences 산출을 FE 대결 화면 계약층에 노출. DB 쓰기 없음.
+         */
+        get: operations["monitor_claims_evidence_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/decision-journal-entries/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+         *     Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+         */
+        get: operations["monitor_decision_journal_entries_list"];
+        put?: never;
+        /**
+         * @description 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+         *     Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+         */
+        post: operations["monitor_decision_journal_entries_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/decision-journal-entries/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+         *     Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+         */
+        get: operations["monitor_decision_journal_entries_retrieve"];
+        /**
+         * @description 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+         *     Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+         */
+        put: operations["monitor_decision_journal_entries_update"];
+        post?: never;
+        /**
+         * @description 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+         *     Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+         */
+        delete: operations["monitor_decision_journal_entries_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). P-4 회고 재인용 대비 —
+         *     Claim 상태 전이 자체는 다루지 않음(FE가 기존 마감/재커밋 경로와 조립).
+         */
+        patch: operations["monitor_decision_journal_entries_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/monitor/indicators/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description monitor__user 소유 검증 공통 로직. */
+        get: operations["monitor_indicators_list"];
+        put?: never;
+        /** @description monitor__user 소유 검증 공통 로직. */
+        post: operations["monitor_indicators_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/indicators/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description monitor__user 소유 검증 공통 로직. */
+        get: operations["monitor_indicators_retrieve"];
+        /** @description monitor__user 소유 검증 공통 로직. */
+        put: operations["monitor_indicators_update"];
+        post?: never;
+        /** @description monitor__user 소유 검증 공통 로직. */
+        delete: operations["monitor_indicators_destroy"];
+        options?: never;
+        head?: never;
+        /** @description monitor__user 소유 검증 공통 로직. */
+        patch: operations["monitor_indicators_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/monitor/monitors/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["monitor_monitors_list"];
+        put?: never;
+        post: operations["monitor_monitors_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/monitors/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["monitor_monitors_retrieve"];
+        put: operations["monitor_monitors_update"];
+        post?: never;
+        delete: operations["monitor_monitors_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["monitor_monitors_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/monitor/monitors/{id}/advisor_notes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description ADVISOR L-A 브리핑 목록 (MON-P4-LA T3) — 일지 advisor kind 소스.
+         *
+         *     단일 모델 조회(aggregate 창설 아님). 최신순, surface=L-A 한정.
+         */
+        get: operations["monitor_monitors_advisor_notes_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/monitors/{id}/evaluate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description 지표 스코어 → 집계 → 스냅샷 → 상태 판정 파이프라인 실행(수동 트리거). */
+        post: operations["monitor_monitors_evaluate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/monitors/{id}/snapshots/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description 점수 정본 시계열 — MonitorSnapshot(동결 기록) 기반 {asof, score, delta} (MON-P2B T1).
+         *
+         *     스트립 델타·일지 스냅샷의 단일 원천. sparkline(추세 곡선, 재산출)과 별개 —
+         *     여기는 '그날 실제로 기록한 값'만 담아 로직 변경에도 과거 불변.
+         */
+        get: operations["monitor_monitors_snapshots_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/monitors/{id}/sparkline/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 상태밴드 스파크라인 데이터 — 최근 N거래일 score 시계열 + 밴드 + 전이 표식. */
+        get: operations["monitor_monitors_sparkline_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/readings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description monitor__user 소유 검증 공통 로직. */
+        get: operations["monitor_readings_list"];
+        put?: never;
+        /** @description monitor__user 소유 검증 공통 로직. */
+        post: operations["monitor_readings_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/readings/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description monitor__user 소유 검증 공통 로직. */
+        get: operations["monitor_readings_retrieve"];
+        /** @description monitor__user 소유 검증 공통 로직. */
+        put: operations["monitor_readings_update"];
+        post?: never;
+        /** @description monitor__user 소유 검증 공통 로직. */
+        delete: operations["monitor_readings_destroy"];
+        options?: never;
+        head?: never;
+        /** @description monitor__user 소유 검증 공통 로직. */
+        patch: operations["monitor_readings_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/monitor/scenario-suggest/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description L계열 가격 제안 (빌더 4단계, 읽기 전용). GET /monitor/scenario-suggest/?symbol=AAPL.
+         *
+         *     DailyPrice에서 지지선(스윙 저점)·ATR×2 손절 폭 산출(서버측 — 3년 OHLC 클라 전송 금지).
+         *     확정은 항상 사용자(3-B). 히스토리 부족 시 available=False.
+         */
+        get: operations["monitor_scenario_suggest_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/swap-hold-logs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description 교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+         *     동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+         */
+        get: operations["monitor_swap_hold_logs_list"];
+        put?: never;
+        /**
+         * @description 교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+         *     동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+         */
+        post: operations["monitor_swap_hold_logs_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/swap-hold-logs/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description 교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+         *     동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+         */
+        get: operations["monitor_swap_hold_logs_retrieve"];
+        /**
+         * @description 교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+         *     동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+         */
+        put: operations["monitor_swap_hold_logs_update"];
+        post?: never;
+        /**
+         * @description 교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+         *     동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+         */
+        delete: operations["monitor_swap_hold_logs_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description 교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). ClaimEvidenceViewSet과
+         *     동일 관례 — claim 하위 별도 엔드포인트, 소유자 체크는 claim.monitor.user.
+         */
+        patch: operations["monitor_swap_hold_logs_partial_update"];
         trace?: never;
     };
     "/api/v1/news/": {
@@ -3893,6 +4749,12 @@ export interface paths {
          *
          *     GET /api/v1/serverless/thesis/{thesis_id}
          *
+         *     접근 정책 (전수조사 SEAM-DEBT #1 — IDOR-read 차단):
+         *       - 공개 테제(is_public=True): 누구나 조회 (공유 기능 보존).
+         *       - 비공개 테제: 소유자만. 비소유/미인증은 존재를 숨기기 위해 404.
+         *     ※ authentication_classes([]) 제거 — 토큰이 있으면 인증되어 소유 판정이 가능해진다
+         *        (없으면 AnonymousUser; AllowAny라 공개 테제는 무인증 조회 허용).
+         *
          *     Response:
          *         {
          *                 "id": 1,
@@ -3991,6 +4853,23 @@ export interface paths {
          *         }
          */
         get: operations["serverless_thesis_shared_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/api/analyst-signals/{symbol}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/v1/stocks/api/analyst-signals/<symbol>/ — 최신 스냅샷 1건. */
+        get: operations["stocks_api_analyst_signals_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4729,7 +5608,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/thesis/": {
+    "/api/v1/telemetry/coverage": {
         parameters: {
             query?: never;
             header?: never;
@@ -4737,63 +5616,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description 가설 CRUD + close 액션.
-         *     list   → GET /              내 가설 목록
-         *     create → POST /             가설 직접 생성
-         *     retrieve → GET /{id}/       가설 상세
-         *     partial_update → PATCH /{id}/ 가설 수정
-         *     close  → POST /{id}/close/  가설 마감
+         * @description GET /api/v1/telemetry/coverage — 발급 대비 유기 노출 커버리지(요청 사용자 스코프).
+         *
+         *     - IssuanceLog(발급, user-agnostic day-1) 를 window_days(발급 signal_date 기준 창) 로 집계 = issued.
+         *     - 그 중 요청 사용자가 유기 표면(COVERAGE_SURFACES, coverage_detail 제외)에서 impression 한 건 = exposed.
+         *     - 미노출(issued − exposed) 리스트는 signal_date desc, 상한 UNEXPOSED_RESPONSE_LIMIT.
+         *     - 사용자 impression 이나 in-window 발급 grain 에 매칭 안 되는 건 = meta.join_misses(침묵 유실 금지).
          */
-        get: operations["thesis_list"];
+        get: operations["telemetry_coverage_retrieve"];
         put?: never;
-        /**
-         * @description 가설 CRUD + close 액션.
-         *     list   → GET /              내 가설 목록
-         *     create → POST /             가설 직접 생성
-         *     retrieve → GET /{id}/       가설 상세
-         *     partial_update → PATCH /{id}/ 가설 수정
-         *     close  → POST /{id}/close/  가설 마감
-         */
-        post: operations["thesis_create"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/thesis/{id}/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * @description 가설 CRUD + close 액션.
-         *     list   → GET /              내 가설 목록
-         *     create → POST /             가설 직접 생성
-         *     retrieve → GET /{id}/       가설 상세
-         *     partial_update → PATCH /{id}/ 가설 수정
-         *     close  → POST /{id}/close/  가설 마감
-         */
-        get: operations["thesis_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * @description 가설 CRUD + close 액션.
-         *     list   → GET /              내 가설 목록
-         *     create → POST /             가설 직접 생성
-         *     retrieve → GET /{id}/       가설 상세
-         *     partial_update → PATCH /{id}/ 가설 수정
-         *     close  → POST /{id}/close/  가설 마감
-         */
-        patch: operations["thesis_partial_update"];
-        trace?: never;
-    };
-    "/api/v1/thesis/{id}/close/": {
+    "/api/v1/telemetry/impressions": {
         parameters: {
             query?: never;
             header?: never;
@@ -4802,259 +5641,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description 가설 마감 + ValidityRecord + InvestorDNA 갱신. */
-        post: operations["thesis_close_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/thesis/{thesis_id}/dashboard/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
         /**
-         * @description GET /{thesis_id}/dashboard/
-         *     관제실 대시보드 데이터 (설계 문서 6.2).
-         *     Phase 1: 실시간 계산 (캐싱 없음).
+         * @description POST /api/v1/telemetry/impressions — impression/click 배치 수신.
+         *
+         *     payload = 이벤트 배열 `[{surface, object_ref, event_type, session_id}, ...]`(sendBeacon 계약).
+         *     - impression: (user_id, surface, object_ref) partial-unique upsert → seen_count += 1,
+         *       first_seen_at 최초 고정(이후 불변). click: 무조건 append.
+         *     - 유효 항목만 처리 + 거부 건수 응답(배치 유실 최소화). 배열 상한 MAX_IMPRESSION_BATCH.
+         *     - 인증 필수(익명 거부). user_id = request.user.id (모델의 nullable user_id 는 예약, 미사용).
+         *     - **per-item 격리(PLATFORM-INGEST-DB-ISOLATE)**: 각 항목을 개별 savepoint(transaction.atomic)로
+         *       감싸 구조적 DB 오류(IntegrityError/DataError 등)가 **항목 단위로만** 실패하도록 한다.
+         *       정상 항목은 전량 수신되고, 실패 항목만 rejected(db_error)로 집계 — 배치 전체 500 없음.
+         *     - 응답 봉투 = {received(=accepted), rejected, rejected_reasons{code: count}}.
+         *       배치가 비거나 전 항목 실패여도 500이 아닌 정상 2xx로 rejected 전량 보고.
          */
-        get: operations["thesis_dashboard_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/thesis/{thesis_id}/indicators/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * @description 부모: thesis/{thesis_id}/indicators/
-         *     + auto_recommend: POST /indicators/auto/
-         */
-        get: operations["thesis_indicators_list"];
-        put?: never;
-        /**
-         * @description 부모: thesis/{thesis_id}/indicators/
-         *     + auto_recommend: POST /indicators/auto/
-         */
-        post: operations["thesis_indicators_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/thesis/{thesis_id}/indicators/{indicator_id}/readings/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description GET /{thesis_id}/indicators/{indicator_id}/readings/?days=14 */
-        get: operations["thesis_indicators_readings_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/thesis/{thesis_id}/indicators/{id}/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * @description 부모: thesis/{thesis_id}/indicators/
-         *     + auto_recommend: POST /indicators/auto/
-         */
-        get: operations["thesis_indicators_retrieve"];
-        /**
-         * @description 부모: thesis/{thesis_id}/indicators/
-         *     + auto_recommend: POST /indicators/auto/
-         */
-        put: operations["thesis_indicators_update"];
-        post?: never;
-        /**
-         * @description 부모: thesis/{thesis_id}/indicators/
-         *     + auto_recommend: POST /indicators/auto/
-         */
-        delete: operations["thesis_indicators_destroy"];
-        options?: never;
-        head?: never;
-        /**
-         * @description 부모: thesis/{thesis_id}/indicators/
-         *     + auto_recommend: POST /indicators/auto/
-         */
-        patch: operations["thesis_indicators_partial_update"];
-        trace?: never;
-    };
-    "/api/v1/thesis/{thesis_id}/indicators/auto/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description AI 자동 지표 추천. */
-        post: operations["thesis_indicators_auto_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/thesis/{thesis_id}/premises/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description 부모: thesis/{thesis_id}/premises/ */
-        get: operations["thesis_premises_list"];
-        put?: never;
-        /** @description 부모: thesis/{thesis_id}/premises/ */
-        post: operations["thesis_premises_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/thesis/{thesis_id}/premises/{id}/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description 부모: thesis/{thesis_id}/premises/ */
-        get: operations["thesis_premises_retrieve"];
-        /** @description 부모: thesis/{thesis_id}/premises/ */
-        put: operations["thesis_premises_update"];
-        post?: never;
-        /** @description 부모: thesis/{thesis_id}/premises/ */
-        delete: operations["thesis_premises_destroy"];
-        options?: never;
-        head?: never;
-        /** @description 부모: thesis/{thesis_id}/premises/ */
-        patch: operations["thesis_premises_partial_update"];
-        trace?: never;
-    };
-    "/api/v1/thesis/alerts/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description GET /alerts/ → 내 알림 목록 (미읽음 우선, 최대 50개) */
-        get: operations["thesis_alerts_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/thesis/alerts/{aid}/read/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** @description PATCH /alerts/{aid}/read/ → 읽음 처리 */
-        patch: operations["thesis_alerts_read_partial_update"];
-        trace?: never;
-    };
-    "/api/v1/thesis/conversation/news-issues/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description GET /conversation/news-issues/ → 최근 뉴스를 한국어 이슈로 변환. */
-        get: operations["thesis_conversation_news_issues_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/thesis/conversation/respond/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description POST /conversation/respond/ → 사용자 응답 처리. */
-        post: operations["thesis_conversation_respond_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/thesis/conversation/start/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description POST /conversation/start/ → 대화 시작. */
-        post: operations["thesis_conversation_start_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/thesis/conversation/suggest/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description POST /conversation/suggest/ → 뉴스 이슈에서 bullish/bearish 가설 2개 자동 제안. */
-        post: operations["thesis_conversation_suggest_create"];
+        post: operations["telemetry_impressions_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5802,6 +6403,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallet/cash/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 현금 목록(GET) / 통화별 upsert(PUT) / 통화별 삭제(DELETE ?currency=). */
+        get: operations["wallet_cash_retrieve"];
+        /** @description 현금 목록(GET) / 통화별 upsert(PUT) / 통화별 삭제(DELETE ?currency=). */
+        put: operations["wallet_cash_update"];
+        post?: never;
+        /** @description 현금 목록(GET) / 통화별 upsert(PUT) / 통화별 삭제(DELETE ?currency=). */
+        delete: operations["wallet_cash_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallet/holdings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 보유 목록(GET) / 추가(POST). user 스코프 wallet__user. */
+        get: operations["wallet_holdings_retrieve"];
+        put?: never;
+        /** @description 보유 목록(GET) / 추가(POST). user 스코프 wallet__user. */
+        post: operations["wallet_holdings_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallet/holdings/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description 보유 수정(PATCH) / 삭제(DELETE). 타 user 미접근(wallet__user 스코프). */
+        delete: operations["wallet_holdings_destroy"];
+        options?: never;
+        head?: never;
+        /** @description 보유 수정(PATCH) / 삭제(DELETE). 타 user 미접근(wallet__user 스코프). */
+        patch: operations["wallet_holdings_partial_update"];
+        trace?: never;
+    };
     "/api/v2/market-pulse/cards/{card_id}/detail": {
         parameters: {
             query?: never;
@@ -5896,6 +6552,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/market-pulse/regime/analog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Regime analog card (Slice B)
+         * @description 유사 국면 카드 결정론 코어. 오늘 z-벡터 가족가중 최근접(②C) + 이웃 SPY 선도수익 지평별 정직 팬(①C). 뉴스·LLM 무의존. label 슬롯 null(Slice C). 1h 캐시.
+         */
+        get: operations["market_pulse_regime_analog_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/market-pulse/regime/stress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Regime stress score (MPS-1)
+         * @description 연속 스트레스 스코어(14지표 가족 균등가중 z 평균) + 카테고리 서브스코어 + 자기역사 백분위 + 방향 2종(스트레스 Δ5d·Δ20d / SPY vs MA20·MA60). baseline = 소급 모집단(고정 잣대) μ·σ. serve-time·미저장, 1h 캐시. **regime 판정 무접촉**. level_band 잠정(S4-REBASE 재산정 대상).
+         */
+        get: operations["market_pulse_regime_stress_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/market-pulse/regime/zscore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Regime z-anomaly (S4)
+         * @description 국면 성분 z-이상도 시계열. baseline = 소급 모집단(고정 잣대) μ·σ(표본). z는 serve-time·미저장. 24h 캐시. 다운샘플(최근 90영업일 일간 + 이전 주간).
+         */
+        get: operations["market_pulse_regime_zscore_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5910,6 +6626,28 @@ export interface components {
          * @enum {string}
          */
         ActionTypeEnum: "watch" | "expand" | "alternatives" | "recheck" | "archive" | "resolve";
+        /** @description 전이 알림 — 인앱 패널 행(상태색/라벨 파생 포함). */
+        AlertEvent: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly monitor: string;
+            readonly monitor_name: string;
+            readonly target_ref: string;
+            readonly from_state: components["schemas"]["CurrentStateEnum"];
+            readonly to_state: components["schemas"]["CurrentStateEnum"];
+            readonly from_label: string;
+            readonly to_label: string;
+            /** Format: date */
+            readonly asof: string;
+            /** Format: double */
+            readonly score: number;
+            readonly is_deterioration: boolean;
+            readonly is_suppressed: boolean;
+            readonly read: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         AnomalyItem: {
             rule_id: string;
             headline: string;
@@ -5927,6 +6665,57 @@ export interface components {
             portfolio_action: string;
             fired: components["schemas"]["AnomalyItem"][];
         };
+        /**
+         * AssetSummaryContract
+         * @description GET 자산 요약 — 최근 PortfolioSnapshot + 진행/배치 갭 + 모드.
+         */
+        AssetSummary: {
+            /** Available */
+            available: boolean;
+            /**
+             * Date
+             * @default null
+             */
+            date: string | null;
+            /**
+             * Total Krw
+             * @default null
+             */
+            total_krw: string | null;
+            /**
+             * By Currency
+             * @default {}
+             */
+            by_currency: {
+                [key: string]: unknown;
+            };
+            /**
+             * Price As Of
+             * @default null
+             */
+            price_as_of: string | null;
+            /**
+             * Progress Gap
+             * @default null
+             */
+            progress_gap: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Allocation Gap
+             * @default null
+             */
+            allocation_gap: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Mode
+             * @default null
+             */
+            mode: string | null;
+        };
+        /** @enum {unknown} */
+        BlankEnum: "";
         BreadthCard: {
             universe: string;
             advance: number;
@@ -5948,9 +6737,259 @@ export interface components {
             regime: components["schemas"]["RegimeCard"] | null;
             breadth: components["schemas"]["BreadthCard"] | null;
             sector: components["schemas"]["SectorCard"] | null;
-            flow: components["schemas"]["FlowCard"] | null;
+            concentration: components["schemas"]["ConcentrationCard"] | null;
             brief: components["schemas"]["BriefCard"] | null;
         };
+        CashUpsertRequest: {
+            currency: components["schemas"]["CurrencyEnum"];
+            /** Format: decimal */
+            amount: string;
+        };
+        Claim: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            monitor: string;
+            /** @description 주장 */
+            assertion: string;
+            /**
+             * Format: date
+             * @description 마감
+             */
+            deadline?: string | null;
+            status?: components["schemas"]["ClaimStatusEnum"];
+            outcome?: components["schemas"]["OutcomeEnum"];
+            /**
+             * @description 시스템 제안 판정 (마감 전 없음)
+             *
+             *     * `validated` - Validated
+             *     * `partial` - Partial
+             *     * `invalidated` - Invalidated
+             *     * `expired` - 기한만료
+             */
+            readonly proposed_verdict: (components["schemas"]["ProposedVerdictEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** @description 마감 주체 */
+            readonly resolved_by: number | null;
+            /** @description 회고 요인 태그(고정 enum) */
+            readonly factor_tags: components["schemas"]["FactorTagsEnum"][];
+            /** @description 회고 선택 한 줄 */
+            readonly retro_memo: string;
+            /**
+             * @description 시나리오 모드(신규 매수/보유 관리/추가 매수)
+             *
+             *     * `new_entry` - 신규 매수
+             *     * `hold` - 보유 관리
+             *     * `add_on` - 추가 매수
+             */
+            scenario_type?: components["schemas"]["ScenarioTypeEnum"];
+            /**
+             * Format: decimal
+             * @description 진입가
+             */
+            entry_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 목표가(익절)
+             */
+            target_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 손절가
+             */
+            stop_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 매입가(확정 사실)
+             */
+            purchase_price?: string | null;
+            /**
+             * Format: date
+             * @description 매입일(보유 기간 원천)
+             */
+            purchase_date?: string | null;
+            /**
+             * Format: decimal
+             * @description 적정가 하단
+             */
+            fair_value_low?: string | null;
+            /**
+             * Format: decimal
+             * @description 적정가 상단
+             */
+            fair_value_high?: string | null;
+            /**
+             * @description 직전 가격 구간(전이 감지용)
+             *
+             *     * `exited` - 이탈
+             *     * `entry` - 진입 구간
+             *     * `approach` - 접근
+             *     * `waiting` - 관망
+             *     * `overheated` - 과열
+             */
+            readonly last_price_zone: (components["schemas"]["LastPriceZoneEnum"] | components["schemas"]["NullEnum"]) | null;
+            /**
+             * Format: date-time
+             * @description 진입 구간 최초 도달 시각(1회 기록)
+             */
+            readonly entry_reached_at: string | null;
+            readonly zone_display: string;
+            readonly closure_snapshot: string;
+            readonly evidences: components["schemas"]["ClaimEvidence"][];
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+        };
+        /**
+         * @description Claim 근거(자동형/수동형, RECON-SWAP-0813 PART 1). 쓰기는 별도 엔드포인트
+         *     (/api/v1/monitor/claim-evidences/)에서 — ClaimSerializer.evidences는 read-only nested.
+         */
+        ClaimEvidence: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            claim: string;
+            kind: components["schemas"]["ClaimEvidenceKindEnum"];
+            /**
+             * Format: uuid
+             * @description 자동형 대상 지표
+             */
+            indicator?: string | null;
+            /**
+             * @description 자동형 비교 연산자(raw_z 대상)
+             *
+             *     * `gte` - >=
+             *     * `lte` - <=
+             *     * `gt` - >
+             *     * `lt` - <
+             */
+            operator?: (components["schemas"]["OperatorEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            /**
+             * Format: double
+             * @description 자동형 임계값(raw_z 대상)
+             */
+            threshold?: number | null;
+            /** @description 자동형 유예 거래일 수(연속 위반 허용 한도) */
+            grace_days?: number;
+            /** @description 수동형 서술 */
+            description?: string;
+            /** @description 수동형 재확인 주기(일) */
+            recheck_period_days?: number;
+            /**
+             * Format: date
+             * @description 수동형 마지막 확인일
+             */
+            last_confirmed_at?: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `auto` - 자동(지표)
+         *     * `manual` - 수동(서술)
+         * @enum {string}
+         */
+        ClaimEvidenceKindEnum: "auto" | "manual";
+        /**
+         * @description Claim 근거(자동형/수동형, RECON-SWAP-0813 PART 1). 쓰기는 별도 엔드포인트
+         *     (/api/v1/monitor/claim-evidences/)에서 — ClaimSerializer.evidences는 read-only nested.
+         */
+        ClaimEvidenceRequest: {
+            /** Format: uuid */
+            claim: string;
+            kind: components["schemas"]["ClaimEvidenceKindEnum"];
+            /**
+             * Format: uuid
+             * @description 자동형 대상 지표
+             */
+            indicator?: string | null;
+            /**
+             * @description 자동형 비교 연산자(raw_z 대상)
+             *
+             *     * `gte` - >=
+             *     * `lte` - <=
+             *     * `gt` - >
+             *     * `lt` - <
+             */
+            operator?: (components["schemas"]["OperatorEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            /**
+             * Format: double
+             * @description 자동형 임계값(raw_z 대상)
+             */
+            threshold?: number | null;
+            /** @description 자동형 유예 거래일 수(연속 위반 허용 한도) */
+            grace_days?: number;
+            /** @description 수동형 서술 */
+            description?: string;
+            /** @description 수동형 재확인 주기(일) */
+            recheck_period_days?: number;
+            /**
+             * Format: date
+             * @description 수동형 마지막 확인일
+             */
+            last_confirmed_at?: string | null;
+        };
+        ClaimRequest: {
+            /** Format: uuid */
+            monitor: string;
+            /** @description 주장 */
+            assertion: string;
+            /**
+             * Format: date
+             * @description 마감
+             */
+            deadline?: string | null;
+            status?: components["schemas"]["ClaimStatusEnum"];
+            outcome?: components["schemas"]["OutcomeEnum"];
+            /**
+             * @description 시나리오 모드(신규 매수/보유 관리/추가 매수)
+             *
+             *     * `new_entry` - 신규 매수
+             *     * `hold` - 보유 관리
+             *     * `add_on` - 추가 매수
+             */
+            scenario_type?: components["schemas"]["ScenarioTypeEnum"];
+            /**
+             * Format: decimal
+             * @description 진입가
+             */
+            entry_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 목표가(익절)
+             */
+            target_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 손절가
+             */
+            stop_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 매입가(확정 사실)
+             */
+            purchase_price?: string | null;
+            /**
+             * Format: date
+             * @description 매입일(보유 기간 원천)
+             */
+            purchase_date?: string | null;
+            /**
+             * Format: decimal
+             * @description 적정가 하단
+             */
+            fair_value_low?: string | null;
+            /**
+             * Format: decimal
+             * @description 적정가 상단
+             */
+            fair_value_high?: string | null;
+        };
+        /**
+         * @description * `active` - Active
+         *     * `resolved` - Resolved
+         * @enum {string}
+         */
+        ClaimStatusEnum: "active" | "resolved";
         /**
          * CommentaryInputE1
          * @description E1 GARP 스코어링 input.
@@ -6740,45 +7779,71 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        ConcentrationCard: {
+            universe: string;
+            /** Format: double */
+            top5_weight: number;
+            /** Format: double */
+            top10_weight: number;
+            /** Format: double */
+            hhi: number;
+            top_holdings: components["schemas"]["ConcentrationHolding"][];
+        };
         ConcentrationHolding: {
             symbol: string;
             /** Format: double */
             weight: number;
         };
         /**
-         * @description * `warming_up` - Warming Up
-         *     * `active` - Active
-         *     * `strengthening` - Strengthening
-         *     * `weakening` - Weakening
-         *     * `critical` - Critical
-         *     * `expired` - Expired
-         *     * `needs_review` - Needs Review
-         *     * `paused` - Paused
+         * @description * `USD` - USD
+         *     * `KRW` - KRW
          * @enum {string}
          */
-        CurrentStateEnum: "warming_up" | "active" | "strengthening" | "weakening" | "critical" | "expired" | "needs_review" | "paused";
+        CurrencyEnum: "USD" | "KRW";
+        /**
+         * @description * `warming_up` - 데이터 수집 중
+         *     * `active` - 활성 관제 중
+         *     * `strengthening` - 강화 추세
+         *     * `weakening` - 약화 추세
+         *     * `critical` - 주의 필요
+         *     * `needs_review` - 점검 필요
+         *     * `expired` - 기간 만료
+         *     * `paused` - 일시정지
+         * @enum {string}
+         */
+        CurrentStateEnum: "warming_up" | "active" | "strengthening" | "weakening" | "critical" | "needs_review" | "expired" | "paused";
         /** @description 커스텀 JWT 토큰 시리얼라이저 - 토큰에 추가 정보 포함 */
         CustomTokenObtainPairRequest: {
             username: string;
             password: string;
         };
+        /** @description 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). sentence 품질 검증 없음(ADR §6). */
+        DecisionJournalEntry: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            claim: string;
+            kind: components["schemas"]["DecisionJournalEntryKindEnum"];
+            /** @description 결정 한 줄(검증 없음 — ADR §6) */
+            sentence: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         /**
-         * @description * `fmp` - FMP
-         *     * `fred` - FRED
-         *     * `news_sentiment` - News Sentiment
-         *     * `metrics` - Metrics
-         *     * `manual` - Manual
-         *     * `custom` - Custom
+         * @description * `close` - 마감
+         *     * `recommit` - 재커밋
+         *     * `hold` - 보류
          * @enum {string}
          */
-        DataSourceEnum: "fmp" | "fred" | "news_sentiment" | "metrics" | "manual" | "custom";
-        /**
-         * @description * `bearish` - Bearish
-         *     * `bullish` - Bullish
-         *     * `neutral` - Neutral
-         * @enum {string}
-         */
-        DirectionEnum: "bearish" | "bullish" | "neutral";
+        DecisionJournalEntryKindEnum: "close" | "recommit" | "hold";
+        /** @description 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). sentence 품질 검증 없음(ADR §6). */
+        DecisionJournalEntryRequest: {
+            /** Format: uuid */
+            claim: string;
+            kind: components["schemas"]["DecisionJournalEntryKindEnum"];
+            /** @description 결정 한 줄(검증 없음 — ADR §6) */
+            sentence: string;
+        };
         /** @description 엔티티 하이라이트 Serializer */
         EntityHighlight: {
             /** @description 하이라이트 텍스트 */
@@ -6807,33 +7872,242 @@ export interface components {
          */
         EntityTypeEnum: "equity" | "index" | "etf" | "cryptocurrency" | "currency" | "mutualfund";
         /**
-         * @description * `news` - Today Issue
-         *     * `free_input` - Free Input
-         *     * `popular` - Popular Thesis
-         *     * `template` - Template
-         *     * `chainsight` - Chain Sight
+         * @description * `timing` - 타이밍
+         *     * `ext_shock` - 외부 충격
+         *     * `indicator_noise` - 지표 노이즈
+         *     * `luck` - 운
          * @enum {string}
          */
-        EntrySourceEnum: "news" | "free_input" | "popular" | "template" | "chainsight";
-        FlowCard: {
-            universe: string;
+        FactorTagsEnum: "timing" | "ext_shock" | "indicator_noise" | "luck";
+        /**
+         * @description 목표 생성 요청(SLICE20BF2, POST). target·horizon 필수, risk·손잡이 선택.
+         *
+         *     범위 강제는 모델 계층(UserGoal.full_clean → validators + KNOB_RANGES)이 진실 소스 —
+         *     여기 선언은 스키마 앵커·형변환. 생성 단일 경로(D-f2-1), 중복 시 409(뷰).
+         */
+        GoalCreateRequest: {
+            /** Format: decimal */
+            target_return_pct: string;
+            horizon_months: number;
+            /** @default moderate */
+            risk_tolerance: components["schemas"]["RiskToleranceEnum"];
+            aggressiveness_offset?: number;
+            growth_boost?: number;
+            /** Format: decimal */
+            diversification_weight?: string;
+            concentration_limit?: number;
+            exploration_ratio?: number;
+        };
+        HoldingCreateRequest: {
+            symbol: string;
+            /** Format: decimal */
+            shares: string;
+            /** Format: decimal */
+            avg_cost: string;
+            /** Format: date */
+            first_bought_at?: string | null;
+            investment_thesis?: string;
+            /** Format: decimal */
+            acquisition_fx_rate?: string | null;
+        };
+        IndicatorReading: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            indicator: string;
             /** Format: double */
-            top5_weight: number;
+            value?: number | null;
+            /** Format: date-time */
+            asof: string;
+            validation_status?: components["schemas"]["ValidationStatusEnum"];
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        IndicatorReadingRequest: {
+            /** Format: uuid */
+            indicator: string;
             /** Format: double */
-            top10_weight: number;
-            /** Format: double */
-            hhi: number;
-            top_holdings: components["schemas"]["ConcentrationHolding"][];
+            value?: number | null;
+            /** Format: date-time */
+            asof: string;
+            validation_status?: components["schemas"]["ValidationStatusEnum"];
         };
         /**
-         * @description * `market_data` - Market Data
-         *     * `macro` - Macro Economic
-         *     * `sentiment` - News Sentiment
-         *     * `technical` - Technical
-         *     * `custom` - Custom
+         * @description * `market_data` - 시장 데이터
+         *     * `macro` - 거시경제
+         *     * `sentiment` - 뉴스 심리
+         *     * `technical` - 기술적 분석
+         *     * `custom` - 사용자 정의
          * @enum {string}
          */
         IndicatorTypeEnum: "market_data" | "macro" | "sentiment" | "technical" | "custom";
+        /**
+         * KnobsReadContract
+         * @description GET 손잡이 현재값 — UserGoal 5종 (읽기 전용, 쓰기는 20b).
+         */
+        KnobsRead: {
+            /** Available */
+            available: boolean;
+            /**
+             * Aggressiveness Offset
+             * @default null
+             */
+            aggressiveness_offset: number | null;
+            /**
+             * Growth Boost
+             * @default null
+             */
+            growth_boost: number | null;
+            /**
+             * Diversification Weight
+             * @default null
+             */
+            diversification_weight: string | null;
+            /**
+             * Concentration Limit
+             * @default null
+             */
+            concentration_limit: number | null;
+            /**
+             * Exploration Ratio
+             * @default null
+             */
+            exploration_ratio: number | null;
+        };
+        /**
+         * @description * `exited` - 이탈
+         *     * `entry` - 진입 구간
+         *     * `approach` - 접근
+         *     * `waiting` - 관망
+         *     * `overheated` - 과열
+         * @enum {string}
+         */
+        LastPriceZoneEnum: "exited" | "entry" | "approach" | "waiting" | "overheated";
+        /**
+         * LatestAdvisoryContract
+         * @description GET 최신 권유 — 최근 AdvisoryRun 산출 전문 + trigger + 실행 시각.
+         */
+        LatestAdvisory: {
+            /** Available */
+            available: boolean;
+            /**
+             * Trigger
+             * @default null
+             */
+            trigger: string | null;
+            /**
+             * Run At
+             * @default null
+             */
+            run_at: string | null;
+            /** @default null */
+            output: {
+                /** Mode */
+                mode: string;
+                /** SummaryContract */
+                summary: {
+                    /**
+                     * Goal Target Return Pct
+                     * @default null
+                     */
+                    goal_target_return_pct: string | null;
+                    /** Numeraire */
+                    numeraire: string;
+                    /** Cost Basis Note */
+                    cost_basis_note: string;
+                    /** DialContract */
+                    dial: {
+                        /** Dd */
+                        dd: string;
+                        /** A */
+                        a: string;
+                        /** Buffer */
+                        buffer: string;
+                        /** Is New High */
+                        is_new_high: boolean;
+                        /** Headroom Frac */
+                        headroom_frac: string;
+                        /** Deployable Krw Total */
+                        deployable_krw_total: string;
+                        /** Frozen */
+                        frozen: boolean;
+                        /** Window Days */
+                        window_days: number;
+                        /** By Currency */
+                        by_currency: {
+                            [key: string]: {
+                                /** Cash Krw */
+                                cash_krw: string;
+                                /** Buffer Share Krw */
+                                buffer_share_krw: string;
+                                /** Deployable Krw */
+                                deployable_krw: string;
+                                /** Headroom Ratio */
+                                headroom_ratio: string;
+                            };
+                        };
+                    };
+                    /** KnobsContract */
+                    knobs: {
+                        /** A */
+                        A: number;
+                        /** G */
+                        G: number;
+                        /** W */
+                        w: string;
+                        /** L */
+                        L: number;
+                        /** E */
+                        E: number;
+                    };
+                    /** @default null */
+                    max_concentration: {
+                        /** Symbol */
+                        symbol: string;
+                        /** Currency */
+                        currency: string;
+                        /** Weight */
+                        weight: string;
+                    } | null;
+                    /** Notes */
+                    notes: string[];
+                    /** Progress Gap */
+                    progress_gap: {
+                        [key: string]: unknown;
+                    };
+                    /** Allocation Gap */
+                    allocation_gap: {
+                        [key: string]: unknown;
+                    };
+                    /** Fx Context */
+                    fx_context: {
+                        [key: string]: unknown;
+                    };
+                } & {
+                    [key: string]: unknown;
+                };
+                /** Recommendations */
+                recommendations: {
+                    /** Action */
+                    action: string;
+                    /** Symbol */
+                    symbol: string;
+                    /** Currency */
+                    currency: string;
+                    /**
+                     * Score
+                     * @default null
+                     */
+                    score: string | null;
+                    /** Lane */
+                    lane: string;
+                    /** Rationale */
+                    rationale: string;
+                }[];
+                /** Disclaimer */
+                disclaimer: string;
+            } | null;
+        };
         /**
          * @description * `title` - Title
          *     * `main_text` - Main Text
@@ -6849,6 +8123,90 @@ export interface components {
             data_finalized: boolean;
             cache?: string;
         };
+        Monitor: {
+            /** Format: uuid */
+            readonly id: string;
+            scope: components["schemas"]["ScopeEnum"];
+            target_ref: string;
+            name: string;
+            status?: components["schemas"]["MonitorStatusEnum"];
+            readonly current_state: components["schemas"]["CurrentStateEnum"];
+            /** Format: date */
+            target_date_end?: string | null;
+            readonly resolved_label: string;
+            readonly latest_score: string;
+            readonly display: string;
+            readonly indicator_count: string;
+            readonly indicator_coverage: string;
+            readonly next_deadline: string;
+            readonly has_claim: string;
+            readonly close_suggested: boolean;
+            readonly danger_streak: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        MonitorIndicator: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            monitor: string;
+            name: string;
+            indicator_type: components["schemas"]["IndicatorTypeEnum"];
+            support_direction?: components["schemas"]["SupportDirectionEnum"];
+            /** Format: double */
+            weight?: number;
+            source_key?: string;
+            /** Format: double */
+            epsilon?: number | null;
+            window?: number | null;
+            /** Format: double */
+            decay?: number | null;
+            is_active?: boolean;
+            is_paused?: boolean;
+            /** Format: double */
+            override_score?: number | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        MonitorIndicatorRequest: {
+            /** Format: uuid */
+            monitor: string;
+            name: string;
+            indicator_type: components["schemas"]["IndicatorTypeEnum"];
+            support_direction?: components["schemas"]["SupportDirectionEnum"];
+            /** Format: double */
+            weight?: number;
+            source_key?: string;
+            /** Format: double */
+            epsilon?: number | null;
+            window?: number | null;
+            /** Format: double */
+            decay?: number | null;
+            is_active?: boolean;
+            is_paused?: boolean;
+            /** Format: double */
+            override_score?: number | null;
+        };
+        MonitorRequest: {
+            scope: components["schemas"]["ScopeEnum"];
+            target_ref: string;
+            name: string;
+            status?: components["schemas"]["MonitorStatusEnum"];
+            /** Format: date */
+            target_date_end?: string | null;
+        };
+        /**
+         * @description * `setting_up` - Setting Up
+         *     * `active` - Active
+         *     * `paused` - Paused
+         *     * `archived` - Archived
+         * @enum {string}
+         */
+        MonitorStatusEnum: "setting_up" | "active" | "paused" | "archived";
         /** @description 뉴스 상세용 Serializer */
         NewsArticleDetail: {
             /** Format: uuid */
@@ -7119,12 +8477,23 @@ export interface components {
         /** @enum {unknown} */
         NullEnum: null;
         /**
-         * @description * `correct` - Correct
-         *     * `incorrect` - Incorrect
-         *     * `neutral` - Neutral
+         * @description * `gte` - >=
+         *     * `lte` - <=
+         *     * `gt` - >
+         *     * `lt` - <
          * @enum {string}
          */
-        OutcomeEnum: "correct" | "incorrect" | "neutral";
+        OperatorEnum: "gte" | "lte" | "gt" | "lt";
+        /**
+         * @description * `pending` - Pending
+         *     * `validated` - Validated
+         *     * `partial` - Partial
+         *     * `invalidated` - Invalidated
+         *     * `inconclusive` - Inconclusive
+         *     * `expired` - 기한만료
+         * @enum {string}
+         */
+        OutcomeEnum: "pending" | "validated" | "partial" | "invalidated" | "inconclusive" | "expired";
         OverviewResponse: {
             /** meta */
             _meta: components["schemas"]["Meta"];
@@ -7132,6 +8501,7 @@ export interface components {
             news: components["schemas"]["NewsItem"][];
             anomaly: components["schemas"]["AnomalySection"];
             cards: components["schemas"]["Cards"];
+            translations?: components["schemas"]["Translations"] | null;
         };
         PaginatedNewsArticleListList: {
             /** @example 123 */
@@ -7148,44 +8518,192 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["NewsArticleList"][];
         };
-        PatchedThesisDetailRequest: {
-            title?: string;
+        /**
+         * @description Claim 근거(자동형/수동형, RECON-SWAP-0813 PART 1). 쓰기는 별도 엔드포인트
+         *     (/api/v1/monitor/claim-evidences/)에서 — ClaimSerializer.evidences는 read-only nested.
+         */
+        PatchedClaimEvidenceRequest: {
+            /** Format: uuid */
+            claim?: string;
+            kind?: components["schemas"]["ClaimEvidenceKindEnum"];
+            /**
+             * Format: uuid
+             * @description 자동형 대상 지표
+             */
+            indicator?: string | null;
+            /**
+             * @description 자동형 비교 연산자(raw_z 대상)
+             *
+             *     * `gte` - >=
+             *     * `lte` - <=
+             *     * `gt` - >
+             *     * `lt` - <
+             */
+            operator?: (components["schemas"]["OperatorEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            /**
+             * Format: double
+             * @description 자동형 임계값(raw_z 대상)
+             */
+            threshold?: number | null;
+            /** @description 자동형 유예 거래일 수(연속 위반 허용 한도) */
+            grace_days?: number;
+            /** @description 수동형 서술 */
             description?: string;
-            direction?: components["schemas"]["DirectionEnum"];
-            target?: string;
-            target_type?: components["schemas"]["TargetTypeEnum"];
-            expected_timeframe?: string;
-            expected_magnitude?: string;
-            /** Format: date */
-            target_date_start?: string | null;
-            /** Format: date */
-            target_date_end?: string | null;
-            thesis_type?: components["schemas"]["ThesisTypeEnum"];
-            entry_source?: components["schemas"]["EntrySourceEnum"];
+            /** @description 수동형 재확인 주기(일) */
+            recheck_period_days?: number;
+            /**
+             * Format: date
+             * @description 수동형 마지막 확인일
+             */
+            last_confirmed_at?: string | null;
         };
-        PatchedThesisIndicatorRequest: {
+        PatchedClaimRequest: {
+            /** Format: uuid */
+            monitor?: string;
+            /** @description 주장 */
+            assertion?: string;
+            /**
+             * Format: date
+             * @description 마감
+             */
+            deadline?: string | null;
+            status?: components["schemas"]["ClaimStatusEnum"];
+            outcome?: components["schemas"]["OutcomeEnum"];
+            /**
+             * @description 시나리오 모드(신규 매수/보유 관리/추가 매수)
+             *
+             *     * `new_entry` - 신규 매수
+             *     * `hold` - 보유 관리
+             *     * `add_on` - 추가 매수
+             */
+            scenario_type?: components["schemas"]["ScenarioTypeEnum"];
+            /**
+             * Format: decimal
+             * @description 진입가
+             */
+            entry_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 목표가(익절)
+             */
+            target_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 손절가
+             */
+            stop_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 매입가(확정 사실)
+             */
+            purchase_price?: string | null;
+            /**
+             * Format: date
+             * @description 매입일(보유 기간 원천)
+             */
+            purchase_date?: string | null;
+            /**
+             * Format: decimal
+             * @description 적정가 하단
+             */
+            fair_value_low?: string | null;
+            /**
+             * Format: decimal
+             * @description 적정가 상단
+             */
+            fair_value_high?: string | null;
+        };
+        /** @description 마감/재커밋 결정 일지 (RECON-SWAP-0813 PART 3-BE). sentence 품질 검증 없음(ADR §6). */
+        PatchedDecisionJournalEntryRequest: {
+            /** Format: uuid */
+            claim?: string;
+            kind?: components["schemas"]["DecisionJournalEntryKindEnum"];
+            /** @description 결정 한 줄(검증 없음 — ADR §6) */
+            sentence?: string;
+        };
+        PatchedHoldingUpdateRequest: {
+            /** Format: decimal */
+            shares?: string;
+            /** Format: decimal */
+            avg_cost?: string;
+            /** Format: date */
+            first_bought_at?: string;
+            investment_thesis?: string;
+            /** Format: decimal */
+            acquisition_fx_rate?: string | null;
+        };
+        PatchedIndicatorReadingRequest: {
+            /** Format: uuid */
+            indicator?: string;
+            /** Format: double */
+            value?: number | null;
+            /** Format: date-time */
+            asof?: string;
+            validation_status?: components["schemas"]["ValidationStatusEnum"];
+        };
+        /**
+         * @description 손잡이 5종 + 목표 수익률 부분 수정 요청(SLICE20B). 전부 optional(partial).
+         *
+         *     검증은 모델 계층(UserGoal.full_clean → validators + KNOB_RANGES)이 진실 소스 —
+         *     여기 선언은 스키마 앵커일 뿐, 범위 강제는 뷰에서 full_clean 경유(프론트 검증 대체 금지).
+         */
+        PatchedKnobsUpdateRequest: {
+            /** Format: decimal */
+            target_return_pct?: string;
+            aggressiveness_offset?: number;
+            growth_boost?: number;
+            /** Format: decimal */
+            diversification_weight?: string;
+            concentration_limit?: number;
+            exploration_ratio?: number;
+        };
+        PatchedMonitorIndicatorRequest: {
+            /** Format: uuid */
+            monitor?: string;
             name?: string;
             indicator_type?: components["schemas"]["IndicatorTypeEnum"];
-            data_source?: components["schemas"]["DataSourceEnum"];
-            data_params?: unknown;
             support_direction?: components["schemas"]["SupportDirectionEnum"];
             /** Format: double */
             weight?: number;
-            is_active?: boolean;
-            is_paused?: boolean;
-            /** Format: uuid */
-            premise?: string | null;
-            /** @description 이 지표가 가설에 추천된 이유 */
-            recommendation_reason?: string;
-        };
-        PatchedThesisPremiseRequest: {
-            content?: string;
-            category?: components["schemas"]["ThesisPremiseCategoryEnum"];
+            source_key?: string;
             /** Format: double */
-            weight?: number;
+            epsilon?: number | null;
+            window?: number | null;
+            /** Format: double */
+            decay?: number | null;
             is_active?: boolean;
             is_paused?: boolean;
-            order?: number;
+            /** Format: double */
+            override_score?: number | null;
+        };
+        PatchedMonitorRequest: {
+            scope?: components["schemas"]["ScopeEnum"];
+            target_ref?: string;
+            name?: string;
+            status?: components["schemas"]["MonitorStatusEnum"];
+            /** Format: date */
+            target_date_end?: string | null;
+        };
+        /**
+         * @description 교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). 쓰기는
+         *     /api/v1/monitor/swap-hold-logs/에서 — 횟수·누적일수는 조회 측(FE)이 이 로그를 집계.
+         */
+        PatchedSwapHoldLogRequest: {
+            /** Format: uuid */
+            claim?: string;
+            /** @description 검토 대상 후보 종목 심볼(대문자) */
+            candidate_ref?: string | null;
+            /**
+             * Format: decimal
+             * @description 보류 시점 보유 종목 가격(성과 앵커)
+             */
+            hold_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 보류 시점 후보 종목 가격(성과 앵커)
+             */
+            candidate_price?: string | null;
+            note?: string;
         };
         PathAction: {
             readonly id: number;
@@ -7200,6 +8718,14 @@ export interface components {
         };
         /** @enum {string} */
         PresetEnum: "garp" | "focused" | "income" | "growth" | "factor";
+        /**
+         * @description * `validated` - Validated
+         *     * `partial` - Partial
+         *     * `invalidated` - Invalidated
+         *     * `expired` - 기한만료
+         * @enum {string}
+         */
+        ProposedVerdictEnum: "validated" | "partial" | "invalidated" | "expired";
         RegimeCard: {
             regime: string;
             status: string;
@@ -7209,6 +8735,13 @@ export interface components {
             fired_rules: string[];
             transitioned: boolean;
         };
+        /**
+         * @description * `conservative` - conservative
+         *     * `moderate` - moderate
+         *     * `aggressive` - aggressive
+         * @enum {string}
+         */
+        RiskToleranceEnum: "conservative" | "moderate" | "aggressive";
         SavedPathCreate: {
             /** @description ticker 배열. 예: ["NVDA", "TSM", "ASML"] */
             path_nodes: unknown;
@@ -7275,6 +8808,22 @@ export interface components {
          * @enum {string}
          */
         SavedPathStatusEnum: "watching" | "active" | "archived" | "resolved";
+        /**
+         * @description * `new_entry` - 신규 매수
+         *     * `hold` - 보유 관리
+         *     * `add_on` - 추가 매수
+         * @enum {string}
+         */
+        ScenarioTypeEnum: "new_entry" | "hold" | "add_on";
+        /**
+         * @description * `market` - Market
+         *     * `sector` - Sector
+         *     * `theme` - Theme
+         *     * `fund` - Fund
+         *     * `stock` - Stock
+         * @enum {string}
+         */
+        ScopeEnum: "market" | "sector" | "theme" | "fund" | "stock";
         SectorCard: {
             leaders: components["schemas"]["SectorCardItem"][];
             laggards: components["schemas"]["SectorCardItem"][];
@@ -7309,231 +8858,60 @@ export interface components {
          */
         SourceEnum: "finnhub" | "marketaux" | "fmp" | "alpha_vantage";
         /**
-         * @description * `positive` - Positive
-         *     * `negative` - Negative
+         * @description * `positive` - 정방향(값↑ = 지지)
+         *     * `negative` - 역방향(값↓ = 지지)
          * @enum {string}
          */
         SupportDirectionEnum: "positive" | "negative";
         /**
-         * @description * `index` - Index
-         *     * `stock` - Stock
-         *     * `sector` - Sector
-         *     * `macro` - Macro
-         * @enum {string}
+         * @description 교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). 쓰기는
+         *     /api/v1/monitor/swap-hold-logs/에서 — 횟수·누적일수는 조회 측(FE)이 이 로그를 집계.
          */
-        TargetTypeEnum: "index" | "stock" | "sector" | "macro";
-        ThesisCreate: {
-            title: string;
-            description?: string;
-            direction: components["schemas"]["DirectionEnum"];
-            target: string;
-            target_type: components["schemas"]["TargetTypeEnum"];
-            expected_timeframe?: string;
-            expected_magnitude?: string;
-            /** Format: date */
-            target_date_start?: string | null;
-            /** Format: date */
-            target_date_end?: string | null;
-            thesis_type: components["schemas"]["ThesisTypeEnum"];
-            entry_source: components["schemas"]["EntrySourceEnum"];
-        };
-        ThesisCreateRequest: {
-            title: string;
-            description?: string;
-            direction: components["schemas"]["DirectionEnum"];
-            target: string;
-            target_type: components["schemas"]["TargetTypeEnum"];
-            expected_timeframe?: string;
-            expected_magnitude?: string;
-            /** Format: date */
-            target_date_start?: string | null;
-            /** Format: date */
-            target_date_end?: string | null;
-            thesis_type: components["schemas"]["ThesisTypeEnum"];
-            entry_source: components["schemas"]["EntrySourceEnum"];
-        };
-        ThesisDetail: {
+        SwapHoldLog: {
             /** Format: uuid */
             readonly id: string;
-            title: string;
-            description?: string;
-            direction: components["schemas"]["DirectionEnum"];
-            target: string;
-            target_type: components["schemas"]["TargetTypeEnum"];
-            expected_timeframe?: string;
-            expected_magnitude?: string;
-            /** Format: date */
-            target_date_start?: string | null;
-            /** Format: date */
-            target_date_end?: string | null;
-            thesis_type: components["schemas"]["ThesisTypeEnum"];
-            entry_source: components["schemas"]["EntrySourceEnum"];
-            readonly status: components["schemas"]["ThesisStatusEnum"];
-            readonly current_state: components["schemas"]["CurrentStateEnum"];
-            /** Format: double */
-            readonly current_score: number | null;
-            readonly outcome: (components["schemas"]["OutcomeEnum"] | components["schemas"]["NullEnum"]) | null;
-            readonly outcome_note: string;
-            readonly premises: components["schemas"]["ThesisPremiseInline"][];
-            readonly indicator_count: number;
-            readonly days_active: number;
-            /** Format: date-time */
-            readonly created_at: string;
-            /** Format: date-time */
-            readonly updated_at: string;
-            /** Format: date-time */
-            readonly closed_at: string | null;
-        };
-        ThesisDetailRequest: {
-            title: string;
-            description?: string;
-            direction: components["schemas"]["DirectionEnum"];
-            target: string;
-            target_type: components["schemas"]["TargetTypeEnum"];
-            expected_timeframe?: string;
-            expected_magnitude?: string;
-            /** Format: date */
-            target_date_start?: string | null;
-            /** Format: date */
-            target_date_end?: string | null;
-            thesis_type: components["schemas"]["ThesisTypeEnum"];
-            entry_source: components["schemas"]["EntrySourceEnum"];
-        };
-        ThesisIndicator: {
             /** Format: uuid */
-            readonly id: string;
-            name: string;
-            indicator_type: components["schemas"]["IndicatorTypeEnum"];
-            data_source: components["schemas"]["DataSourceEnum"];
-            data_params?: unknown;
-            support_direction: components["schemas"]["SupportDirectionEnum"];
-            /** Format: double */
-            weight?: number;
-            is_active?: boolean;
-            is_paused?: boolean;
-            /** Format: double */
-            readonly current_score: number | null;
-            /** Format: double */
-            readonly current_degree: number | null;
-            readonly current_color: string;
-            readonly current_label: string;
-            /** Format: uuid */
-            premise?: string | null;
-            /** Format: double */
-            readonly override_score: number | null;
-            readonly window: number;
-            /** Format: double */
-            readonly decay: number;
-            /** Format: double */
-            readonly epsilon: number;
-            /** @description 이 지표가 가설에 추천된 이유 */
-            recommendation_reason?: string;
-            /** Format: date-time */
-            readonly created_at: string;
-        };
-        ThesisIndicatorRequest: {
-            name: string;
-            indicator_type: components["schemas"]["IndicatorTypeEnum"];
-            data_source: components["schemas"]["DataSourceEnum"];
-            data_params?: unknown;
-            support_direction: components["schemas"]["SupportDirectionEnum"];
-            /** Format: double */
-            weight?: number;
-            is_active?: boolean;
-            is_paused?: boolean;
-            /** Format: uuid */
-            premise?: string | null;
-            /** @description 이 지표가 가설에 추천된 이유 */
-            recommendation_reason?: string;
-        };
-        ThesisList: {
-            /** Format: uuid */
-            readonly id: string;
-            title: string;
-            direction: components["schemas"]["DirectionEnum"];
-            target: string;
-            target_type: components["schemas"]["TargetTypeEnum"];
-            status?: components["schemas"]["ThesisStatusEnum"];
-            current_state?: components["schemas"]["CurrentStateEnum"];
-            /** Format: double */
-            current_score?: number | null;
-            thesis_type: components["schemas"]["ThesisTypeEnum"];
-            entry_source: components["schemas"]["EntrySourceEnum"];
-            readonly days_active: number;
-            /** Format: date-time */
-            readonly created_at: string;
-            /** Format: date-time */
-            readonly updated_at: string;
-        };
-        ThesisPremise: {
-            /** Format: uuid */
-            readonly id: string;
-            content: string;
-            category: components["schemas"]["ThesisPremiseCategoryEnum"];
-            /** Format: double */
-            weight?: number;
-            is_active?: boolean;
-            is_paused?: boolean;
-            order?: number;
-            /** Format: date-time */
-            readonly created_at: string;
+            claim: string;
+            /**
+             * Format: date-time
+             * @description 보류 클릭 시각
+             */
+            readonly held_at: string;
+            /** @description 검토 대상 후보 종목 심볼(대문자) */
+            candidate_ref?: string | null;
+            /**
+             * Format: decimal
+             * @description 보류 시점 보유 종목 가격(성과 앵커)
+             */
+            hold_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 보류 시점 후보 종목 가격(성과 앵커)
+             */
+            candidate_price?: string | null;
+            note?: string;
         };
         /**
-         * @description * `macro` - Macro
-         *     * `sector` - Sector
-         *     * `company` - Company
-         *     * `technical` - Technical
-         *     * `sentiment` - Sentiment
-         *     * `custom` - Custom
-         * @enum {string}
+         * @description 교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). 쓰기는
+         *     /api/v1/monitor/swap-hold-logs/에서 — 횟수·누적일수는 조회 측(FE)이 이 로그를 집계.
          */
-        ThesisPremiseCategoryEnum: "macro" | "sector" | "company" | "technical" | "sentiment" | "custom";
-        ThesisPremiseInline: {
+        SwapHoldLogRequest: {
             /** Format: uuid */
-            readonly id: string;
-            content: string;
-            category: components["schemas"]["ThesisPremiseCategoryEnum"];
-            /** Format: double */
-            weight?: number;
-            is_active?: boolean;
-            is_paused?: boolean;
-            order?: number;
+            claim: string;
+            /** @description 검토 대상 후보 종목 심볼(대문자) */
+            candidate_ref?: string | null;
+            /**
+             * Format: decimal
+             * @description 보류 시점 보유 종목 가격(성과 앵커)
+             */
+            hold_price?: string | null;
+            /**
+             * Format: decimal
+             * @description 보류 시점 후보 종목 가격(성과 앵커)
+             */
+            candidate_price?: string | null;
+            note?: string;
         };
-        ThesisPremiseInlineRequest: {
-            content: string;
-            category: components["schemas"]["ThesisPremiseCategoryEnum"];
-            /** Format: double */
-            weight?: number;
-            is_active?: boolean;
-            is_paused?: boolean;
-            order?: number;
-        };
-        ThesisPremiseRequest: {
-            content: string;
-            category: components["schemas"]["ThesisPremiseCategoryEnum"];
-            /** Format: double */
-            weight?: number;
-            is_active?: boolean;
-            is_paused?: boolean;
-            order?: number;
-        };
-        /**
-         * @description * `setting_up` - Setting Up
-         *     * `active` - Active
-         *     * `closed` - Closed
-         *     * `paused` - Paused
-         * @enum {string}
-         */
-        ThesisStatusEnum: "setting_up" | "active" | "closed" | "paused";
-        /**
-         * @description * `event` - Event-driven
-         *     * `trend` - Trend
-         *     * `comparison` - Comparison
-         *     * `divergence` - Divergence
-         *     * `custom` - Custom
-         * @enum {string}
-         */
-        ThesisTypeEnum: "event" | "trend" | "comparison" | "divergence" | "custom";
         TickerItem: {
             symbol: string;
             /** Format: double */
@@ -7549,6 +8927,29 @@ export interface components {
         TokenRefreshRequest: {
             refresh: string;
         };
+        /**
+         * @description Phase 1.5 S4 — 카드별 감각 유추(senses) envelope. cards와 별개 동렬 블록.
+         *
+         *     senses 키 = cards 키(regime/breadth/sector/concentration) 중 생성된 것만.
+         *     블록 자체가 null = 미생성, senses={} = 생성됐으나 0개(FE가 둘 다 '밴드만'으로 수렴).
+         */
+        Translations: {
+            senses: {
+                [key: string]: string;
+            };
+            model_version: string;
+            /** Format: date-time */
+            generated_at: string;
+            status: string;
+        };
+        /**
+         * @description * `ok` - 정상
+         *     * `extreme_jump_allowed` - 극단 점프 허용
+         *     * `rejected` - 기각
+         *     * `pending` - 대기
+         * @enum {string}
+         */
+        ValidationStatusEnum: "ok" | "extreme_jump_allowed" | "rejected" | "pending";
     };
     responses: never;
     parameters: never;
@@ -7558,6 +8959,42 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    api_credit_signals_strip_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    api_dashboard_news_strip_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_providers_cache_retrieve: {
         parameters: {
             query?: never;
@@ -7736,6 +9173,132 @@ export interface operations {
             };
         };
     };
+    advisory_knobs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnobsRead"];
+                };
+            };
+        };
+    };
+    advisory_knobs_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GoalCreateRequest"];
+                "multipart/form-data": components["schemas"]["GoalCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnobsRead"];
+                };
+            };
+        };
+    };
+    advisory_knobs_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedKnobsUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedKnobsUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedKnobsUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnobsRead"];
+                };
+            };
+        };
+    };
+    advisory_latest_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LatestAdvisory"];
+                };
+            };
+        };
+    };
+    advisory_run_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LatestAdvisory"];
+                };
+            };
+        };
+    };
+    advisory_summary_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetSummary"];
+                };
+            };
+        };
+    };
     chainsight_graph_retrieve: {
         parameters: {
             query?: never;
@@ -7825,6 +9388,154 @@ export interface operations {
             };
         };
     };
+    chainsight_centrality_top_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    chainsight_ego_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                symbol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    chainsight_events_retrieve: {
+        parameters: {
+            query?: {
+                /** @description 조회 날짜 (YYYY-MM-DD). 기본값: 최신 스냅샷 날짜. */
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    chainsight_events_stocks_retrieve: {
+        parameters: {
+            query?: {
+                /** @description 조회 날짜 (YYYY-MM-DD). 기본값: 최신 스냅샷 날짜. */
+                date?: string;
+                /** @description 주도주 지표 윈도우(20 또는 120). 기본값: 20. 그 외 값은 20으로 폴백. */
+                window?: number;
+            };
+            header?: never;
+            path: {
+                theme: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    chainsight_mindmap_card_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                symbol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    chainsight_mindmap_tree_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     chainsight_sector_graph_retrieve: {
         parameters: {
             query?: never;
@@ -7889,6 +9600,60 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    chainsight_theme_heat_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    chainsight_theme_heat_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                theme: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8151,6 +9916,24 @@ export interface operations {
             };
         };
     };
+    coach_analyst_scorecard_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     coach_e1_create: {
         parameters: {
             query?: never;
@@ -8319,7 +10102,7 @@ export interface operations {
             };
         };
     };
-    macro_calendar_retrieve: {
+    iron_trading_daily_context_retrieve: {
         parameters: {
             query?: never;
             header?: never;
@@ -8337,7 +10120,7 @@ export interface operations {
             };
         };
     };
-    macro_fear_greed_retrieve: {
+    iron_trading_daily_context_retrieve_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -8355,7 +10138,7 @@ export interface operations {
             };
         };
     };
-    macro_global_markets_retrieve: {
+    iron_trading_latest_trading_date_retrieve: {
         parameters: {
             query?: never;
             header?: never;
@@ -8373,25 +10156,7 @@ export interface operations {
             };
         };
     };
-    macro_inflation_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    macro_interest_rates_retrieve: {
+    iron_trading_latest_trading_date_retrieve_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -8410,24 +10175,6 @@ export interface operations {
         };
     };
     macro_pulse_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    macro_sectors_retrieve: {
         parameters: {
             query?: never;
             header?: never;
@@ -8481,7 +10228,106 @@ export interface operations {
             };
         };
     };
-    macro_vix_retrieve: {
+    monitor_alerts_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertEvent"][];
+                };
+            };
+        };
+    };
+    monitor_alerts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertEvent"];
+                };
+            };
+        };
+    };
+    monitor_alerts_read_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertEvent"];
+                };
+            };
+        };
+    };
+    monitor_alerts_read_all_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertEvent"];
+                };
+            };
+        };
+    };
+    monitor_alerts_summary_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertEvent"];
+                };
+            };
+        };
+    };
+    monitor_catalog_retrieve: {
         parameters: {
             query?: never;
             header?: never;
@@ -8496,6 +10342,1156 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    monitor_claim_evidences_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimEvidence"][];
+                };
+            };
+        };
+    };
+    monitor_claim_evidences_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimEvidenceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClaimEvidenceRequest"];
+                "multipart/form-data": components["schemas"]["ClaimEvidenceRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimEvidence"];
+                };
+            };
+        };
+    };
+    monitor_claim_evidences_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimEvidence"];
+                };
+            };
+        };
+    };
+    monitor_claim_evidences_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimEvidenceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClaimEvidenceRequest"];
+                "multipart/form-data": components["schemas"]["ClaimEvidenceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimEvidence"];
+                };
+            };
+        };
+    };
+    monitor_claim_evidences_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    monitor_claim_evidences_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedClaimEvidenceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedClaimEvidenceRequest"];
+                "multipart/form-data": components["schemas"]["PatchedClaimEvidenceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimEvidence"];
+                };
+            };
+        };
+    };
+    monitor_claims_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"][];
+                };
+            };
+        };
+    };
+    monitor_claims_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClaimRequest"];
+                "multipart/form-data": components["schemas"]["ClaimRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+        };
+    };
+    monitor_claims_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+        };
+    };
+    monitor_claims_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClaimRequest"];
+                "multipart/form-data": components["schemas"]["ClaimRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+        };
+    };
+    monitor_claims_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    monitor_claims_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedClaimRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedClaimRequest"];
+                "multipart/form-data": components["schemas"]["PatchedClaimRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+        };
+    };
+    monitor_claims_close_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClaimRequest"];
+                "multipart/form-data": components["schemas"]["ClaimRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+        };
+    };
+    monitor_claims_close_preview_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+        };
+    };
+    monitor_claims_evidence_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+        };
+    };
+    monitor_decision_journal_entries_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionJournalEntry"][];
+                };
+            };
+        };
+    };
+    monitor_decision_journal_entries_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionJournalEntryRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DecisionJournalEntryRequest"];
+                "multipart/form-data": components["schemas"]["DecisionJournalEntryRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionJournalEntry"];
+                };
+            };
+        };
+    };
+    monitor_decision_journal_entries_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionJournalEntry"];
+                };
+            };
+        };
+    };
+    monitor_decision_journal_entries_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionJournalEntryRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DecisionJournalEntryRequest"];
+                "multipart/form-data": components["schemas"]["DecisionJournalEntryRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionJournalEntry"];
+                };
+            };
+        };
+    };
+    monitor_decision_journal_entries_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    monitor_decision_journal_entries_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedDecisionJournalEntryRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedDecisionJournalEntryRequest"];
+                "multipart/form-data": components["schemas"]["PatchedDecisionJournalEntryRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionJournalEntry"];
+                };
+            };
+        };
+    };
+    monitor_indicators_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonitorIndicator"][];
+                };
+            };
+        };
+    };
+    monitor_indicators_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MonitorIndicatorRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["MonitorIndicatorRequest"];
+                "multipart/form-data": components["schemas"]["MonitorIndicatorRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonitorIndicator"];
+                };
+            };
+        };
+    };
+    monitor_indicators_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonitorIndicator"];
+                };
+            };
+        };
+    };
+    monitor_indicators_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MonitorIndicatorRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["MonitorIndicatorRequest"];
+                "multipart/form-data": components["schemas"]["MonitorIndicatorRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonitorIndicator"];
+                };
+            };
+        };
+    };
+    monitor_indicators_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    monitor_indicators_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedMonitorIndicatorRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedMonitorIndicatorRequest"];
+                "multipart/form-data": components["schemas"]["PatchedMonitorIndicatorRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonitorIndicator"];
+                };
+            };
+        };
+    };
+    monitor_monitors_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Monitor"][];
+                };
+            };
+        };
+    };
+    monitor_monitors_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MonitorRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["MonitorRequest"];
+                "multipart/form-data": components["schemas"]["MonitorRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Monitor"];
+                };
+            };
+        };
+    };
+    monitor_monitors_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Monitor"];
+                };
+            };
+        };
+    };
+    monitor_monitors_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MonitorRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["MonitorRequest"];
+                "multipart/form-data": components["schemas"]["MonitorRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Monitor"];
+                };
+            };
+        };
+    };
+    monitor_monitors_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    monitor_monitors_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedMonitorRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedMonitorRequest"];
+                "multipart/form-data": components["schemas"]["PatchedMonitorRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Monitor"];
+                };
+            };
+        };
+    };
+    monitor_monitors_advisor_notes_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Monitor"];
+                };
+            };
+        };
+    };
+    monitor_monitors_evaluate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MonitorRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["MonitorRequest"];
+                "multipart/form-data": components["schemas"]["MonitorRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Monitor"];
+                };
+            };
+        };
+    };
+    monitor_monitors_snapshots_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Monitor"];
+                };
+            };
+        };
+    };
+    monitor_monitors_sparkline_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Monitor"];
+                };
+            };
+        };
+    };
+    monitor_readings_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndicatorReading"][];
+                };
+            };
+        };
+    };
+    monitor_readings_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IndicatorReadingRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["IndicatorReadingRequest"];
+                "multipart/form-data": components["schemas"]["IndicatorReadingRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndicatorReading"];
+                };
+            };
+        };
+    };
+    monitor_readings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndicatorReading"];
+                };
+            };
+        };
+    };
+    monitor_readings_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IndicatorReadingRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["IndicatorReadingRequest"];
+                "multipart/form-data": components["schemas"]["IndicatorReadingRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndicatorReading"];
+                };
+            };
+        };
+    };
+    monitor_readings_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    monitor_readings_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedIndicatorReadingRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedIndicatorReadingRequest"];
+                "multipart/form-data": components["schemas"]["PatchedIndicatorReadingRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndicatorReading"];
+                };
+            };
+        };
+    };
+    monitor_scenario_suggest_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    monitor_swap_hold_logs_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapHoldLog"][];
+                };
+            };
+        };
+    };
+    monitor_swap_hold_logs_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapHoldLogRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SwapHoldLogRequest"];
+                "multipart/form-data": components["schemas"]["SwapHoldLogRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapHoldLog"];
+                };
+            };
+        };
+    };
+    monitor_swap_hold_logs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapHoldLog"];
+                };
+            };
+        };
+    };
+    monitor_swap_hold_logs_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapHoldLogRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SwapHoldLogRequest"];
+                "multipart/form-data": components["schemas"]["SwapHoldLogRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapHoldLog"];
+                };
+            };
+        };
+    };
+    monitor_swap_hold_logs_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    monitor_swap_hold_logs_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSwapHoldLogRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSwapHoldLogRequest"];
+                "multipart/form-data": components["schemas"]["PatchedSwapHoldLogRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapHoldLog"];
+                };
             };
         };
     };
@@ -10974,6 +13970,26 @@ export interface operations {
             };
         };
     };
+    stocks_api_analyst_signals_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                symbol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     stocks_api_balance_sheet_retrieve: {
         parameters: {
             query?: never;
@@ -11700,499 +14716,7 @@ export interface operations {
             };
         };
     };
-    thesis_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisList"][];
-                };
-            };
-        };
-    };
-    thesis_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ThesisCreateRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["ThesisCreateRequest"];
-                "multipart/form-data": components["schemas"]["ThesisCreateRequest"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisCreate"];
-                };
-            };
-        };
-    };
-    thesis_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description thesis을 식별하는 UUID 문자열. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisDetail"];
-                };
-            };
-        };
-    };
-    thesis_partial_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description thesis을 식별하는 UUID 문자열. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["PatchedThesisDetailRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedThesisDetailRequest"];
-                "multipart/form-data": components["schemas"]["PatchedThesisDetailRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisDetail"];
-                };
-            };
-        };
-    };
-    thesis_close_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description thesis을 식별하는 UUID 문자열. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ThesisDetailRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["ThesisDetailRequest"];
-                "multipart/form-data": components["schemas"]["ThesisDetailRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisDetail"];
-                };
-            };
-        };
-    };
-    thesis_dashboard_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    thesis_indicators_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisIndicator"][];
-                };
-            };
-        };
-    };
-    thesis_indicators_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ThesisIndicatorRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["ThesisIndicatorRequest"];
-                "multipart/form-data": components["schemas"]["ThesisIndicatorRequest"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisIndicator"];
-                };
-            };
-        };
-    };
-    thesis_indicators_readings_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                indicator_id: string;
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    thesis_indicators_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description thesis indicator을 식별하는 UUID 문자열. */
-                id: string;
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisIndicator"];
-                };
-            };
-        };
-    };
-    thesis_indicators_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description thesis indicator을 식별하는 UUID 문자열. */
-                id: string;
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ThesisIndicatorRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["ThesisIndicatorRequest"];
-                "multipart/form-data": components["schemas"]["ThesisIndicatorRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisIndicator"];
-                };
-            };
-        };
-    };
-    thesis_indicators_destroy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description thesis indicator을 식별하는 UUID 문자열. */
-                id: string;
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    thesis_indicators_partial_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description thesis indicator을 식별하는 UUID 문자열. */
-                id: string;
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["PatchedThesisIndicatorRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedThesisIndicatorRequest"];
-                "multipart/form-data": components["schemas"]["PatchedThesisIndicatorRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisIndicator"];
-                };
-            };
-        };
-    };
-    thesis_indicators_auto_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ThesisIndicatorRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["ThesisIndicatorRequest"];
-                "multipart/form-data": components["schemas"]["ThesisIndicatorRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisIndicator"];
-                };
-            };
-        };
-    };
-    thesis_premises_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisPremise"][];
-                };
-            };
-        };
-    };
-    thesis_premises_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ThesisPremiseRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["ThesisPremiseRequest"];
-                "multipart/form-data": components["schemas"]["ThesisPremiseRequest"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisPremise"];
-                };
-            };
-        };
-    };
-    thesis_premises_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description thesis premise을 식별하는 UUID 문자열. */
-                id: string;
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisPremise"];
-                };
-            };
-        };
-    };
-    thesis_premises_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description thesis premise을 식별하는 UUID 문자열. */
-                id: string;
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ThesisPremiseRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["ThesisPremiseRequest"];
-                "multipart/form-data": components["schemas"]["ThesisPremiseRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisPremise"];
-                };
-            };
-        };
-    };
-    thesis_premises_destroy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description thesis premise을 식별하는 UUID 문자열. */
-                id: string;
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    thesis_premises_partial_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description thesis premise을 식별하는 UUID 문자열. */
-                id: string;
-                thesis_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["PatchedThesisPremiseRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedThesisPremiseRequest"];
-                "multipart/form-data": components["schemas"]["PatchedThesisPremiseRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThesisPremise"];
-                };
-            };
-        };
-    };
-    thesis_alerts_retrieve: {
+    telemetry_coverage_retrieve: {
         parameters: {
             query?: never;
             header?: never;
@@ -12210,81 +14734,7 @@ export interface operations {
             };
         };
     };
-    thesis_alerts_read_partial_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                aid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    thesis_conversation_news_issues_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    thesis_conversation_respond_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    thesis_conversation_start_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    thesis_conversation_suggest_create: {
+    telemetry_impressions_create: {
         parameters: {
             query?: never;
             header?: never;
@@ -13363,12 +15813,160 @@ export interface operations {
             };
         };
     };
+    wallet_cash_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    wallet_cash_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashUpsertRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CashUpsertRequest"];
+                "multipart/form-data": components["schemas"]["CashUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    wallet_cash_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    wallet_holdings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    wallet_holdings_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoldingCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["HoldingCreateRequest"];
+                "multipart/form-data": components["schemas"]["HoldingCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    wallet_holdings_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    wallet_holdings_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedHoldingUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedHoldingUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedHoldingUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     market_pulse_cards_detail_retrieve: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                card_id: "breadth" | "brief" | "flow" | "regime" | "sector";
+                card_id: "breadth" | "brief" | "concentration" | "regime" | "sector";
             };
             cookie?: never;
         };
@@ -13516,6 +16114,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OverviewResponse"];
+                };
+            };
+        };
+    };
+    market_pulse_regime_analog_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    market_pulse_regime_stress_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    market_pulse_regime_zscore_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };

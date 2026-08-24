@@ -417,3 +417,164 @@ def score_tier1(as_of: date, symbols=None) -> dict:
             }
         result["cohorts"][cohort] = entry
     return result
+
+
+# ============================================================
+# D1-SCOREBOARD Part 1 — 성적판 read 표면 (compute-on-read, 순수 함수)
+# ============================================================
+# 성적판은 기존 집계(score_tier1)와 별개의 '신호별 상세' 뷰다. 위 Tier1 집계 함수를
+# 무접촉(행위보존)으로 두고, 동일 순수 코어(load_scoring_inputs·resolve_realized·
+# cross_sectional_ic·_sign)만 재사용해 신호 단위로 재조립한다. DB 쓰기 0.
+# significance_threshold = 방향 적중 표본이 이 수 미만이면 '참고용'으로 표기(통계적
+# 유의성 최소 표본 근사). 값은 계약 상수(디렉터 확정).
+SCOREBOARD_SIGNIFICANCE_THRESHOLD = 60
+
+
+def _direction_label(spot, target) -> Optional[str]:
+    """예측 방향 라벨 = sign(target − spot). target/spot 부재 시 None(방향 판정 불가)."""
+    if spot is None or target is None:
+        return None
+    return {1: "up", -1: "down", 0: "flat"}[_sign(target - spot)]
+
+
+def _est_maturity_date(capture_date: date, h: int) -> date:
+    """immature 신호의 만기 추정일(거래일 → 달력 근사, W3 정책과 동일 계수)."""
+    return capture_date + timedelta(days=round(h * _CAL_PER_TD))
+
+
+def _scorecard_signal(p: "Prediction", bars, splits, h: int, as_of: date) -> dict:
+    """신호 1건(Prediction) → 성적판 표시 dict. resolve_realized 재사용."""
+    status, rdate, rclose = resolve_realized(
+        bars.get(p.symbol, []), p.capture_date, h, as_of, splits.get(p.symbol, [])
+    )
+    direction = _direction_label(p.spot, p.target_consensus)
+    entry = {
+        "direction": direction,
+        "captured_at": p.capture_date.isoformat(),
+        "spot_at_capture": float(p.spot) if p.spot is not None else None,
+        "target_price": float(p.target_consensus) if p.target_consensus is not None else None,
+        "maturity_date": None,
+        "status": None,
+        "realized": None,
+        "unscoreable_reason": None,
+        "pending_d_day": None,
+        "cohort": p.cohort,  # additive — derived(파생 spot) 캐비앗 표기용
+    }
+    if status == "ok":
+        entry["status"] = "scored"
+        entry["maturity_date"] = rdate.isoformat()
+        spot = p.spot
+        ret_pct = float((rclose - spot) / spot * 100) if spot else None
+        pred_move = (p.target_consensus - spot) if p.target_consensus is not None else None
+        tp_pct = (
+            float((rclose - spot) / pred_move * 100)
+            if pred_move not in (None, 0)
+            else None
+        )
+        if direction in ("up", "down"):
+            pred_dir = 1 if direction == "up" else -1
+            verdict = "hit" if _sign(rclose - spot) == pred_dir else "miss"
+        else:
+            verdict = "flat"  # 유지(방향 0)·방향불명 = 적중 판정 대상 아님(0-5 ①)
+        entry["realized"] = {
+            "close": float(rclose),
+            "return_pct": round(ret_pct, 2) if ret_pct is not None else None,
+            "target_progress_pct": round(tp_pct, 2) if tp_pct is not None else None,
+            "verdict": verdict,
+        }
+    elif status == "immature":
+        entry["status"] = "pending"
+        est = _est_maturity_date(p.capture_date, h)
+        entry["maturity_date"] = est.isoformat()
+        entry["pending_d_day"] = (est - as_of).days
+    else:  # unscoreable:*
+        entry["status"] = "unscoreable"
+        entry["unscoreable_reason"] = status.split(":", 1)[1] if ":" in status else status
+    return entry
+
+
+def build_scorecard(as_of: date, h: int, symbols=None) -> dict:
+    """성적판 payload (compute-on-read). h거래일 지평.
+
+    전역 read: user 스코프 없음(모든 AnalystSignalSnapshot 대상, symbols 필터는 테스트용).
+    코호트(pinned/derived) 전건을 신호 단위로 표시하되 각 신호에 cohort 태그 부착.
+    board 집계는 status=scored 신호에서 산출(방향 적중은 방향 up/down만 분모).
+    computed_at은 뷰가 캐시 저장 직전 주입(순수성 유지 — 여기선 미포함).
+    """
+    predictions, bars, splits, counts = load_scoring_inputs(as_of, symbols)
+    splits_rows = sum(len(v) for v in splits.values())
+    splits_max = max((d for v in splits.values() for d in v), default=None)
+
+    by_symbol: dict[str, list] = defaultdict(list)
+    for p in predictions:
+        by_symbol[p.symbol].append(p)
+
+    board_hits = board_total = 0
+    board_tp: list[float] = []
+    total_scored = 0
+    symbols_out = []
+    for sym in sorted(by_symbol):
+        s_scored = s_pending = s_unscoreable = 0
+        s_hits = s_total = 0
+        s_tp: list[float] = []
+        sig_list = []
+        for p in sorted(by_symbol[sym], key=lambda x: x.capture_date):
+            entry = _scorecard_signal(p, bars, splits, h, as_of)
+            sig_list.append(entry)
+            if entry["status"] == "scored":
+                s_scored += 1
+                total_scored += 1
+                r = entry["realized"]
+                if r["verdict"] in ("hit", "miss"):
+                    s_total += 1
+                    board_total += 1
+                    if r["verdict"] == "hit":
+                        s_hits += 1
+                        board_hits += 1
+                if r["target_progress_pct"] is not None:
+                    s_tp.append(r["target_progress_pct"])
+                    board_tp.append(r["target_progress_pct"])
+            elif entry["status"] == "pending":
+                s_pending += 1
+            else:
+                s_unscoreable += 1
+        symbols_out.append(
+            {
+                "symbol": sym,
+                "counts": {"scored": s_scored, "pending": s_pending, "unscoreable": s_unscoreable},
+                "hit": {"hits": s_hits, "total": s_total} if s_total else None,
+                "avg_target_progress": round(sum(s_tp) / len(s_tp), 2) if s_tp else None,
+                "signals": sig_list,
+            }
+        )
+
+    # ③ 횡단면 IC = 공유 함수 재사용(주간 코호트 Spearman). 표본 미도달 시 null+사유.
+    ic = cross_sectional_ic(predictions, bars, as_of, horizons=(h,), splits_by_symbol=splits)[h]
+    if ic["cohorts_scored"] == 0:
+        ic_value = None
+        ic_reason = "표본 미도달" + (
+            f" — 최초 만기 {ic['earliest_maturity_est']}" if ic["earliest_maturity_est"] else ""
+        )
+    else:
+        ic_value = round(ic["mean_ic"], 4) if ic["mean_ic"] is not None else None
+        ic_reason = None if ic_value is not None else ic["caveat"]
+
+    return {
+        "as_of": as_of.isoformat(),
+        "horizon": h,
+        "reproduction": reproduction_header(
+            as_of,
+            counts,
+            splits_input_rows=splits_rows,
+            splits_max_date=splits_max.isoformat() if splits_max else None,
+        ),
+        "board": {
+            "sample_n": total_scored,
+            "significance_threshold": SCOREBOARD_SIGNIFICANCE_THRESHOLD,
+            "direction_hit": {"hits": board_hits, "total": board_total},
+            "avg_target_progress": round(sum(board_tp) / len(board_tp), 2) if board_tp else None,
+            "cross_sectional_ic": ic_value,
+            "cross_sectional_ic_reason": ic_reason,  # additive — null 시 사유
+        },
+        "symbols": symbols_out,
+    }

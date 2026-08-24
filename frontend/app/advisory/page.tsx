@@ -16,6 +16,7 @@ import { ExpectedReturnSlot } from '@/components/advisory/ExpectedReturnSlot'
 import { GoalOnboardingCard } from '@/components/advisory/GoalOnboardingCard'
 import { KnobsPanel } from '@/components/advisory/KnobsPanel'
 import { RecommendationCard } from '@/components/advisory/RecommendationCard'
+import { ScorecardSection } from '@/components/scorecard/ScorecardSection'
 import {
   useAdvisoryKnobs,
   useAdvisorySummary,
@@ -150,6 +151,13 @@ function AdvisoryPageContent() {
       {!isLoading && !isError && (
         <div className="mt-6">
           <DeepDiveSection />
+        </div>
+      )}
+
+      {/* 애널리스트 성적판 (D1-SCOREBOARD) — 전역 read, advisory 상태와 독립. 자립 승격 전제. */}
+      {!isLoading && !isError && (
+        <div className="mt-6">
+          <ScorecardSection />
         </div>
       )}
     </div>

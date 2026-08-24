@@ -1561,3 +1561,11 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **원인**: HEAD:main 직행 push 체계는 세션 브랜치에 **upstream을 남기지 않는다**(`push -u` 미사용). upstream 없으면 `git branch -d`는 **명령 실행 트리의 현재 HEAD** 기준으로만 머지 판정. primary 체크아웃이 stale 브랜치(예 `cca67275`)에 정체돼 있으면 그 HEAD가 브랜치를 미포함 → **미머지 오탐**.
 
 **해소**: `git branch --set-upstream-to=origin/main <브랜치>` 후 `git branch -d <브랜치>` 재시도 → `-d`가 **origin/main 기준 머지 판정**(브랜치가 조상=포함) → force 없이 삭제. 또는 origin/main 체크아웃 트리에서 실행. **`-D` 전환 절대 금지**(손실 0 실측은 진행 근거 아님 — D-BRANCH-DELETE-MANUAL 상호 참조). cf. #104(-d 거부=HALT 신호)·#107(첫 수=원인 규명). -D 통산 0회 유지 실증.
+
+## drf-spectacular OpenApiSerializerExtension target_class가 pre-monorepo 경로면 컴포넌트 무음 드롭 (채번 대기, D1-SCOREBOARD 2026-08-20) [openapi][monorepo][frontend]
+
+**증상**: `manage.py spectacular` 재생성 시 `CoachE1~E6` 등 명명 컴포넌트가 스키마에서 **경고 없이 사라짐**. 커밋된 (stale) schema.yml에는 있었으나 재생성본에는 path만 남고 `responses: No response body`. FE `lib/coach/types.ts`가 `Schemas['CoachE1Response']`를 참조 → tsc가 phantom 참조로 대량 실패(coach 6페이지·hooks·api·9 테스트 전파).
+
+**원인**: 스키마는 passthrough 앵커 serializer + `OpenApiSerializerExtension`(target_class 문자열 매칭)으로 명명 컴포넌트를 방출한다. 모노레포 이전 후 `openapi_extensions.py`의 target_class가 구 경로 `portfolio.api.serializers.*` 잔존 → serializer 실제 `__module__`(`apps.portfolio.api.serializers.*`)과 불일치 → extension 미매칭 → 컴포넌트 무음 드롭. `advisory_schema.py`는 이미 `apps.` 접두라 정상(대조).
+
+**해소**: extension target_class = **serializer의 실제 `__module__` 전체 경로**(모노레포 `apps.` 접두 필수). 재생성 전 `git show HEAD:schema.yml | grep -c <컴포넌트>` vs 재생성본 대조로 드롭 선탐지. 규칙은 이미 memory `reference` + `advisory_schema.py` 주석에 명시 — 신규 extension 추가 시 준수. cf. DECISIONS D-COACH-SCHEMA-EXT-PATH.

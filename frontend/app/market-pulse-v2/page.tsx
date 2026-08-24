@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { useOverview } from '@/hooks/useMarketPulseV2'
+import { useOverview, useRegimeStress } from '@/hooks/useMarketPulseV2'
 import { useMarketPulseI18n, translate } from '@/lib/i18n/marketPulse'
 
 import { AnomalyPanel } from './components/AnomalyPanel'
@@ -35,6 +35,10 @@ const CARD_TITLE: Record<CardId, string> = {
 export default function MarketPulseV2Page() {
   const { data: overview, isLoading, isError, refetch } = useOverview()
   const { data: i18n } = useMarketPulseI18n()
+  // C-lite(1.6-S0): StressCardContainer와 동일 키(useRegimeStress) → react-query dedup으로
+  // 중복 fetch 없이 level_band 공유. available=false·band 없음이면 배지 미표시(부재 = null).
+  const { data: stressEnv } = useRegimeStress(true)
+  const stressBand = stressEnv?.data?.available ? (stressEnv.data.level_band ?? null) : null
   const labels = i18n?.labels
   const [openCard, setOpenCard] = useState<CardId | null>(null)
   // MP2-TREND S2(D-TREND-EMPHASIS 옵션 B): 델타→섹터 진입 시 강조 컨텍스트. 직접 진입/닫기 시 클리어(무영향).
@@ -82,6 +86,7 @@ export default function MarketPulseV2Page() {
             labels={labels}
             onOpen={() => setOpenCard('regime')}
             sense={selectSense(translations, 'regime')}
+            stressBand={stressBand}
           />
         </div>
 

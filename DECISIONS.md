@@ -8,6 +8,56 @@
 
 ---
 
+## [2026-08-20] D-P16-ENTRY — Phase 1.6 착수 = C-lite 히어로 배지 선착지 (가안) [marketpulse][frontend][process]
+
+**결정 (가안 채택)**: Phase 1.6 착수 순서 = **C-lite 선착지**(홈 히어로에 스트레스 상태 배지) → 그 위에서 플레이북 본론(체인 정의) 결정. 퀀트 4.20 > 3.50 > 3.40, 마진 0.70. 타이브레이커 = **"결정은 실측 위에서"** — C-lite를 착지시키며 플레이북 엔진 지형을 겸사 정찰해 다음 결정 사이클(체인 정의)의 실측 재료를 확보.
+
+**Why**: 플레이북 체인은 "무엇을 조건으로 삼을 수 있는가"의 엔진/신호 지형이 확정돼야 설계 가능. C-lite는 그 자체로 사용자 가치(홈 최상단 스트레스 축 인지, 스크롤 불요)이면서 착지 비용이 낮아(FE-only·백엔드 0) 정찰과 병행하기 최적. C-lite 구현 원칙 = 판단 로직 신설 0(백엔드 level_band 그대로)·색 하드코딩 0(stressAlert 토큰 재사용)·가산(기존 StressCard 무변경).
+
+**How to apply**: 배지 = `StressHeroBadge`(신규 소품) + RegimeCardSummary 옵셔널 prop `stressBand`(가산). 데이터 = page가 `useRegimeStress`(StressCard와 동일 키·react-query dedup) → 중복 fetch 0. 부재/스테일(available=false) 시 미렌더. 색·라벨 = `stressAlert`(D-MPS-COLOR/D-MPS-BAND-NAME) 재사용. 플레이북 본론(체인 정의)은 별도 결정 사이클(TASKQUEUE `P16-PLAYBOOK-CHAIN`, 정찰 재료 첨부). cf. [[project_mp_stress_track]].
+
+## [2026-08-20] D-SCANNER-SELECT-UX — dashboard 스캐너 선별 UX 재설계 (직교 5축·정칙 v2.1·경로 ㉮) [dashboard][platform][recommendation]
+
+**결정 (목표 상태 = 정보안 C · 경로 = ㉮ 단계출시)**: dashboard 스캐너 = 추천 시스템의 핵심 선별 퍼널. 화면 원리 = **"관심 유발 = 독립(직교) 축의 합류"**. **직교 5축** = 기술(카테고리 합류·RSI·52주 위치·MA) / 가치평가(비교군 명시 상대 밸류) / 퀄리티(ROE·성장·부채) / 관계(RelationConfidence 강도 우선) / 뉴스·이력. 각 축 = 행 칩 1개 + 패널 상세 칸. **합류 정의 = 카테고리 축 단위**(원시 신호 개수 아님·tagger 6카테고리 정본) — 가격 파생 신호(P1~P4) 상관 중복 배제가 목적.
+
+**가중합 기록**: 정보안 **B 4.65 / A 4.10 / C 3.65**(마진 0.55 → 사용자 확인 08-20) · 경로 **㉮ 단계출시 4.40 / ㉯ 직행 2.65**(마진 1.75 → 자동 결정). 최종 = 목표 상태 **C** · 경로 **㉮**(① FE → ② shared BE 보강 → ③ 관계·이력).
+
+**렌더링 정칙 v2.1 (7건·스트레스 테스트 NVDA/IREN류 가정 산출)**:
+- ⑴ **결측 정칙** — 데이터 없는 축은 칩 조용히 생략, 패널에만 "미커버" 명시. 결측을 '나쁨'으로 렌더 금지(audit-absent 강건성 원칙의 정보판).
+- ⑵ **서술 비처방** — 지표 라벨은 상태 서술만("RSI 72 · 과열권"), 매매 암시 금지.
+- ⑶ **비교군 명시** — 상대 밸류는 비교군 문구 동반("반도체 중앙값 38 대비 +37%"), industry 우선·표본 부족 시 sector 폴백(표기).
+- ⑷ **상태어 전환** — 음수 베이스 성장률 % 숨김("흑자 전환"/"적자 지속"), 적자 시 PER 대신 "적자 · PSR" 폴백.
+- ⑸ **합류 배지-체급 문맥 결박** — 배지는 거래대금·시총과 동일 시야 강제, 필터에 거래대금 하한 기본 제공, ②단계 변동성 칩 추가.
+- ⑹ **관계 축 강도 우선** — "상위 truth_score · 건수" 순(허브 편향 방어).
+- ⑺ **체급 티어 내 백분위** — ②단계 BE 계약 결정 사안으로 위임.
+
+**정직성 한 줄(고정·사용자 승인)**: 패널 하단 "신호는 주목 후보를 고르는 렌즈이며 수익을 보장하지 않음".
+
+**Why**: 스캐너 "너무 많고 정보 부족" 피드백(RECON-SCANNER-UX-R1)의 근본 = 가격 파생 신호(P1~P4) 상관 중복이 관심 축을 부풀림. 직교 축 합류 = 독립 정보의 수렴만 배지화 → 노이즈 감소. 경로 ㉮(FE 선행, 마진 1.75 자동)는 shared BE 보강 전에 보유 데이터로 즉시 화면 개선 가능.
+
+**How to apply**: 목업 정본 = 본 결정의 칩·문구 명세(텍스트). 시각 목업은 디렉터 스레드(08-20) 렌더 2종 = 참조 기록만. 스캐너 루트 = `app/page.tsx`(D-OWN-HOME 정합). 슬라이스 분해 = TASKQUEUE SCAN-B1-FE~SCAN-B3 + SIGNAL-HITRATE(예약). cf. [[project_scanner_ux_recon]]·D-C2-S2-FUNNEL-COV(w90 정합).
+
+## [2026-08-20] D-C2-S2-FUNNEL-COV-A — 안건 ⓐ 분할 (w90 확정 · 퍼널 튜닝 보류) [dashboard][platform]
+
+**결정 (D-C2-S2-FUNNEL-COV 안건 ⓐ 백-어노 분할)**:
+- **ⓐ-1 coverage 기본 창 w90 = 확정**(사용자 08-20) — "적체 비제거"와 동일 철학: 놓친 추천이 창 밖으로 사라지지 않게. 구현 = SCAN-B1-FE 편입.
+- **ⓐ-2 퍼널 상수 튜닝 = 보류** — 유기 노출 표본 부족 → 스캐너 개편·계측(SCAN-TELEM-*)으로 데이터 성장 후 재개.
+
+**Why**: 안건 ⓐ("퍼널 상수 튜닝")는 창 산정과 상수 튜닝 두 결이 섞여 있었음. 창(w90)은 데이터 무관 원칙 결정이라 즉시 확정 가능하나, 상수 튜닝은 유기 노출 표본이 성장해야 근거가 생김 → 분리. ⓐ-1을 SCAN-B1-FE에 편입해 스캐너 개편과 동반 착지.
+
+**How to apply**: ⓐ-1 = SCAN-B1-FE(w90 렌더). ⓐ-2 = SCAN-TELEM-* 계측 성숙 후 C2-S2-REGATE ⓐ로 재개. cf. D-C2-S2-FUNNEL-COV·C2-S2-REGATE(TASKQUEUE).
+
+## [2026-08-20] D-SCANNER-RECON-OBS — 스캐너 recon 관찰 3건 (기록만·착수 아님) [dashboard][platform][observation]
+
+**관찰 (RECON-SCANNER-UX-R1 부산, 등재만·착수 아님)**:
+- ⑴ **스캐너 = 미계측 표면** — impression/click emit 없음(R7). 계측 = SCAN-TELEM-SHARED→SCAN-TELEM-FE로 신설.
+- ⑵ **선존 계약 드리프트 3건**: `PipelineMeta` 타입 · `vix_regime` enum(elevated 미발생·`vix>25` 하드컷) · `chain_sight_cta` 항상 `False`. (수리 = 별도 트랙, 본 배치 등재만.)
+- ⑶ **스캐너 루트 = `app/page.tsx`** — D-OWN-HOME 정합 재확인.
+
+**Why**: recon에서 발견된 사실을 소실 없이 장부에 고정(착수는 별도 결정). 특히 ⑵ 드리프트 3건은 스캐너 개편이 신호/축 데이터에 의존하므로 후속 슬라이스가 밟기 전 기록 필요.
+
+**How to apply**: 등재만 — 착수 트리거는 각 후속 슬라이스(SCAN-TELEM-*·SCAN-B2-BE 계약)에서. cf. [[project_scanner_ux_recon]].
+
 ## [2026-08-20] D-RB-1 — 런타임 스테일/고아 자동 감지 (감지는 자동, 집행은 사람) [ops][runbook][governance]
 
 **결정 (다안 = 자동 감지)**: `scripts/runtime_check.py`(100% read-only) + launchd 주기 job(`com.stockvis.runtime-check`, StartInterval 3600)으로 런타임 3종 상시 감지 — ⑴ 고아 스윕(포트 리스너 pid가 launchd 관리 pid 자신/자손 아니면 ORPHAN) ⑵ 드리프트(트리 HEAD vs origin/main behind, 24h 지속=WARN) ⑶ launchd 상태. **알림은 기록·표면화만, 자동 집행(kill·kickstart·checkout) 절대 없음.** 퀀트 4.45.
@@ -6652,3 +6702,17 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **검증**: alias Marvell→DIS 0 / →MRVL 1·SCE3451→MRVL·FTNT→MRVL evidence 1·FTNT→DIS excluded·evidence self-loop 0·evidence 총계 3356→3343(−14 excluded +1 신규)·excluded 14. pytest 7 GREEN(self-loop 가드 4 + backfill 하드닝 3).
 
 **R-2 잔여 RC 스윕 부기 (2026-08-20, CS-P5 LAND 번들)**: 위 R-2/A-1은 SCE `current()` target-set만 대조 → **supersession 전 이미 선착지된 RC evidence 행(잔존 오염)을 미대조**한 사각. CS-P5 화면 검증 중 `ORCL→INCY`(Epic Systems→INCY) 노출로 발견. **한정 재감사·집행**: fuzzy-era 오매칭 pair 유래 RC evidence SEC4종 17후보 → **backing SCE 최대유사도**로 정밀화(전 백킹 오매칭=clear vs legit 백킹 존재=ambiguous) → **clear 15행 비파괴 excluded**(evidence 3343→3328·excluded 14→29), **ambiguous 2행 보호**(`FTNT↔MU`=Micron 정당 백킹 sim100·v2 current). 근본 교훈: **오염 sweep은 SCE 현재값이 아니라 선착지 RC 잔존까지 대조**(pair-match만으론 legit 오탐 → backing 유사도 이중검증 필수). 스코프 밖 신규 오염 클래스 0(HALT 없음). 잔존 완전제거는 [[CS-RESIDUAL-RC-POLLUTION-SWEEP]] done.
+
+## [2026-08-20] D-COACH-FE-1 — 애널리스트 성적판 (D1-SCOREBOARD) 3결정 [portfolio/coach]
+
+> 트랙: D1-SCOREBOARD(실행 세션·마이그 0·beat 0·prod-write 0). worktree `monorepo/sess-coach-scb` base origin/main `f6d0d51b`(작업트리 sess-signal-fwd-recon는 503커밋 분기·analyst 코드 부재라 미사용). 커밋 스택 `761bda33`(Part1 BE)·`eb73d47f`(Part2 계약)·`0bbc089a`(Part3 FE).
+
+- **① 2층 계약 + A 표현(증거 바·판정 문장)**: 성적판 = board(집계층) + symbols[].signals[](신호별 상세층). 신호마다 증거 바(포착가·실현가·목표가 눈금) + 판정 문장 템플릿(예 "하락 전망이었으나 +6.3% 상승"). 스트레스 테스트 7시나리오 근거로 A(문장형) 채택.
+- **② advisory 편입 + 자립 컴포넌트**: ScorecardSection을 advisory 페이지에 얇게 편입(전역 read, advisory 상태와 독립). 단 컴포넌트는 자립(types/service/hook/present 자립 네임스페이스) — 5-metric 착수 시 전용 라우트 승격 이사 전제([[SCB-BOARD-PROMOTE]]).
+- **③ 나안 TTL 캐시**: 캐시 키 = {SCORING_VERSION, h, 입력 최신일 3좌표(snapshot·DailyPrice·StockSplit max date)} + TTL 24h. 데이터 갱신 시 키 회전 → stale 구조적 불가. **병진 override 명기**: 디렉터 추천 가(precompute) 4.30 대비 나(TTL) 4.15, 마진 −0.15 수용. 사유 = 지연 상한 선확보(compute miss 실측 285ms → hit 무시가능·TTL로 재계산 억제). 계산 비대 시 다안 재평가([[SCB-PRECOMPUTE-REEVAL]]).
+
+**BE**: build_scorecard 순수 함수를 analyst_scoring에 additive(기존 score_tier1 무접촉 = command 산출 byte-IDENTICAL·GATE 1a). GET /api/v1/coach/analyst-scorecard/?h=21(전역 read·IsAuthenticated). 판정 어휘 = 채점 코어 정의 일치(hold=방향 판정 대상 아님·무목표가=진행률 제외·바 강등).
+
+**부대 발견 D-COACH-SCHEMA-EXT-PATH**: 계약 재생성 중 CoachE1~E6 컴포넌트 무음 드롭 발견 → 근인 = `openapi_extensions.py` target_class가 pre-monorepo 경로(`portfolio.api.serializers.*`, 실제=`apps.portfolio...`). advisory_schema.py는 이미 `apps.` 접두 사용·정상. 12건 수복 → 재생성 비파괴 전환(E1~E6 복원 + advisory + scorecard 유입 = stale 해소). 규칙: **spectacular target_class = serializer 실제 __module__(모노레포 `apps.` 접두 필수)**. common-bugs 등재.
+
+**Why**: 채점(Tier1) REST 표면이 command-only였음 → derived-render 슬라이스는 BE compute-on-read API 신설 선행 필수. 신규 테이블/마이그 0(D-I3-1 파생 계산). GATE 전건 GREEN(1a byte-identical·1b blast 748·makemigrations clean / 2 tsc0·vitest989 / 3 tsc0·lint0·vitest1015).
