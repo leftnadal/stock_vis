@@ -617,6 +617,48 @@ class FMPClient:
         return data if isinstance(data, list) else []
 
     # ============================================================
+    # Event Calendar (EVT 트랙 — 설계 앵커 §3, B′ 범위)
+    # ⚠️ 하드캡 4,000행 실측(earnings 90일 창=tail만 반환·앞 74일 무언 소실).
+    #    소비 측은 반드시 detect_truncation() 으로 캡 감지 후 청킹 (감지기 없이 가동 금지).
+    # ============================================================
+
+    def get_earnings_calendar(self, from_date: str, to_date: str) -> List[Dict[str, Any]]:
+        """
+        어닝 캘린더 (EVT EARNINGS 공급원).
+
+        API: GET /stable/earnings-calendar?from={from_date}&to={to_date}
+        필드: date/symbol/epsEstimated/epsActual/revenueEstimated/revenueActual/lastUpdated.
+        추정↔실적 구분 = actual 필드 null(발표 전) → 채움(발표 후). 확정 플래그 없음
+        (earnings-calendar-confirmed 404 실측). ⚠️ 45일 이하 창 권장(하드캡 4,000).
+        """
+        params = {"from": from_date, "to": to_date}
+        data = self._make_request("/stable/earnings-calendar", params)
+        return data if isinstance(data, list) else []
+
+    def get_dividends_calendar(self, from_date: str, to_date: str) -> List[Dict[str, Any]]:
+        """
+        배당 캘린더 (EVT DIVIDEND 공급원, event_date=ex-date).
+
+        API: GET /stable/dividends-calendar?from={from_date}&to={to_date}
+        필드: date/symbol/dividend/adjDividend/declarationDate/paymentDate/recordDate/
+        frequency/yield. 90일 창 캡 미도달 실측(2,517행).
+        """
+        params = {"from": from_date, "to": to_date}
+        data = self._make_request("/stable/dividends-calendar", params)
+        return data if isinstance(data, list) else []
+
+    def get_splits_calendar(self, from_date: str, to_date: str) -> List[Dict[str, Any]]:
+        """
+        분할 예정 캘린더 (EVT SPLIT 공급원). I3-SPLIT-GUARD 예정 분할 소비 계약.
+
+        API: GET /stable/splits-calendar?from={from_date}&to={to_date}
+        필드: date/symbol/numerator/denominator/splitType. 저볼륨(8일 14건 실측).
+        """
+        params = {"from": from_date, "to": to_date}
+        data = self._make_request("/stable/splits-calendar", params)
+        return data if isinstance(data, list) else []
+
+    # ============================================================
     # Analyst Estimates (C8 원장 스냅샷 — 설계서 §5.3 · §6.6)
     # ============================================================
 
