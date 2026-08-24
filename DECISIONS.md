@@ -8,6 +8,37 @@
 
 ---
 
+## [2026-08-24] D-SCAN-B1-DEVIATIONS — SCAN-B1-FE 편차 3건 + 관찰 2건 + 소결정 ⓐ-1b [dashboard][platform]
+
+**편차(구현 중 확정·정칙 범위 내 재량)**:
+- ⑴ **뉴스 감성 → 존재·신선도 칩 대체**: NewsContext에 sentiment polarity 필드 **부재** + 당일 스캐너 유니버스 실뉴스 매칭 **0**(전건 `profile` 폴백) → 정칙 ⑵(매매/감성 주장 금지) 준수 위해 감성 대신 **존재+신선도**만 서술(match_type≠profile일 때만 칩). 오늘 0렌더.
+- ⑵ **w90 = CoverageStrip 한정**: 전역 `DEFAULT_COVERAGE_WINDOW_DAYS=7` 유지(변경 시 `/dashboard/coverage`의 7↔90 조인미스 대조 D-C2-S1-JOINMISS-LABEL 붕괴). → **소결정 ⓐ-1b 등재**(아래).
+- ⑶ **S4 카드 0종목**: 당일 데이터 상태(14 nominal→13 baked). 코드 무관.
+
+**소결정 ⓐ-1b (D-C2-S2-FUNNEL-COV-A 인접·설계 대기)**: coverage **상세 페이지 기본 창 + 창 전환 UI**를 두되, JOINMISS(7↔90) 대조 표면과 **공존 설계**한다. 목업 동반·설계 대기(착수 아님). Why: 스트립은 w90 확정(ⓐ-1)이나 상세는 두 창 대조가 분석 목적 → 전역 상수 일괄 변경 대신 창 전환 UI로 흡수.
+
+**관찰(기록만·착수 아님)**:
+- ⑴ **스캐너 유니버스 실뉴스 매칭 0** — enricher 매칭 점검 후보(안건 ⓒ news_chip 재설계 인접). 착수 아님.
+- ⑵ **node 셸 기본 v23.11.0 드리프트** — full-suite 정본 = **v22.19.0 pin**(nvm). 심링크·버전 불일치 = 거짓 red. cf. common-bugs #80 연계.
+
+**How to apply**: ⑴⑵⑶ = SCAN-B1-FE 착지분(origin/main `73d7f38b`)의 실제 동작. ⓐ-1b = 후속 설계 사이클(coverage 상세). 관찰 2건 = 후속 슬라이스 트리거. cf. [[project_scanner_ux_recon]].
+
+## [2026-08-24] D-SCAN-B2-DERIVE — SCAN-B2 = 파생 계산 확정 (Stock OVERVIEW 죽음) [dashboard][platform][data]
+
+**결정 (RECON-VALUATION-R1 실측 반전 등재)**: SCAN-B2 펀더/기술 축은 **Stock OVERVIEW 필드 조회가 아니라 파생 계산**으로 확정. 근거 = 스캐너 유니버스 293종목 실측: Stock의 PE/PB/PS/ROE/beta/52주/MA = **1~3.4% 커버리지**(last_updated 2025-11 stale·shares_outstanding 3/293). 반면 market_cap/sector/industry 99~100% · DailyPrice 293/293(median 784봉·최신≤4일) · IncomeStatement/BalanceSheet 293/293(최신 08-02).
+
+**파생 경로**:
+- **밸류** = market_cap(100%) ÷ TTM 재무제표(PE=/net_income·PS=/revenue·PB=/equity) — **shares_outstanding 무의존**.
+- **퀄리티** = ROE(net_income/equity)·margins·debt_eq·current(statement 파생).
+- **기술** = DailyPrice에서 RSI/52주/MA(캘큘레이터 기계산분 재사용).
+- ⚠️ **TTM dedupe 필수**: IncomeStatement reported_date에 annual+quarterly 혼재 → period_type 선별 후 4분기 합.
+
+**비교군(정칙 ⑶ 강화)**: **sector 중앙값 = 정본**(그룹 median 31·robust) · **industry 중앙값 = 상시 폴백**(median 3·88/126 <5표본). → **정칙 ⑶ 강화: 비교군 문구에 `n`(표본수)·폴백 여부(industry→sector) 표기 필수.**
+
+**Why**: "Stock 모델에 다 있으니 순수 조회" 통념이 실측에서 반증됨(OVERVIEW 싱크 사망). 파생만이 유일 실행로이며, live FMP(screener passthrough=debt_eq/current_ratio 원천)는 rate-limit로 베이커 부적합.
+
+**How to apply**: payload +30%(cards 4배열 증폭) 수용 — symbol-ref 축약 리팩터는 **선택·보류**. 슬라이스 = SCAN-B2-TECH-BE(선행)→FUND-BE(후행), TASKQUEUE. cf. [[project_scanner_ux_recon]] R1 절.
+
 ## [2026-08-20] D-P16-ENTRY — Phase 1.6 착수 = C-lite 히어로 배지 선착지 (가안) [marketpulse][frontend][process]
 
 **결정 (가안 채택)**: Phase 1.6 착수 순서 = **C-lite 선착지**(홈 히어로에 스트레스 상태 배지) → 그 위에서 플레이북 본론(체인 정의) 결정. 퀀트 4.20 > 3.50 > 3.40, 마진 0.70. 타이브레이커 = **"결정은 실측 위에서"** — C-lite를 착지시키며 플레이북 엔진 지형을 겸사 정찰해 다음 결정 사이클(체인 정의)의 실측 재료를 확보.

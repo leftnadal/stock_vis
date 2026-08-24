@@ -1569,3 +1569,11 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **원인**: 스키마는 passthrough 앵커 serializer + `OpenApiSerializerExtension`(target_class 문자열 매칭)으로 명명 컴포넌트를 방출한다. 모노레포 이전 후 `openapi_extensions.py`의 target_class가 구 경로 `portfolio.api.serializers.*` 잔존 → serializer 실제 `__module__`(`apps.portfolio.api.serializers.*`)과 불일치 → extension 미매칭 → 컴포넌트 무음 드롭. `advisory_schema.py`는 이미 `apps.` 접두라 정상(대조).
 
 **해소**: extension target_class = **serializer의 실제 `__module__` 전체 경로**(모노레포 `apps.` 접두 필수). 재생성 전 `git show HEAD:schema.yml | grep -c <컴포넌트>` vs 재생성본 대조로 드롭 선탐지. 규칙은 이미 memory `reference` + `advisory_schema.py` 주석에 명시 — 신규 extension 추가 시 준수. cf. DECISIONS D-COACH-SCHEMA-EXT-PATH.
+
+## LAND health DoD를 절대값(0W/0F)으로 두면 시간 부패형 검사에 교착 — 세션 시작 기준선 대비 델타로 판정 (#118, LAND-SCAN-B1 2026-08-24) `[process][harness]`
+
+**증상**: LAND 세션 양식이 STEP 4 health를 **절대값 0 WARN/0 FAIL**로 요구했으나, LAND-SCAN-B1(08-24) 착지 후 `health_check.py`가 **PROGRESS.md 86h 미갱신(>72h) FAIL**을 보고. 이 FAIL은 착지 diff(dashboard 17파일)와 **무관** — 경과 시간(마지막 PROGRESS 갱신 = 08-20 BATCH-35)으로 72h 임계를 넘긴 **시간 부패형** 검사다.
+
+**원인**: LAND 세션은 **메타 4종 변경 금지**(코드 착지 전용)이므로 PROGRESS stale을 **수리할 수 없다**. 절대값 0/0 요구는 "LAND가 못 고치는 검사"를 게이트에 넣어 **구조적 교착**을 만든다. 유사 검사: DECISIONS 갱신일·PROGRESS stale 등 시간 임계 기반 전부 동일 위험.
+
+**해소**: LAND health DoD = **절대값 아닌 세션 시작 기준선 대비 델타 0**. LAND 양식 STEP 0에 health 기준선 측정을 추가하고, STEP 4는 "신규 FAIL/WARN 0(= 착지가 새 결함을 만들지 않음)"으로 판정. 시간 부패형 FAIL은 착지 무관으로 명시·soncan(mgmt PROGRESS 갱신)에 회부. cf. [[lesson_land_health_measure_in_target_tree]] · MGMT-BATCH-36이 본 stale 해소.
