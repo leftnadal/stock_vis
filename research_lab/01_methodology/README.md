@@ -8,4 +8,4 @@ Research Methodology defines how research undertakings are framed and progressed
 
 - [Stock_vis Research Lab Terminology Governance](terminology_governance.md) — Approved v1.0, 2026-08-12
 - [Stock_vis Research Lab Knowledge and Understanding Framework](knowledge_and_understanding_framework.md) — Approved v1.0, 2026-08-20
-- [Stock_vis Research Lab Research Methodology](research_methodology.md) — Approved v1.0, 2026-08-24
+- [Stock_vis Research Lab Research Methodology](research_methodology.md) — Approved v1.1, 2026-08-27

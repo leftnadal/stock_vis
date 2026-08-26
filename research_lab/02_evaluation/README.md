@@ -4,4 +4,4 @@ This directory contains the Research Lab's evaluation principles, epistemic asse
 
 ## Documents
 
-- [Stock_vis Research Lab Evaluation Methodology](evaluation_methodology.md) — Approved v1.0, 2026-08-24
+- [Stock_vis Research Lab Evaluation Methodology](evaluation_methodology.md) — Approved v1.1, 2026-08-27
