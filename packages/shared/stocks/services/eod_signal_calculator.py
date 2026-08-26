@@ -1,7 +1,8 @@
 """
 EOD Signal Calculator (Step 2)
 
-S&P 500 전체 종목에 대해 벡터 연산으로 14개 시그널을 계산합니다.
+유니버스(SP500 ∪ 감시등록 Monitor scope="stock") 종목에 대해 벡터 연산으로
+14개 시그널을 계산합니다 (A-2, EODUNIV-P15-V01).
 
 규칙:
 - for-loop 금지, pandas 벡터 연산만 사용
@@ -22,6 +23,62 @@ import pandas as pd
 from packages.shared.stocks.models import DailyPrice, SP500Constituent, Stock
 
 logger = logging.getLogger(__name__)
+
+
+def eod_universe_symbols() -> list[str]:
+    """
+    EOD 시그널 계산 대상 유니버스 심볼 목록.
+
+    유니버스 = SP500 활성 종목 ∪ 감시등록(Monitor scope="stock") 종목.
+    신규 감시 등록 종목은 다음 파이프라인 회차부터 자동 편입된다 — 하드코딩 금지
+    (예: 특정 심볼을 코드에 직접 나열하지 않는다).
+
+    감시등록 심볼 중 Stock 행이 없거나 DailyPrice 이력이 전혀 없는 것은
+    계산기의 sector/meta 매핑·가격 로드가 깨지지 않도록 조용히 스킵한다.
+
+    SP500 파트의 순서/구성은 기존과 동일하게 보존하고, 감시등록 전용 심볼만
+    뒤에 추가한다(중복 없음).
+    """
+    sp500_symbols = list(
+        SP500Constituent.objects.filter(is_active=True).values_list(
+            "symbol", flat=True
+        )
+    )
+    sp500_set = set(sp500_symbols)
+
+    # lazy import: apps.monitor는 별도 Django app — 모듈 로드 순서 이슈 회피
+    from apps.monitor.models.monitor import Monitor
+
+    watch_symbols = {
+        s.upper()
+        for s in Monitor.objects.filter(scope="stock").values_list(
+            "target_ref", flat=True
+        )
+        if s
+    }
+
+    extra_watch = sorted(watch_symbols - sp500_set)
+    if extra_watch:
+        has_stock = set(
+            Stock.objects.filter(symbol__in=extra_watch).values_list(
+                "symbol", flat=True
+            )
+        )
+        has_price = set(
+            DailyPrice.objects.filter(stock__symbol__in=extra_watch)
+            .values_list("stock__symbol", flat=True)
+            .distinct()
+        )
+        valid_extra = [s for s in extra_watch if s in has_stock and s in has_price]
+        skipped = [s for s in extra_watch if s not in valid_extra]
+        if skipped:
+            logger.info(
+                f"[eod_universe_symbols] 감시등록 심볼 스킵(Stock/DailyPrice 없음): {skipped}"
+            )
+    else:
+        valid_extra = []
+
+    return sp500_symbols + valid_extra
 
 THRESHOLDS = {
     "normal": {
@@ -69,7 +126,7 @@ def profile_stage(func):
 
 class EODSignalCalculator:
     """
-    S&P 500 전 종목 EOD 시그널 계산기.
+    유니버스(SP500 ∪ 감시등록) 전 종목 EOD 시그널 계산기.
 
     DailyPrice에서 250일분 데이터를 bulk 로드한 뒤
     pandas 벡터 연산만으로 14개 시그널을 계산합니다.
@@ -79,17 +136,24 @@ class EODSignalCalculator:
         self.thresholds = THRESHOLDS
 
     @profile_stage
-    def calculate_batch(self, target_date: date) -> pd.DataFrame:
+    def calculate_batch(
+        self, target_date: date, symbols: list[str] | None = None
+    ) -> pd.DataFrame:
         """
-        S&P 500 전 종목의 250일 DailyPrice → DataFrame → 벡터 연산 → 시그널 DataFrame 반환.
+        유니버스(SP500 ∪ 감시등록) 전 종목의 250일 DailyPrice → DataFrame → 벡터 연산 → 시그널 DataFrame 반환.
 
         Args:
             target_date: 시그널 계산 대상 날짜
+            symbols: 명시적 심볼 목록(선택, additive). None이면 eod_universe_symbols()
+                (SP500 ∪ 감시등록, 기본/운영 경로) 사용. 소수 심볼로 스코프를 좁히면
+                섹터 상대 시그널(S1/S2)이 그 스코프 내에서만 비교되어 왜곡될 수 있음
+                (예: 심볼 1개만 넘기면 섹터 평균=자기 자신 → S1/S2 항상 비활성) —
+                백필 등 부분 스코프 계산 시 알려진 한계로 문서화.
 
         Returns:
             target_date 행만 포함한 DataFrame (시그널 컬럼 포함)
         """
-        df = self._load_price_data(target_date)
+        df = self._load_price_data(target_date, symbols=symbols)
         if df.empty:
             logger.warning(f"[EODSignalCalculator] {target_date} 가격 데이터 없음")
             return pd.DataFrame()
@@ -103,19 +167,24 @@ class EODSignalCalculator:
         result = self._detect_signals(df, regime, target_date)
         return result
 
-    def _load_price_data(self, target_date: date) -> pd.DataFrame:
+    def _load_price_data(
+        self, target_date: date, symbols: list[str] | None = None
+    ) -> pd.DataFrame:
         """
-        S&P500 종목의 250일 DailyPrice 데이터를 bulk 로드하여 long format DataFrame으로 반환.
+        유니버스(SP500 ∪ 감시등록) 종목의 250일 DailyPrice 데이터를 bulk 로드하여 long format DataFrame으로 반환.
+
+        Args:
+            target_date: 조회 기준일
+            symbols: 명시적 심볼 목록(선택, additive). None이면 eod_universe_symbols()
+                (SP500 ∪ 감시등록 Monitor scope="stock" — 신규 감시 등록 자동 편입,
+                하드코딩 금지) 사용.
 
         Columns: symbol, date, open, high, low, close, volume, sector, industry
         """
-        symbols = list(
-            SP500Constituent.objects.filter(is_active=True).values_list(
-                "symbol", flat=True
-            )
-        )
+        if symbols is None:
+            symbols = eod_universe_symbols()
         if not symbols:
-            logger.warning("[EODSignalCalculator] 활성 S&P500 종목 없음")
+            logger.warning("[EODSignalCalculator] 활성 유니버스 종목 없음")
             return pd.DataFrame()
 
         start_date = target_date - timedelta(
