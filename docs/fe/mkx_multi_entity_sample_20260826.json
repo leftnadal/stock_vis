@@ -1,0 +1,147 @@
+{
+  "uuid": "9e66be41-1dab-4bde-a275-d977af226171",
+  "title": "Market Open: Falling oil prices point to a solid ASX start today",
+  "description": "he ASX is expected to continue its recent positive run, with the market tipped to open higher today with oil prices down again.",
+  "keywords": "",
+  "snippet": "Join our daily newsletter At The Bell to receive exclusive market insights\n\nASX today – The ASX is expected to continue its recent positive run, with the mark...",
+  "url": "https://themarketonline.com.au/market-open-falling-oil-prices-point-to-a-solid-asx-start-today-2026-08-26/",
+  "image_url": "https://themarketonline.com.au/wp-content/uploads/2026/03/ASX-Up-Bull.png",
+  "language": "en",
+  "published_at": "2026-08-25T22:42:11.000000Z",
+  "source": "themarketherald.com.au",
+  "relevance_score": null,
+  "entities": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "exchange": null,
+      "exchange_long": null,
+      "country": "us",
+      "type": "equity",
+      "industry": "Technology",
+      "match_score": 8.993364,
+      "sentiment_score": 0.7334,
+      "highlights": [
+        {
+          "highlight": "On Spotify, <em>Apple</em>, and more.\n\nT[+281 characters]",
+          "sentiment": 0.7334,
+          "highlighted_in": "main_text"
+        }
+      ]
+    },
+    {
+      "symbol": "DKM.AX",
+      "name": "Duketon Mining Limited",
+      "exchange": null,
+      "exchange_long": null,
+      "country": "au",
+      "type": "equity",
+      "industry": "Basic Materials",
+      "match_score": 62.789597,
+      "sentiment_score": 0.4201,
+      "highlights": [
+        {
+          "highlight": "Financing firm Wisr (ASX: WZR) delivered[+333 characters]",
+          "sentiment": 0.8402,
+          "highlighted_in": "main_text"
+        },
+        {
+          "highlight": "<em>Mining</em> (<em>ASX</em>: <em>DKM</[+55 characters]",
+          "sentiment": 0,
+          "highlighted_in": "main_text"
+        }
+      ]
+    },
+    {
+      "symbol": "PRU.AX",
+      "name": "Perseus Mining Limited",
+      "exchange": null,
+      "exchange_long": null,
+      "country": "au",
+      "type": "equity",
+      "industry": "Basic Materials",
+      "match_score": 57.23947,
+      "sentiment_score": 0.8402,
+      "highlights": [
+        {
+          "highlight": "Financing firm Wisr (ASX: WZR) delivered[+347 characters]",
+          "sentiment": 0.8402,
+          "highlighted_in": "main_text"
+        }
+      ]
+    },
+    {
+      "symbol": "MIN.AX",
+      "name": "Mineral Resources Limited",
+      "exchange": null,
+      "exchange_long": null,
+      "country": "au",
+      "type": "equity",
+      "industry": "Basic Materials",
+      "match_score": 36.929302,
+      "sentiment_score": 0.8402,
+      "highlights": [
+        {
+          "highlight": "Financing firm Wisr (ASX: WZR) delivered[+329 characters]",
+          "sentiment": 0.8402,
+          "highlighted_in": "main_text"
+        }
+      ]
+    },
+    {
+      "symbol": "WZR.AX",
+      "name": "Wisr Limited",
+      "exchange": null,
+      "exchange_long": null,
+      "country": "au",
+      "type": "equity",
+      "industry": "Financial Services",
+      "match_score": 59.05924,
+      "sentiment_score": 0.8402,
+      "highlights": [
+        {
+          "highlight": "Financing firm <em>Wisr</em> (<em>ASX</e[+338 characters]",
+          "sentiment": 0.8402,
+          "highlighted_in": "main_text"
+        }
+      ]
+    },
+    {
+      "symbol": "^AXJO",
+      "name": "S&P/ASX 200",
+      "exchange": null,
+      "exchange_long": null,
+      "country": "au",
+      "type": "index",
+      "industry": "N/A",
+      "match_score": 58.70235,
+      "sentiment_score": 0.7096,
+      "highlights": [
+        {
+          "highlight": "The positive vibe comes after the <em>S<[+278 characters]",
+          "sentiment": 0.7096,
+          "highlighted_in": "main_text"
+        }
+      ]
+    },
+    {
+      "symbol": "VRS.AX",
+      "name": "Veris Limited",
+      "exchange": null,
+      "exchange_long": null,
+      "country": "au",
+      "type": "equity",
+      "industry": "Industrials",
+      "match_score": 53.837246,
+      "sentiment_score": 0.3818,
+      "highlights": [
+        {
+          "highlight": "On the market news front:\n\nDigital and s[+169 characters]",
+          "sentiment": 0.3818,
+          "highlighted_in": "main_text"
+        }
+      ]
+    }
+  ],
+  "similar": []
+}
