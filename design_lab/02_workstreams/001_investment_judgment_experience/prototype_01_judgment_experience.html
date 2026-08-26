@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stock_vis — Judgment Experience Prototype 01</title>
+<style>
+  :root { --bg:#f4f4f4; --panel:#fff; --line:#b9b9b9; --text:#171717; --muted:#666; --soft:#ececec; --strong:#2f2f2f; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+  button { font:inherit; }
+  .app { max-width:1180px; margin:0 auto; padding:20px; }
+  .top { display:flex; gap:16px; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+  .eyebrow { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  h1 { font-size:24px; margin:5px 0 6px; }
+  .desc { color:var(--muted); font-size:14px; max-width:720px; line-height:1.5; }
+  .mode { display:flex; background:#ddd; padding:3px; border-radius:8px; min-width:330px; }
+  .mode button, .scenarios button, .action { border:1px solid var(--line); background:var(--panel); padding:9px 12px; cursor:pointer; }
+  .mode button { flex:1; border-radius:6px; border:none; background:transparent; }
+  .mode button.active { background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.12); font-weight:650; }
+  .scenarios { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .scenarios button { border-radius:18px; color:#444; }
+  .scenarios button.active { background:#222; color:#fff; border-color:#222; }
+  .layout { display:grid; grid-template-columns:260px minmax(0,1fr); gap:14px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; }
+  .sidebar { padding:14px; }
+  .side-title { font-size:12px; color:var(--muted); text-transform:uppercase; margin-bottom:10px; }
+  .ticker { padding:12px; border:1px solid var(--line); border-radius:8px; margin-bottom:8px; cursor:pointer; }
+  .ticker.active { outline:2px solid #333; }
+  .ticker b { display:block; }
+  .ticker small { color:var(--muted); }
+  .attention { margin-top:16px; border-top:1px solid #ddd; padding-top:12px; }
+  .attention-item { padding:10px 0; border-bottom:1px solid #eee; font-size:13px; line-height:1.4; }
+  .attention-item strong { display:block; }
+  .main { min-height:690px; }
+  .header { padding:16px 18px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:16px; }
+  .company h2 { margin:0; font-size:22px; }
+  .company .meta { color:var(--muted); font-size:13px; margin-top:4px; }
+  .pill { display:inline-block; padding:4px 8px; border:1px solid var(--line); border-radius:999px; font-size:12px; margin-left:5px; }
+  .content { padding:16px 18px 24px; }
+  .summary { padding:12px 14px; background:var(--soft); border-radius:8px; font-size:14px; line-height:1.5; margin-bottom:14px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .card { border:1px solid var(--line); border-radius:9px; padding:13px; background:#fff; }
+  .card h3 { margin:0 0 9px; font-size:15px; }
+  .row { display:flex; justify-content:space-between; gap:14px; padding:9px 0; border-top:1px solid #eee; }
+  .row:first-of-type { border-top:none; }
+  .label small, .value small { display:block; color:var(--muted); margin-top:3px; line-height:1.3; }
+  .value { text-align:right; font-weight:600; }
+  .stable { color:#444; }
+  .up { color:#111; }
+  .warn { border-left:4px solid #555; padding-left:10px; }
+  .diverge { background:#f1f1f1; border:1px dashed #777; padding:10px; border-radius:7px; margin-top:9px; }
+  .diverge strong { display:block; margin-bottom:4px; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .action { border-radius:6px; }
+  .action.primary { background:#222; color:#fff; border-color:#222; }
+  .action.quiet { background:#f5f5f5; }
+  .review { border:2px solid #333; border-radius:10px; padding:15px; margin-top:14px; background:#fff; }
+  .review h3 { margin:0 0 4px; }
+  .review .subtitle { color:var(--muted); font-size:13px; margin-bottom:14px; }
+  .review-step { border-top:1px solid #ddd; padding:11px 0; }
+  .review-step:first-of-type { border-top:none; }
+  .review-step b { display:block; margin-bottom:5px; font-size:13px; }
+  .diff { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
+  .diff > div { border:1px solid #ccc; padding:10px; border-radius:7px; }
+  .diff .heading { font-size:11px; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .footer-note { color:var(--muted); font-size:12px; margin-top:16px; line-height:1.5; }
+  .hidden { display:none; }
+  .inline-diff { background:#f4f4f4; padding:8px; border-radius:6px; margin-top:6px; font-size:13px; }
+  .context { padding:10px 12px; border:1px dashed #888; border-radius:7px; margin-top:12px; color:#444; font-size:13px; }
+  @media (max-width:780px) { .top{display:block}.mode{margin-top:12px;min-width:0}.layout{grid-template-columns:1fr}.sidebar{display:none}.grid{grid-template-columns:1fr}.diff{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div>
+      <div class="eyebrow">Design Lab · Prototype 01 · Low Fidelity</div>
+      <h1>Judgment Experience</h1>
+      <div class="desc">동일한 IREN 시나리오를 두 interaction architecture로 비교한다. A는 중요한 변화만 집중 Review로 확장하고, B는 모든 변화를 Judgment Home 안에서 inline diff로 처리한다.</div>
+    </div>
+    <div class="mode" aria-label="prototype mode">
+      <button id="modeA" class="active" onclick="setMode('A')">A · Adaptive Review</button>
+      <button id="modeB" onclick="setMode('B')">B · Integrated Home</button>
+    </div>
+  </div>
+
+  <div class="scenarios">
+    <button id="s1" class="active" onclick="setScenario(1)">1 · 급락, thesis 변화 없음</button>
+    <button id="s2" onclick="setScenario(2)">2 · Mixed earnings</button>
+    <button id="s3" onclick="setScenario(3)">3 · AI와 내 판단 충돌</button>
+  </div>
+
+  <div class="layout">
+    <aside class="panel sidebar">
+      <div class="side-title">Portfolio orientation</div>
+      <div class="ticker active"><b>IREN</b><small id="sideIren">-14% · 확인할 가치 있음</small></div>
+      <div class="ticker"><b>NVDA</b><small>변화 없음 · 낮은 attention</small></div>
+      <div class="ticker"><b>CEG</b><small>Regulatory update · watch</small></div>
+      <div class="attention">
+        <div class="side-title">Why this deserves attention</div>
+        <div class="attention-item" id="attentionText"><strong>가격 급락</strong>큰 움직임이지만 현재까지 핵심 thesis를 바꾸는 evidence는 없음.</div>
+      </div>
+    </aside>
+
+    <main class="panel main">
+      <div class="header">
+        <div class="company">
+          <h2>IREN</h2>
+          <div class="meta">Maintained judgment · updated moments ago</div>
+        </div>
+        <div><span class="pill">System synthesis</span><span class="pill">My view</span></div>
+      </div>
+      <div class="content">
+        <div class="summary" id="summary"></div>
+
+        <div class="grid">
+          <section class="card">
+            <h3>Judgment snapshot</h3>
+            <div class="row"><div class="label"><b>AI demand</b><small>Core driver</small></div><div class="value" id="demand">Strong<small>stable</small></div></div>
+            <div class="row"><div class="label"><b>Power advantage</b><small>Structural driver</small></div><div class="value">Moderate<small>stable</small></div></div>
+            <div class="row"><div class="label"><b>Execution</b><small>Delivery / build timing</small></div><div class="value" id="execution">Moderate<small>watch</small></div></div>
+            <div class="row"><div class="label"><b>Valuation</b><small>Decision-relevant, not thesis</small></div><div class="value" id="valuation">Improved<small>after drawdown</small></div></div>
+            <div id="divergenceBox" class="diverge hidden"><strong>System ↔ My View divergence</strong><span id="divergenceText"></span></div>
+          </section>
+
+          <section class="card">
+            <h3>Recent change</h3>
+            <div id="changeContent"></div>
+            <div class="actions" id="changeActions"></div>
+          </section>
+        </div>
+
+        <section id="focusedReview" class="review hidden">
+          <h3>Focused Change Review</h3>
+          <div class="subtitle">복잡하거나 consequential한 변화만 이 깊이로 확장한다.</div>
+          <div class="review-step"><b>1 · What changed?</b><span id="reviewTrigger"></span></div>
+          <div class="review-step"><b>2 · What does it bear on?</b><span id="reviewBearing"></span></div>
+          <div class="review-step"><b>3 · Why?</b><span id="reviewWhy"></span></div>
+          <div class="review-step"><b>4 · System proposal vs My view</b><div class="diff"><div><div class="heading">Stock_vis</div><div id="systemProposal"></div></div><div><div class="heading">My view</div><div id="myView"></div></div></div></div>
+          <div class="review-step"><b>5 · Only if my judgment materially changes</b><div class="actions"><button class="action primary">Adopt proposal</button><button class="action">Modify</button><button class="action">Keep my view</button><button class="action quiet">Leave unresolved</button></div></div>
+        </section>
+
+        <div class="context">Decision Context는 이 화면의 기본 결론이 아니다. Portfolio 비중, alternative, horizon, constraints를 고려해 실제 선택을 검토하고 싶을 때 별도 mode로 들어간다.</div>
+        <div class="footer-note">Prototype rule: System synthesis는 자동 업데이트될 수 있지만, user-owned judgment가 material하게 바뀌는 경우에만 실제 user action이 필요하다. UI 단순화를 위해 system proposal을 자동으로 “내 생각”으로 바꾸지 않는다.</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+let mode='A'; let scenario=1;
+function setMode(m){ mode=m; document.getElementById('modeA').classList.toggle('active',m==='A'); document.getElementById('modeB').classList.toggle('active',m==='B'); render(); }
+function setScenario(s){ scenario=s; [1,2,3].forEach(i=>document.getElementById('s'+i).classList.toggle('active',i===s)); render(); }
+function openReview(){ document.getElementById('focusedReview').classList.remove('hidden'); document.getElementById('focusedReview').scrollIntoView({behavior:'smooth',block:'start'}); }
+function render(){
+ const sum=document.getElementById('summary'), change=document.getElementById('changeContent'), actions=document.getElementById('changeActions'), review=document.getElementById('focusedReview'), div=document.getElementById('divergenceBox');
+ review.classList.add('hidden'); div.classList.add('hidden'); actions.innerHTML='';
+ document.getElementById('demand').innerHTML='Strong<small>stable</small>'; document.getElementById('execution').innerHTML='Moderate<small>watch</small>'; document.getElementById('valuation').innerHTML='Improved<small>after drawdown</small>';
+ if(scenario===1){
+  document.getElementById('sideIren').textContent='-14% · thesis change 없음';
+  document.getElementById('attentionText').innerHTML='<strong>가격 급락</strong>큰 움직임이지만 현재까지 핵심 thesis를 바꾸는 evidence는 없음.';
+  sum.innerHTML='<b>쉽게 말하면:</b> 주가는 크게 빠졌지만 회사에 대한 핵심 판단은 아직 바뀌지 않았다. 지금 바뀐 것은 가격과 valuation이다.';
+  if(mode==='A'){
+    change.innerHTML='<b>-14% price move</b><div class="inline-diff">System assessment: <b>No material thesis change</b><br>Valuation: improved · Volatility: higher</div><p>이 정도 변화는 별도 Review task를 만들지 않고 inline으로 끝낸다.</p>';
+    actions.innerHTML='<button class="action">Why no thesis change?</button><button class="action quiet">View evidence</button>';
+  } else {
+    change.innerHTML='<b>Integrated diff</b><div class="inline-diff">Price ↓ 14%<br>AI demand — unchanged<br>Execution — unchanged<br>Valuation ↑ improved</div><p>모든 변화가 Judgment Home 내부 diff로 처리된다.</p>';
+    actions.innerHTML='<button class="action">Expand diff</button>';
+  }
+ }
+ if(scenario===2){
+  document.getElementById('sideIren').textContent='Earnings · components 3개 영향';
+  document.getElementById('attentionText').innerHTML='<strong>Mixed earnings</strong>하나의 event가 Demand, Execution, Margin uncertainty에 서로 다른 방향으로 영향을 줌.';
+  document.getElementById('demand').innerHTML='Stronger<small>new demand evidence</small>'; document.getElementById('execution').innerHTML='Weaker<small>timing / delivery</small>'; document.getElementById('valuation').innerHTML='Mixed<small>price + estimates</small>';
+  sum.innerHTML='<b>쉽게 말하면:</b> 실적은 “좋다/나쁘다” 하나로 요약하기 어렵다. 수요 근거는 강해졌지만 execution은 약해졌고 margin uncertainty는 커졌다.';
+  if(mode==='A'){
+    change.innerHTML='<b>Q2 earnings + guidance</b><p>여러 judgment component가 동시에 움직여 focused review가 유리하다.</p>';
+    actions.innerHTML='<button class="action primary" onclick="openReview()">Open focused review</button><button class="action quiet">Later</button>';
+  } else {
+    change.innerHTML='<b>Integrated component diffs</b><div class="inline-diff">Demand ↑ stronger<br>Execution ↓ weaker<br>Margin ? more uncertain</div><p>빠르지만 하나의 event가 왜 이렇게 여러 판단을 바꿨는지는 card 사이에서 재구성해야 한다.</p>';
+    actions.innerHTML='<button class="action">See event impact</button>';
+  }
+  document.getElementById('reviewTrigger').textContent='Q2 earnings와 revised guidance.';
+  document.getElementById('reviewBearing').textContent='Demand 강화 · Execution 약화 · Margin uncertainty 증가.';
+  document.getElementById('reviewWhy').textContent='Hyperscaler demand evidence는 강화됐지만 build timing과 cost/mix evidence가 충돌.';
+  document.getElementById('systemProposal').innerHTML='Demand → stronger<br>Execution → weaker<br>Margin → unresolved';
+  document.getElementById('myView').innerHTML='Demand → moderate<br>Execution → unchanged<br>Margin → unresolved';
+ }
+ if(scenario===3){
+  document.getElementById('sideIren').textContent='Execution · system-user divergence';
+  document.getElementById('attentionText').innerHTML='<strong>Meaningful disagreement</strong>Stock_vis는 execution 판단을 약화했지만 My View는 아직 유지 중.';
+  document.getElementById('execution').innerHTML='System: Weaker<small>My View: unchanged</small>';
+  div.classList.remove('hidden'); document.getElementById('divergenceText').textContent='Execution: Stock_vis는 weakened, My View는 unchanged.';
+  sum.innerHTML='<b>쉽게 말하면:</b> AI와 내가 다르게 생각하는 상황을 숨기지 않는다. 다만 모든 component를 두 칼럼으로 보여주지 않고, 실제 차이가 있는 곳만 표시한다.';
+  if(mode==='A'){
+    change.innerHTML='<b>Execution disagreement</b><p>평소에는 divergence marker만 보이고, 이유를 따져보고 싶을 때 focused review로 확장한다.</p>';
+    actions.innerHTML='<button class="action primary" onclick="openReview()">Review disagreement</button><button class="action quiet">Keep my view for now</button>';
+  } else {
+    change.innerHTML='<b>Inline divergence</b><div class="inline-diff">Stock_vis: Execution weakened<br>My View: unchanged<br><br>Difference remains visible inside Judgment Home.</div>';
+    actions.innerHTML='<button class="action">Why different?</button><button class="action">Edit my view</button>';
+  }
+  document.getElementById('reviewTrigger').textContent='Build timing / delivery evidence accumulated beyond prior expectation.';
+  document.getElementById('reviewBearing').textContent='Execution component only; long-term AI demand and power advantage remain unchanged.';
+  document.getElementById('reviewWhy').textContent='System weights repeated schedule slippage as stronger execution evidence. User has not adopted that interpretation.';
+  document.getElementById('systemProposal').innerHTML='Execution → weaker<br>Conviction ↓';
+  document.getElementById('myView').innerHTML='Execution → unchanged<br>Conviction unchanged';
+ }
+}
+render();
+</script>
+</body>
+</html>
