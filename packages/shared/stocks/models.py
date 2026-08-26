@@ -1410,3 +1410,116 @@ class AnalystSignalSnapshot(models.Model):
 
     def __str__(self):
         return f"AnalystSignalSnapshot({self.symbol} @ {self.captured_at:%Y-%m-%d})"
+
+
+class CalendarEvent(models.Model):
+    """예정 시장 이벤트 통합 원장 (EVT 트랙, 설계 앵커 docs/design/event_calendar_design.md §2).
+
+    D-EVT-1: 이벤트 **사실 원장 = 앱 중립** → shared 토대. 해석·노출은 앱 계층.
+    D-EVT-MODEL(M-B): 단일 테이블 · typed nullable 컬럼. 유형 = EARNINGS / DIVIDEND / SPLIT.
+    멱등 upsert 키 = (event_type, symbol, event_date). 재관측 시 date_observed_count +1
+    (P1-ii 날짜 안정 신호). status stale = 재조회 창에서 소실(이동·철회 추정, v1 직접매칭 없음).
+
+    소비 계약: I3-SPLIT-GUARD 예정 분할 = event_type=SPLIT. 발효(사후) 분할은 StockSplit 별도 경로.
+    서프라이즈 % = (eps_actual − eps_estimated)/|eps_estimated| — 저장 안 함, 읽기 계층 계산(P1-i).
+    """
+
+    class EventType(models.TextChoices):
+        EARNINGS = "EARNINGS", "Earnings"
+        DIVIDEND = "DIVIDEND", "Dividend"
+        SPLIT = "SPLIT", "Split"
+
+    class Session(models.TextChoices):
+        BMO = "BMO", "Before Market Open"
+        AMC = "AMC", "After Market Close"
+        UNKNOWN = "UNKNOWN", "Unknown"
+
+    class Status(models.TextChoices):
+        SCHEDULED = "scheduled", "Scheduled"
+        OCCURRED = "occurred", "Occurred"
+        STALE = "stale", "Stale"
+
+    # 식별 (멱등 키)
+    event_type = models.CharField(max_length=16, choices=EventType.choices)
+    symbol = models.CharField(max_length=10, db_index=True)
+    event_date = models.DateField(db_index=True, help_text="ET 기준. DIVIDEND는 ex-date.")
+
+    # 세션·상태
+    session = models.CharField(
+        max_length=8, choices=Session.choices, default=Session.UNKNOWN,
+        help_text="EARNINGS 발표 세션 (BMO/AMC).",
+    )
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.SCHEDULED,
+        help_text="stale = 재조회 창에서 소실(이동·철회 추정).",
+    )
+
+    # --- EARNINGS ---
+    eps_estimated = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
+    eps_actual = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
+    revenue_estimated = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    revenue_actual = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+
+    # --- DIVIDEND ---
+    dividend_amount = models.DecimalField(max_digits=12, decimal_places=6, null=True, blank=True)
+    payment_date = models.DateField(null=True, blank=True)
+    record_date = models.DateField(null=True, blank=True)
+    frequency = models.CharField(max_length=20, blank=True, default="")
+
+    # --- SPLIT ---
+    split_numerator = models.DecimalField(max_digits=15, decimal_places=6, null=True, blank=True)
+    split_denominator = models.DecimalField(max_digits=15, decimal_places=6, null=True, blank=True)
+
+    # --- 관측 메타 (P1-ii) ---
+    first_seen_at = models.DateTimeField(auto_now_add=True, help_text="최초 관측 시각.")
+    last_seen_at = models.DateTimeField(auto_now=True, help_text="최근 관측 시각(저장마다 갱신).")
+    date_observed_count = models.PositiveSmallIntegerField(
+        default=1, help_text="동일 (type,symbol,date) 재관측 누적 → 날짜 안정 신호.",
+    )
+
+    # --- 출처 메타 ---
+    source = models.CharField(max_length=16, default="fmp")
+    fmp_last_updated = models.DateTimeField(null=True, blank=True, help_text="FMP lastUpdated 원문.")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "shared_calendar_event"
+        unique_together = ("event_type", "symbol", "event_date")
+        indexes = [
+            models.Index(fields=["symbol", "event_date"]),
+            models.Index(fields=["event_date", "event_type"]),
+        ]
+        ordering = ["event_date", "symbol"]
+        verbose_name = "Calendar Event"
+        verbose_name_plural = "Calendar Events"
+
+    def __str__(self):
+        return f"CalendarEvent({self.event_type} {self.symbol} @ {self.event_date})"
+
+    @classmethod
+    def record_observation(cls, *, event_type, symbol, event_date, defaults=None):
+        """멱등 upsert + 재관측 카운터.
+
+        (event_type, symbol, event_date) 신규 → 생성(date_observed_count=1).
+        기존 행 → defaults 필드 갱신 + date_observed_count += 1 (auto_now로 last_seen_at 갱신).
+        반환: (obj, created).
+        """
+        from django.db.models import F
+
+        symbol = symbol.upper()
+        defaults = dict(defaults or {})
+        obj, created = cls.objects.get_or_create(
+            event_type=event_type,
+            symbol=symbol,
+            event_date=event_date,
+            defaults=defaults,
+        )
+        if not created:
+            for k, v in defaults.items():
+                setattr(obj, k, v)
+            obj.date_observed_count = F("date_observed_count") + 1
+            obj.save()
+            obj.refresh_from_db(fields=["date_observed_count"])
+        return obj, created

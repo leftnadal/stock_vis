@@ -1577,6 +1577,21 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 **원인**: LAND 세션은 **메타 4종 변경 금지**(코드 착지 전용)이므로 PROGRESS stale을 **수리할 수 없다**. 절대값 0/0 요구는 "LAND가 못 고치는 검사"를 게이트에 넣어 **구조적 교착**을 만든다. 유사 검사: DECISIONS 갱신일·PROGRESS stale 등 시간 임계 기반 전부 동일 위험.
 
 **해소**: LAND health DoD = **절대값 아닌 세션 시작 기준선 대비 델타 0**. LAND 양식 STEP 0에 health 기준선 측정을 추가하고, STEP 4는 "신규 FAIL/WARN 0(= 착지가 새 결함을 만들지 않음)"으로 판정. 시간 부패형 FAIL은 착지 무관으로 명시·soncan(mgmt PROGRESS 갱신)에 회부. cf. [[lesson_land_health_measure_in_target_tree]] · MGMT-BATCH-36이 본 stale 해소.
+
+---
+
+## 부존재 판정 규율 — 절단 목록·이름 grep만으로 '없음' 판정 금지 (2026-08-24, EVT-SURVEY 회고)
+
+**증상**: 조사에서 "X가 없다"고 단정했으나 실제로는 존재. 오판이 후속 결정의 잘못된 전제가 됨.
+
+**사례 2건 (EVT 트랙 조사)**:
+- **EVT-0 beat drift 오경보**: `PeriodicTask` 목록을 `head -50`으로 잘라 보고 "`update-economic-calendar` DB 미등록(#28 drift)"로 판정 → 실제로는 알파벳순('u')이 절단선 뒤라 잘렸을 뿐. DB에 정상 등록·가동 중(EVT-1 재측정에서 last_run 실측으로 정정).
+- **EVT-1 shared 모델 0건 오판 소지**: 이름 패턴 grep(`class *Calendar*`)만으로 "shared에 관련 모델 없음"에 근접 → 실제 packages/shared는 ~28개 모델 보유(StockSplit 포함). 이름 grep은 명명이 다르면 놓침.
+
+**규율**: 부존재('없음'/'0건') 판정 전 반드시 —
+1. **전수성 검증**: 목록을 `head -N`으로 자르지 말고 `wc -l` 대조 또는 필터+정렬로 전량 확인. 절단 출력으로 '없음' 단정 금지.
+2. **의미 기반 재탐색**: 이름 패턴 grep이 비면 테이블명·db_table·행 존재(SQL)·소비처 grep 등 **다른 축**으로 교차 확인.
+3. 판정을 후속 결정의 전제로 쓰기 전 **행이 증거**(DB 실행 수·last_run 타임스탬프)로 재확인.
 ## health WARN 유형 판정 기준 — 환경·동기화 신호성=보고 후 진행 / 신규 발생 WARN·FAIL=명목 HALT (채번 후보, DSS-FLAT-OBS-1 2026-08-24) [harness][process][ops]
 
 health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 미푸시 세션 상태로 인한 sync 계열)은 보고 후 진행 가능. (ii) 시스템 검사에서 신규 발생한 WARN/FAIL은 명목 HALT. STEP 0 보고에 유형 구분을 명시한다. 실증: MGMT-LEDGER-1 STEP 0-2 (08-19).

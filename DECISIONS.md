@@ -6763,3 +6763,17 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **부대 발견 D-COACH-SCHEMA-EXT-PATH**: 계약 재생성 중 CoachE1~E6 컴포넌트 무음 드롭 발견 → 근인 = `openapi_extensions.py` target_class가 pre-monorepo 경로(`portfolio.api.serializers.*`, 실제=`apps.portfolio...`). advisory_schema.py는 이미 `apps.` 접두 사용·정상. 12건 수복 → 재생성 비파괴 전환(E1~E6 복원 + advisory + scorecard 유입 = stale 해소). 규칙: **spectacular target_class = serializer 실제 __module__(모노레포 `apps.` 접두 필수)**. common-bugs 등재.
 
 **Why**: 채점(Tier1) REST 표면이 command-only였음 → derived-render 슬라이스는 BE compute-on-read API 신설 선행 필수. 신규 테이블/마이그 0(D-I3-1 파생 계산). GATE 전건 GREEN(1a byte-identical·1b blast 748·makemigrations clean / 2 tsc0·vitest989 / 3 tsc0·lint0·vitest1015).
+
+---
+
+## 2026-08-24 EVT 트랙 설계 확정 (설계 앵커: docs/design/event_calendar_design.md v1.1)
+- D-EVT-1: 이벤트 사실 원장 = 앱 중립, 해석·노출 = 앱 (C, 마진 1.05 자동)
+- D-EVT-1b: 신규 원장 packages/shared + 기존 3-트리(macro.EconomicEvent · shared.StockSplit · chain_sight Filing-IPO) 불변·읽기 연합 (1b-A 4.30, 사용자 확정). 흡수 재소환 트리거: 소비처 2곳 이상 병합 중복 시, makemigrations --dry-run 필수
+- D-EVT-2: 범위 B′ = 어닝(+결과 채움)·배당락·분할예정·거시 정비 (4.75, 사용자 확정)
+- D-EVT-MODEL: 단일 테이블 typed nullable, 모델명 CalendarEvent ("Event" 단독 금지 — 4앱 명칭 충돌 실측)
+- D-EVT-3: 페이즈드 — Phase 1 캘린더 뷰+거시 스트립 → Phase 2 EVT-CHAIN (4.30, 사용자 확정)
+- D-EVT-FE1: 노드 미니 이벤트 위젯은 Phase 2와 동시 출시 (4.65, 사용자 확정)
+- SPLIT-CALENDAR-PREVIEW(TASKQUEUE) → EVT 흡수. 예정 분할 = CalendarEvent(SPLIT), I3-SPLIT-GUARD 소비 계약은 본 원장이 제공. 발효 분할 기존 경로 불변
+- 이연: D-EVT-CHAIN-THRESH (관계 타임라인 파라미터 — 실데이터 관찰 게이트) / 1b-A 이중성 해소(흡수) 재소환
+- 원칙: 이벤트 원장 백필은 no-retroactive 원칙 비대상 (사실 데이터, 재현 가능)
+- 하드 요건: earnings-calendar 45일 이하 청킹 + 캡 감지(count==4000 또는 요청·반환 span 불일치) 없이 수집 가동 금지
