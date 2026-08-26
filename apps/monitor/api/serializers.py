@@ -98,13 +98,43 @@ class SwapHoldLogSerializer(serializers.ModelSerializer):
     """교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). 쓰기는
     /api/v1/monitor/swap-hold-logs/에서 — 횟수·누적일수는 조회 측(FE)이 이 로그를 집계."""
 
+    # 서버 계산 성과(스냅샷 시점 대비 DailyPrice 종가 변화, RECON-SWAP-0813 후속 —
+    # FE "현재가 데이터 없음" 제거). 새 가격 API 없음(latest_close 재사용). null-safe.
+    hold_performance_pct = serializers.SerializerMethodField()
+    candidate_performance_pct = serializers.SerializerMethodField()
+
     class Meta:
         model = SwapHoldLog
-        fields = ["id", "claim", "held_at", "candidate_ref", "hold_price", "candidate_price", "note"]
+        fields = [
+            "id", "claim", "held_at", "candidate_ref", "hold_price", "candidate_price", "note",
+            "hold_performance_pct", "candidate_performance_pct",
+        ]
         read_only_fields = ["id", "held_at"]
 
     def validate_candidate_ref(self, value):
         return value.upper() if value else value
+
+    @staticmethod
+    def _perf_pct(symbol, held_at):
+        """anchor(스냅샷 시점 종가) 대비 current(최신 종가) 변화율(%). null-safe."""
+        if not symbol:
+            return None
+        from apps.monitor.services.scenario import latest_close
+
+        anchor = latest_close(symbol, as_of=held_at.date())
+        if not anchor:
+            return None
+        current = latest_close(symbol)
+        if current is None:
+            return None
+        return round((current - anchor) / anchor * 100.0, 2)
+
+    def get_hold_performance_pct(self, obj):
+        symbol = obj.claim.monitor.target_ref
+        return self._perf_pct(symbol, obj.held_at)
+
+    def get_candidate_performance_pct(self, obj):
+        return self._perf_pct(obj.candidate_ref, obj.held_at)
 
 
 class DecisionJournalEntrySerializer(serializers.ModelSerializer):
@@ -401,6 +431,9 @@ class MonitorSerializer(serializers.ModelSerializer):
     display = serializers.SerializerMethodField()
     # MON-P2A T3: 점수 커버리지 {sufficient, total} — 스트립 점수 토큰 접미 표기(예 6/9).
     indicator_coverage = serializers.SerializerMethodField()
+    # 가격 표시 통화(B-BE-1) — target_ref 배후 Stock.currency. 비주식 scope·미매칭 심볼은
+    # "USD" 폴백(하드코딩 심볼 금지, Stock.currency choices가 단일 소스).
+    currency_code = serializers.SerializerMethodField()
 
     class Meta:
         model = Monitor
@@ -408,7 +441,7 @@ class MonitorSerializer(serializers.ModelSerializer):
             "id", "scope", "target_ref", "name", "status", "current_state",
             "target_date_end", "resolved_label", "latest_score", "display",
             "indicator_count", "indicator_coverage", "next_deadline", "has_claim",
-            "close_suggested", "danger_streak", "created_at", "updated_at",
+            "close_suggested", "danger_streak", "currency_code", "created_at", "updated_at",
         ]
         # current_state·마감제안은 파이프라인(엔진) 소유 — 사용자 입력 불가
         read_only_fields = [
@@ -443,6 +476,20 @@ class MonitorSerializer(serializers.ModelSerializer):
 
     def get_has_claim(self, obj):
         return bool(getattr(obj, "has_claim", False))
+
+    def get_currency_code(self, obj):
+        # 저비용 단건 조회(indexed symbol lookup) — 리스트 N+1은 종목수만큼(모니터당 1건),
+        # scope=stock 외에는 조회 자체를 생략한다.
+        if obj.scope != Monitor.Scope.STOCK or not obj.target_ref:
+            return "USD"
+        from packages.shared.stocks.models import Stock
+
+        currency = (
+            Stock.objects.filter(symbol=obj.target_ref.upper())
+            .values_list("currency", flat=True)
+            .first()
+        )
+        return currency or "USD"
 
     def get_display(self, obj):
         # latest_score(스냅샷 overall_score)에서 파생값을 BE 엔진으로 산출(단일 소스).

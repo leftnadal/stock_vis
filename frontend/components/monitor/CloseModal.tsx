@@ -12,6 +12,7 @@ import { AlertTriangle, Loader2 } from 'lucide-react'
 import { monitorKeys, useCloseClaim, useClosePreview } from '@/hooks/useMonitor'
 import { VERDICT_META, VERDICT_OPTIONS } from '@/lib/monitor/verdictLabels'
 import type { FactorTag, IndicatorResultValue, ProposedVerdict } from '@/types/monitor'
+import { formatScore } from '@/utils/formatters'
 
 interface CloseModalProps {
   monitorId: string
@@ -149,7 +150,7 @@ export function CloseModal({ monitorId, claimId, onClose }: CloseModalProps) {
                     <span className="ml-1 block text-xs text-blue-600 dark:text-blue-300">
                       {preview.proposed_verdict === 'expired'
                         ? '기한 경과 · 진입 구간 미도달'
-                        : `overall_score ${preview.overall_score.toFixed(3)} · 밴드 [−0.333, +0.333]`}
+                        : `overall_score ${formatScore(preview.overall_score)} · 밴드 [−0.333, +0.333]`}
                     </span>
                   </div>
 

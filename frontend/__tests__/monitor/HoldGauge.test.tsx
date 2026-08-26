@@ -91,11 +91,11 @@ describe('HoldGauge', () => {
       { wrapper }
     )
     await waitFor(() => expect(screen.getByTestId('hold-gauge-cumulative')).toBeInTheDocument())
-    expect(screen.getByTestId('hold-gauge-cumulative')).toHaveTextContent('+5.2%')
+    expect(screen.getByTestId('hold-gauge-cumulative')).toHaveTextContent('+5.20%')
     // 앵커 = 최초 로그(100/50) 대비 현재가(120/55) → 보유 +20.0%, 후보 +10.0%, 격차 +10.0%p
-    expect(screen.getByTestId('hold-gauge-hold-performance')).toHaveTextContent('+20.0%')
-    expect(screen.getByTestId('hold-gauge-candidate-performance')).toHaveTextContent('+10.0%')
-    expect(screen.getByTestId('hold-gauge-gap')).toHaveTextContent('+10.0%p')
+    expect(screen.getByTestId('hold-gauge-hold-performance')).toHaveTextContent('+20.00%')
+    expect(screen.getByTestId('hold-gauge-candidate-performance')).toHaveTextContent('+10.00%')
+    expect(screen.getByTestId('hold-gauge-gap')).toHaveTextContent('+10.00%p')
   })
 
   it('앵커 스냅샷 가격이 없는 구 기록이면 "성과 앵커 없음(구 기록)"으로 정직 표기한다', async () => {
@@ -157,9 +157,45 @@ describe('HoldGauge', () => {
     ])
     render(<HoldGauge claimId="c1" candidateRef="MSFT" holdCurrentPrice="110" />, { wrapper })
     await waitFor(() => expect(screen.getByTestId('hold-gauge-cumulative')).toBeInTheDocument())
-    expect(screen.getByTestId('hold-gauge-hold-performance')).toHaveTextContent('+10.0%')
+    expect(screen.getByTestId('hold-gauge-hold-performance')).toHaveTextContent('+10.00%')
     expect(screen.getByTestId('hold-gauge-candidate-performance')).toHaveTextContent('현재가 데이터 없음')
     expect(screen.getByTestId('hold-gauge-gap')).toHaveTextContent('산출 불가')
+  })
+
+  // PART C-4 — BE가 held_at 스냅샷→DailyPrice로 계산한 성과가 있으면 Wallet 현재가 없이도
+  // 후보 성과를 보여준다("현재가 데이터 없음" 오표기 해소, 후보가 감시 등록만 되어있어도 됨).
+  it('BE 산출 성과 필드가 있으면 후보 현재가(Wallet)가 없어도 "현재가 데이터 없음"이 사라진다', async () => {
+    listSwapHoldLogs.mockResolvedValue([
+      {
+        id: '1',
+        claim: 'c1',
+        held_at: '2026-08-01T00:00:00Z',
+        candidate_ref: 'MSFT',
+        hold_price: '100',
+        candidate_price: '50',
+        note: '',
+        hold_performance_pct: 20,
+        candidate_performance_pct: 10,
+      },
+      {
+        id: '2',
+        claim: 'c1',
+        held_at: '2026-08-05T00:00:00Z',
+        candidate_ref: 'MSFT',
+        hold_price: '105',
+        candidate_price: '52',
+        note: '',
+      },
+    ])
+    // candidateCurrentPrice 미전달(후보 미보유) — 그래도 BE 필드가 있으면 산출돼야 한다.
+    render(<HoldGauge claimId="c1" candidateRef="MSFT" holdCurrentPrice="120" />, { wrapper })
+    await waitFor(() => expect(screen.getByTestId('hold-gauge-cumulative')).toBeInTheDocument())
+    expect(screen.getByTestId('hold-gauge-hold-performance')).toHaveTextContent('+20.00%')
+    expect(screen.getByTestId('hold-gauge-candidate-performance')).toHaveTextContent('+10.00%')
+    expect(screen.getByTestId('hold-gauge-candidate-performance')).not.toHaveTextContent(
+      '현재가 데이터 없음'
+    )
+    expect(screen.getByTestId('hold-gauge-gap')).toHaveTextContent('+10.00%p')
   })
 
   it('보류 버튼 클릭 시 candidate_ref·hold_price·candidate_price와 함께 createSwapHoldLog를 호출한다', async () => {

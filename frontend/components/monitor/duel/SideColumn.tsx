@@ -9,6 +9,7 @@ import { AlertTriangle, ShieldPlus } from 'lucide-react'
 
 import { SourceBadge } from '@/components/monitor/SourceBadge'
 import { EvidenceForm } from '@/components/monitor/evidence/EvidenceForm'
+import { EvidenceModal } from '@/components/monitor/evidence/EvidenceModal'
 import { useEvidenceStatus } from '@/hooks/useMonitor'
 import { gapMultiplierFor } from '@/constants/gapProfile'
 import {
@@ -19,6 +20,7 @@ import {
 } from '@/lib/monitor/duel'
 import { EVIDENCE_STATUS_META } from '@/lib/monitor/evidence'
 import type { Claim } from '@/types/monitor'
+import { formatPctRule } from '@/utils/formatters'
 
 interface SideColumnProps {
   testKey: string // testid 접미(안정적 영문 키 — label은 한글일 수 있어 별도 전달)
@@ -42,6 +44,8 @@ export function SideColumn({
   const claimId = claim?.id ?? ''
   const { data: status } = useEvidenceStatus(claimId, undefined, !!claimId)
   const [adopting, setAdopting] = useState(false)
+  // C-1: "판단 불가" 카드에서 바로 근거 관리 모달을 열기 위한 로컬 토글.
+  const [evidenceOpen, setEvidenceOpen] = useState(false)
   const summary = summarizeEvidenceStatus(status)
   const judgment = checkJudgmentAvailability({
     hasClaim: !!claim,
@@ -72,7 +76,26 @@ export function SideColumn({
               <li key={c}>{c}</li>
             ))}
           </ul>
+          {/* C-1 — claim은 있으나 근거가 부족/없어서 판단 불가인 경우, 근거 관리로 바로 유도 */}
+          {claim && monitorId && (
+            <button
+              type="button"
+              onClick={() => setEvidenceOpen(true)}
+              data-testid="judgment-unavailable-evidence-cta"
+              className="mt-1 inline-flex w-fit items-center gap-1 rounded border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <ShieldPlus size={12} /> 근거 관리
+            </button>
+          )}
         </div>
+        {evidenceOpen && claim && monitorId && (
+          <EvidenceModal
+            claimId={claim.id}
+            monitorId={monitorId}
+            targetRef={targetRef}
+            onClose={() => setEvidenceOpen(false)}
+          />
+        )}
       </div>
     )
   }
@@ -138,8 +161,7 @@ export function SideColumn({
         <p className="text-sm text-gray-700 dark:text-gray-300">{friction.note}</p>
         {friction.unrealizedPct != null && (
           <p className="mt-0.5 text-xs text-gray-400">
-            평가손익 {friction.unrealizedPct >= 0 ? '+' : ''}
-            {friction.unrealizedPct.toFixed(1)}%
+            평가손익 {formatPctRule(friction.unrealizedPct, { signed: true })}
           </p>
         )}
       </div>

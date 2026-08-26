@@ -10,6 +10,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react'
 import { PriceLadder } from '@/components/monitor/PriceLadder'
 import { STATE_TONE_CLASS, ddayLabel, stateMeta } from '@/lib/monitor/display'
 import type { Claim, Monitor, MonitorIndicator, MonitorScope } from '@/types/monitor'
+import { dirArrow, formatIndicator, formatPctRule, formatScore } from '@/utils/formatters'
 
 const SCOPE_LABEL: Record<MonitorScope, string> = {
   market: '시장',
@@ -112,6 +113,7 @@ export function SlimStrip({
   const score = monitor.latest_score
   const cov = monitor.indicator_coverage // MON-P2A T3: {sufficient, total}
   const dday = ddayLabel(monitor.next_deadline)
+  const currencyCode = monitor.currency_code ?? 'USD' // PART B-FE 숫자 표시 규약 '가'
 
   // 위험 강조 = 기존 신호만 소비(신규 임계 창설 금지, T1): danger_streak·close_suggested·이탈 존.
   const dangerActive =
@@ -156,7 +158,7 @@ export function SlimStrip({
           testid="token-score"
           value={
             <span className="inline-flex items-baseline gap-1">
-              {score != null ? score.toFixed(2) : '—'}
+              {score != null ? formatScore(score) : '—'}
               {scoreDelta != null && (
                 <span
                   data-testid="token-score-delta"
@@ -168,8 +170,8 @@ export function SlimStrip({
                         : 'text-gray-400'
                   }`}
                 >
-                  {scoreDelta > 0 ? '▲' : scoreDelta < 0 ? '▼' : '·'}
-                  {scoreDelta === 0 ? '+0.00' : Math.abs(scoreDelta).toFixed(2)}
+                  {dirArrow(scoreDelta, 3) || '·'}
+                  {formatScore(scoreDelta, { signed: true })}
                 </span>
               )}
               {/* MON-P2A T3: 커버리지 접미(유효/전체). 유효<전체면 경고톤(부분 데이터). */}
@@ -188,7 +190,7 @@ export function SlimStrip({
         <Token
           label="손절여유"
           testid="token-stop-distance"
-          value={typeof stopPct === 'number' ? `${stopPct.toFixed(1)}%` : '—'}
+          value={typeof stopPct === 'number' ? formatPctRule(stopPct) : '—'}
           tone={typeof stopPct === 'number' ? (dangerActive ? 'danger' : 'default') : 'muted'}
         />
         <Token
@@ -227,7 +229,7 @@ export function SlimStrip({
             </button>
             {priceOpen && (
               <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-800" data-testid="panel-price">
-                <PriceLadder zoneDisplay={zd} />
+                <PriceLadder zoneDisplay={zd} currencyCode={currencyCode} />
                 <p className="mt-3 text-[11px] text-gray-400">일봉 기준 · 스윙 타이밍</p>
               </div>
             )}
@@ -274,7 +276,7 @@ export function SlimStrip({
                         )}
                       </span>
                       <span className="flex-shrink-0 text-gray-400">
-                        {typeof v === 'number' ? v.toFixed(3) : '—'}
+                        {typeof v === 'number' ? formatIndicator(v) : '—'}
                       </span>
                     </div>
                   )

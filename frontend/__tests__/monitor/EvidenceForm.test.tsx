@@ -40,6 +40,14 @@ describe('EvidenceForm', () => {
     await waitFor(() => expect(screen.getByTestId('evidence-form-submit')).toBeDisabled())
   })
 
+  // C-3 — 임계 z가 원값이 아니라 z-점수 기준임을 명시하는 헬퍼 문구.
+  it('자동형: 임계 입력 아래에 z-점수 기준 안내 문구를 표시한다', async () => {
+    render(<EvidenceForm claimId="c1" monitorId="m1" />, { wrapper })
+    expect(screen.getByTestId('evidence-threshold-help')).toHaveTextContent(
+      '임계는 원값이 아니라 z-점수 기준입니다 — 원값 조건은 수동형으로.'
+    )
+  })
+
   it('자동형: 지표 선택 + 임계 입력 후 제출하면 createClaimEvidence를 호출한다', async () => {
     createClaimEvidence.mockResolvedValue({ id: 'e1' })
     render(<EvidenceForm claimId="c1" monitorId="m1" />, { wrapper })

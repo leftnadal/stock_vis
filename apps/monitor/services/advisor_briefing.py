@@ -18,7 +18,7 @@ from apps.monitor.services.technical import score_indicator_dispatch
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "v1.1"
+PROMPT_VERSION = "v1.2"
 SURFACE_LA = AdvisorNote.Surface.L_A
 
 # 무변화 임계 (D-MON-P4-LA, STEP0 실측 48델타 P50 0.0125<0.02<P75 0.0252로 확정)
@@ -39,6 +39,7 @@ SYSTEM_PROMPT_V1 = """너는 개인 투자자의 종목 관제를 돕는 '비서
 - 전할 수 있는 것은 오직 사실·거리·상태다: 종합 점수와 그 변화, 현재가로부터 시나리오 레벨(진입/목표/손절)까지의 거리, 상태(달 위상), 근거 지표의 충분성.
 - 반드시 근거 지표 커버리지(n/총)를 문장에 포함하라. 숫자를 지어내지 마라 — 주어진 값만 쓴다.
 - **제공된 수치(점수·%·가격)는 기준·부호·정밀도를 그대로 인용하라.** 재계산·기준 변경·반올림 금지 — 예: "+0.0185"를 "+0.02"로 줄이거나, "현재가로부터 +5.02%"를 "매입가 대비 -5%"처럼 기준·부호를 뒤집지 마라. 거리는 항상 '현재가로부터'가 기준이다.
+- **가격은 프롬프트에 주어진 통화 표기(예 "$")를 그대로 써라.** "원" 등 다른 통화 단위로 임의 치환하지 마라 — 프롬프트에 없는 통화 단위를 지어내지 마라.
 - 근거 점검 수치(생존 m/n, 소멸 연속거래일수, 재확인 D-n)도 위 인용 원칙과 동일하게 제공된 값 그대로 쓴다 — 계산·반올림 금지.
 - 상태는 주어진 상태 어휘(달 위상 라벨)를 그대로 쓴다.
 - 무변화(unchanged=true)로 표시되면 1~2문장으로 짧게 "큰 변화 없음 + 현재 상태" 정도만 전한다.
@@ -46,6 +47,21 @@ SYSTEM_PROMPT_V1 = """너는 개인 투자자의 종목 관제를 돕는 '비서
 
 출력은 반드시 아래 JSON 형식 하나만. 그 외 텍스트·코드펜스 금지:
 {"headline": "...", "body": "..."}"""
+
+
+# 통화 코드 → 프롬프트 표기 접두(B-BE-2). 값은 Stock.CURRENCY_CHOICES 범위 내에서만
+# 늘어난다 — 미등록 코드는 코드 그대로 접두(예 "EUR 100")로 안전 폴백.
+_CURRENCY_PREFIX = {"USD": "$", "KRW": "₩"}
+
+
+def _currency_prefix(code):
+    return _CURRENCY_PREFIX.get(code, f"{code} " if code else "")
+
+
+def _fmt_price(price, currency):
+    """가격에 통화 접두를 붙인다 — 숫자 자체(정밀도)는 원문 그대로 보존(인용 계약 무변)."""
+    prefix = _currency_prefix(currency)
+    return f"{prefix}{price}"
 
 
 def _pct_distance(close, level):
@@ -97,6 +113,15 @@ def build_context(monitor, as_of=None):
             {"name": ind.name, "score": r.get("score"), "sufficient": suff}
         )
 
+    # 통화 표기(B-BE-2) — target_ref 배후 Stock.currency. 미매칭·비주식 scope는 USD 폴백.
+    from packages.shared.stocks.models import Stock
+
+    currency = (
+        Stock.objects.filter(symbol=monitor.target_ref.upper())
+        .values_list("currency", flat=True)
+        .first()
+    ) or "USD"
+
     # 시나리오 레벨 3종과 현재가 거리
     close = latest_close(monitor.target_ref)
     claim = monitor.claims.filter(
@@ -142,6 +167,7 @@ def build_context(monitor, as_of=None):
         "coverage_total": coverage_total,
         "indicators": indicators,
         "close": close,
+        "currency": currency,
         "levels": levels,
         "claim": claim,
         "evidence": evidence,
@@ -258,20 +284,22 @@ def _lexical_guard(text):
 
 
 def _render_user_prompt(ctx, unchanged):
+    currency = ctx.get("currency", "USD")
     lines = [
         f"종목: {ctx['symbol']}  기준일(asof): {ctx['asof']}",
         f"종합 점수: {ctx['overall_score']:+.4f} (범위 -1~1, 소수 4자리 그대로 인용)"
         + (f", 직전 대비 Δ {ctx['delta']:+.4f}" if ctx["delta"] is not None else ", 직전 스냅샷 없음"),
         f"상태(달 위상): {ctx['state_display']}",
         f"근거 지표 커버리지: {ctx['coverage_n']}/{ctx['coverage_total']} (충분/등록)",
+        f'통화 표기: 아래 가격은 전부 "{_currency_prefix(currency)}" 표기(다른 통화 단위로 바꾸지 말 것)',
     ]
     if ctx["close"] is not None:
-        lines.append(f"현재가(종가): {ctx['close']}")
+        lines.append(f"현재가(종가): {_fmt_price(ctx['close'], currency)}")
     if ctx["levels"]:
         lines.append("시나리오 레벨 (거리 기준 = 현재가로부터):")
         for lv in ctx["levels"]:
             d = f"현재가로부터 {lv['distance_pct']:+.2f}%" if lv["distance_pct"] is not None else "n/a"
-            lines.append(f"  - {lv['label']} {lv['price']}: {d}")
+            lines.append(f"  - {lv['label']} {_fmt_price(lv['price'], currency)}: {d}")
     suff_names = [i["name"] for i in ctx["indicators"] if i["sufficient"]]
     if suff_names:
         lines.append("충분 지표: " + ", ".join(suff_names))

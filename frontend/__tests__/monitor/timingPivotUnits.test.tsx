@@ -53,7 +53,7 @@ describe('ZoneChip', () => {
     const chip = screen.getByTestId('zone-chip')
     expect(chip).toHaveAttribute('data-zone', 'entry')
     expect(chip).toHaveTextContent('진입 구간')
-    expect(chip).toHaveTextContent('-5.0%')
+    expect(chip).toHaveTextContent('-5.00%')
   })
   it('zone null이면 미표시', () => {
     render(<ZoneChip zoneDisplay={{ ...ZD, zone: null, label: null }} />)
@@ -66,8 +66,8 @@ describe('MiniPriceLadder (카드 수평)', () => {
     render(<MiniPriceLadder zoneDisplay={ZD} />)
     expect(screen.getByTestId('mini-price-ladder')).toBeInTheDocument()
     expect(screen.getByTestId('mini-ladder-marker')).toBeInTheDocument()
-    expect(screen.getByText(/손절 90/)).toBeInTheDocument()
-    expect(screen.getByText(/목표 120/)).toBeInTheDocument()
+    expect(screen.getByText(/손절 \$90\.00/)).toBeInTheDocument()
+    expect(screen.getByText(/목표 \$120\.00/)).toBeInTheDocument()
   })
 })
 
@@ -79,6 +79,6 @@ describe('PriceLadder (상세 수직)', () => {
     expect(screen.getByTestId('ladder-band-entry')).toHaveTextContent('진입 구간')
     // 경계값 4종 노출
     expect(screen.getByText('접근 상한')).toBeInTheDocument()
-    expect(screen.getByText('103')).toBeInTheDocument()
+    expect(screen.getByText('$103.00')).toBeInTheDocument()
   })
 })

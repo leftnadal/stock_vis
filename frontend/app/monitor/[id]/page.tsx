@@ -5,7 +5,7 @@
 import { use, useState } from 'react'
 
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ShieldPlus } from 'lucide-react'
 
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { CloseModal } from '@/components/monitor/CloseModal'
@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import {
   useAdvisorNotes,
   useClosePreview,
+  useEvidenceStatus,
   useIndicators,
   useMonitor,
   useMonitorAlerts,
@@ -26,7 +27,9 @@ import {
 } from '@/hooks/useMonitor'
 import { buildJournal } from '@/lib/monitor/journal'
 import { outcomeToVerdict } from '@/lib/monitor/closure'
+import { summarizeEvidenceStatus } from '@/lib/monitor/duel'
 import type { Claim } from '@/types/monitor'
+import { formatPctRule, formatPrice, formatScore } from '@/utils/formatters'
 
 function formatDate(iso: string | null): string {
   if (!iso) return ''
@@ -37,12 +40,14 @@ function ClaimRow({
   claim,
   monitorId,
   judgeUsername,
+  currencyCode,
   onCloseClick,
   onEvidenceClick,
 }: {
   claim: Claim
   monitorId: string
   judgeUsername?: string | null
+  currencyCode: string
   onCloseClick: (claim: Claim) => void
   onEvidenceClick: (claim: Claim) => void
 }) {
@@ -72,12 +77,13 @@ function ClaimRow({
                       : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
                 }`}
               >
-                {claim.zone_display.pnl_pct >= 0 ? '+' : ''}
-                {claim.zone_display.pnl_pct.toFixed(1)}%
+                {formatPctRule(claim.zone_display.pnl_pct, { signed: true })}
               </span>
             )}
             {claim.purchase_price && (
-              <span className="text-[11px] text-gray-400">매입 {claim.purchase_price}</span>
+              <span className="text-[11px] text-gray-400">
+                매입 {formatPrice(claim.purchase_price, currencyCode)}
+              </span>
             )}
           </div>
         )}
@@ -87,7 +93,7 @@ function ClaimRow({
           <p className="mt-1 text-xs text-gray-400" data-testid="claim-row-closure-summary">
             {claim.resolved_at ? `${formatDate(claim.resolved_at)} 마감` : '마감'}
             {typeof claim.closure_snapshot?.overall_score === 'number' &&
-              ` · 동결 점수 ${claim.closure_snapshot.overall_score.toFixed(3)}`}
+              ` · 동결 점수 ${formatScore(claim.closure_snapshot.overall_score)}`}
             {judgeUsername && ` · 판정자 ${judgeUsername}`}
           </p>
         )}
@@ -145,6 +151,12 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
   // close-preview는 무상태라 claim 상태 무관하게 호출 가능 — 이걸로 지표 "최신값"을 보강.
   const firstClaimId = claims?.[0]?.id ?? ''
   const { data: preview } = useClosePreview(firstClaimId, !!firstClaimId)
+
+  // C-2: 상단 스트립 근거 상태 배지 — 활성 claim 우선, 없으면 첫 claim.
+  const activeClaim = (claims ?? []).find((c) => c.status === 'active') ?? claims?.[0] ?? null
+  const activeClaimId = activeClaim?.id ?? ''
+  const { data: evidenceStatus } = useEvidenceStatus(activeClaimId, undefined, !!activeClaimId)
+  const evidenceSummary = summarizeEvidenceStatus(evidenceStatus)
   const latestValueById = new Map((preview?.indicators ?? []).map((i) => [i.id, i.latest_value]))
   // MON-P2A T3: 지표별 충분성(신호 패널 배지). is_sufficient 미제공 시 표기 안 함.
   const sufficientById = new Map(
@@ -176,6 +188,7 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
 
   // 가격축: 활성 Claim 중 zone_display 있는 첫 건 → 스트립 존/손절여유 + 가격 사다리 패널.
   const zoneClaim = (claims ?? []).find((c) => c.status === 'active' && c.zone_display?.zone)
+  const currencyCode = monitor.currency_code ?? 'USD' // PART B-FE 숫자 표시 규약 '가'
 
   // 전일 Δ = 점수 정본 시계열(snapshots) 마지막 점의 delta(MON-P2B T1) — sparkline 무접촉.
   // 산출 가능(마지막 점 delta != null)하면 항상 사용(0 포함), null이면 무표시.
@@ -205,6 +218,34 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
         sufficientById={sufficientById}
       />
 
+      {/* C-2 — 근거 상태 배지 + 근거 관리 진입(상단 노출, 클레임 행 내부의 저노출 링크는 유지) */}
+      {activeClaim && (
+        <div className="mb-4 flex items-center gap-2">
+          <span
+            data-testid="strip-evidence-badge"
+            className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+              evidenceSummary.total === 0
+                ? 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                : evidenceSummary.alive < evidenceSummary.total
+                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+            }`}
+          >
+            {evidenceSummary.total === 0
+              ? '근거 0건'
+              : `근거 ${evidenceSummary.alive}/${evidenceSummary.total}`}
+          </span>
+          <button
+            type="button"
+            onClick={() => setEvidenceClaim(activeClaim)}
+            data-testid="strip-evidence-cta"
+            className="inline-flex items-center gap-1 text-xs text-gray-500 underline-offset-2 hover:text-gray-800 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <ShieldPlus size={12} /> 근거 관리
+          </button>
+        </div>
+      )}
+
       {/* T2 — 일지 (지배 영역) */}
       <section className="mb-6" data-testid="detail-journal">
         <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">일지</h2>
@@ -228,6 +269,7 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
                 claim={c}
                 monitorId={monitorId}
                 judgeUsername={user?.username}
+                currencyCode={currencyCode}
                 onCloseClick={setClosingClaim}
                 onEvidenceClick={setEvidenceClaim}
               />

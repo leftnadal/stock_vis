@@ -22,6 +22,15 @@ vi.mock('@/components/monitor/CloseModal', () => ({
   ),
 }))
 
+// C-2: 상단 스트립 배지·CTA 배선만 검증 대상 — EvidenceModal 내부는 EvidenceModal.test.tsx가 담당.
+vi.mock('@/components/monitor/evidence/EvidenceModal', () => ({
+  EvidenceModal: ({ claimId, onClose }: { claimId: string; onClose: () => void }) => (
+    <div data-testid="evidence-modal-stub" data-claim-id={claimId}>
+      <button onClick={onClose}>evidence-stub-close</button>
+    </div>
+  ),
+}))
+
 const monitor: Monitor = {
   id: 'm1',
   scope: 'stock',
@@ -82,6 +91,8 @@ function makeClaim(overrides: Partial<Claim> = {}): Claim {
 
 const useMonitorMock = vi.fn()
 const useMonitorClaimsMock = vi.fn()
+// C-2: 상단 스트립 근거 상태 배지 소스 — 기본은 미상태(data: undefined), 개별 테스트가 override.
+const useEvidenceStatusMock = vi.fn()
 
 vi.mock('@/hooks/useMonitor', () => ({
   useMonitor: (id: string) => useMonitorMock(id),
@@ -92,6 +103,7 @@ vi.mock('@/hooks/useMonitor', () => ({
   useSparkline: () => ({ data: null }),
   useSnapshots: () => ({ data: null }),
   useAdvisorNotes: () => ({ data: null }),
+  useEvidenceStatus: (...a: unknown[]) => useEvidenceStatusMock(...a),
 }))
 
 import MonitorDetailPage from '@/app/monitor/[id]/page'
@@ -99,6 +111,8 @@ import MonitorDetailPage from '@/app/monitor/[id]/page'
 beforeEach(() => {
   useMonitorMock.mockReset()
   useMonitorClaimsMock.mockReset()
+  useEvidenceStatusMock.mockReset()
+  useEvidenceStatusMock.mockReturnValue({ data: undefined })
 })
 
 // use(params)가 Promise를 언랩하며 1회 suspend한다 — act(async)로 마이크로태스크를 흘려보낸다.
@@ -181,6 +195,52 @@ describe('MonitorDetailPage', () => {
     // 일지 영역 + open 항목(첫 claim 사전 커밋)
     expect(screen.getByTestId('detail-journal')).toBeInTheDocument()
     expect(screen.getByTestId('journal-entry-open')).toBeInTheDocument()
+  })
+
+  // C-2 — 상단 스트립 근거 상태 배지 + 근거 관리 진입(저노출 링크는 claim 행에 유지).
+  describe('C-2 — 상단 근거 상태 배지 + 근거 관리 진입', () => {
+    it('근거 0건이면 "근거 0건" 배지를 표시한다', async () => {
+      useMonitorMock.mockReturnValue({ data: monitor, isLoading: false, isError: false, error: null })
+      useMonitorClaimsMock.mockReturnValue({ data: [makeClaim()] })
+      useEvidenceStatusMock.mockReturnValue({
+        data: { claim_id: 'c1', as_of: '2026-08-11', total: 0, alive: 0, results: [] },
+      })
+      await renderDetail()
+
+      await waitFor(() => expect(screen.getByTestId('strip-evidence-badge')).toBeInTheDocument())
+      expect(screen.getByTestId('strip-evidence-badge')).toHaveTextContent('근거 0건')
+    })
+
+    it('근거가 있으면 "근거 alive/total" 배지를 표시한다', async () => {
+      useMonitorMock.mockReturnValue({ data: monitor, isLoading: false, isError: false, error: null })
+      useMonitorClaimsMock.mockReturnValue({ data: [makeClaim()] })
+      useEvidenceStatusMock.mockReturnValue({
+        data: {
+          claim_id: 'c1',
+          as_of: '2026-08-11',
+          total: 3,
+          alive: 2,
+          results: [],
+        },
+      })
+      await renderDetail()
+
+      await waitFor(() => expect(screen.getByTestId('strip-evidence-badge')).toBeInTheDocument())
+      expect(screen.getByTestId('strip-evidence-badge')).toHaveTextContent('근거 2/3')
+    })
+
+    it('근거 관리 CTA 클릭 시 근거 관리 모달이 활성 claim으로 열린다', async () => {
+      useMonitorMock.mockReturnValue({ data: monitor, isLoading: false, isError: false, error: null })
+      useMonitorClaimsMock.mockReturnValue({ data: [makeClaim({ id: 'c-active' })] })
+      await renderDetail()
+
+      await waitFor(() => expect(screen.getByTestId('strip-evidence-cta')).toBeInTheDocument())
+      expect(screen.queryByTestId('evidence-modal-stub')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('strip-evidence-cta'))
+
+      expect(screen.getByTestId('evidence-modal-stub')).toHaveAttribute('data-claim-id', 'c-active')
+    })
   })
 
   it('로딩 중에는 로딩 표시를, 404 에러 시 안내 문구를 보여준다', async () => {

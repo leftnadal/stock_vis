@@ -5,6 +5,7 @@
 import type { PriceZone, ZoneBand, ZoneDisplay, ZoneTick } from '@/types/monitor'
 
 import { ZONE_LADDER_ORDER, ZONE_TONE, priceVsEntryPct } from '@/lib/monitor/zone'
+import { formatPctRule, formatPrice } from '@/utils/formatters'
 
 // ── zone_display 폴백(구 응답 · 수동 목 데이터) — new_entry 기존 표시 재현 ──
 function bandsOf(zd: ZoneDisplay): ZoneBand[] {
@@ -64,18 +65,19 @@ export function ZoneChip({ zoneDisplay }: { zoneDisplay: ZoneDisplay }) {
       className={`inline-flex flex-shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${ZONE_TONE[tone].chip}`}
     >
       {zoneDisplay.label}
-      {pct != null && (
-        <span className="opacity-70">
-          {pct >= 0 ? '+' : ''}
-          {pct.toFixed(1)}%
-        </span>
-      )}
+      {pct != null && <span className="opacity-70">{formatPctRule(pct, { signed: true })}</span>}
     </span>
   )
 }
 
 // ── 카드 수평 미니 사다리: 색 밴드 + 현재가 마커(+hold 매입가 금색 마커) + 3틱 ──
-export function MiniPriceLadder({ zoneDisplay }: { zoneDisplay: ZoneDisplay }) {
+export function MiniPriceLadder({
+  zoneDisplay,
+  currencyCode = 'USD',
+}: {
+  zoneDisplay: ZoneDisplay
+  currencyCode?: string
+}) {
   if (!zoneDisplay.zone) return null
   const bands = bandsOf(zoneDisplay)
   const ticks = ticksOf(zoneDisplay)
@@ -110,7 +112,7 @@ export function MiniPriceLadder({ zoneDisplay }: { zoneDisplay: ZoneDisplay }) {
       <div className="mt-0.5 flex justify-between text-[9px] text-gray-400">
         {ticks.map((t) => (
           <span key={t.label}>
-            {t.label} {t.value}
+            {t.label} {formatPrice(t.value, currencyCode)}
           </span>
         ))}
       </div>
@@ -119,7 +121,13 @@ export function MiniPriceLadder({ zoneDisplay }: { zoneDisplay: ZoneDisplay }) {
 }
 
 // ── 상세 수직 사다리: 밴드 스택(위=고가측) + 경계값 + 활성 구간 + 현재가/매입가 마커 ──
-export function PriceLadder({ zoneDisplay }: { zoneDisplay: ZoneDisplay }) {
+export function PriceLadder({
+  zoneDisplay,
+  currencyCode = 'USD',
+}: {
+  zoneDisplay: ZoneDisplay
+  currencyCode?: string
+}) {
   if (!zoneDisplay.zone) return null
   const { close, label } = zoneDisplay
   const bands = [...bandsOf(zoneDisplay)].reverse() // 위=고가측
@@ -137,7 +145,7 @@ export function PriceLadder({ zoneDisplay }: { zoneDisplay: ZoneDisplay }) {
                 b.active ? 'ring-2 ring-inset ring-gray-800/40 dark:ring-white/40' : 'opacity-50'
               }`}
             >
-              {b.active && (close != null ? `${label} · ${close}` : label)}
+              {b.active && (close != null ? `${label} · ${formatPrice(close, currencyCode)}` : label)}
             </div>
           ))}
         </div>
@@ -146,7 +154,9 @@ export function PriceLadder({ zoneDisplay }: { zoneDisplay: ZoneDisplay }) {
           {rows.map((r) => (
             <div key={r.label} className="flex items-center gap-2">
               <span className="h-px w-4 bg-gray-300 dark:bg-gray-600" />
-              <span className="font-medium text-gray-600 dark:text-gray-300">{r.value}</span>
+              <span className="font-medium text-gray-600 dark:text-gray-300">
+                {formatPrice(r.value, currencyCode)}
+              </span>
               <span className="text-gray-400">{r.label}</span>
             </div>
           ))}

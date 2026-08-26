@@ -155,6 +155,12 @@ export function EvidenceForm({
                 placeholder="0.3"
                 className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900"
               />
+              <p
+                data-testid="evidence-threshold-help"
+                className="mt-1 text-[10px] leading-snug text-gray-400"
+              >
+                임계는 원값이 아니라 z-점수 기준입니다 — 원값 조건은 수동형으로.
+              </p>
             </label>
             <label className="text-xs text-gray-500">
               유예(거래일)

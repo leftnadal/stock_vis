@@ -46,7 +46,7 @@ const LEGACY_ZD: ZoneDisplay = {
 describe('사다리 zone_display 소비 (하드코딩 제거 회귀)', () => {
   it('MiniPriceLadder(hold): 매입가 틱 + 매입가 마커 + 4밴드', () => {
     render(<MiniPriceLadder zoneDisplay={HOLD_ZD} />)
-    expect(screen.getByText(/매입가 100/)).toBeInTheDocument() // BE ticks 소비(하드코딩 '진입' 아님)
+    expect(screen.getByText(/매입가 \$100\.00/)).toBeInTheDocument() // BE ticks 소비(하드코딩 '진입' 아님)
     expect(screen.getByTestId('mini-ladder-anchor')).toBeInTheDocument() // 매입가 금색 마커
     expect(screen.getByTestId('mini-ladder-marker')).toBeInTheDocument()
   })
@@ -61,19 +61,19 @@ describe('사다리 zone_display 소비 (하드코딩 제거 회귀)', () => {
     render(<ZoneChip zoneDisplay={HOLD_ZD} />)
     const chip = screen.getByTestId('zone-chip')
     expect(chip).toHaveTextContent('보유')
-    expect(chip).toHaveTextContent('+10.0%')
+    expect(chip).toHaveTextContent('+10.00%')
   })
 
   it('폴백(구 응답): new_entry 기존 5구간/틱 재현', () => {
     render(<MiniPriceLadder zoneDisplay={LEGACY_ZD} />)
-    expect(screen.getByText(/손절 90/)).toBeInTheDocument()
-    expect(screen.getByText(/진입 100/)).toBeInTheDocument()
-    expect(screen.getByText(/목표 120/)).toBeInTheDocument()
+    expect(screen.getByText(/손절 \$90\.00/)).toBeInTheDocument()
+    expect(screen.getByText(/진입 \$100\.00/)).toBeInTheDocument()
+    expect(screen.getByText(/목표 \$120\.00/)).toBeInTheDocument()
   })
 
   it('ZoneChip(new_entry): 진입가 대비 %', () => {
     render(<ZoneChip zoneDisplay={LEGACY_ZD} />)
-    expect(screen.getByTestId('zone-chip')).toHaveTextContent('-5.0%') // (95-100)/100
+    expect(screen.getByTestId('zone-chip')).toHaveTextContent('-5.00%') // (95-100)/100
   })
 })
 

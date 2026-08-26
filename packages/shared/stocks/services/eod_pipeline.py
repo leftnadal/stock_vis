@@ -29,12 +29,14 @@ from packages.shared.stocks.models import (
     EODSignal,
     PipelineLog,
     SignalAccuracy,
-    SP500Constituent,
     Stock,
 )
 from packages.shared.stocks.services.eod_json_baker import EODJSONBaker
 from packages.shared.stocks.services.eod_news_enricher import EODNewsEnricher
-from packages.shared.stocks.services.eod_signal_calculator import EODSignalCalculator
+from packages.shared.stocks.services.eod_signal_calculator import (
+    EODSignalCalculator,
+    eod_universe_symbols,
+)
 from packages.shared.stocks.services.eod_signal_tagger import EODSignalTagger
 
 logger = logging.getLogger(__name__)
@@ -276,7 +278,7 @@ class EODPipeline:
 
     def _stage_ingest(self, target_date: date) -> tuple[pd.DataFrame, dict]:
         """
-        Stage 1: DailyPrice에서 S&P500 데이터 로드 + 품질 체크.
+        Stage 1: DailyPrice에서 유니버스(SP500 ∪ 감시등록) 데이터 로드 + 품질 체크.
 
         Returns:
             (raw_df, ingest_quality_dict)
@@ -289,17 +291,24 @@ class EODPipeline:
 
         total_symbols = int(raw_df["symbol"].nunique())
         total_rows = len(raw_df)
-        sp500_count = SP500Constituent.objects.filter(is_active=True).count()
+        # A-2(EODUNIV-P15-V01): 분모 = 실제 계산 유니버스(SP500 ∪ 감시등록) 크기.
+        # 과거 SP500Constituent.count()만 쓰던 것을 eod_universe_symbols()로 교체
+        # (감시등록 종목이 늘면 커버리지 %가 부정확하게 낮아지는 것을 방지).
+        universe_count = len(eod_universe_symbols())
 
-        coverage_pct = (total_symbols / sp500_count * 100) if sp500_count > 0 else 0.0
+        coverage_pct = (
+            (total_symbols / universe_count * 100) if universe_count > 0 else 0.0
+        )
 
         # target_date 행 수
         today_rows = len(raw_df[raw_df["date"] == target_date])
-        today_coverage = (today_rows / sp500_count * 100) if sp500_count > 0 else 0.0
+        today_coverage = (
+            (today_rows / universe_count * 100) if universe_count > 0 else 0.0
+        )
 
         ingest_quality = {
             "total_symbols": total_symbols,
-            "sp500_universe": sp500_count,
+            "sp500_universe": universe_count,
             "total_rows": total_rows,
             "today_rows": today_rows,
             "coverage_pct": round(coverage_pct, 1),
@@ -557,7 +566,8 @@ class EODPipeline:
         bullish_count = sum(e.get("bullish_count", 0) for e in enriched)
         bearish_count = sum(e.get("bearish_count", 0) for e in enriched)
         stocks_with_signals = len(enriched)
-        total_sp500_count = SP500Constituent.objects.filter(is_active=True).count()
+        # A-2(EODUNIV-P15-V01): 분모 = 실제 계산 유니버스(SP500 ∪ 감시등록) 크기.
+        total_universe_count = len(eod_universe_symbols())
 
         return {
             "sp500_change": round(spy_change, 4),
@@ -568,8 +578,8 @@ class EODPipeline:
             "bullish_count": bullish_count,
             "bearish_count": bearish_count,
             "stocks_with_signals": stocks_with_signals,
-            "stock_universe": total_sp500_count,
-            "headline": f"{total_sp500_count}종목에서 {total_signals}개 시그널 감지",
+            "stock_universe": total_universe_count,
+            "headline": f"{total_universe_count}종목에서 {total_signals}개 시그널 감지",
         }
 
     def _get_index_change(

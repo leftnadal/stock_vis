@@ -1,9 +1,10 @@
 """교체 검토 API 검증 (RECON-SWAP-0813 PART 3-BE): evidence-status · swap-hold-logs ·
 decision-journal-entries. D-FIXTURE-FIXED-BASE 준수(as_of=고정일)."""
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.monitor.models import (
@@ -195,6 +196,67 @@ class TestSwapHoldLogAPI:
         data = resp.data["results"] if isinstance(resp.data, dict) and "results" in resp.data else resp.data
         assert len(data) == 1
         assert data[0]["candidate_ref"] == "MSFT"
+
+
+# ── swap-hold-logs 성과(C-BE) ──────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestSwapHoldLogPerformance:
+    """C-BE — hold_performance_pct/candidate_performance_pct 서버 계산(스냅샷 시점 대비
+    DailyPrice 종가 변화). latest_close(scenario.py) 재사용, 새 가격 API 없음."""
+
+    def _seed_prices(self, symbol, rows):
+        from packages.shared.stocks.models import DailyPrice, Stock
+
+        stock, _ = Stock.objects.get_or_create(symbol=symbol)
+        DailyPrice.objects.bulk_create([
+            DailyPrice(
+                stock=stock, date=d,
+                open_price=close, high_price=close, low_price=close,
+                close_price=close, volume=1,
+            )
+            for d, close in rows
+        ])
+        return stock
+
+    def test_hold_and_candidate_performance_computed(self, client_alice, alice_claim):
+        self._seed_prices("AAPL", [(date(2026, 8, 1), 100), (date(2026, 8, 20), 110)])
+        self._seed_prices("MSFT", [(date(2026, 8, 1), 200), (date(2026, 8, 20), 190)])
+
+        log = SwapHoldLog.objects.create(claim=alice_claim, candidate_ref="MSFT")
+        SwapHoldLog.objects.filter(pk=log.pk).update(
+            held_at=timezone.make_aware(datetime(2026, 8, 1, 12, 0))
+        )
+
+        resp = client_alice.get("/api/v1/monitor/swap-hold-logs/")
+        data = resp.data["results"] if isinstance(resp.data, dict) and "results" in resp.data else resp.data
+        assert resp.status_code == 200
+        row = data[0]
+        assert row["hold_performance_pct"] == pytest.approx(10.0)  # (110-100)/100*100
+        assert row["candidate_performance_pct"] == pytest.approx(-5.0)  # (190-200)/200*100
+
+    def test_null_when_no_candidate_ref(self, client_alice, alice_claim):
+        self._seed_prices("AAPL", [(date(2026, 8, 1), 100), (date(2026, 8, 20), 110)])
+        log = SwapHoldLog.objects.create(claim=alice_claim)
+        SwapHoldLog.objects.filter(pk=log.pk).update(
+            held_at=timezone.make_aware(datetime(2026, 8, 1, 12, 0))
+        )
+
+        resp = client_alice.get("/api/v1/monitor/swap-hold-logs/")
+        data = resp.data["results"] if isinstance(resp.data, dict) and "results" in resp.data else resp.data
+        row = data[0]
+        assert row["hold_performance_pct"] == pytest.approx(10.0)
+        assert row["candidate_performance_pct"] is None
+
+    def test_null_when_no_price_data(self, client_alice, alice_claim):
+        # AAPL·MSFT 모두 DailyPrice 없음 — anchor/current 조회 실패 → null-safe
+        log = SwapHoldLog.objects.create(claim=alice_claim, candidate_ref="MSFT")
+        resp = client_alice.get("/api/v1/monitor/swap-hold-logs/")
+        data = resp.data["results"] if isinstance(resp.data, dict) and "results" in resp.data else resp.data
+        row = data[0]
+        assert row["hold_performance_pct"] is None
+        assert row["candidate_performance_pct"] is None
 
 
 # ── decision-journal-entries ─────────────────────────────────────────────

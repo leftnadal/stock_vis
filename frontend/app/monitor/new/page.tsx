@@ -19,6 +19,7 @@ import type {
   ScenarioType,
   SupportDirection,
 } from '@/types/monitor'
+import { formatPctRule } from '@/utils/formatters'
 
 const SCOPES: { key: MonitorScope; label: string; active: boolean }[] = [
   { key: 'stock', label: '종목', active: true },
@@ -479,8 +480,7 @@ function BuilderContent() {
                     }`}
                   >
                     {Math.abs(holdPnl) < 1 ? '중립' : holdPnl > 0 ? '수익' : '손실'}{' '}
-                    {holdPnl >= 0 ? '+' : ''}
-                    {holdPnl.toFixed(1)}%
+                    {formatPctRule(holdPnl, { signed: true })}
                   </span>
                 )}
 

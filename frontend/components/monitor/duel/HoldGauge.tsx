@@ -11,6 +11,7 @@ import { useState } from 'react'
 
 import { useCreateSwapHoldLog, useSwapHoldLogs } from '@/hooks/useMonitor'
 import { computeHoldGaugePerformance, summarizeHoldGauge } from '@/lib/monitor/duel'
+import { formatPctRule } from '@/utils/formatters'
 
 interface HoldGaugeProps {
   claimId: string
@@ -18,10 +19,6 @@ interface HoldGaugeProps {
   holdPnlPct?: number | null
   holdCurrentPrice?: string | null
   candidateCurrentPrice?: string | null
-}
-
-function formatPct(pct: number): string {
-  return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`
 }
 
 export function HoldGauge({
@@ -74,7 +71,7 @@ export function HoldGauge({
           <p>누적 보류 {summary.cumulativeDays}일</p>
           <p>
             보유 · 매입 이후 손익(참고 — 보류 시점 기준 아님):{' '}
-            {holdPnlPct != null ? `${holdPnlPct >= 0 ? '+' : ''}${holdPnlPct.toFixed(1)}%` : '데이터 없음'}
+            {holdPnlPct != null ? formatPctRule(holdPnlPct, { signed: true }) : '데이터 없음'}
           </p>
           <div
             className="mt-1 flex flex-col gap-0.5 border-t border-gray-200 pt-1.5 dark:border-gray-700"
@@ -86,7 +83,7 @@ export function HoldGauge({
             <p data-testid="hold-gauge-hold-performance">
               보유:{' '}
               {performance.holdPerformancePct != null
-                ? formatPct(performance.holdPerformancePct)
+                ? formatPctRule(performance.holdPerformancePct, { signed: true })
                 : performance.holdPerformanceReason === 'anchor_missing'
                   ? '성과 앵커 없음(구 기록)'
                   : '현재가 데이터 없음'}
@@ -94,13 +91,16 @@ export function HoldGauge({
             <p data-testid="hold-gauge-candidate-performance">
               후보:{' '}
               {performance.candidatePerformancePct != null
-                ? formatPct(performance.candidatePerformancePct)
+                ? formatPctRule(performance.candidatePerformancePct, { signed: true })
                 : performance.candidatePerformanceReason === 'anchor_missing'
                   ? '성과 앵커 없음(구 기록)'
                   : '현재가 데이터 없음'}
             </p>
             <p data-testid="hold-gauge-gap">
-              격차(보유−후보): {performance.gapPct != null ? `${formatPct(performance.gapPct)}p` : '산출 불가'}
+              격차(보유−후보):{' '}
+              {performance.gapPct != null
+                ? `${formatPctRule(performance.gapPct, { signed: true })}p`
+                : '산출 불가'}
             </p>
           </div>
         </div>
