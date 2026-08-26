@@ -8,6 +8,35 @@
 
 ---
 
+## [2026-08-26] D-SCAN-B2TECH-CONTRACT — 기술 축 baked JSON 계약 (SCAN-B2-TECH-BE 착지) [dashboard][platform][data]
+
+**계약 (baked preview_stock에 nested `technical` 블록·additive·SCAN-B2-FE 입력 정본)**:
+```json
+"technical": {
+  "rsi": 72.3,                  // rsi_14 반올림
+  "rsi_state": "overbought",    // oversold(<30)/overbought(>70)/neutral
+  "dist_52w_high_pct": 98.1,    // close/high_52w*100
+  "ma_state": "above"           // golden_cross/dead_cross/above/below
+}
+```
+- **결측 = 키 생략**(정칙 ⑴·null/0/"N/A" 금지). 지표 전건 결측이면 `technical` 블록 자체 부재.
+- **enum → 표시어 맵(FE 몫·정칙 ⑵ "그대로 렌더"=정적 맵)**: rsi_state `oversold`→과매도·`overbought`→과매수·`neutral`→중립 / ma_state `golden_cross`→골든크로스·`dead_cross`→데드크로스·`above`→정배열·`below`→역배열.
+- **dist 표시 변환 = FE 몫**: value(고점 대비 %)→"52주 고점 −x.x%" 등 표시어 변환은 FE(BE는 순수 수치).
+
+**Why**: BE=분류(임계·교차 판정)·FE=표시. enum 방출로 표시어를 FE 정적 맵에 고정 → 정칙 ⑵(매매 암시 금지) 위반 여지를 BE에서 원천 차단. 착지 = origin/main `1c338dac`(LAND-SCAN-B2TECH).
+
+**How to apply**: SCAN-B2-FE는 이 블록을 그대로 소비(AxisChipStrip 기술 슬롯). 값은 **차기 야간 bake부터** baked JSON에 출현(prod bake 미실행). cf. [[project_scanner_ux_recon]]·D-SCAN-B2-DERIVE.
+
+## [2026-08-26] D-SCAN-R1-CORRECTION — RECON-VALUATION-R1 정정 + 관찰 2건 [dashboard][platform][process]
+
+**정정 (RECON-VALUATION-R1 오기 교정)**: R1이 기술 축 라벨 원천으로 `get_rsi_signal → 과매도/과매수/중립`을 지목했으나, **실제 반환값 = `buy`/`sell`/`neutral`(매매어)**. 정칙 ⑵(매매 암시 금지) 위반이라 **재사용 기각** → SCAN-B2-TECH-BE에서 **사실 구간 enum**(oversold/overbought/neutral)을 신설 산출. (정칙 ⑵의 실전 적용 첫 사례.)
+
+**관찰(기록만·착수 아님)**:
+- ⑴ **선존 `get_rsi_signal` 매매어 반환** — `indicators.py:IndicatorSignals.get_rsi_signal`이 buy/sell 반환. 스캐너 미사용이나 다른 소비처 존재 가능(shared 소관·착수 아님).
+- ⑵ **payload 예산 감시** — TECH 상한 +26%(cards gzip 246→~310KB) 실측. **SCAN-B2-FUND-BE STEP 0에 payload 실측 가드** + 예산 초과 시 **symbol-ref 축약**(D-SCAN-B2-DERIVE 기등재 완화책) 편입 상신.
+
+**How to apply**: 정정 = R1 산출물 참조 시 이 교정 우선. 관찰 ⑵ = FUND-BE STEP 0 게이트 조건. cf. [[project_scanner_ux_recon]] R1 절.
+
 ## [2026-08-24] D-SCAN-B1-DEVIATIONS — SCAN-B1-FE 편차 3건 + 관찰 2건 + 소결정 ⓐ-1b [dashboard][platform]
 
 **편차(구현 중 확정·정칙 범위 내 재량)**:
