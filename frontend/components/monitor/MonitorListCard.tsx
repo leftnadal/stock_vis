@@ -11,6 +11,7 @@ import { useSparkline } from '@/hooks/useMonitor'
 import { frozenScore, outcomeToVerdict, type ClaimClosureSummary } from '@/lib/monitor/closure'
 import { STATE_TONE_CLASS, ddayLabel, stateMeta } from '@/lib/monitor/display'
 import type { Monitor, ZoneDisplay } from '@/types/monitor'
+import { formatScore } from '@/utils/formatters'
 
 const SCOPE_LABEL: Record<Monitor['scope'], string> = {
   market: '시장',
@@ -45,6 +46,7 @@ export function MonitorListCard({
   const display = monitor.display // API 파생값 (degree·color·label·phase), score 없으면 null
   const meta = stateMeta(monitor.current_state)
   const dday = ddayLabel(monitor.next_deadline)
+  const currencyCode = monitor.currency_code ?? 'USD' // PART B-FE 숫자 표시 규약 '가'
   // score 없는(warming_up) 모니터는 스파크라인 조회 자체를 생략. 동결 카드도 조회는 유지(회색 처리만).
   const { data: spark } = useSparkline(monitor.id, 30, score !== null)
 
@@ -81,7 +83,7 @@ export function MonitorListCard({
             data-testid="monitor-card-frozen-meta"
           >
             {claim?.resolved_at ? `${formatDate(claim.resolved_at)} 마감` : '마감'}
-            {typeof frozen === 'number' && ` · 동결 점수 ${frozen.toFixed(3)}`}
+            {typeof frozen === 'number' && ` · 동결 점수 ${formatScore(frozen)}`}
             {judgeUsername && ` · 판정자 ${judgeUsername}`}
           </p>
           {spark && (
@@ -162,7 +164,9 @@ export function MonitorListCard({
           </div>
         )}
         {/* 가격 미니 사다리 (신호축 스파크라인과 별개 축) */}
-        {zoneDisplay?.zone && <MiniPriceLadder zoneDisplay={zoneDisplay} />}
+        {zoneDisplay?.zone && (
+          <MiniPriceLadder zoneDisplay={zoneDisplay} currencyCode={currencyCode} />
+        )}
       </div>
 
       {display ? (

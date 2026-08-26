@@ -262,6 +262,58 @@ describe('computeHoldGaugePerformance', () => {
     expect(r.candidatePerformanceReason).toBe('no_current_price')
     expect(r.gapPct).toBeNull()
   })
+
+  // PART C-4 — BE가 held_at 스냅샷→최신 종가(DailyPrice)로 계산한 성과가 있으면 우선 소비한다.
+  // Wallet 보유분 현재가(currentHoldPrice/currentCandidatePrice 인자)에는 더 이상 의존하지 않는다.
+  describe('PART C-4: BE 산출 성과 우선 소비', () => {
+    it('BE 필드(hold_performance_pct/candidate_performance_pct)가 숫자면 그대로 사용한다(Wallet 현재가 무시)', () => {
+      const logs: SwapHoldLog[] = [
+        log({
+          hold_price: '100',
+          candidate_price: '50',
+          hold_performance_pct: 15.5,
+          candidate_performance_pct: 8.25,
+        }),
+        log({ id: '2', held_at: '2026-08-05T00:00:00Z' }),
+      ]
+      // Wallet 현재가를 일부러 다른 값으로 넣어도 BE 필드가 우선이어야 한다.
+      const r = computeHoldGaugePerformance(logs, '999', '999')
+      expect(r.holdPerformancePct).toBe(15.5)
+      expect(r.candidatePerformancePct).toBe(8.25)
+      expect(r.gapPct).toBeCloseTo(15.5 - 8.25)
+      expect(r.holdPerformanceReason).toBeNull()
+      expect(r.candidatePerformanceReason).toBeNull()
+    })
+
+    it('BE 필드가 존재하지만 후보 값이 null이면(가격 이력·candidate_ref 없음) no_current_price로 표기한다(현재가 없음 오표기 해소)', () => {
+      const logs: SwapHoldLog[] = [
+        log({
+          hold_price: '100',
+          candidate_price: null,
+          hold_performance_pct: 12.0,
+          candidate_performance_pct: null,
+        }),
+        log({ id: '2', held_at: '2026-08-05T00:00:00Z' }),
+      ]
+      // Wallet 현재가가 없어도(후보 미보유) BE가 DailyPrice로 산출했으면 보유측은 값이 나온다.
+      const r = computeHoldGaugePerformance(logs, undefined, undefined)
+      expect(r.holdPerformancePct).toBe(12.0)
+      expect(r.candidatePerformancePct).toBeNull()
+      expect(r.candidatePerformanceReason).toBe('no_current_price')
+      expect(r.gapPct).toBeNull()
+    })
+
+    it('BE 필드가 undefined(구 배포 응답)면 기존 Wallet 현재가 계산으로 폴백한다(하위호환)', () => {
+      const logs: SwapHoldLog[] = [
+        log({ hold_price: '100', candidate_price: '50' }), // hold/candidate_performance_pct 미포함
+        log({ id: '2', held_at: '2026-08-05T00:00:00Z' }),
+      ]
+      const r = computeHoldGaugePerformance(logs, '110', '55')
+      expect(r.holdPerformancePct).toBeCloseTo(10)
+      expect(r.candidatePerformancePct).toBeCloseTo(10)
+      expect(r.holdPerformanceReason).toBeNull()
+    })
+  })
 })
 
 describe('manualExpiryDday', () => {

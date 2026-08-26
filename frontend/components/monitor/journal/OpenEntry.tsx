@@ -1,5 +1,6 @@
 // 일지 kind=open 렌더러 (MON-DETAIL-P1 T2) — 관제 개시 + claim 사전 커밋 요약.
 import type { JournalEntry, OpenPayload } from '@/lib/monitor/journal'
+import { formatPrice } from '@/utils/formatters'
 
 const SCENARIO_LABEL: Record<string, string> = {
   new_entry: '신규 매수',
@@ -10,12 +11,13 @@ const SCENARIO_LABEL: Record<string, string> = {
 export function OpenEntry({ entry }: { entry: JournalEntry }) {
   const p = entry.payload as OpenPayload
   // hold는 매입가 앵커, 그 외는 진입가.
+  // 통화: OpenPayload는 아직 currency_code를 나르지 않음(journal 계약 무접촉 유지) — 'USD' 폴백.
   const anchorLabel = p.scenario_type === 'hold' ? '매입' : '진입'
   const anchorValue = p.scenario_type === 'hold' ? p.purchase_price : p.entry_price
   const parts: string[] = []
-  if (anchorValue) parts.push(`${anchorLabel} ${anchorValue}`)
-  if (p.target_price) parts.push(`목표 ${p.target_price}`)
-  if (p.stop_price) parts.push(`손절 ${p.stop_price}`)
+  if (anchorValue) parts.push(`${anchorLabel} ${formatPrice(anchorValue)}`)
+  if (p.target_price) parts.push(`목표 ${formatPrice(p.target_price)}`)
+  if (p.stop_price) parts.push(`손절 ${formatPrice(p.stop_price)}`)
   return (
     <div data-testid="journal-open">
       <div className="flex items-center gap-1.5">

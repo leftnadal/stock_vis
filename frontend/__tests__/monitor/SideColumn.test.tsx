@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const getEvidenceStatus = vi.fn()
 const listIndicators = vi.fn()
 const createClaimEvidence = vi.fn()
+const listClaimEvidences = vi.fn()
 
 vi.mock('@/services/monitorService', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/monitorService')>()
@@ -17,6 +18,7 @@ vi.mock('@/services/monitorService', async (importOriginal) => {
       getEvidenceStatus: (...a: unknown[]) => getEvidenceStatus(...a),
       listIndicators: (...a: unknown[]) => listIndicators(...a),
       createClaimEvidence: (...a: unknown[]) => createClaimEvidence(...a),
+      listClaimEvidences: (...a: unknown[]) => listClaimEvidences(...a),
     },
   }
 })
@@ -62,7 +64,9 @@ beforeEach(() => {
   getEvidenceStatus.mockReset()
   listIndicators.mockReset()
   createClaimEvidence.mockReset()
+  listClaimEvidences.mockReset()
   listIndicators.mockResolvedValue([])
+  listClaimEvidences.mockResolvedValue([])
 })
 
 describe('SideColumn', () => {
@@ -73,6 +77,45 @@ describe('SideColumn', () => {
     )
     await waitFor(() => expect(screen.getByTestId('judgment-unavailable')).toBeInTheDocument())
     expect(screen.queryByTestId('layer-contract')).not.toBeInTheDocument()
+  })
+
+  // C-1 — "판단 불가" 카드에서도 claim이 있으면(근거 부족일 뿐) 근거 관리로 바로 진입 가능해야 한다.
+  describe('C-1 — 판단 불가 카드의 근거 관리 바로가기', () => {
+    it('claim이 없으면 CTA를 표시하지 않는다(등록할 claim 자체가 없음)', async () => {
+      render(
+        <SideColumn testKey="hold" label="보유" targetRef="AAPL" claim={null} monitorId="m1" />,
+        { wrapper }
+      )
+      await waitFor(() => expect(screen.getByTestId('judgment-unavailable')).toBeInTheDocument())
+      expect(screen.queryByTestId('judgment-unavailable-evidence-cta')).not.toBeInTheDocument()
+    })
+
+    it('claim은 있으나 근거가 없어 판단 불가면 CTA를 표시하고, 클릭하면 근거 관리 모달이 열린다', async () => {
+      getEvidenceStatus.mockResolvedValue({
+        claim_id: 'c1',
+        as_of: '2026-08-11',
+        total: 0,
+        alive: 0,
+        results: [],
+      })
+      render(
+        <SideColumn
+          testKey="hold"
+          label="보유"
+          targetRef="AAPL"
+          claim={BASE_CLAIM}
+          monitorId="m1"
+        />,
+        { wrapper }
+      )
+      await waitFor(() => expect(screen.getByTestId('judgment-unavailable')).toBeInTheDocument())
+      expect(screen.getByTestId('judgment-unavailable-evidence-cta')).toBeInTheDocument()
+      expect(screen.queryByTestId('evidence-modal')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('judgment-unavailable-evidence-cta'))
+
+      expect(screen.getByTestId('evidence-modal')).toBeInTheDocument()
+    })
   })
 
   it('근거 판정불가 비율이 절반 이상이면 판단 불가를 표시한다', async () => {

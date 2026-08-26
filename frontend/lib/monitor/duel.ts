@@ -194,6 +194,9 @@ function sidePerformance(
   return { pct: (current / anchor - 1) * 100, reason: null }
 }
 
+// PART C-4 — BE가 held_at 스냅샷→최신 종가(DailyPrice)로 계산한 서버 산출 성과가 있으면
+// 그걸 우선 소비한다(후보 미보유라도 DailyPrice 이력만 있으면 산출됨 — "현재가 데이터 없음"
+// 오표기 해소). BE 필드가 없는(구 배포·구 기록) 로그만 기존 Wallet 현재가 계산으로 폴백한다.
 export function computeHoldGaugePerformance(
   logs: SwapHoldLog[],
   currentHoldPrice: string | null | undefined,
@@ -210,8 +213,28 @@ export function computeHoldGaugePerformance(
   }
   const anchor = [...logs].sort((a, b) => a.held_at.localeCompare(b.held_at))[0]
 
-  const hold = sidePerformance(anchor.hold_price, currentHoldPrice)
-  const candidate = sidePerformance(anchor.candidate_price, currentCandidatePrice)
+  // BE 필드가 "정의(defined)"되어 있으면(응답에 키가 존재) 그 값을 신뢰한다 — null이어도 BE가
+  // 계산을 시도했으나 데이터가 없다는 뜻(no_current_price)이지 "구 기록"은 아니다. 필드 자체가
+  // 없는(undefined, 구 배포 응답) 경우에만 기존 Wallet 현재가 계산 폴백(anchor_missing 판정 포함)으로 내려간다.
+  const hold =
+    anchor.hold_performance_pct !== undefined
+      ? {
+          pct: anchor.hold_performance_pct,
+          reason: (anchor.hold_performance_pct == null
+            ? 'no_current_price'
+            : null) as PerformanceGapReason,
+        }
+      : sidePerformance(anchor.hold_price, currentHoldPrice)
+
+  const candidate =
+    anchor.candidate_performance_pct !== undefined
+      ? {
+          pct: anchor.candidate_performance_pct,
+          reason: (anchor.candidate_performance_pct == null
+            ? 'no_current_price'
+            : null) as PerformanceGapReason,
+        }
+      : sidePerformance(anchor.candidate_price, currentCandidatePrice)
 
   return {
     holdPerformancePct: hold.pct,

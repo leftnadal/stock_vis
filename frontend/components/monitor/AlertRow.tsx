@@ -4,6 +4,7 @@
 import { StateBandSparkline } from '@/components/monitor/StateBandSparkline'
 import { useSparkline } from '@/hooks/useMonitor'
 import type { AlertEvent } from '@/types/monitor'
+import { formatScore } from '@/utils/formatters'
 
 interface AlertRowProps {
   alert: AlertEvent
@@ -46,7 +47,7 @@ export function AlertRow({ alert, onRead }: AlertRowProps) {
           {alert.from_label} → {alert.to_label}
         </p>
         <p className="mt-0.5 text-[11px] text-gray-400">
-          score {alert.score.toFixed(2)} · {alert.asof}
+          score {formatScore(alert.score)} · {alert.asof}
         </p>
       </div>
 

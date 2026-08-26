@@ -158,6 +158,8 @@ export interface Monitor {
   danger_streak: number
   created_at: string
   updated_at: string
+  // 통화 표시 계약 (PART B-FE 숫자 표시 규약 '가') — BE가 채워줌, 없으면 FE는 'USD' 폴백.
+  currency_code?: string
 }
 
 export interface MonitorIndicator {
@@ -436,6 +438,10 @@ export interface SwapHoldLog {
   hold_price: string | null
   candidate_price: string | null
   note: string
+  // PART C-4: BE 서버 산출 성과(held_at 스냅샷 → 최신 종가, DailyPrice 기반). 가격 이력·후보
+  // 미지정이면 null — FE는 존재하면 우선 소비하고 없으면 Wallet 현재가 계산으로 폴백한다.
+  hold_performance_pct?: number | null
+  candidate_performance_pct?: number | null
 }
 
 export interface SwapHoldLogInput {

@@ -77,7 +77,7 @@ describe('SlimStrip', () => {
     ]) {
       expect(screen.getByTestId(t)).toBeInTheDocument()
     }
-    expect(within(screen.getByTestId('token-stop-distance')).getByText('18.2%')).toBeInTheDocument()
+    expect(within(screen.getByTestId('token-stop-distance')).getByText('18.18%')).toBeInTheDocument()
     expect(screen.getByTestId('tracking-day')).toHaveTextContent('관제')
   })
 
@@ -92,7 +92,7 @@ describe('SlimStrip', () => {
         latestValueById={new Map()}
       />
     )
-    expect(within(screen.getByTestId('token-stop-distance')).getByText('18.2%').className).not.toContain(
+    expect(within(screen.getByTestId('token-stop-distance')).getByText('18.18%').className).not.toContain(
       'text-red-600'
     )
     // danger_streak>0 → 적색
@@ -105,7 +105,7 @@ describe('SlimStrip', () => {
         latestValueById={new Map()}
       />
     )
-    expect(within(screen.getByTestId('token-stop-distance')).getByText('18.2%').className).toContain(
+    expect(within(screen.getByTestId('token-stop-distance')).getByText('18.18%').className).toContain(
       'text-red-600'
     )
   })
@@ -156,7 +156,7 @@ describe('SlimStrip', () => {
     expect(c.className).toContain('text-amber-600') // sufficient<total → 경고톤
   })
 
-  it('MON-P2B T1: scoreDelta=0은 무표시가 아니라 · + "+0.00"으로 표시(중립색)', () => {
+  it('MON-P2B T1: scoreDelta=0은 무표시가 아니라 ·0.000으로 표시(중립색, ▲0.00 자기모순 제거)', () => {
     render(
       <SlimStrip
         monitor={makeMonitor()}
@@ -167,7 +167,7 @@ describe('SlimStrip', () => {
       />
     )
     const delta = screen.getByTestId('token-score-delta')
-    expect(delta).toHaveTextContent('·+0.00')
+    expect(delta).toHaveTextContent('·0.000')
     expect(delta.className).not.toContain('text-green-600')
     expect(delta.className).not.toContain('text-red-600')
   })
