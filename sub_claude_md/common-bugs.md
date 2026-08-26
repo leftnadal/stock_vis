@@ -1592,3 +1592,10 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 1. **전수성 검증**: 목록을 `head -N`으로 자르지 말고 `wc -l` 대조 또는 필터+정렬로 전량 확인. 절단 출력으로 '없음' 단정 금지.
 2. **의미 기반 재탐색**: 이름 패턴 grep이 비면 테이블명·db_table·행 존재(SQL)·소비처 grep 등 **다른 축**으로 교차 확인.
 3. 판정을 후속 결정의 전제로 쓰기 전 **행이 증거**(DB 실행 수·last_run 타임스탬프)로 재확인.
+## health WARN 유형 판정 기준 — 환경·동기화 신호성=보고 후 진행 / 신규 발생 WARN·FAIL=명목 HALT (채번 후보, DSS-FLAT-OBS-1 2026-08-24) [harness][process][ops]
+
+health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 미푸시 세션 상태로 인한 sync 계열)은 보고 후 진행 가능. (ii) 시스템 검사에서 신규 발생한 WARN/FAIL은 명목 HALT. STEP 0 보고에 유형 구분을 명시한다. 실증: MGMT-LEDGER-1 STEP 0-2 (08-19).
+
+## 비-mgmt 세션 지시서의 common-bugs #NN 사전 지정 금지 — '채번 후보'로 작성, 번호는 mgmt 배치 실측+1 (채번 후보, DSS-FLAT-OBS-1 2026-08-24) [harness][process][git]
+
+비-mgmt 세션 지시서에 common-bugs #NN 번호 사전 지정 금지. 비-mgmt 세션은 '채번 후보'로 작성하고 번호 부여는 mgmt 배치에서 실측+1로 수행(D-NUMBERING-MGMT-ONLY·훅 가드 준수). 실증: DSS-FLAT-OBS-1 커밋 2 훅 차단 (08-24).

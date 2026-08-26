@@ -373,7 +373,7 @@ class EODJSONBaker:
             )
             self._company_name_cache[symbol] = stock or ""
 
-        return {
+        preview = {
             "symbol": symbol,
             "company_name": self._company_name_cache.get(symbol, ""),
             "sector": item.get("sector", ""),
@@ -398,6 +398,11 @@ class EODJSONBaker:
             "mini_chart_20d": item.get("_mini_chart_20d", []),
             "chain_sight_cta": False,
         }
+        # 기술 축(SCAN-B2-TECH-BE) — tagger가 채운 경우에만 서피스(결측 시 키 생략·정칙 ⑴). additive.
+        tech = item.get("technical")
+        if tech:
+            preview["technical"] = tech
+        return preview
 
     def _preload_mini_charts(self, signals_data: list[dict], target_date: date):
         """

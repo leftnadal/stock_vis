@@ -25,7 +25,8 @@ The Design Lab exists to study and improve how Stock_vis supports better investm
 ## Active Workstream
 
 - [`Workstream 001 — Investment Judgment Experience Foundation`](02_workstreams/001_investment_judgment_experience/brief.md) · [한국어](02_workstreams/001_investment_judgment_experience/brief_ko.md)
-  - [`Exploration Log`](02_workstreams/001_investment_judgment_experience/exploration.md) · [한국어](02_workstreams/001_investment_judgment_experience/exploration_ko.md)
+  - [`Exploration Log / Batch 01`](02_workstreams/001_investment_judgment_experience/exploration.md) · [한국어](02_workstreams/001_investment_judgment_experience/exploration_ko.md)
+  - [`Exploration Batch 02 — Judgment Update Logic & Information Model`](02_workstreams/001_investment_judgment_experience/batch_02_judgment_update_logic.md) · [한국어](02_workstreams/001_investment_judgment_experience/batch_02_judgment_update_logic_ko.md)
   - [`Synthesis`](02_workstreams/001_investment_judgment_experience/synthesis.md) · [한국어](02_workstreams/001_investment_judgment_experience/synthesis_ko.md)
 
 Workstream material is Working by default and does not become approved Design Knowledge or product architecture automatically.

@@ -3,7 +3,7 @@
 > **한국어 Companion 문서**  
 > 이 문서는 [`README.md`](README.md)의 한국어 companion이다. 영어 파일은 canonical repository document로 유지하지만, 영어 문구 자체가 승인된 의미보다 우선하지는 않는다. 영어와 한국어 사이에 의미 차이가 발견되면 관련 CEO-approved semantic intent와 authoritative Design / Research decision을 기준으로 두 문서를 다시 정합시킨다. 한국어 companion 자체가 별도의 독립 authority를 만들지는 않는다.
 
-**Source Synced:** 2026-08-22
+**Source Synced:** 2026-08-25
 
 이 디렉터리는 Stock_vis Design Lab의 공식 지식 및 운영 라이브러리다.
 
@@ -32,7 +32,8 @@ Design Lab은 Stock_vis의 더 넓은 목적인 **Better Investment Decisions**�
 ## 현재 Active Workstream
 
 - [`Workstream 001 — Investment Judgment Experience Foundation`](02_workstreams/001_investment_judgment_experience/brief_ko.md)
-  - [`Exploration Log`](02_workstreams/001_investment_judgment_experience/exploration_ko.md)
+  - [`Exploration Log / Batch 01`](02_workstreams/001_investment_judgment_experience/exploration_ko.md)
+  - [`Exploration Batch 02 — Judgment Update Logic & Information Model`](02_workstreams/001_investment_judgment_experience/batch_02_judgment_update_logic_ko.md)
   - [`Synthesis`](02_workstreams/001_investment_judgment_experience/synthesis_ko.md)
 
 Workstream 자료는 기본적으로 **Working** 상태이며, 자동으로 Approved Design Knowledge나 제품 architecture가 되지 않는다.
