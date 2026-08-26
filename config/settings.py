@@ -383,7 +383,10 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'user': '60/min',
         'anon': '20/min',
-        'market_pulse_user': '60/min',
+        # INC-P16-1 Part C: 60→120/min. market-pulse-v2 마운트 동시 4엔드포인트 +
+        # 하드리프레시 반복이 60/min을 넘겨 429 캐스케이드 유발 → 예산 2배 보험.
+        # (근인 완화는 Part A 429 무재시도 + Part B lazy-load; C는 여유 예산.)
+        'market_pulse_user': '120/min',
         'market_pulse_user_hour': '1000/hour',
         'market_pulse_llm': '5/min',
     },

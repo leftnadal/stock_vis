@@ -1599,3 +1599,10 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 ## 비-mgmt 세션 지시서의 common-bugs #NN 사전 지정 금지 — '채번 후보'로 작성, 번호는 mgmt 배치 실측+1 (채번 후보, DSS-FLAT-OBS-1 2026-08-24) [harness][process][git]
 
 비-mgmt 세션 지시서에 common-bugs #NN 번호 사전 지정 금지. 비-mgmt 세션은 '채번 후보'로 작성하고 번호 부여는 mgmt 배치에서 실측+1로 수행(D-NUMBERING-MGMT-ONLY·훅 가드 준수). 실증: DSS-FLAT-OBS-1 커밋 2 훅 차단 (08-24).
+## 한 화면이 마운트에 N개 엔드포인트 동시 fetch + RQ 재시도 증폭 + 하드리프레시 반복 → throttle 초과 → 429 캐스케이드 → 게이팅 쿼리 isError → 전면 에러 (채번 대기, INC-P16-1 2026-08-24) `[frontend][infra][performance]`
+
+**증상**: market-pulse-v2 페이지를 하드리프레시로 반복 로드하면 어느 순간 화면 전체가 "데이터를 불러오지 못했습니다"로 전환. 단건 curl로는 재현 안 됨(200 정상) — 브라우저 경로(동시 다엔드포인트 + refresh 누적)에서만 발생.
+
+**원인**: 페이지 마운트 시 **동시 4엔드포인트**(overview·regime/stress·regime/analog·playbook) fetch. 각 쿼리는 TanStack Query 전역 `retry: 2`로 실패 시 최대 3배 요청 증폭. 하드리프레시를 빠르게 반복하면 분당 요청이 `market_pulse_user` throttle(당시 60/min)을 초과 → 429. **429에도 RQ가 재시도**하면 rate window 안에서 예산을 더 태워 429가 눈덩이(캐스케이드). 게이팅 쿼리(useOverview)가 isError로 떨어지면 page.tsx가 **전면 에러**로 게이팅. 1.6-S1이 4번째 엔드포인트(playbook)를 추가해 footprint를 3→4로 올린 것이 촉진자(근인은 선존 fragility).
+
+**해소(A+B+C 3중)**: **A** 전역 retry를 함수형(`shouldRetryQuery`)으로 — 429는 즉시 무재시도(그 외 실패는 기존 최대 2회 보존). 429에 재시도 안 함이 정답(백오프해도 window 내 재소비). **B** fold 아래 카드(PlaybookCardContainer)는 `useInViewOnce`로 뷰포트 진입 시점까지 fetch 지연 → 초기 동시 요청 감소(렌더 불변, fetch 시점만 늦춤). **C** `market_pulse_user` 60→120/min(예산 2배 보험). **재발 방지 규칙**: 신규 홈/랜딩 엔드포인트 추가 시 = ⑴ lazy(뷰포트 진입 fetch) 우선 검토 or ⑵ throttle 예산 재점검 필수. 단건 curl은 이 유형을 구조적으로 못 잡음 → 브라우저 경로 스모크(SMOKE-BROWSER-PATH) 필요. DRF ScopedRateThrottle은 429에 Retry-After 세팅 → 향후 Retry-After 존중 재시도로 고도화 여지. cf. common-bugs #23(FMP 402)·#41(모듈 상수 변경=재기동 필수).

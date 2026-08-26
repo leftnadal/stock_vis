@@ -5,6 +5,12 @@
 
 ---
 
+## INC-P16-1 후속 (2026-08-24, 홈 429 캐스케이드 핫픽스)
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| SMOKE-BROWSER-PATH | 브라우저 경로 재현 스모크 보강 — 동시 다엔드포인트 + 하드리프레시 반복 시나리오를 헤드리스로 자동 재현(429 발생 시 캐스케이드/전면에러 부재 관측). 단건 curl은 이 유형을 **구조적으로 못 잡음**(200 정상)이 교훈 | @qa (browse) | INC-P16-1 랜딩 | 🆕 **todo(등재)** | INC-P16-1이 무자동화(수동 절차·react-query 실행 루프 결정론 테스트로 갈음). 후속 자동화로 회귀 지속 감시. cf. D-INC-P16-1·common-bugs(채번 대기 INC-P16-1) |
+
 ## SCANNER-SELECT-UX 트랙 (2026-08-20 개설, D-SCANNER-SELECT-UX)
 
 > 출처: D-SCANNER-SELECT-UX(DECISIONS 2026-08-20). 목표 상태 = 정보안 C · 경로 ㉮(① FE → ② shared BE → ③ 관계·이력). 슬라이스 6+1. RECON = [[project_scanner_ux_recon]].
@@ -61,7 +67,7 @@
 | DEPLOY-RUNBOOK | 런타임 동기 절차 정의(주기·체크리스트·runbook) — api 런타임 포함(스테일 런타임 3개 실증: worker+web+api) | @infra | — | ✅ **done(2026-08-20, RB-1·D-RB-1/D-RB-2)** | `docs/runbook/DEPLOY.md` 4장(1장 고아 스윕·2장 동기 절차[web 리빌드 2.2 수동 명기]·3장 감사·부록 인벤토리/neo4j 예외/주기 조정). 자동 감지 = `runtime_check.py`(read-only 3검사)+launchd `com.stockvis.runtime-check`(3600s). 3전례(SYNC/WEBSYNC/APISYNC) 절차 흡수. SESSION_CONTRACT §H 포인터 편입 |
 | SYNC-AUDIT-LOG | `worker_sync.sh`에 집행 감사 로그 1줄 추가(시각·pid·ppid·호출 컨텍스트=tty/parent) — 미귀속 동기 실행 구조적 재발 방지 | @infra (`scripts/worker_sync.sh`) | RB-1 | ✅ **done(2026-08-20, RB-1)** | dry-run exit 직후(실행 최초 지점) `audit_log()` 비차단 추가 → `sync-audit.log`에 `<ts> invoked pid ppid(부모명) tty before[worker/web/api HEAD]` 1줄. diff=18 insertions·0 deletions(행위보존). 다음 미귀속 사건 특정 비용 소거 |
 | SYNC-COVERAGE | `worker_sync.sh` web 파트가 **프로덕션 리빌드 미커버**(re-detach만·"next dev 핫리로드"는 prod 빌드엔 거짓) → FE 변경 반영은 현재 런북 2.2 수동 절차. 자동화(빌드+kickstart web-frontend) 후속 검토 | @infra (`scripts/worker_sync.sh`) | RB-1 | 🕒 **후속 등재(RB-1 STEP 0 발견·행위보존으로 이번 미확장)** | worker/api는 kickstart 커버·web은 re-detach만. WEBSYNC 가드레일(빌드 먼저·폴백·스모크)을 스크립트화 시 web도 `sv sync` 1회로 완결. 착수 전 무중단 폴백 안전성 재확인 필요 |
-| MPS-OPS-GLD-DASH | 티커 스트립 비주식 ETF 시세 "—"(누락) — Stock 테이블에 레코드 부재(GLD·SLV 등 커모디티 ETF) | @backend | — | 🔎 **소형 조사 후보(MPS-OPS 관찰, 이번 세션 수리 금지)** | DailyPrice 이전에 Stock 시드 없음. 스트립이 GLD 등을 기대하나 종목 미등록 → 시드 필요 여부·대체 소스 판단은 별건 |
+| MPS-OPS-GLD-DASH | 티커 스트립 비주식 ETF 시세 "—"(누락) — Stock 테이블에 레코드 부재(GLD·SLV 등 커모디티 ETF) | @backend | — | 🔎 **소형 조사 후보(MPS-OPS 관찰, 이번 세션 수리 금지)** | DailyPrice 이전에 Stock 시드 없음. 스트립이 GLD 등을 기대하나 종목 미등록 → 시드 필요 여부·대체 소스 판단은 별건. **STEP 0 재료(INC-P16-1 포렌식 관측 인계)**: 16:41 FMP 402 로그(CLUSD·NGUSD·DX-Y.NYB, #23 `.`포함/커모디티 심볼 프리미엄벽 패턴) → 커모디티/FX 시세 대체 소스 결정 시 참조. 본 세션 미검증(포렌식 보고 전사) |
 | OPS-NEO4J-TREE | neo4j 워커(pid 15346)가 **미커밋 recon 트리**(`Desktop/stock_vis` sess-signal-fwd-recon)에서 구동 중 — 정리 별건 | @infra | — | 🕒 **별건 등재** | STEP 0 발견. neo4j 워커 cwd=Desktop(로컬 미커밋 변경 다수). #45 트리 표류 리스크. 별도 정리(전용 런타임 트리로 이관) |
 | BACKFILL-SCOPE-GUARD | `backfill_v2_a1` 하드닝 — `--series-id` 지정 시 심볼 백필 자동 배제 또는 명시 플래그 강제(위험한 기본값 제거) | @backend | — | 🕒 **소형 하드닝 등재(INC-MPS-BACKFILL-SCOPE 파생)** | --series-id가 econ만 스코프하고 심볼은 전량 백필하는 기본값이 INC 유발. --series-id/--symbol 중 하나만 지정 시 나머지 파트 스킵이 안전 |
 | MPS-SOFR | **별건**: SOFR 스프레드 series 전략 확정(**별건 내 프로브 허용**) + 필요시 market_pulse 파생 최소 설계. 소급 백필로 무손실 | @backend | — | 🕒 **보류(기한=S4-REBASE 성분 편입 심사 前)** | market_pulse 파생 인프라 부재로 MPS-1서 배선 보류(D-MPS-INDICATORS). 단일 raw 존재 시 1줄, 파생(SOFR−EFFR)이면 최소 파생 설계 필요 |

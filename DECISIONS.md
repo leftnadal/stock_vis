@@ -6806,3 +6806,17 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - 이연: D-EVT-CHAIN-THRESH (관계 타임라인 파라미터 — 실데이터 관찰 게이트) / 1b-A 이중성 해소(흡수) 재소환
 - 원칙: 이벤트 원장 백필은 no-retroactive 원칙 비대상 (사실 데이터, 재현 가능)
 - 하드 요건: earnings-calendar 45일 이하 청킹 + 캡 감지(count==4000 또는 요청·반환 span 불일치) 없이 수집 가동 금지
+## [2026-08-24] D-INC-P16-1 — 홈 429 캐스케이드 핫픽스 (A+B+C) [frontend][infra][incident]
+
+> 트랙: INC-P16-1-FIX(실행 핫픽스·마이그 0·prod-write 0·FE 2건 + settings 1줄). worktree `monorepo/sess-inc-p16-fix` base main `f40ba682`(지시서 expected HEAD `6f9c902f`는 stale — 6f9c902f/872037c5 둘 다 main 포함, 실제 통합점=main). 커밋=본 세션 스택.
+
+- **판정 요지**: market-pulse-v2 하드리프레시 반복 → 마운트 동시 4엔드포인트(overview·regime/stress·regime/analog·playbook) + RQ `retry:2` 증폭이 분당 요청을 `market_pulse_user` throttle(60/min) 초과로 밀어 429 캐스케이드 → useOverview isError → page.tsx 전면 에러. **근인=선존 fragility**(다엔드포인트 + 429 재시도), 1.6-S1(playbook 추가, footprint 3→4)은 **촉진자**.
+- **조치 = 핫픽스(구성 A+B+C)**: 퀀트 핫픽스 4.50 > 롤백 2.80(마진 1.70 자동 확정). 구성은 디렉터 추천 A+B(마진 0.10)에 **병진이 C(throttle 예산 2배)를 보험으로 추가 채택** — 원장 병기.
+  - **A** 전역 retry 함수형(`providers/queryRetry.ts` `shouldRetryQuery`) — 429 즉시 무재시도, 그 외(500·네트워크) 기존 최대 2회 보존. 429 재시도는 rate window 내 예산 재소비라 무재시도가 정답.
+  - **B** PlaybookCardContainer를 `hooks/useInViewOnce`로 뷰포트 진입 시점까지 fetch 지연. 렌더 불변(lazy=fetch 시점만 지연). fold 아래 배치 실측(hero+stress+delta+anomaly 아래·max-w-3xl 단일컬럼) = B 효과 유효.
+  - **C** `settings.py market_pulse_user` 60→120/min(타 scope 무접촉·부수효과 0 실측). 모듈 상수 → **재기동 필수**(common-bugs #41), 랜딩 동기에 api 재기동 포함.
+- **행위보존**: A는 전역 정책이나 429 외 실패 재시도는 불변(테스트 고정: 429→queryFn 1회·500→3회). B는 진입 후 렌더 = 1.6-S1과 동일(스냅샷 무변경). anomaly·playbook 엔진·BE 로직 무접촉.
+
+**검증**: vitest 전체 **1080 passed**(신규 A 8 + B 2)·tsc 0·lint 0·playbook pytest 15. 재현 검증=react-query 실행 루프에 predicate 물려 429 무재시도(1회)·500 재시도(3회) 결정론 입증(브라우저 수동 재현 갈음, 후속=SMOKE-BROWSER-PATH 자동화).
+
+**Why C 추가**: A+B로 반복 refresh 5회 ≈ 15~25/min « 60이 산수상 충분하나, throttle 예산 2배는 재현 변동(캐시 miss·동시 탭)에 대한 저비용 보험(settings 1줄). 근인 완화는 A/B, C는 여유 예산. **랜딩=병진 수동**(main 머지 + sv sync + **api 재기동(#41)** + web 리빌드 + 스모크). 실행 세션은 배포/서비스 op 자기집행 금지([[feedback_deploy_approval_explicit_quote]]·[[feedback_service_op_submit_not_execute]]).
