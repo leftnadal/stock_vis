@@ -36,6 +36,7 @@ Design Lab은 Stock_vis의 더 넓은 목적인 **Better Investment Decisions**�
   - [`Exploration Batch 02 — Judgment Update Logic & Information Model`](02_workstreams/001_investment_judgment_experience/batch_02_judgment_update_logic_ko.md)
   - [`Exploration Batch 03 — Judgment Structure Granularity & Human–AI Authorship Boundary`](02_workstreams/001_investment_judgment_experience/batch_03_authorship_granularity_ko.md)
   - [`Exploration Batch 04 — Judgment Experience Interaction Architecture`](02_workstreams/001_investment_judgment_experience/batch_04_interaction_architecture_ko.md)
+  - [`Exploration Batch 05 — Low-Fidelity Wireflow / Prototype Exploration`](02_workstreams/001_investment_judgment_experience/batch_05_wireflow_prototype_ko.md)
   - [`Synthesis`](02_workstreams/001_investment_judgment_experience/synthesis_ko.md)
 
 Workstream 자료는 기본적으로 **Working** 상태이며, 자동으로 Approved Design Knowledge나 제품 architecture가 되지 않는다.
