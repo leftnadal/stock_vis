@@ -1,11 +1,11 @@
 # Stock_vis Research Lab Evaluation Methodology
 
 **Status:** Approved  
-**Version:** 1.0  
-**Last Updated:** 2026-08-24  
+**Version:** 1.1  
+**Last Updated:** 2026-08-27  
 **Owner:** Stock_vis Research Lab  
-**Approval:** Approved by Project Owner on 2026-08-24  
-**Effective Date:** 2026-08-24
+**Approval:** Approved by Project Owner on 2026-08-27  
+**Effective Date:** 2026-08-27
 
 ## 1. Purpose
 
@@ -33,7 +33,7 @@ It governs:
 - consequence-proportional rigor and effective challenge;
 - versioned Evaluation Records;
 - material warrant and dependency traceability;
-- re-evaluation and reconsideration triggers as evaluation mechanisms; and
+- re-evaluation and reconsideration triggers as evaluation mechanisms, including governance-initiated review requests; and
 - meta-evaluation of the Evaluation Methodology itself.
 
 This document does not define:
@@ -250,6 +250,8 @@ Knowledge admission depends on Evaluation Purpose and applicable admission crite
 An admitted Knowledge item may retain explicit limitations, unresolved alternatives, or scope restrictions.
 
 Every Knowledge admission requires an admission-purpose structured evaluation. The required rigor may differ with epistemic consequence, but admission must not occur without an applicable evaluation.
+
+High downstream consequence may justify stronger evaluation, specialized review, or additional challenge. It does not by itself transfer epistemic truth adjudication to the Project Owner / CEO.
 
 ## 8. Composition Evaluation
 
@@ -510,6 +512,14 @@ The trigger does not require change. It requires reconsideration.
 
 Exact thresholds remain a Non-Decision of v1.
 
+### 15.3 Governance-Initiated Review
+
+The Project Owner / CEO, acting in a consequential governance role, may require Re-evaluation or Reconsideration when a material concern exists about an epistemic result, methodology, architecture, assumption, or consequential use.
+
+A governance-initiated review request does not constitute an epistemic verdict and does not predetermine the outcome. It activates the applicable Research and Evaluation processes, which may retain, strengthen, revise, restrict, supersede, reject, or otherwise update the prior state according to the evidence and legitimate authority.
+
+This preserves the CEO's ability to challenge consequential work without turning governance authority into direct epistemic override.
+
 ## 16. Meta-Evaluation
 
 The Evaluation Methodology itself must be evaluated over time.
@@ -545,13 +555,17 @@ Research Methodology
 Lifecycle / Admission Action
 ```
 
+High epistemic consequence may require stronger Evaluation, additional challenge, or specialized epistemic review. It does not by itself make the Project Owner / CEO the epistemic truth reviewer.
+
+When an evaluated result creates material strategic, architectural, operational, cross-lab, resource, risk, or value-dependent consequences, the Project Owner / CEO may exercise consequential governance over what Stock_vis should do about that result. Consequential governance is downstream from epistemic assessment and does not replace it.
+
 In other contexts, including Model governance, ongoing monitoring, meta-evaluation, or future downstream decision-support systems, the legitimate downstream authority owns the response to the structured assessment.
 
-This separation prevents Evaluation from silently becoming an automatic epistemic promotion or governance mechanism.
+This separation prevents Evaluation from silently becoming an automatic epistemic promotion or governance mechanism and prevents consequential governance from silently becoming epistemic override.
 
 ## 18. Boundaries and Non-Decisions
 
-Evaluation Methodology v1 does not adopt:
+Evaluation Methodology v1.1 does not adopt:
 
 - a universal scalar quality score;
 - evidence weights;
@@ -567,6 +581,7 @@ Evaluation Methodology v1 does not adopt:
 - mandatory independent evaluators for every evaluation;
 - an evaluation reuse compatibility algorithm;
 - exact Re-evaluation or Reconsideration thresholds;
+- exact CEO-escalation thresholds or routing rules;
 - meta-evaluation calibration metrics;
 - a graph, ontology, database, or storage implementation for Material Warrant Network;
 - model-specific benchmark or validation metrics; or
@@ -582,10 +597,18 @@ This document depends on and must remain consistent with:
 - [Stock_vis Research Lab Terminology Governance](../01_methodology/terminology_governance.md)
 - [Stock_vis Research Lab Knowledge and Understanding Framework](../01_methodology/knowledge_and_understanding_framework.md)
 - [Stock_vis Research Lab Research Methodology](../01_methodology/research_methodology.md)
+- [DR-0006: Separate Epistemic Authority from Consequential Governance](../04_decision_records/DR-0006-separate-epistemic-authority-consequential-governance.md)
 
 Research Methodology is a peer operational authority. Evaluation Methodology does not own the research lifecycle.
 
 ## 20. Change Log
+
+### 1.1 — 2026-08-27
+
+- Clarified that high epistemic consequence increases evaluation rigor and specialized review rather than transferring truth adjudication to the Project Owner / CEO.
+- Added governance-initiated Re-evaluation and Reconsideration as review pathways that do not predetermine epistemic outcomes.
+- Clarified the downstream separation between epistemic assessment and CEO consequential governance.
+- Preserved exact CEO-escalation thresholds, agent voting, and routing mechanics as Non-Decisions.
 
 ### 1.0 — 2026-08-24
 

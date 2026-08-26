@@ -1,11 +1,11 @@
 # Stock_vis Research Lab Research Methodology
 
 **Status:** Approved  
-**Version:** 1.0  
-**Last Updated:** 2026-08-24  
+**Version:** 1.1  
+**Last Updated:** 2026-08-27  
 **Owner:** Stock_vis Research Lab  
-**Approval:** Approved by Project Owner on 2026-08-24  
-**Effective Date:** 2026-08-24
+**Approval:** Approved by Project Owner on 2026-08-27  
+**Effective Date:** 2026-08-27
 
 ## 1. Purpose
 
@@ -37,6 +37,7 @@ It governs:
 - the interface between Research Methodology and Evaluation Methodology;
 - lifecycle actions following evaluation;
 - the process by which candidate results may be admitted as Research Knowledge;
+- the high-level separation between epistemic admission authority and consequential governance;
 - the handling of unresolved, revised, restricted, or discontinued research;
 - the relationship between Knowledge change, Understanding impact, and subsequent Research Triggers; and
 - proportionality in research process rigor.
@@ -48,7 +49,7 @@ This document does not define:
 - evaluation dimensions, evidence weights, validation criteria, or admission thresholds;
 - model-specific algorithms, metrics, or implementation;
 - ontology, database, graph, or software schemas;
-- agent voting, orchestration, or escalation algorithms; or
+- exact agent voting, orchestration, reviewer-count, or escalation algorithms; or
 - investment decision rules.
 
 Those responsibilities remain with their legitimate authorities.
@@ -275,7 +276,7 @@ Investigation may produce many legitimate outputs, including:
 
 Research Knowledge is therefore one possible research outcome, not the mandatory terminal state of every undertaking.
 
-## 14. Lifecycle and Admission Actions
+## 14. Lifecycle, Admission, and Governance Actions
 
 A structured evaluation result does not automatically determine a lifecycle action.
 
@@ -288,16 +289,45 @@ The Research Methodology interprets evaluation results within the research lifec
 - restrict scope, conditions, or intended use;
 - preserve an unresolved state;
 - discontinue or defer the research path;
-- escalate a material unresolved issue under later governance; or
+- escalate a material unresolved issue under applicable governance; or
 - admit a bounded result as Research Knowledge when applicable admission criteria are satisfied.
 
-Exact lifecycle labels and actor-level admission authority are not fixed by v1.
+Exact lifecycle labels remain open to later operational refinement.
 
 ### 14.1 Admission Is Not Truth Declaration
 
 Admission means that the Research Lab currently accepts a bounded epistemic result for legitimate reuse under stated scope, conditions, provenance, and limitations. It does not establish timeless or infallible truth.
 
 Evaluation Methodology owns epistemic criteria for admission. Research Methodology owns the process and lifecycle transition by which an evaluated candidate may be admitted.
+
+### 14.2 Epistemic Admission Authority
+
+The Research Lab's epistemic system is responsible for determining whether a candidate result is sufficiently warranted to be admitted as Research Knowledge or maintained as an evaluated Understanding.
+
+The Project Owner / CEO is not the default epistemic truth reviewer and does not serve as the ordinary authority for deciding whether a factual, causal, predictive, comparative, or other research conclusion is scientifically or analytically correct.
+
+Greater epistemic consequence, expected reuse, uncertainty, or disagreement should increase the rigor of Evaluation, effective challenge, and specialized epistemic review. It does not by itself transfer truth adjudication to the Project Owner / CEO.
+
+Epistemic admission therefore remains governed by the approved Research and Evaluation Methodologies. Exact agent-level mechanics, reviewer counts, voting rules, consensus algorithms, and escalation thresholds remain Non-Decisions of v1.1.
+
+### 14.3 Consequential Governance Authority
+
+The Project Owner / CEO holds consequential governance authority over what Stock_vis should do about sufficiently evaluated research results when those results create material strategic, architectural, operational, or value-dependent consequences.
+
+CEO-level governance may include decisions about:
+
+- major research direction or priority;
+- substantial resource commitment;
+- system-wide or cross-lab dependency;
+- methodology or architecture change;
+- material downstream use boundaries or risk tolerance;
+- product or decision-support direction;
+- hard-to-reverse commitments; and
+- value choices among multiple legitimate alternatives.
+
+The importance of an epistemic result may justify stronger internal evaluation without requiring CEO epistemic approval. CEO escalation is driven by consequential governance needs rather than by a requirement for the CEO to verify research truth.
+
+The Project Owner / CEO may raise a material epistemic concern and require Re-evaluation or Reconsideration through the applicable methodology. Such a governance request creates a review obligation but does not predetermine the epistemic outcome. The Project Owner / CEO does not directly overwrite Research Knowledge or Understanding by decree; any epistemic revision, restriction, retention, or rejection must proceed through the legitimate Research and Evaluation authorities.
 
 ## 15. Knowledge and Understanding Impact
 
@@ -348,7 +378,7 @@ The exact storage representation is delegated to later ontology and engineering 
 
 ## 19. Boundaries and Non-Decisions
 
-Research Methodology v1 does not adopt:
+Research Methodology v1.1 does not adopt:
 
 - a fixed exhaustive taxonomy of research question types;
 - a fixed exhaustive taxonomy of research methods;
@@ -357,10 +387,9 @@ Research Methodology v1 does not adopt:
 - one universal formal Research Design template;
 - exact Knowledge admission thresholds;
 - exact lifecycle vocabulary;
-- actor-level admission or escalation authority;
+- exact agent-level admission mechanics, reviewer counts, voting rules, consensus algorithms, or escalation thresholds;
 - numerical credibility scales;
 - fixed evaluation-rigor tiers;
-- an agent orchestration or voting algorithm;
 - a database, ontology, graph, or workflow-engine schema;
 - a physical Material Warrant Network implementation; or
 - investment decision rules.
@@ -375,10 +404,19 @@ This document depends on and must remain consistent with:
 - [Stock_vis Research Lab Terminology Governance](terminology_governance.md)
 - [Stock_vis Research Lab Knowledge and Understanding Framework](knowledge_and_understanding_framework.md)
 - [Stock_vis Research Lab Evaluation Methodology](../02_evaluation/evaluation_methodology.md)
+- [DR-0006: Separate Epistemic Authority from Consequential Governance](../04_decision_records/DR-0006-separate-epistemic-authority-consequential-governance.md)
 
 Evaluation Methodology is a peer operational authority, not a subordinate component of Research Methodology.
 
 ## 21. Change Log
+
+### 1.1 — 2026-08-27
+
+- Separated epistemic admission authority from consequential governance authority.
+- Established that Research/Evaluation systems determine warranted epistemic status while the Project Owner / CEO governs material downstream strategic consequences.
+- Established that high epistemic consequence increases evaluation rigor rather than requiring CEO truth approval by default.
+- Established CEO authority to require Re-evaluation or Reconsideration without directly overwriting epistemic conclusions.
+- Preserved exact agent-level admission, voting, reviewer-count, and escalation mechanics as Non-Decisions.
 
 ### 1.0 — 2026-08-24
 
