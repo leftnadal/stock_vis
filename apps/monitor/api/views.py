@@ -408,7 +408,11 @@ class SwapHoldLogViewSet(_OwnedByMonitorMixin, viewsets.ModelViewSet):
     monitor_lookup = "claim__monitor"
 
     def get_queryset(self):
-        qs = SwapHoldLog.objects.filter(claim__monitor__user=self.request.user)
+        # select_related — hold_performance_pct가 claim.monitor.target_ref를 매 로그마다
+        # 참조(SwapHoldLogSerializer, C-BE) → N+1 방지.
+        qs = SwapHoldLog.objects.filter(
+            claim__monitor__user=self.request.user
+        ).select_related("claim__monitor")
         claim_id = self.request.query_params.get("claim")
         if claim_id:
             qs = qs.filter(claim_id=claim_id)

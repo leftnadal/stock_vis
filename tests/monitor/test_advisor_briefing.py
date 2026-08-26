@@ -85,6 +85,71 @@ class TestBuildContext:
 
 
 @pytest.mark.django_db
+class TestCurrencyLabel:
+    """B-BE-2 — 브리핑 프롬프트 통화 표기(v1.2). 숫자 정밀도는 무변, 통화 접두만 추가."""
+
+    def test_context_defaults_usd_without_matching_stock(self, monitor):
+        # stock_aapl fixture 미사용 → target_ref(AAPL)에 매칭되는 Stock 없음 → USD 폴백
+        _snap(monitor, date(2026, 8, 6), 0.10)
+        _snap(monitor, date(2026, 8, 7), 0.12)
+        ctx = svc.build_context(monitor)
+        assert ctx["currency"] == "USD"
+
+    def test_context_reads_krw_from_stock(self, user):
+        from apps.monitor.models import Monitor
+        from packages.shared.stocks.models import Stock
+
+        Stock.objects.create(symbol="005930", stock_name="Samsung", currency="KRW")
+        krw_monitor = Monitor.objects.create(
+            user=user, scope=Monitor.Scope.STOCK, target_ref="005930", name="삼성전자 감시"
+        )
+        _snap(krw_monitor, date(2026, 8, 6), 0.10)
+        _snap(krw_monitor, date(2026, 8, 7), 0.12)
+        ctx = svc.build_context(krw_monitor)
+        assert ctx["currency"] == "KRW"
+
+    def test_prompt_prefixes_usd_close_price_and_preserves_precision(
+        self, monitor, stock_aapl
+    ):
+        _snap(monitor, date(2026, 8, 6), 0.10)
+        _snap(monitor, date(2026, 8, 7), 0.12)
+        ctx = svc.build_context(monitor)
+        assert ctx["close"] is not None
+        prompt = svc._render_user_prompt(ctx, True)
+        assert f"현재가(종가): ${ctx['close']}" in prompt  # 숫자 원문 그대로 + $ 접두
+        assert "원" not in prompt  # 기본 결함 재발 방지(임의 "원" 표기 금지)
+
+    def test_prompt_prefixes_krw_close_price(self, user):
+        from datetime import timedelta as _td
+
+        from apps.monitor.models import Monitor
+        from packages.shared.stocks.models import DailyPrice, Stock
+
+        stock = Stock.objects.create(symbol="005930", stock_name="Samsung", currency="KRW")
+        DailyPrice.objects.bulk_create([
+            DailyPrice(
+                stock=stock, date=date(2025, 1, 1) + _td(days=i),
+                open_price=1, high_price=1, low_price=1, close_price=70000 + i, volume=1,
+            )
+            for i in range(300)
+        ])
+        krw_monitor = Monitor.objects.create(
+            user=user, scope=Monitor.Scope.STOCK, target_ref="005930", name="삼성전자 감시"
+        )
+        _snap(krw_monitor, date(2026, 8, 6), 0.10)
+        _snap(krw_monitor, date(2026, 8, 7), 0.12)
+        ctx = svc.build_context(krw_monitor)
+        prompt = svc._render_user_prompt(ctx, True)
+        assert f"현재가(종가): ₩{ctx['close']}" in prompt
+
+    def test_system_prompt_instructs_currency_notation(self):
+        assert "통화" in svc.SYSTEM_PROMPT_V1
+
+    def test_prompt_version_is_v1_2(self):
+        assert svc.PROMPT_VERSION == "v1.2"
+
+
+@pytest.mark.django_db
 class TestUnchanged:
     def _ctx(self, monitor, delta, state, prev_state):
         return {
@@ -124,7 +189,7 @@ class TestGenerateBriefing:
         assert note.coverage_total == 1 and note.coverage_n == 1
         assert note.model_id == "claude-sonnet-4-5"
         assert note.input_tokens == 120 and note.output_tokens == 60
-        assert note.prompt_version == "v1.1"
+        assert note.prompt_version == "v1.2"
 
     def test_idempotent_skip(self, monkeypatch, monitor, make_indicator, add_readings, stock_aapl):
         self._prep(monitor, make_indicator, add_readings)

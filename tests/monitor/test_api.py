@@ -95,6 +95,50 @@ class TestMonitorAPIScope:
 
 
 @pytest.mark.django_db
+class TestMonitorCurrencyCode:
+    """B-BE-1 — currency_code(SerializerMethodField). Stock.currency 단일 소스, 폴백=USD."""
+
+    def test_defaults_usd_without_matching_stock(self, client_alice, alice, db):
+        Monitor.objects.create(
+            user=alice, scope="stock", target_ref="ZZZZ", name="미매칭 심볼"
+        )
+        resp = client_alice.get("/api/v1/monitor/monitors/")
+        assert resp.status_code == 200
+        items = resp.data["results"] if isinstance(resp.data, dict) and "results" in resp.data else resp.data
+        assert items[0]["currency_code"] == "USD"
+
+    def test_reads_stock_currency_krw(self, client_alice, alice, db):
+        from packages.shared.stocks.models import Stock
+
+        Stock.objects.create(symbol="005930", stock_name="Samsung", currency="KRW")
+        Monitor.objects.create(
+            user=alice, scope="stock", target_ref="005930", name="삼성전자"
+        )
+        resp = client_alice.get("/api/v1/monitor/monitors/")
+        assert resp.status_code == 200
+        items = resp.data["results"] if isinstance(resp.data, dict) and "results" in resp.data else resp.data
+        assert items[0]["currency_code"] == "KRW"
+
+    def test_reads_stock_currency_usd(self, client_alice, alice, aapl):
+        Monitor.objects.create(
+            user=alice, scope="stock", target_ref="AAPL", name="애플 감시"
+        )
+        resp = client_alice.get("/api/v1/monitor/monitors/")
+        assert resp.status_code == 200
+        items = resp.data["results"] if isinstance(resp.data, dict) and "results" in resp.data else resp.data
+        assert items[0]["currency_code"] == "USD"
+
+    def test_non_stock_scope_defaults_usd(self, client_alice, alice, db):
+        Monitor.objects.create(
+            user=alice, scope="sector", target_ref="TECH", name="테크 섹터"
+        )
+        resp = client_alice.get("/api/v1/monitor/monitors/")
+        assert resp.status_code == 200
+        items = resp.data["results"] if isinstance(resp.data, dict) and "results" in resp.data else resp.data
+        assert items[0]["currency_code"] == "USD"
+
+
+@pytest.mark.django_db
 class TestEvaluateAction:
     def test_evaluate_returns_result(self, client_alice, alice):
         mon = Monitor.objects.create(
