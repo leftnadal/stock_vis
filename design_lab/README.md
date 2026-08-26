@@ -32,6 +32,12 @@ The Design Lab exists to study and improve how Stock_vis supports better investm
 
 Workstream material is Working by default and does not become approved Design Knowledge or product architecture automatically.
 
+## Approved Decision Records
+
+- [`DL-DR-0001 — Human–AI Judgment Authority Boundary`](04_decision_records/DL-DR-0001_human_ai_judgment_authority.md) · [한국어](04_decision_records/DL-DR-0001_human_ai_judgment_authority_ko.md)
+
+Approved Decision Records are durable downstream constraints within their stated scope until explicitly revised or superseded.
+
 ## Growth Model
 
 The Design Lab starts with the minimum structure required to operate. New workstream, knowledge, decision, evaluation, terminology, or design-system structures are added only when real work creates a recurring need for them.
