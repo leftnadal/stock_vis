@@ -29,6 +29,7 @@ The Design Lab exists to study and improve how Stock_vis supports better investm
   - [`Exploration Batch 02 — Judgment Update Logic & Information Model`](02_workstreams/001_investment_judgment_experience/batch_02_judgment_update_logic.md) · [한국어](02_workstreams/001_investment_judgment_experience/batch_02_judgment_update_logic_ko.md)
   - [`Exploration Batch 03 — Judgment Structure Granularity & Human–AI Authorship Boundary`](02_workstreams/001_investment_judgment_experience/batch_03_authorship_granularity.md) · [한국어](02_workstreams/001_investment_judgment_experience/batch_03_authorship_granularity_ko.md)
   - [`Exploration Batch 04 — Judgment Experience Interaction Architecture`](02_workstreams/001_investment_judgment_experience/batch_04_interaction_architecture.md) · [한국어](02_workstreams/001_investment_judgment_experience/batch_04_interaction_architecture_ko.md)
+  - [`Exploration Batch 05 — Low-Fidelity Wireflow / Prototype Exploration`](02_workstreams/001_investment_judgment_experience/batch_05_wireflow_prototype.md) · [한국어](02_workstreams/001_investment_judgment_experience/batch_05_wireflow_prototype_ko.md)
   - [`Synthesis`](02_workstreams/001_investment_judgment_experience/synthesis.md) · [한국어](02_workstreams/001_investment_judgment_experience/synthesis_ko.md)
 
 Workstream material is Working by default and does not become approved Design Knowledge or product architecture automatically.
