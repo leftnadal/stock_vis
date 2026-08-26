@@ -25,6 +25,19 @@ export interface NewsContext {
   age_days: number;
 }
 
+// === Technical (SCAN-B2-TECH-BE · D-SCAN-B2TECH-CONTRACT) ===
+// 전 키 optional — 결측 지표는 baker가 키를 생략(정칙 ⑴). rsi/rsi_state는 동반.
+export type RsiState = 'oversold' | 'overbought' | 'neutral';
+export type MaState = 'golden_cross' | 'dead_cross' | 'above' | 'below';
+
+export interface TechnicalBlock {
+  rsi?: number;
+  rsi_state?: RsiState;
+  /** 52주 고점 대비 위치(%) = close/high_52w*100. FE가 "52주 고점 −x.x%"로 표시 변환. */
+  dist_52w_high_pct?: number;
+  ma_state?: MaState;
+}
+
 // === Signal Stock ===
 export interface SignalStock {
   symbol: string;
@@ -43,6 +56,8 @@ export interface SignalStock {
   market_cap: number | null;
   volume: number;
   dollar_volume: number;
+  /** 기술 축(SCAN-B2-TECH-BE). 미착지 bake/전결측이면 부재 → 정칙 ⑴ 칩 생략. */
+  technical?: TechnicalBlock;
 }
 
 // === Signal Card ===
