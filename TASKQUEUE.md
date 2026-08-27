@@ -11,6 +11,33 @@
 - **방향 후보(결정=디렉터)**: 방향2(주입=호출자가 watch symbols를 `eod_universe_symbols(extra=...)`로 주입 → shared 무의존) / 방향C(승격=VIXProvider식 포트+등록 패턴 의존역전, BOUNDARY-3 선례). 방향1(소비자 이동)=호출자가 shared 내부라 난도 높음.
 - **통지 필요**: EODUNIV-P15 트랙(원 유입)과 소진 방향 조율.
 - **목표**: 동결 1→0, green 유지(동결=임시 격리). 상태: **등재(방향 결정 대기)**.
+## GUIDE 트랙 (2026-08-27 개설, D-GUIDE-TRACK)
+
+> 출처: D-GUIDE-TRACK(DECISIONS 2026-08-27). 목표 = 옵션 C(허브 + 화면별 `?` 오버레이). 가이드 데이터 = **야간 도그푸딩 에이전트 루브릭 단일 출처**. 순서 = 가이드 → 에이전트.
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| GUIDE-S1 | 슬라이스 1 — 데이터 계약(`lib/guide/`) + 렌더러(GuideOverlay·GuideHub) + 네비 삽입 + 핵심 5화면 | @frontend | D-GUIDE-TRACK | ✅ **완료·main 착지(GUIDE-S1C 동반)** | vitest 1164·tsc 0·lint 순증 0. 행위보존 기계 증명 12/12. |
+| GUIDE-S1-REVIEW | 5화면 문구 병진 검수 → `reviewStatus` draft → confirmed 전환 | 병진(사용자) | GUIDE-S1 | ✅ **승인 완료(2026-08-27)** | 5화면 승인. marketPulse만 v1 초안 폐기→v2 문구 교체 후 confirmed. 허브 "초안" 배지 전건 소멸(테스트 고정). |
+| GUIDE-S1-SHOT | 5화면 + 허브 라이브 스크린샷 증적 | @qa | GUIDE-S1 랜딩 | 🆕 **todo(잔여)** | [[feedback_ui_slice_live_screenshot]]. browse 데몬 무출력·Chrome 확장 미연결로 S1에서 미수행. HTML 렌더 검증으로 갈음(6라우트 200·`?` 버튼 5/5·`/guide` 미노출 1/1). |
+| GUIDE-S2 | 슬라이스 2 — 잔여 사용자-대면 화면 가이드 확장(31화면) | @frontend | GUIDE-S1-REVIEW(done) | 🆕 **todo(선행 해소·착수 가능)** | 톤 확정됨. 권고 순서 = `/stocks/[symbol]`(4단계 갭) → Monitor 심화 4 → Chain Sight 심화 → 나머지. |
+| GUIDE-STAGE4-GAP | 플로우 4단계(1차 검증)에 **독립 라우트 부재** — 검증 UI는 `/stocks/[symbol]` 내부 섹션. 허브가 "가이드 준비 중"으로 정직 표시 중 | 미배정 | 설계 | 🔭 **관찰(KEEP/CUT 입력)** | 심볼 없이는 진입 불가 → 플로우 한 바퀴가 끊긴다. 라우트 신설 vs 플로우 정의 수정 = 제품 결정. |
+| GUIDE-MP-V1V2 | `/market-pulse` v1↔v2 이중 — 가이드를 어디에 붙일지 | 미배정 | — | ✅ **해소(D-MP-V2-NAV, S1C)** | 가이드·네비 모두 v2로 이설. v1은 가이드 미제공 = 은퇴 신호. 후속 = `MP-V1-RETIRE`. |
+| MP-V1-RETIRE | **v1(`/market-pulse`) 은퇴 결정·집행** — 리다이렉트 여부 + MobileNav active prefix 정리 + docs 정리 | 미배정 | GUIDE-S1C §4 측정(done) | 🆕 **todo(결정 대기·재료 확보됨)** | 측정 결과 **실동선 0건**(네비 전환 후 v1로 보내는 Link/href/push 없음·백엔드 알림은 이미 v2·manifest/middleware 무참조). 기술 장애물 없음 → **결정만 남음**(디렉터). 함께 정리할 것 = Header/MobileNav active 판정식 불일치(v1에서 Header 비활성·MobileNav 활성). |
+| GUIDE-S1C-SHOT | 허브 + 5화면 오버레이 라이브 스크린샷 증적 | @qa | main 착지(done)·:3000 재빌드 | 🆕 **todo(잔여·도구 제약)** | S1에서 browse 데몬 무출력·Chrome 확장 미연결로 2회 시도 후 중단. 대체 증적 확보됨: ⑴ 실 페이지 통합 테스트(v2 7영역 앵커 전건 해소 + 배지 7/7) ⑵ 라이브 HTTP 7라우트(`?` 노출/미노출 매트릭스). GUIDE-S1-SHOT 승계. |
+| GUIDE-AGENT | 야간 도그푸딩 에이전트(옵션 B+C: 관찰 후보 0~5개 + 성적 원장) — 루브릭 = `coreQuestion` | 미배정 | GUIDE-S1-REVIEW | 🆕 **todo(별도 지시서)** | 검수된 coreQuestion 없이 착수 금지(기준 문장이 흔들리면 채점이 무의미). |
+
+
+### 질문 불성립 파생 — 앱 백로그 (GUIDE-S1 조사 산출, 2026-08-27 · **등재만·구현 금지**)
+
+> 출처: GUIDE-S1 부록 A. "이 영역이 답하는 질문"이 정직하게 안 써진 자리 = 제품 결함 후보. 가이드 트랙이 아니라 **해당 앱 소관**.
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| DASH-STRIP-KEEPCUT | 대시보드 3스트립(Coverage·Macro·News) KEEP/CUT — 전부 fail-quiet이라 "무엇을 결정하게 해주는지"가 안 써짐. 배경 장식인지 판단 재료인지 불명 | @frontend (dashboard) | — | 🔭 **관찰(등재만)** | 질문 부여(KEEP) or 제거(CUT). 가이드 regions에서 제외된 상태. |
+| PF-TODAY-GAIN | 포트폴리오 "오늘 수익"이 **항상 0** — `app/portfolio/page.tsx`의 `todayGain={0} // TODO`·`todayGainPercent={0} // TODO` 하드코딩 | @frontend (portfolio) | — | 🔭 **관찰(등재만)** | 표시는 되는데 값이 언제나 0 = "거짓을 조용히 보여주는" 상태. 구현하거나 숨기거나 둘 중 하나. |
+| CS-ATTENTION-DEF | Chain Sight 카드 "관심도"(`avg_score`)의 정의가 화면에 없음 — 무엇을 0~100으로 매긴 값인지 답 불가 | chain_sight | — | 🔭 **관찰(등재만)** | 툴팁·범례로 정의 노출 필요. 가이드는 "세 숫자"로 뭉뚱그려 우회. |
+| GUIDE-STAGE4-ROUTE | 플로우 4단계(1차 검증) 독립 라우트 부재 — 검증 UI는 `/stocks/[symbol]` 내부 섹션뿐 | 미배정 | 설계 | 🔭 **관찰(등재만)** | GUIDE-STAGE4-GAP과 동일 사안. 라우트 신설 vs 플로우 정의 수정 = 제품 결정. |
 
 ## INC-P16-1 후속 (2026-08-24, 홈 429 캐스케이드 핫픽스)
 

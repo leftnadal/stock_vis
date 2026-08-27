@@ -29,7 +29,7 @@ export function SignalFilterTabs({ cards, activeCategory, onCategoryChange }: Si
   const totalCount = cards.reduce((sum, card) => sum + card.count, 0);
 
   return (
-    <div className="mb-4">
+    <div data-guide="dashboard.filter-tabs" className="mb-4">
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {CATEGORY_ORDER.map((category) => {
           const isActive = activeCategory === category;

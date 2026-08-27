@@ -69,6 +69,7 @@ function StatusSegment({
   return (
     <div
       className="mb-4 inline-flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800"
+      data-guide="monitor.status-segment"
       data-testid="status-segment"
     >
       {STATUS_SEGMENTS.map((s) => (
@@ -190,6 +191,7 @@ function MonitorListContent() {
         </div>
         <Link
           href="/monitor/new"
+          data-guide="monitor.new"
           className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
         >
           <Plus size={16} /> 새 모니터
@@ -198,7 +200,7 @@ function MonitorListContent() {
 
       {!isLoading && !isError && (monitors?.length ?? 0) > 0 && (
         <>
-          <div className="mb-3 flex flex-wrap gap-2">
+          <div data-guide="monitor.scope-chips" className="mb-3 flex flex-wrap gap-2">
             {SCOPE_CHIPS.map((c) => (
               <Chip
                 key={c.key}
@@ -226,7 +228,7 @@ function MonitorListContent() {
       )}
       {!isLoading && !isError && (monitors?.length ?? 0) === 0 && <EmptyState />}
       {!isLoading && !isError && (monitors?.length ?? 0) > 0 && (
-        <div className="flex flex-col gap-3">
+        <div data-guide="monitor.list" className="flex flex-col gap-3">
           {filtered.map((m: Monitor) => (
             <MonitorListCard
               key={m.id}
