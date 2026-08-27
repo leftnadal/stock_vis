@@ -498,7 +498,11 @@ _BOUNDARY_FORBIDDEN_SEGMENTS = ("apps", "macro")
 # #1·#2: 2026-06-01 BOUNDARY-1 청소 완료 (circuit_breaker → shared)
 # #3: 2026-06-01 BOUNDARY-2 청소 완료 (daily_report → apps.get_model 동적 lookup)
 # #4·#5: 2026-06-04 BOUNDARY-3 청소 완료 (eod_* → VIXProvider 의존 역전 + 등록 패턴)
-_BOUNDARY_KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
+# #6: 2026-08-27 BOUNDARY-TRIAGE-1 동결 (eod_signal_calculator → apps.monitor, 7ec24c62 유입).
+#     SSOT 동기 = tests/architecture/test_shared_boundary.py:KNOWN_VIOLATIONS. 소진=BOUNDARY-BURNDOWN-EOD.
+_BOUNDARY_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
+    ("stocks/services/eod_signal_calculator.py", "apps.monitor.models.monitor"),
+}
 
 
 def _boundary_is_forbidden(module: str) -> bool:
