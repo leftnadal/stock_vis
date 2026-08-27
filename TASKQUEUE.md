@@ -17,14 +17,15 @@
 
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |----|------|-------|------------|--------|-----------|
-| GUIDE-S1 | 슬라이스 1 — 데이터 계약(`lib/guide/`) + 렌더러(GuideOverlay·GuideHub) + 네비 삽입 + 핵심 5화면 | @frontend | D-GUIDE-TRACK | ✅ **완료·main 착지(GUIDE-S1C 동반)** | vitest 1164·tsc 0·lint 순증 0. 행위보존 기계 증명 12/12. |
+| GUIDE-S1 | 슬라이스 1 — 데이터 계약(`lib/guide/`) + 렌더러(GuideOverlay·GuideHub) + 네비 삽입 + 핵심 5화면 | @frontend | D-GUIDE-TRACK | ✅ **완료·main 착지 `8aa46ab8`(GUIDE-S1C 동반)** | vitest 1164·tsc 0·lint 순증 0. 행위보존 기계 증명 12/12. |
 | GUIDE-S1-REVIEW | 5화면 문구 병진 검수 → `reviewStatus` draft → confirmed 전환 | 병진(사용자) | GUIDE-S1 | ✅ **승인 완료(2026-08-27)** | 5화면 승인. marketPulse만 v1 초안 폐기→v2 문구 교체 후 confirmed. 허브 "초안" 배지 전건 소멸(테스트 고정). |
 | GUIDE-S1-SHOT | 5화면 + 허브 라이브 스크린샷 증적 | @qa | GUIDE-S1 랜딩 | 🆕 **todo(잔여)** | [[feedback_ui_slice_live_screenshot]]. browse 데몬 무출력·Chrome 확장 미연결로 S1에서 미수행. HTML 렌더 검증으로 갈음(6라우트 200·`?` 버튼 5/5·`/guide` 미노출 1/1). |
 | GUIDE-S2 | 슬라이스 2 — 잔여 사용자-대면 화면 가이드 확장(31화면) | @frontend | GUIDE-S1-REVIEW(done) | 🆕 **todo(선행 해소·착수 가능)** | 톤 확정됨. 권고 순서 = `/stocks/[symbol]`(4단계 갭) → Monitor 심화 4 → Chain Sight 심화 → 나머지. |
 | GUIDE-STAGE4-GAP | 플로우 4단계(1차 검증)에 **독립 라우트 부재** — 검증 UI는 `/stocks/[symbol]` 내부 섹션. 허브가 "가이드 준비 중"으로 정직 표시 중 | 미배정 | 설계 | 🔭 **관찰(KEEP/CUT 입력)** | 심볼 없이는 진입 불가 → 플로우 한 바퀴가 끊긴다. 라우트 신설 vs 플로우 정의 수정 = 제품 결정. |
 | GUIDE-MP-V1V2 | `/market-pulse` v1↔v2 이중 — 가이드를 어디에 붙일지 | 미배정 | — | ✅ **해소(D-MP-V2-NAV, S1C)** | 가이드·네비 모두 v2로 이설. v1은 가이드 미제공 = 은퇴 신호. 후속 = `MP-V1-RETIRE`. |
 | MP-V1-RETIRE | **v1(`/market-pulse`) 은퇴 결정·집행** — 리다이렉트 여부 + MobileNav active prefix 정리 + docs 정리 | 미배정 | GUIDE-S1C §4 측정(done) | 🆕 **todo(결정 대기·재료 확보됨)** | 측정 결과 **실동선 0건**(네비 전환 후 v1로 보내는 Link/href/push 없음·백엔드 알림은 이미 v2·manifest/middleware 무참조). 기술 장애물 없음 → **결정만 남음**(디렉터). 함께 정리할 것 = Header/MobileNav active 판정식 불일치(v1에서 Header 비활성·MobileNav 활성). |
-| GUIDE-S1C-SHOT | 허브 + 5화면 오버레이 라이브 스크린샷 증적 | @qa | main 착지(done)·:3000 재빌드 | 🆕 **todo(잔여·도구 제약)** | S1에서 browse 데몬 무출력·Chrome 확장 미연결로 2회 시도 후 중단. 대체 증적 확보됨: ⑴ 실 페이지 통합 테스트(v2 7영역 앵커 전건 해소 + 배지 7/7) ⑵ 라이브 HTTP 7라우트(`?` 노출/미노출 매트릭스). GUIDE-S1-SHOT 승계. |
+| GUIDE-S1C-RUNTIME | 런타임 동기(3트리 `418b2a8e`→`8aa46ab8`) + web 프로덕션 리빌드 | 병진(수동) | main 착지(done) | 🆕 **상신 완료·집행 대기** | CC 자기 집행 금지(서비스·launchctl / sv sync 명시 승인 인용 필요). **마이그 0건·`migrate --plan` no-op·lock 무변** 실측 → 안전 확인됨. 명령문 = scratchpad `GUIDE_S1C_런타임동기_상신_20260827.md`(DEPLOY.md 2.1+2.2). 이 동기는 SCAN-B2-FE·CS-UNIVERSE-EXCLUDE·R2-PRE-A·BOUNDARY-TRIAGE-1도 함께 반영. |
+| GUIDE-S1C-SHOT | 허브 + 5화면 오버레이 라이브 스크린샷 증적 | @qa | GUIDE-S1C-RUNTIME | 🆕 **todo(잔여·도구 제약)** | S1에서 browse 데몬 무출력·Chrome 확장 미연결로 2회 시도 후 중단. 대체 증적 확보됨: ⑴ 실 페이지 통합 테스트(v2 7영역 앵커 전건 해소 + 배지 7/7) ⑵ 라이브 HTTP 7라우트(`?` 노출/미노출 매트릭스). GUIDE-S1-SHOT 승계. |
 | GUIDE-AGENT | 야간 도그푸딩 에이전트(옵션 B+C: 관찰 후보 0~5개 + 성적 원장) — 루브릭 = `coreQuestion` | 미배정 | GUIDE-S1-REVIEW | 🆕 **todo(별도 지시서)** | 검수된 coreQuestion 없이 착수 금지(기준 문장이 흔들리면 채점이 무의미). |
 
 
