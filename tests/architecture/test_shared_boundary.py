@@ -31,7 +31,13 @@ FORBIDDEN_TOP_SEGMENTS = ("apps", "macro")
 # (Django apps.get_model 동적 lookup으로 변환, cross-app aggregator 표준 패턴).
 # #4·#5 (eod_regime_calculator, eod_pipeline → macro.models): 2026-06-04 BOUNDARY-3 청소
 # 완료 (VIXProvider 포트 + apps.market_pulse 등록 패턴, 의존 역전).
-KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
+# #6 (eod_signal_calculator → apps.monitor.models.monitor): 2026-08-27 BOUNDARY-TRIAGE-1 동결.
+#     7ec24c62(EODUNIV-P15-V01, 08-26) 유입 — eod_universe_symbols()가 Monitor(scope=stock)
+#     target_ref를 union하며 lazy import. 소진 트랙 = TASKQUEUE BOUNDARY-BURNDOWN-EOD
+#     (방향 결정=디렉터). SSOT 동기 = scripts/health_check.py:_BOUNDARY_KNOWN_VIOLATIONS.
+KNOWN_VIOLATIONS: set[tuple[str, str]] = {
+    ("stocks/services/eod_signal_calculator.py", "apps.monitor.models.monitor"),
+}
 
 
 def _is_forbidden(module: str) -> bool:

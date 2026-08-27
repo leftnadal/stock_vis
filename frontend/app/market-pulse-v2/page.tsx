@@ -34,7 +34,7 @@ const CARD_TITLE: Record<CardId, string> = {
 }
 
 export default function MarketPulseV2Page() {
-  const { data: overview, isLoading, isError, refetch } = useOverview()
+  const { data: overview, isLoading, isError, error, refetch } = useOverview()
   const { data: i18n } = useMarketPulseI18n()
   // C-lite(1.6-S0): StressCardContainer와 동일 키(useRegimeStress) → react-query dedup으로
   // 중복 fetch 없이 level_band 공유. available=false·band 없음이면 배지 미표시(부재 = null).
@@ -57,6 +57,29 @@ export default function MarketPulseV2Page() {
     )
   }
   if (isError || !overview) {
+    // INC-P16-CLOSE Part 3: 실패 원인 구분(HTTP transport status). 429/401만 안내를
+    // 달리하고 그 외는 기존 문구 유지. 원인 단정·기술 용어(스로틀 등) 노출 금지.
+    const status = (error as { response?: { status?: number } } | null | undefined)?.response?.status
+    if (status === 429) {
+      return (
+        <PageShell title="Market Pulse v2">
+          <p className="text-rose-700 mb-2">요청이 많아 잠시 제한됐어요. 잠시 후 다시 시도해 주세요.</p>
+          <button type="button" className="text-sm underline text-slate-700" onClick={() => refetch()}>
+            다시 시도
+          </button>
+        </PageShell>
+      )
+    }
+    if (status === 401) {
+      return (
+        <PageShell title="Market Pulse v2">
+          <p className="text-rose-700 mb-2">로그인이 필요합니다.</p>
+          <a href="/login" className="text-sm underline text-slate-700">
+            로그인
+          </a>
+        </PageShell>
+      )
+    }
     return (
       <PageShell title="Market Pulse v2">
         <p className="text-rose-700 mb-2">데이터를 불러오지 못했습니다.</p>
@@ -81,7 +104,7 @@ export default function MarketPulseV2Page() {
         <StatusBanner status={meta.status} reason={meta.status_reason} labels={labels} />
 
         {/* ③ Regime hero (full-width) — D-MP2-SURFACE 변형1 위계 1번 */}
-        <div className="mt-4">
+        <div data-guide="marketPulse.regime" className="mt-4">
           <RegimeCardSummary
             data={overview.cards.regime}
             labels={labels}
@@ -97,7 +120,7 @@ export default function MarketPulseV2Page() {
         </div>
 
         {/* ③b Delta Card — 어제와 달라진 것 (MP2-DELTA Slice 1) */}
-        <div className="mt-4">
+        <div data-guide="marketPulse.delta" className="mt-4">
           <DeltaCard
             regime={overview.cards.regime}
             sectorDeltas={overview.sector_deltas}
@@ -111,7 +134,7 @@ export default function MarketPulseV2Page() {
         <AnomalyPanel data={overview.anomaly} labels={labels} />
 
         {/* ④a Macro Playbook — 다신호 합류 체인 (1.6-S1). anomaly와 구분(합류 부분점등). */}
-        <div className="mt-4">
+        <div data-guide="marketPulse.playbook" className="mt-4">
           <PlaybookCardContainer />
         </div>
 
@@ -124,7 +147,7 @@ export default function MarketPulseV2Page() {
         </div>
 
         {/* ⑦ Grid: Breadth + Concentration — 위계 5번 */}
-        <section className="mt-4 grid gap-3 sm:grid-cols-2">
+        <section data-guide="marketPulse.breadth-concentration" className="mt-4 grid gap-3 sm:grid-cols-2">
           <BreadthCardSummary
             data={overview.cards.breadth}
             labels={labels}
@@ -140,7 +163,7 @@ export default function MarketPulseV2Page() {
         </section>
 
         {/* ⑦.5 유사 국면 카드 (MP2-ANALOG Slice B) — 결정론 코어, 라벨 슬롯 Slice C */}
-        <section className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
+        <section data-guide="marketPulse.analog-brief" className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
           <AnalogCardContainer />
         </section>
 

@@ -99,7 +99,7 @@ function PortfolioContent() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             내 포트폴리오
           </h1>
-          <div className="flex space-x-3">
+          <div data-guide="portfolio.add" className="flex space-x-3">
             <button
               onClick={handleRefresh}
               disabled={refreshing}
@@ -136,7 +136,7 @@ function PortfolioContent() {
 
         {/* Charts Section */}
         {portfolios.length > 0 && (
-          <div className="mt-8">
+          <div data-guide="portfolio.charts" className="mt-8">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 포트폴리오 분석
@@ -171,7 +171,7 @@ function PortfolioContent() {
         )}
 
         {/* Portfolio Grid/Table */}
-        <div className="mt-8">
+        <div data-guide="portfolio.holdings" className="mt-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               보유 종목 ({portfolios.length})

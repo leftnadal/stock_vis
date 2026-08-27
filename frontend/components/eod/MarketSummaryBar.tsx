@@ -64,7 +64,7 @@ export function MarketSummaryBar({ summary }: MarketSummaryBarProps) {
     : 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700';
 
   return (
-    <div className="mb-4 p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+    <div data-guide="dashboard.market-summary" className="mb-4 p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
       {/* 헤드라인 */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">

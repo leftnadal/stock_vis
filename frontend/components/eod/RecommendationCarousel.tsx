@@ -30,7 +30,7 @@ export function RecommendationCarousel({
   );
 
   return (
-    <section aria-label="추천 종목 캐러셀" className="my-4">
+    <section data-guide="dashboard.recommendations" aria-label="추천 종목 캐러셀" className="my-4">
       <h2 className="mb-2 px-1 text-sm font-semibold text-gray-700 dark:text-gray-200">
         오늘의 추천 <span className="text-gray-400">({sorted.length})</span>
       </h2>

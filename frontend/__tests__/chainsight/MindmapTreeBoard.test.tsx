@@ -83,15 +83,15 @@ describe('MindmapTreeBoard (CS-P5-FE-CARD B3)', () => {
     expect(screen.getByText('TECHNOLOGY')).toBeInTheDocument();
     expect(screen.getByText('미분류')).toBeInTheDocument();
     // 기본 접힘 — industry/카드 미노출
-    expect(screen.queryByText('Semiconductors')).not.toBeInTheDocument();
+    expect(screen.queryByText('반도체')).not.toBeInTheDocument();
     expect(screen.queryByText('NVDA')).not.toBeInTheDocument();
   });
 
   it('sector 클릭 → industry 펼침 → industry 클릭 → 카드 그리드 렌더', () => {
     render(<MindmapTreeBoard />);
     fireEvent.click(screen.getByText('TECHNOLOGY'));
-    expect(screen.getByText('Semiconductors')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Semiconductors'));
+    expect(screen.getByText('반도체')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('반도체'));
     expect(screen.getByText('NVDA')).toBeInTheDocument();
     expect(screen.getByText('연결 5')).toBeInTheDocument();
     expect(screen.getByText('그룹 2')).toBeInTheDocument();
@@ -100,7 +100,7 @@ describe('MindmapTreeBoard (CS-P5-FE-CARD B3)', () => {
   it('검색어 입력 시 매칭 sector/industry만 자동 펼쳐짐', () => {
     render(<MindmapTreeBoard />);
     fireEvent.change(screen.getByLabelText('티커 또는 종목명 검색'), { target: { value: 'nvda' } });
-    expect(screen.getByText('Semiconductors')).toBeInTheDocument();
+    expect(screen.getByText('반도체')).toBeInTheDocument();
     expect(screen.getByText('NVDA')).toBeInTheDocument();
     // 미매칭 카드(AMD)는 검색 중 숨김
     expect(screen.queryByText('AMD')).not.toBeInTheDocument();
@@ -111,7 +111,7 @@ describe('MindmapTreeBoard (CS-P5-FE-CARD B3)', () => {
   it('카드 클릭 시 router.push(?symbol=...) 호출', () => {
     render(<MindmapTreeBoard />);
     fireEvent.click(screen.getByText('TECHNOLOGY'));
-    fireEvent.click(screen.getByText('Semiconductors'));
+    fireEvent.click(screen.getByText('반도체'));
     fireEvent.click(screen.getByRole('button', { name: 'NVDA 카드' }));
     expect(mockPush).toHaveBeenCalledWith('/chainsight/mindmap?symbol=NVDA');
   });
@@ -151,7 +151,7 @@ describe('MindmapTreeBoard (CS-P5-FE-CARD B3)', () => {
   it('new_conn_7d>0 카드에 신규 배지 표시, 0이면 미표시', () => {
     render(<MindmapTreeBoard />);
     fireEvent.click(screen.getByText('TECHNOLOGY'));
-    fireEvent.click(screen.getByText('Semiconductors'));
+    fireEvent.click(screen.getByText('반도체'));
     expect(screen.getByText('新 +3')).toBeInTheDocument(); // NVDA
     expect(screen.queryByText(/新 \+0/)).not.toBeInTheDocument(); // AMD는 미표시
   });
@@ -176,7 +176,7 @@ describe('MindmapTreeBoard (CS-P5-FE-CARD B3)', () => {
   it('정렬 "연결 적은순" 선택 시 카드 순서가 오름차순으로 재배열', () => {
     render(<MindmapTreeBoard />);
     fireEvent.click(screen.getByText('TECHNOLOGY'));
-    fireEvent.click(screen.getByText('Semiconductors'));
+    fireEvent.click(screen.getByText('반도체'));
     fireEvent.change(screen.getByLabelText('카드 정렬'), { target: { value: 'conn_asc' } });
     const tickers = screen.getAllByText(/^(NVDA|AMD)$/).map((el) => el.textContent);
     expect(tickers).toEqual(['AMD', 'NVDA']); // AMD(0) → NVDA(5)

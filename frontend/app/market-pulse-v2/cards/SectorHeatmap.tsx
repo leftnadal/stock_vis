@@ -34,6 +34,7 @@ export function SectorHeatmap({ labels, onOpen, sense }: SectorHeatmapProps) {
 
   return (
     <section
+      data-guide="marketPulse.sector"
       className="mt-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm cursor-pointer hover:border-slate-300 transition"
       onClick={onOpen}
       role={onOpen ? 'button' : undefined}

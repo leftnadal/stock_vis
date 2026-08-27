@@ -72,7 +72,7 @@ function EventCard({ item, onClick }: { item: EventBoardItem; onClick: () => voi
         </div>
       </div>
       {/* ⑳-G S4: 등락률 = 카드 최상위 강조(크기·굵기 상향). */}
-      <div className={`text-2xl font-extrabold tabular-nums ${isPositive ? CHANGE_TEXT.up : CHANGE_TEXT.down}`}>
+      <div data-guide="chainsight.card-metrics" className={`text-2xl font-extrabold tabular-nums ${isPositive ? CHANGE_TEXT.up : CHANGE_TEXT.down}`}>
         {isPositive ? '▲' : '▼'} {Math.abs(item.avg_return * 100).toFixed(2)}%
       </div>
       {/* ⑳-G S4: 관심도·종목수 = 보조 정보로 시각 강등(크기·명도 하향). */}
@@ -128,7 +128,7 @@ export default function EventBoard() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">이벤트 보드</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">관심 종목 그룹 동향</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+        <div data-guide="chainsight.entrypoints" className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
           {/* CS-P5-FE-CARD: 업종 2단 마인드맵 진입점(신규 라우트, additive) */}
           <Link
             href="/chainsight/mindmap"
@@ -146,7 +146,7 @@ export default function EventBoard() {
           </Link>
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div data-guide="chainsight.event-grid" className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {sorted.map((item) => (
           <EventCard
             key={item.theme}
