@@ -27,7 +27,7 @@
 
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |----|------|-------|------------|--------|-----------|
-| AGENT-S1 | 1단계 — 정량 체크 러너 + diff 3분류 + 메일 + 실행 스크립트/plist 초안 | @infra | D-AGENT-S1 | ✅ **구현 완료(브랜치 `monorepo/sess-agent-s1`)** | pytest 신규 48 · 전체 5041 passed/53 skipped · ruff 신규분 0. 수동 1회 실행 성공(정량 16/17)·**메일 실발송 2통**. 점검 대상은 가이드 데이터에서 자동 유도. |
+| AGENT-S1 | 1단계 — 정량 체크 러너 + diff 3분류 + 메일 + 실행 스크립트/plist 초안 | @infra | D-AGENT-S1 | ✅ **완료·main 착지 `a717a204`** | pytest 신규 48 · 전체 5041 passed/53 skipped · ruff 신규분 0. 수동 1회 실행 성공(정량 16/17)·**메일 실발송 2통**. 점검 대상은 가이드 데이터에서 자동 유도. |
 | AGENT-S1-DEPLOY | 운용본 배치 + launchd 등록(05:20 KST) | 병진(수동) | AGENT-S1 착지 | 🆕 **상신 완료·집행 대기** | CC 자기 집행 금지(launchd·서비스). 명령문 = scratchpad `AGENT_S1_상신_20260827.md`. 코드는 repo 안이라 `sv sync`만으로 배치됨(별도 복사 불필요). `sv-worker-runtime/.env` 심링크 확인됨. |
 | AGENT-S1-AUTH | 점검 전용 계정 `DOGFOOD_API_USER/PASSWORD` env 등재 | 병진(수동) | — | 🆕 **todo(2단계 선행)** | 현재는 무인증 축소 모드(401=존재 확인만) → API **스키마·빈 응답 미검사**. 전용 읽기 계정 권장(일반 계정은 실사용 데이터 접촉 여지). credential은 코드 미포함(repo PUBLIC). |
 | AGENT-S1-OBSERVE | 익일 2일치 리포트로 **diff 3분류 실작동** 확인 + 로그 위생 | @qa | AGENT-S1-DEPLOY | 🆕 **todo(등록 후 1일)** | 첫날은 "기준일" 처리(설계). 2일째부터 신규/재발/해소가 나온다. 합성 데이터로는 이미 실증됨. |
