@@ -18,7 +18,7 @@ The Design Lab exists to study and improve how Stock_vis supports better investm
 
 1. [`00_foundation/foundation.md`](00_foundation/foundation.md) · [한국어](00_foundation/foundation_ko.md)
 2. [`01_operating_system/operating_model.md`](01_operating_system/operating_model.md) · [한국어](01_operating_system/operating_model_ko.md)
-3. [`01_operating_system/agent_protocol.md`](01_operating_system/operating_model_ko.md)
+3. [`01_operating_system/agent_protocol.md`](01_operating_system/agent_protocol.md) · [한국어](01_operating_system/agent_protocol_ko.md)
 4. [`01_operating_system/knowledge_lifecycle.md`](01_operating_system/knowledge_lifecycle.md) · [한국어](01_operating_system/knowledge_lifecycle_ko.md)
 5. [`01_operating_system/evolution.md`](01_operating_system/evolution.md) · [한국어](01_operating_system/evolution_ko.md)
 
