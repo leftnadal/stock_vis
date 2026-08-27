@@ -15,6 +15,20 @@
 - **경위(0-3 사실·판단 없음)**: 7ec24c62 커밋 메시지에 **경계 red 인지/신고 문구 부재**. `eod_universe_symbols()`가 Monitor union 기능(A-2) 추가 중 lazy import로 위반 유입. health·아키텍처 가드 red 채로 착지.
 - **Why**: 동결 = 임시 격리 — green 회복으로 회귀 가드 복원·다른 트랙(QUAD-IMPL-1 등 health FAIL HALT) 차단 해제. 실제 수리는 방향 판단(주입 vs 승격)이 필요해 별도 사이클. 등록 없는 red 방치는 가드 무력화이므로 즉시 동결로 SSOT 정합 회복.
 - **How to apply**: 동결 키 = `("stocks/services/eod_signal_calculator.py", "apps.monitor.models.monitor")` 양쪽 동기(한쪽만 갱신 시 어긋남). 소진 = TASKQUEUE `BOUNDARY-BURNDOWN-EOD`. 착지 규칙 = common-bugs #121(등록 없는 red 착지 금지). cf. BOUNDARY-1~3(#1~#5 청소 완료 선례).
+## [2026-08-27] D-MP-V2-NAV — Market Pulse 네비 목적지 v2 전환(옵션 B) + GUIDE-S1 검수 승인 [frontend][product][process]
+
+**결정 ⑴ (GUIDE-S1 검수 승인)**: 병진 검수 결과 5화면 가이드 문구 **승인** → `reviewStatus: 'draft' → 'confirmed'`. 단 **marketPulse는 v1 기준 초안을 폐기**하고 v2 기준 문구(7영역)로 **교체 후** confirmed. 승인 근거 주석 = `// 병진 검수 승인 2026-08-27 (GUIDE-S1C)`.
+
+**결정 ⑵ (네비 = 옵션 B)**: `Header.tsx`·`MobileNav.tsx`의 Market Pulse href를 `/market-pulse` → **`/market-pulse-v2`**. 라벨 불변. **v1 라우트는 존치**(리다이렉트 금지). 가이드 데이터는 v2에만 두고 **v1에는 두지 않는다 = 은퇴 신호**(오버레이가 데이터 없는 화면에 `?` 버튼을 안 띄우므로 추가 코드 0).
+
+**Why**: 가중합 **B 7.5 vs C 7.8**, 마진 **0.3 < 0.4**(자동 결정 임계 미달) → 타이브레이커 적용. 타이브레이커 = **v1 참조가 아직 미측정**이었으므로 **가역성 우선**. 리다이렉트(C)는 v1 직접 진입 경로를 즉시 없애 되돌리기 비용이 크고, 미측정 참조가 깨질 위험을 떠안는다. B는 목적지만 바꾸므로 한 줄로 원복 가능하다. 참조 전수 측정(아래)을 끝낸 뒤 v1 은퇴(리다이렉트)를 별도 결정한다.
+
+**측정 결과(GUIDE-S1C §4, read-only)**: **사용자를 v1으로 보내는 실동선 = 0건.** 네비 전환 후 frontend에 `/market-pulse` 라우트로 향하는 Link·href·router.push 없음. 백엔드 알림 렌더러(`apps/market_pulse/alert_renderers.py:44`)는 **이미 v2**를 가리킨다. manifest·middleware·next.config에 참조 없음. `MobileNav.tsx:26`의 `startsWith('/market-pulse')`는 **목적지가 아니라 active 판정 prefix**. docs/ 라우트성 언급 64행/37파일은 전부 과거 감사 리포트(운영 런북 아님). → **v1 은퇴(리다이렉트)의 기술적 장애물 없음**; 실행은 BOUNDARY 성격 결정이므로 별도 항목(TASKQUEUE `MP-V1-RETIRE`).
+
+**관측 사실(억지 통일하지 않음)**: v1(`/market-pulse`)에 직접 접근하면 **Header는 Market Pulse 비활성**(판정식이 `pathname.startsWith(item.href)`인데 href가 v2라 불성립), **MobileNav는 활성**(판정 prefix가 `'/market-pulse'` 하드코딩이라 v1·v2 모두 매칭). 두 컴포넌트의 판정식이 원래 다른 데서 오는 차이다. 코드로 맞추지 않고 **테스트로 고정**(`__tests__/guide/navMarketPulse.test.tsx`) — v1 은퇴 결정 시 함께 정리한다.
+
+**How to apply**: 가이드 문구 수정은 여전히 `frontend/lib/guide/*.ts` 단일 지점. v1에 가이드를 되살리지 말 것(은퇴 신호가 무의미해진다). v2 이관이 확정되면 `MP-V1-RETIRE` 항목에서 리다이렉트·active 판정식·docs를 한 번에 처리. cf. [[project_guide_track]]·D-GUIDE-TRACK.
+
 ## [2026-08-27] D-GUIDE-TRACK — 유저 가이드 = 허브 + 화면별 오버레이 (옵션 C) [frontend][product][process]
 
 **결정**: 유저 가이드를 **옵션 C = 허브(`/guide`) + 화면별 `?` 오버레이** 구조로 구축한다. 가이드 텍스트는 산문이 아니라 **구조화 데이터**(`frontend/lib/guide/`)로 관리하며, **이 데이터가 이후 야간 도그푸딩 에이전트의 채점 루브릭 단일 출처**가 된다. 진행 순서 = **가이드 먼저 → 에이전트 나중**.
