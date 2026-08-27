@@ -3,7 +3,7 @@
 > **한국어 Companion 문서**  
 > 이 문서는 [`README.md`](README.md)의 한국어 companion이다. 영어 파일은 canonical repository document로 유지하지만, 영어 문구 자체가 승인된 의미보다 우선하지는 않는다. 의미 차이가 발견되면 관련 CEO-approved semantic intent와 authoritative Design / Research decision을 기준으로 두 문서를 다시 정합시킨다. 한국어 companion 자체가 별도의 독립 authority를 만들지는 않는다.
 
-**Source Synced:** 2026-08-27
+**Source Synced:** 2026-08-28
 
 이 디렉터리는 Stock_vis Design Lab의 공식 지식 및 운영 라이브러리다.
 
@@ -46,6 +46,7 @@ Design Lab은 Stock_vis의 더 넓은 목적인 **Better Investment Decisions**�
 - [`Brief`](02_workstreams/002_product_surface_ia/brief_ko.md)
 - [`Batch 01 — Surface Responsibility & IA Families`](02_workstreams/002_product_surface_ia/batch_01_surface_architecture_ko.md)
 - [`Batch 02 — Cross-Domain Analogical Benchmark & Idea Pool`](02_workstreams/002_product_surface_ia/batch_02_cross_domain_idea_pool_ko.md)
+- [`Batch 03 — Cross-Domain Architecture Generation & Stress Test`](02_workstreams/002_product_surface_ia/batch_03_cross_domain_architecture_generation_ko.md)
 
 Workstream 자료와 prototype artifact는 기본적으로 **Working** 상태이며, 자동으로 Approved Design Knowledge나 제품 architecture가 되지 않는다.
 
