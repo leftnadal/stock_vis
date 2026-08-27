@@ -5,6 +5,13 @@
 
 ---
 
+## BOUNDARY-BURNDOWN-EOD — shared 경계 동결 #6 소진 (등재, BOUNDARY-TRIAGE-1 2026-08-27) [ops][boundary][harness]
+- **동결 1건**: `packages/shared/stocks/services/eod_signal_calculator.py:50` → `apps.monitor.models.monitor` (7ec24c62 EODUNIV-P15-V01, 08-26 유입). BOUNDARY-TRIAGE-1이 KNOWN_VIOLATIONS 양쪽 동결(green 회복).
+- **소진 재료(0-4)**: 위반 함수 = `eod_universe_symbols()` — `Monitor(scope=stock).target_ref`를 union. 호출자 전부 packages/shared 내부(`backfill_eod_signals_universe`·`eod_pipeline:297,570`). `apps.monitor.Monitor` = user-data 모델(scope/target_ref).
+- **방향 후보(결정=디렉터)**: 방향2(주입=호출자가 watch symbols를 `eod_universe_symbols(extra=...)`로 주입 → shared 무의존) / 방향C(승격=VIXProvider식 포트+등록 패턴 의존역전, BOUNDARY-3 선례). 방향1(소비자 이동)=호출자가 shared 내부라 난도 높음.
+- **통지 필요**: EODUNIV-P15 트랙(원 유입)과 소진 방향 조율.
+- **목표**: 동결 1→0, green 유지(동결=임시 격리). 상태: **등재(방향 결정 대기)**.
+
 ## INC-P16-1 후속 (2026-08-24, 홈 429 캐스케이드 핫픽스)
 
 | ID | Task | Agent | Depends On | Status | 근거/비고 |

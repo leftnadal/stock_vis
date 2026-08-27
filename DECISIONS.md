@@ -8,6 +8,14 @@
 
 ---
 
+## [2026-08-27] D-BOUNDARY-TRIAGE-FREEZE — shared 경계 회귀 #6 동결 격리 [ops][boundary][harness]
+
+**결정**: `packages/shared/stocks/services/eod_signal_calculator.py → apps.monitor.models.monitor` 경계 위반(7ec24c62, EODUNIV-P15-V01 08-26 유입)을 **KNOWN_VIOLATIONS 동결로 격리**한다 — test SSOT(`tests/architecture/test_shared_boundary.py`) + `scripts/health_check.py` 양쪽 동시. 위반 코드 자체 수정은 범위 밖 — 소진 트랙 `BOUNDARY-BURNDOWN-EOD`로 예약(방향 결정=디렉터).
+
+- **경위(0-3 사실·판단 없음)**: 7ec24c62 커밋 메시지에 **경계 red 인지/신고 문구 부재**. `eod_universe_symbols()`가 Monitor union 기능(A-2) 추가 중 lazy import로 위반 유입. health·아키텍처 가드 red 채로 착지.
+- **Why**: 동결 = 임시 격리 — green 회복으로 회귀 가드 복원·다른 트랙(QUAD-IMPL-1 등 health FAIL HALT) 차단 해제. 실제 수리는 방향 판단(주입 vs 승격)이 필요해 별도 사이클. 등록 없는 red 방치는 가드 무력화이므로 즉시 동결로 SSOT 정합 회복.
+- **How to apply**: 동결 키 = `("stocks/services/eod_signal_calculator.py", "apps.monitor.models.monitor")` 양쪽 동기(한쪽만 갱신 시 어긋남). 소진 = TASKQUEUE `BOUNDARY-BURNDOWN-EOD`. 착지 규칙 = common-bugs #121(등록 없는 red 착지 금지). cf. BOUNDARY-1~3(#1~#5 청소 완료 선례).
+
 ## [2026-08-26] D-SCAN-B2TECH-CONTRACT — 기술 축 baked JSON 계약 (SCAN-B2-TECH-BE 착지) [dashboard][platform][data]
 
 **계약 (baked preview_stock에 nested `technical` 블록·additive·SCAN-B2-FE 입력 정본)**:
