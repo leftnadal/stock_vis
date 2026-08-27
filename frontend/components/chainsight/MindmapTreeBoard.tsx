@@ -16,7 +16,7 @@ import {
   type MindmapFilterMode,
   type MindmapSortKey,
 } from './mindmapConfig';
-import { getLabelForSector } from '@/constants/categoryMap';
+import { getLabelForSector, getLabelForIndustry } from '@/constants/categoryMap';
 import type { MindmapCardSummary, MindmapIndustry, MindmapSector } from '@/types/chainsight';
 
 /**
@@ -311,7 +311,7 @@ function IndustryAccordion({
         className="w-full flex items-center gap-2 py-1 text-left"
         aria-expanded={open}
       >
-        <span className="text-xs text-gray-600 dark:text-gray-300">{industry.industry}</span>
+        <span className="text-xs text-gray-600 dark:text-gray-300">{getLabelForIndustry(industry.industry)}</span>
         <span className="text-[11px] text-gray-400 tabular-nums">{industry.stock_count}</span>
         <span className="ml-auto text-gray-400 text-xs">{open ? '▾' : '▸'}</span>
       </button>
