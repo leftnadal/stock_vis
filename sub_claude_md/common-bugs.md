@@ -1684,3 +1684,20 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 **원인**: `com.stockvis.web.plist`가 daphne의 stdout=`web.log`(access), stderr=`web-error.log`로 분리. **비-TTY에서 Python stdout은 블록 버퍼링** → access 라인이 청크 단위로 밀려, 읽는 순간 버퍼 미flush분(09:13:21~)이 파일에 아직 안 보임. stderr는 라인/무버퍼라 즉시 기록. = 데이터 유실이 아닌 **버퍼 desync**.
 
 **해소**: `scripts/daphne-web.sh`에 `export PYTHONUNBUFFERED=1`(exec 직전) → stdout 즉시 flush. 랜딩 후 재기동 필요(#41). **판독 규칙**: 인시던트 로그 대조 시 access·error 두 소스를 **항상 교차** 확인(한 소스의 절단을 다른 소스가 메움). cf. INC-P16-2 부수건.
+
+## HTML 문구 매칭으로 화면 상태를 판정할 때 — 부분 토큰 마커와 Next RSC 인라인 페이로드가 전 라우트를 거짓 fail로 만든다 (채번 후보, AGENT-S1 2026-08-27) `[frontend][ops][agent]`
+
+**증상**: 야간 점검 러너가 "화면에 실패 문구가 노출됐는가"를 SSR HTML 문자열 포함으로 판정했더니 **점검 대상 7개 라우트가 전부 fail**로 나왔다. 실제로는 전부 정상이었다. 두 번 연속 다른 원인으로 재현됐다.
+
+**원인 ⑴ — 부분 토큰 마커**: 실패 마커에 `"500"`을 넣음. tailwind 클래스(`text-gray-500`)·티커명(`SP500`)·인라인 CSS(`font-weight:500`)에 전부 걸린다. 마커는 **화면에 실제로 뜨는 문구 전체**여야 한다.
+
+**원인 ⑵ — Next.js RSC 인라인 페이로드**: `"This page could not be found"`로 바꿨더니 **여전히 7/7 fail**. Next.js는 RSC 플라이트 데이터와 not-found 컴포넌트 문자열을 `self.__next_f.push(...)` 형태로 **모든 페이지의 인라인 `<script>`에** 실어 보낸다. 원문 HTML에 매칭하면 정상 페이지에서도 404 문구가 잡힌다.
+
+**해소**: 판정 전 `<script>`·`<style>` 블록을 제거하고 태그를 벗긴 **가시 텍스트에만** 매칭한다.
+```python
+_SCRIPT_OR_STYLE = re.compile(r"<(script|style)\b.*?</\1>", re.S | re.I)
+text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
+```
+**규율**: ⑴ 마커는 12자 이상 전체 문구만(테스트로 강제 — `test_error_markers_have_no_short_tokens`). ⑵ 셸 마커(있어야 정상)도 같은 가시 텍스트로 판정. ⑶ **매일 발송되는 자동 점검에서 거짓 경보는 곧 그 점검의 폐기**다 — 임계·마커는 도입 전에 실데이터로 1회 돌려 오탐 0을 확인하고 넣는다.
+
+**부기**: SSR HTML로는 **클라이언트 렌더 데이터가 안 보인다**. 대시보드·모니터·포트폴리오는 마운트 후 fetch하므로 HTML에는 셸/로딩만 있고 `data-guide` 앵커도 없다. 따라서 HTTP 전용 점검의 사거리는 "셸이 뜨는가 · 에러 문구가 없는가"까지이고, 데이터 유무는 **API·baked JSON을 따로 봐야** 한다(AGENT-S1이 그렇게 나눈 이유).

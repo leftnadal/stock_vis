@@ -20,6 +20,21 @@
 - **방향 후보(결정=디렉터)**: 방향2(주입=호출자가 watch symbols를 `eod_universe_symbols(extra=...)`로 주입 → shared 무의존) / 방향C(승격=VIXProvider식 포트+등록 패턴 의존역전, BOUNDARY-3 선례). 방향1(소비자 이동)=호출자가 shared 내부라 난도 높음.
 - **통지 필요**: EODUNIV-P15 트랙(원 유입)과 소진 방향 조율.
 - **목표**: 동결 1→0, green 유지(동결=임시 격리). 상태: **등재(방향 결정 대기)**.
+## AGENT 트랙 — 야간 도그푸딩 에이전트 (2026-08-27 개설, D-AGENT-S1)
+
+> 3단계: **1단계 정량**(완료) → 2단계 루브릭 채점 → 3단계 관찰 후보 + 성적 원장. 메일 매일.
+> 루브릭·점검 대상 단일 출처 = `frontend/lib/guide/` confirmed 데이터(D-GUIDE-TRACK).
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| AGENT-S1 | 1단계 — 정량 체크 러너 + diff 3분류 + 메일 + 실행 스크립트/plist 초안 | @infra | D-AGENT-S1 | ✅ **구현 완료(브랜치 `monorepo/sess-agent-s1`)** | pytest 신규 48 · 전체 5041 passed/53 skipped · ruff 신규분 0. 수동 1회 실행 성공(정량 16/17)·**메일 실발송 2통**. 점검 대상은 가이드 데이터에서 자동 유도. |
+| AGENT-S1-DEPLOY | 운용본 배치 + launchd 등록(05:20 KST) | 병진(수동) | AGENT-S1 착지 | 🆕 **상신 완료·집행 대기** | CC 자기 집행 금지(launchd·서비스). 명령문 = scratchpad `AGENT_S1_상신_20260827.md`. 코드는 repo 안이라 `sv sync`만으로 배치됨(별도 복사 불필요). `sv-worker-runtime/.env` 심링크 확인됨. |
+| AGENT-S1-AUTH | 점검 전용 계정 `DOGFOOD_API_USER/PASSWORD` env 등재 | 병진(수동) | — | 🆕 **todo(2단계 선행)** | 현재는 무인증 축소 모드(401=존재 확인만) → API **스키마·빈 응답 미검사**. 전용 읽기 계정 권장(일반 계정은 실사용 데이터 접촉 여지). credential은 코드 미포함(repo PUBLIC). |
+| AGENT-S1-OBSERVE | 익일 2일치 리포트로 **diff 3분류 실작동** 확인 + 로그 위생 | @qa | AGENT-S1-DEPLOY | 🆕 **todo(등록 후 1일)** | 첫날은 "기준일" 처리(설계). 2일째부터 신규/재발/해소가 나온다. 합성 데이터로는 이미 실증됨. |
+| AGENT-S2 | 2단계 — 루브릭 채점(화면별 coreQuestion 기준) | 미배정 | AGENT-S1-AUTH · GUIDE 검수(done) | 🆕 **todo(별도 지시서)** | 채점 기준 = confirmed `coreQuestion`. 결핍 = ⑴ 인증 계정 ⑵ 화면별 "정상 상태" 정의 ⑶ 렌더 후 DOM 접근 수단(1단계는 SSR HTML만 봄 — 클라이언트 렌더 데이터·`data-guide` 앵커는 HTTP로 안 보임). |
+| AGENT-S3 | 3단계 — 관찰 후보 0~5개 + 성적 원장 | 미배정 | AGENT-S2 | 🆕 **todo(별도 지시서)** | — |
+| AGENT-API-GAPS | 1단계에서 드러난 **필요 API 목록**(도메인 앱 이관) | 해당 앱 트랙 | — | 🔭 **관찰(등재만·구현 금지)** | ⑴ 무인증 **점검용 요약 엔드포인트 부재** — 화면 데이터 유무를 보려면 사용자 토큰이 필요(EOD만 baked JSON으로 무인증 접근 가능). ⑵ `/api/v2/market-pulse/health`가 **인증 게이트**라 헬스 용도로 못 씀(무인증 `/api/v1/health/`는 있음). |
+
 ## GUIDE 트랙 (2026-08-27 개설, D-GUIDE-TRACK)
 
 > 출처: D-GUIDE-TRACK(DECISIONS 2026-08-27). 목표 = 옵션 C(허브 + 화면별 `?` 오버레이). 가이드 데이터 = **야간 도그푸딩 에이전트 루브릭 단일 출처**. 순서 = 가이드 → 에이전트.

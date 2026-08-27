@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  야간 도그푸딩 에이전트 1단계 — 05:20 KST 매일.
+  ⚠️ 초안 파일. 등록(launchctl bootstrap)은 병진 수동 — CC 자기 집행 금지.
+     설치 전 ~/Library/LaunchAgents/ 로 복사할 것.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.stockvis.dogfood</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>$HOME/worktrees/sv-worker-runtime/auto_agent_system/dogfood/run_dogfood.sh &gt;&gt; $HOME/stock-vis-nightly/logs/dogfood_launchd.log 2&gt;&amp;1</string>
+    </array>
+
+    <!-- 매일 05:20 KST — 미국장 마감(서머타임 05:00 / 동절기 06:00) 직후. -->
+    <!-- 동절기에는 마감 전이 될 수 있으나, 스크립트가 대상 세션을 '직전 거래일'로 -->
+    <!-- 잡으므로 판정은 어긋나지 않는다(전일 세션 기준으로 점검). -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>5</integer>
+        <key>Minute</key>
+        <integer>20</integer>
+    </dict>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/byeongjinjeong</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/byeongjinjeong/stock-vis-nightly/logs/dogfood_stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/byeongjinjeong/stock-vis-nightly/logs/dogfood_stderr.log</string>
+
+    <!-- 점검은 수 분이면 끝난다. 오래 물리면 무언가 잘못된 것. -->
+    <key>TimeoutSeconds</key>
+    <integer>900</integer>
+
+    <key>KeepAlive</key>
+    <false/>
+</dict>
+</plist>
