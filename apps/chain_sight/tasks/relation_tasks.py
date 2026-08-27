@@ -251,6 +251,12 @@ def update_relation_confidence(self):
       참조: DECISIONS D2.
     """
     from apps.chain_sight.models import CoMentionEdge, RelationConfidence
+    from apps.chain_sight.services.score_scale import (
+        GRADE_CONFIRMED_MIN,
+        GRADE_LIKELY_MIN,
+        GRADE_OBSERVED_MIN,
+        SCORE_VERSION_CURRENT,
+    )
     from apps.chain_sight.utils import normalize_pair
 
     # co-mention 쌍 (임계 count>=2 보존 — P2-1 판정 "임계 아님", 임계 변경 금지.
@@ -267,12 +273,13 @@ def update_relation_confidence(self):
             continue
 
         # ── CO_MENTIONED (market / serving_layer=evidence): 뉴스 동시출현 증거 ──
+        # D-RC-SCALE: [0,1] 단위 계단(단일 소스 score_scale).
         if count >= 10:
-            tier, status, score = 1, "confirmed", 85
+            tier, status, score = 1, "confirmed", GRADE_CONFIRMED_MIN
         elif count >= 5:
-            tier, status, score = 2, "probable", 60
+            tier, status, score = 2, "probable", GRADE_LIKELY_MIN
         else:
-            tier, status, score = 3, "weak", 35
+            tier, status, score = 3, "weak", GRADE_OBSERVED_MIN
 
         obj, is_new = RelationConfidence.objects.update_or_create(
             symbol_a=sym_a,
@@ -284,6 +291,7 @@ def update_relation_confidence(self):
                 "relation_status": status,
                 "market_score": score,
                 "truth_score": 0,
+                "score_version": SCORE_VERSION_CURRENT,  # 신규 행 태생 [0,1]·v3.0
                 "evidence_tier_best": tier,
                 "evidence_count_total": 1,
                 "evidence_count_independent": 1,

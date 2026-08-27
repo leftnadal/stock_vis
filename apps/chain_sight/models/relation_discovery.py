@@ -181,7 +181,9 @@ class RelationConfidence(models.Model):
         help_text="True이면 Neo4j 동기화 필요. save() 시 자동 True.",
     )
     neo4j_synced_at = models.DateTimeField(null=True, blank=True)
-    score_version = models.CharField(max_length=10, default="2.1")
+    # D-RC-SCALE(RC-A-1 PART 2): 점수 도메인 [0,1] 통일 = "3.0". writer가 명시 세팅하지
+    # 못한 신규 행도 태생 3.0이 되도록 default 승격(구 "2.1"=[0,100] 계단).
+    score_version = models.CharField(max_length=10, default="3.0")
 
     # CS-P1A Slice2 (additive): 계층 분류 — 근거/유사/제외/보류.
     # DECISIONS D-CS-REDESIGN-BEFORE-BASELINE 매핑표 기준. 순수 데이터 필드(읽는 API·화면 없음).

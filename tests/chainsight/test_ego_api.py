@@ -413,21 +413,22 @@ class TestEgoGradeFields:
     def grade_data(self, db):
         for s in ["HUB", "SUP", "PR85", "PR60", "PR35", "CM", "PC"]:
             _stock(s)
+        # D-RC-SCALE: 점수 [0,1] 계단 (0.85/0.60/0.35). 구 [0,100] 시드 이동.
         # SEC 공시(truth): basis_summary가 근거 역할, evidence 0이어도 등급 confirmed
-        sup = _rc("HUB", "SUP", "SUPPLIES_TO", 85.0, category="truth")
+        sup = _rc("HUB", "SUP", "SUPPLIES_TO", 0.85, category="truth")
         sup.relation_basis_summary = "SEC 10-K: We purchase memory from Micron."
         sup.save(update_fields=["relation_basis_summary"])
         # PEER_OF(truth) 계단값 3종
-        _rc("HUB", "PR85", "PEER_OF", 85.0, category="truth")
-        _rc("HUB", "PR60", "PEER_OF", 60.0, category="truth")
-        _rc("HUB", "PR35", "PEER_OF", 35.0, category="truth")
+        _rc("HUB", "PR85", "PEER_OF", 0.85, category="truth")
+        _rc("HUB", "PR60", "PEER_OF", 0.60, category="truth")
+        _rc("HUB", "PR35", "PEER_OF", 0.35, category="truth")
         # market 관계: truth_score=0, market_score에 값 → grade는 market_score 기반
         cm = _rc("HUB", "CM", "CO_MENTIONED", 0.0, category="market")
-        cm.market_score = 35.0
+        cm.market_score = 0.35
         cm.relation_basis_summary = "뉴스 동시출현 4회"
         cm.save(update_fields=["market_score", "relation_basis_summary"])
         pc = _rc("HUB", "PC", "PRICE_CORRELATED", 0.0, category="market")
-        pc.market_score = 85.0
+        pc.market_score = 0.85
         pc.relation_basis_summary = "주가 상관 0.83"
         pc.save(update_fields=["market_score", "relation_basis_summary"])
         return None

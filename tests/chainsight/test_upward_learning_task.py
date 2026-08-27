@@ -17,7 +17,7 @@ from apps.chain_sight.tasks import relation_tasks
 AGG_SVC = "apps.chain_sight.services.pair_aggregation.aggregate_relation_pairs"
 
 
-def _reconfirmed_pair(status="stale", tier=1, score=80.0, category="truth"):
+def _reconfirmed_pair(status="stale", tier=1, score=0.80, category="truth"):
     """당회 재확인 pair (last_observed_at=오늘 auto_now, 비-market 텍스트 파생)."""
     return RelationConfidence.objects.create(
         symbol_a="AAA", symbol_b="BBB", relation_type="SUPPLIES_TO",
@@ -54,7 +54,7 @@ def test_upward_body_upgrades_reconfirmed_pair(settings):
     """2b) flag on 정상 경로: 재확인 Tier-1 pair(stale, score≥60) → fast-path 1단계 승급."""
     settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED = True
     period = timezone.now().date()
-    p = _reconfirmed_pair(status="stale", tier=1, score=80.0)
+    p = _reconfirmed_pair(status="stale", tier=1, score=0.80)
     r = relation_tasks.apply_upward_learning_task.apply(
         kwargs={"period": period.isoformat()}).get()
     assert r["enabled"] is True
@@ -84,7 +84,7 @@ def test_idempotent_same_period(settings):
     """4) 동일 period 이중 실행 → 멱등(이중 상향 금지, last_computed_at 가드)."""
     settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED = True
     period = timezone.now().date()
-    p = _reconfirmed_pair(status="stale", tier=1, score=80.0)
+    p = _reconfirmed_pair(status="stale", tier=1, score=0.80)
 
     r1 = relation_tasks.apply_upward_learning_task.apply(
         kwargs={"period": period.isoformat()}).get()
@@ -105,7 +105,7 @@ def test_market_relations_excluded(settings):
     """market 관계는 upward 대상 아님(update_relation_confidence가 직접 재산정 — 이중관리 방지)."""
     settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED = True
     period = timezone.now().date()
-    _reconfirmed_pair(status="stale", tier=1, score=80.0, category="market")
+    _reconfirmed_pair(status="stale", tier=1, score=0.80, category="market")
     r = relation_tasks.apply_upward_learning_task.apply(
         kwargs={"period": period.isoformat()}).get()
     assert r["evaluated"] == 0
@@ -113,7 +113,7 @@ def test_market_relations_excluded(settings):
 
 # ─────────────────────────── T-3b Phase A (①②③ⓔ) ───────────────────────────
 
-def _make_pair(sym_a, sym_b, *, status="probable", tier=1, score=80.0,
+def _make_pair(sym_a, sym_b, *, status="probable", tier=1, score=0.80,
                category="truth", rel_type="SUPPLIES_TO"):
     return RelationConfidence.objects.create(
         symbol_a=sym_a, symbol_b=sym_b, relation_type=rel_type,
@@ -143,7 +143,7 @@ def test_a_backfilled_pairs_not_reselected_until_reobserved(settings):
 def test_b_last_observed_at_unchanged_after_upward_save(settings):
     """(b) ② 자가오염 차단: upward save가 last_observed_at(auto_now)을 밀지 않음."""
     settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED = True
-    p = _make_pair("AAA", "BBB", status="probable", tier=1, score=80.0)  # last_computed NULL
+    p = _make_pair("AAA", "BBB", status="probable", tier=1, score=0.80)  # last_computed NULL
     p.refresh_from_db()
     before = p.last_observed_at
     relation_tasks.apply_upward_learning_task.apply(kwargs={"period": None}).get()
@@ -172,7 +172,7 @@ def test_d_confirmed_pair_skipped_and_fastpath_preserved(settings):
     settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED = True
     witness = timezone.now() - timedelta(days=5)
     old_comp = timezone.now() - timedelta(days=3)
-    p = _make_pair("AAA", "BBB", status="confirmed", tier=1, score=80.0)
+    p = _make_pair("AAA", "BBB", status="confirmed", tier=1, score=0.80)
     # 재관측되게(선별 대상) + witness/last_computed 고정
     RelationConfidence.objects.filter(pk=p.pk).update(
         last_observed_at=timezone.now(), last_computed_at=old_comp,

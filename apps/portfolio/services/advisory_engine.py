@@ -265,6 +265,10 @@ def determine_mode(progress_gap: dict, dial: dict) -> str:
 # ============================================================
 
 # 배치 우선순위 점수 성분 가중(기대수익 아님). w 상한 0.20에도 신뢰도(0.48)가 최대 성분.
+# D-RC-SCALE(RC-A-1 PART 2): conf(=truth_score)가 [0,1]로 통일됨. 불변식 "신뢰도 0.48
+# 최대"((1−0.20)×0.60)는 애초 conf∈[0,1]을 가정했으나 구 데이터가 [0,85]로 유입돼
+# conf가 base를 지배하던 잠재 결함이 있었다(RC-A-0). 마이그레이션(0033)이 conf를 [0,1]로
+# 교정하므로 CONF_WEIGHT 값 자체는 불변 — 이제 entry/ccy와 스케일 정합.
 CONF_WEIGHT = Decimal("0.60")
 ENTRY_WEIGHT = Decimal("0.25")
 CCY_WEIGHT = Decimal("0.15")
