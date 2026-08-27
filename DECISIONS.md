@@ -29,6 +29,22 @@
 - **경위(0-3 사실·판단 없음)**: 7ec24c62 커밋 메시지에 **경계 red 인지/신고 문구 부재**. `eod_universe_symbols()`가 Monitor union 기능(A-2) 추가 중 lazy import로 위반 유입. health·아키텍처 가드 red 채로 착지.
 - **Why**: 동결 = 임시 격리 — green 회복으로 회귀 가드 복원·다른 트랙(QUAD-IMPL-1 등 health FAIL HALT) 차단 해제. 실제 수리는 방향 판단(주입 vs 승격)이 필요해 별도 사이클. 등록 없는 red 방치는 가드 무력화이므로 즉시 동결로 SSOT 정합 회복.
 - **How to apply**: 동결 키 = `("stocks/services/eod_signal_calculator.py", "apps.monitor.models.monitor")` 양쪽 동기(한쪽만 갱신 시 어긋남). 소진 = TASKQUEUE `BOUNDARY-BURNDOWN-EOD`. 착지 규칙 = common-bugs #121(등록 없는 red 착지 금지). cf. BOUNDARY-1~3(#1~#5 청소 완료 선례).
+## [2026-08-27] D-AGENT-S1 — 야간 도그푸딩 에이전트 1단계(정량 체크 + 메일 + diff 원장) [ops][agent][frontend]
+
+**결정 ⑴ (단계 도입)**: 야간 도그푸딩 에이전트를 **옵션 B+C 결합·3단계**로 도입한다. **1단계 = 정량 체크**(라우트 매트릭스·데이터 신선도·API 헬스) → 2단계 = 루브릭 채점 → 3단계 = 관찰 후보 + 성적 원장. 메일은 **매일**. 1단계부터 메일을 보내는 이유 = 보고 습관과 노이즈 수준을 먼저 검증해야 2단계 채점이 읽히기 때문.
+
+**결정 ⑵ (점검 대상의 단일 출처)**: 점검 화면 목록을 **별도로 두지 않고 `frontend/lib/guide/`(confirmed GuideScreen)에서 읽는다**(`auto_agent_system/dogfood/targets.py`). 가이드 데이터가 이미 루브릭 단일 출처(D-GUIDE-TRACK)이므로, 점검 대상까지 같은 파일에서 나오면 **루브릭과 점검 범위가 구조적으로 어긋날 수 없다**(복제 = drift). 형식이 바뀌어 0건이 되면 조용히 통과하지 않고 `RuntimeError`로 터진다 + 테스트가 화면 수를 고정한다.
+
+**결정 ⑶ (Playwright 불필요)**: 1단계는 **HTTP + baked JSON + API 프로브만**으로 충분하다. 헤드리스 브라우저를 도입하지 않는다 — SSR HTML의 셸 마커 존재·실패 문구 부재로 "빈 화면/에러 화면"을 잡을 수 있고, 데이터 유무는 baked `dashboard.json`과 API로 직접 본다. 브라우저는 2단계(루브릭 채점)에서 필요해지면 그때 도입한다.
+
+**결정 ⑷ (휴장일 스킵)**: 미국장 휴장(주말·NYSE 정규 휴장 9종 + Juneteenth)에는 **점검을 건너뛰고 메일도 보내지 않는다**(`--force`로 우회 가능). 장이 안 열린 날은 EOD가 갱신되지 않아 신선도 판정이 무의미하고, 연 110일가량의 무의미한 통지가 섞이면 메일이 안 읽힌다. 캘린더 패키지가 repo에 없어 **표준 라이브러리로 NYSE 규칙을 직접 구현**했다(`market_calendar.py`, observed 이동·Good Friday 포함, 유닛 테스트로 고정).
+
+**결정 ⑸ (인증 축소 모드)**: 화면이 쓰는 핵심 API는 전부 인증 게이트다. 토큰이 없으면 **401 = 엔드포인트 존재**로 판정하고 메일에 "무인증 모드" 고지를 넣는다. `DOGFOOD_API_USER/PASSWORD`가 env에 있으면 로그인해 200·스키마·빈 응답까지 본다. **credential은 코드에 넣지 않는다**(repo는 PUBLIC — [[reference_repo_is_public_github]]).
+
+**Why(핵심 함정 2건, 실측)**: ⑴ 실패 문구 마커를 `"500"` 같은 **부분 토큰**으로 두면 tailwind 클래스(`text-gray-500`)·티커(`SP500`)에 걸려 **전 라우트가 거짓 fail**이 된다(첫 실행 7/7 오탐). ⑵ Next.js는 RSC 플라이트 페이로드와 404 컴포넌트 문자열을 **모든 페이지의 인라인 스크립트**에 실어 보내므로, 원문 HTML에 매칭하면 `"This page could not be found"`가 전 라우트에서 걸린다(교정 후에도 7/7 오탐 재현). → 마커 판정은 **script/style 제거 후 가시 텍스트에만** 한다. 매일 오는 자동 메일에서 거짓 경보는 곧 메일 자체의 폐기를 뜻하므로 이 두 규칙은 계약이다.
+
+**How to apply**: 새 화면을 가이드에 등재하면 점검 대상에 **자동 편입**된다(별도 등록 금지). 셸 마커는 `targets.SHELL_MARKERS`에 라우트별로 추가. 실패 문구 마커는 **12자 이상 전체 문구만**(테스트가 강제). 배치·launchd 등록은 상신 전용(scratchpad `AGENT_S1_상신_20260827.md`). 2단계 착수 전 필요 = 인증 계정(⑸)·화면별 기대 상태 정의. cf. [[project_guide_track]]·D-GUIDE-TRACK.
+
 ## [2026-08-27] D-MP-V2-NAV — Market Pulse 네비 목적지 v2 전환(옵션 B) + GUIDE-S1 검수 승인 [frontend][product][process]
 
 **결정 ⑴ (GUIDE-S1 검수 승인)**: 병진 검수 결과 5화면 가이드 문구 **승인** → `reviewStatus: 'draft' → 'confirmed'`. 단 **marketPulse는 v1 기준 초안을 폐기**하고 v2 기준 문구(7영역)로 **교체 후** confirmed. 승인 근거 주석 = `// 병진 검수 승인 2026-08-27 (GUIDE-S1C)`.
