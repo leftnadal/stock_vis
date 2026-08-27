@@ -1635,3 +1635,18 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 - prop 변화에 따른 리셋은 effect가 아니라 **렌더 중 이전값 비교**(`if (last !== cur) { setLast(cur); ... }`) 패턴.
 
 **측정 규율**: 신규분 판정은 총계가 아니라 **기준선 대조**로. `git stash -u` → `npm run lint` → pop 하여 origin/main 총계와 비교(GUIDE-S1: 327 → 327, 순증 0).
+
+## 네비 링크의 href를 바꾸면 active 표시가 컴포넌트마다 갈린다 — 파생 판정식(startsWith(item.href)) vs 하드코딩 prefix (채번 후보, GUIDE-S1C 2026-08-27) `[frontend]`
+
+**증상**: Market Pulse 네비 목적지를 `/market-pulse` → `/market-pulse-v2`로 바꿨더니, **구 경로에 직접 접근했을 때 활성 표시가 두 컴포넌트에서 달라졌다.**
+- `Header.tsx`: 판정식이 `pathname.startsWith(item.href)` — href에서 **파생**되므로 href를 바꾸면 판정도 같이 바뀐다 → 구 경로에서 **비활성**.
+- `MobileNav.tsx`: 판정식이 `active: pathname.startsWith('/market-pulse')` — **하드코딩 prefix**라 href와 무관 → 구 경로에서도 **활성**.
+
+한 줄만 고쳤는데 두 표면의 동작이 갈리고, 새 경로(`/market-pulse-v2`)에서는 둘 다 활성이라 **정상 동선만 보면 발견되지 않는다**. 구 경로 직접 접근이라는 잔여 경로에서만 드러난다.
+
+**규율**:
+1. 네비 항목의 href를 바꿀 때는 **그 항목의 active 판정식이 href 파생인지 하드코딩인지 전 표면에서 확인**한다(Header·MobileNav·사이드바·브레드크럼 등). "링크 한 줄"이 아니다.
+2. 구 경로를 존치(리다이렉트 없이)하는 전환에서는 **구 경로 직접 접근 시의 활성 표시를 테스트로 고정**한다. 통일할지 말지는 은퇴 결정과 함께 — 임시로 코드를 맞춰 두면 은퇴 시 되돌릴 근거가 사라진다.
+3. 활성 여부 단언은 **클래스 토큰 일치**로. `className.toContain('text-blue-600')`은 `hover:text-blue-600`에 **오탐**한다 → `className.split(/\s+/).includes('text-blue-600')`.
+
+**부기(같은 세션 실측)**: 계약 테스트에 임의 상한을 박으면 나중에 **승인된 콘텐츠를 자기 테스트가 막는다**. GUIDE-S1이 `regions 3~5개`로 둔 상한이 S1C에서 승인된 7영역 문구를 red로 만들었다 — 상한을 7로 완화하고 "S1의 5는 임의값"임을 주석에 남겼다. 계약 테스트의 수치 경계는 **근거가 있을 때만** 박을 것.
