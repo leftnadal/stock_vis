@@ -6903,3 +6903,9 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **INC-P16-CLOSE(소품 3)**: ① QueryProvider 안정성 회귀 테스트(같은 자리 3번째 인시던트 코드 차단) ② access 로그 flush(위) ③ page.tsx 에러 원인 구분(429="요청이 많아 잠시 제한됐어요"·401="로그인이 필요합니다"·기타=기존 문구, HTTP transport status 분기는 시장 판단 아님 → 단일소스 원칙 무관). vitest 전체 **1138**·tsc 0·lint 0. **랜딩=병진 승인 후**(런북 준비·이 랜딩 sv sync가 현행 드리프트 WARN도 자연 해소).
 
 **★ INC-P16 트랙 종결 + Phase 1.6 종결**: 1.6-S0(C-lite 배지)·1.6-S1(Playbook)·INC-P16-1(핫픽스)·INC-P16-2(포렌식)·INC-P16-CLOSE(마감) 전건 완료.
+
+## D-EVT-ROBUST-1 (2026-08-27) — 외부 원장 적재 견고화 (보정2)
+- **결정**: 외부(FMP) 쓰레기 값 = **필드 null**(사실 보존: 행은 유지, 수치만 무해화) + **행-레벨 격리**(한 행 예외가 성분 전체를 잃지 않게). `_safe_decimal(value, max_abs)`가 필드 용량 초과·비수치를 null 처리(eps 10^8·revenue 10^18·dividend 10^6·split 10^9). persist 루프는 행별 try/except + atomic.
+- **근거**: EVT-IMPL-3 초회 적재 실측 — `ADTX 2026-09-02 epsEstimated=−2.2×10^11`(FMP 데이터 쓰레기) → DecimalField(12,4) 오버플로 DataError → 성분-레벨 격리가 **1행에서 성분 ~973행 소실** 유발. 성분-레벨 격리만으로 불충분.
+- **부수 규칙**: 유형에 skip 발생(skipped>0) 시 그 유형 stale 스윕 **생략**(미persist 행 last_seen 미갱신 → 오탐 stale 방지). 성분당 nulled+skipped > max(50, 행수 1%) = 스키마 drift 경고(관찰 지표, HALT 아님).
+- 보정1(이분)과 동형 = 실측서 드러난 견고화, 신규 결정 아님.
