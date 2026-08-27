@@ -1,208 +1,198 @@
 # Workstream 001 — Synthesis
 
-**Status:** Working Synthesis / Awaiting CEO decision on foundation promotion  
+**Status:** Working Design Foundation / Research-aligned  
 **Synthesized:** 2026-08-27  
+**Semantic Alignment:** DL-DR-0002 effective 2026-08-27  
 **Owner:** Stock_vis Design Lab
 
 ## 1. Executive Synthesis
 
-Workstream 001 began with a broad question: how should Stock_vis help a user form, maintain, revise, compare, and use an investment judgment without replacing that judgment?
+Workstream 001 explored how Stock_vis can help users form, maintain, revise, compare, and use investment views without allowing information salience or AI synthesis to replace user judgment.
 
-Across six exploration batches, adversarial scenarios, Research-Lab boundary checks, and two low-fidelity prototypes, the strongest surviving direction is:
+After six exploration batches, adversarial scenario tests, Research-Lab consistency checks, and low-fidelity prototypes, the leading Design direction is:
 
-> **Stock_vis should maintain a traceable, revisable judgment workspace around each investment, help the user allocate attention to judgment-bearing change, support initial formation and ongoing revision with adaptive depth, preserve Human–AI authorship boundaries, and move comparison / portfolio reasoning into a downstream Decision Context that can include forward scenarios and relative opportunity.**
+> **Stock_vis should maintain a traceable and revisable Investment View workspace around each investment, allocate user attention to meaningful changes, support initial formation and ongoing maintenance with adaptive depth, preserve Human–AI authorship boundaries, and combine relevant Understanding / maintained views with Decision Context only when forming downstream Judgment and Decision.**
 
-This is a **Design mental-model and logical experience architecture**, not final Product IA, navigation, screen naming, or implementation schema.
+Forward comparison should reason about plausible futures, growth-path conditions, valuation, uncertainty, and relative opportunity without treating one forecast or one score as the truth.
+
+This is a **Working Design Foundation**, not Approved Product IA, navigation, screen naming, ontology, database schema, or investment-decision rule.
 
 **Overall Recommendation Strength: Strong.**
 
-It is not Very Strong because real-user validation is still limited, the right user-visible granularity remains unresolved, and future-scenario / relative-opportunity methodology depends on Research Lab work that Design Lab must not invent.
+## 2. Research-Aligned Semantic Boundary
 
-## 2. Recommended Problem Framing
+Workstream 001 originally used `Judgment State`, `Judgment Workspace`, and `User Judgment` for a persistent company-level state. Review against the current Approved Research Lab architecture identified a semantic conflict.
 
-### Recommended framing
+Research authority defines:
+
+```text
+Understanding
++ Decision Context
+→ Judgment
+→ Decision
+→ Action
+```
+
+Therefore, under **DL-DR-0002**, Design Lab no longer treats the persistent pre-Decision-Context company state as the cross-Lab `Judgment` object.
+
+The corrected structure is:
+
+```text
+Research Knowledge / Understanding
+        ↓
+System Synthesis
+        ↕
+Maintained User Investment View
+        +
+Decision Context
+        ↓
+Judgment
+        ↓
+Decision
+        ↓
+Action
+```
+
+`Investment View` is a Working Design label, not yet a governed final term.
+
+Historical Workstream documents may retain earlier Working wording for traceability; downstream reusable Design knowledge must use the aligned semantics.
+
+## 3. Recommended Problem Framing
 
 The core problem is not primarily information scarcity or predicting which stock will rise.
 
-A stronger formulation is:
+A stronger framing is:
 
-> **Investors must allocate limited attention, interpret new information against prior expectations and context, revise beliefs under uncertainty, preserve why their view changed, and compare current holdings with future alternatives without allowing salience or AI synthesis to silently become their judgment.**
+> **Investors must allocate limited attention, interpret changing reality against prior understanding and expectations, maintain a revisable view under uncertainty, preserve why that view changed, and combine that view with a concrete Decision Context when judging whether to act or allocate capital differently.**
 
-Stock_vis therefore should help with:
+Stock_vis should therefore support:
 
 - attention allocation;
-- evidence-to-judgment traceability;
-- belief / judgment revision;
+- traceable connection from Research / Understanding to user-facing synthesis;
+- persistent but revisable Investment View memory;
 - explicit uncertainty and unresolved states;
-- persistent judgment memory;
 - Human–AI authorship clarity;
-- forward-looking comparison under Decision Context; and
-- distinguishing company growth from investment value.
+- adaptive review of meaningful changes;
+- downstream Decision Context;
+- forward-looking comparative opportunity; and
+- separation of company growth from shareholder / investment value.
 
-### Framings that were rejected or narrowed
+## 4. Maintained Investment View Model
 
-#### More information is the main solution
+The persistent Design-side state may contain, when material:
 
-Rejected as insufficient. More information can increase overload, salience bias, and reactive decision behavior.
-
-#### News / event feed as the primary organizing object
-
-Narrowed to an orientation / trigger role. Events matter because of their bearing on maintained judgment, not merely because they occurred recently or moved price.
-
-#### Judgment = a single score or bullish / bearish state
-
-Rejected as a default. Important components can move in different directions and carry different uncertainty / conviction.
-
-#### A fixed linear user journey
-
-Narrowed. A sequence such as `Orient → Understand → Judge` remains useful shorthand but did not survive as a mandatory screen flow.
-
-## 3. Recommended Judgment Model
-
-### 3.1 Investment Judgment is a maintained and revisable state
-
-The strongest model is not `state vs structure vs process` as an exclusive choice.
-
-Investment Judgment is better treated as:
-
-> **a maintained state with internal structure, revised through an update process, whose downstream relevance changes with Decision Context.**
-
-A maintained state may include, when material:
-
-- important drivers / claims;
+- important drivers / propositions;
 - risks and invalidation conditions;
-- dependencies / conditions;
+- dependencies / enabling conditions;
 - unresolved questions or alternatives;
 - local conviction / uncertainty;
-- System–User divergence; and
-- material revision history.
+- System–User divergence;
+- relevant scenario conditions; and
+- revision history / provenance.
 
-### 3.2 Semantic model and update process must remain distinct
-
-The workstream found that earlier models mixed objects, relations, evaluations, and processes.
-
-The recommended split is:
-
-1. **Judgment Semantic Model** — what exists and how it relates.
-2. **Judgment Update Logic** — how a trigger changes, retains, qualifies, or leaves unresolved the maintained state.
-
-This also aligns with Research Lab's process–object separation.
-
-### 3.3 System Synthesis and User Judgment remain semantically distinct
-
-This is already Approved in `DL-DR-0001 — Human–AI Judgment Authority Boundary`.
-
-The AI may autonomously research, synthesize, challenge, monitor, and update **System Synthesis**. It must not silently attribute or overwrite a material **User-owned Judgment**.
-
-The absence of an explicit user view is a valid state. A user may have:
+A user may legitimately have:
 
 - no explicit view yet;
 - a partial view;
 - unresolved components;
-- agreement with the system on some components; and
+- agreement with System Synthesis on some components; and
 - disagreement on others.
 
-## 4. Recommended Information Model
+The product should not require a complete user-authored thesis before providing value.
 
-The minimum useful structure is not a list of peer information layers. It is a set of semantically different objects and relations.
+## 5. System Synthesis and User-Owned View
 
-### Maintained Judgment State
+DL-DR-0001 remains in force, interpreted through DL-DR-0002.
 
-The current structured view.
+AI may autonomously research, structure, summarize, monitor, challenge, and maintain **System Synthesis**. It must not silently attribute that synthesis to the user or overwrite the user's maintained Investment View.
 
-### Update Trigger / Signal
+Material user-owned changes require meaningful user control or an explicitly delegated rule that is visible in scope, reversible, and traceable.
 
-Something that makes reconsideration potentially worthwhile. Price movement, news, time decay, a new competitor, a portfolio-context change, or a user question may all be triggers.
+System–User disagreement may persist.
 
-A trigger is not automatically evidence against a thesis.
+A later workstream should distinguish where System Synthesis is merely a presentation / translation of Research Understanding versus where it introduces a new inferential claim that requires legitimate Research epistemic treatment.
 
-### Reference / Interpretive Context
+## 6. Recommended Information / Relationship Model
 
-The baseline against which information is interpreted: prior judgment, prior expectation, management guidance, consensus, peers, historical range, regime, or another relevant reference.
+The experience should distinguish different semantic functions rather than flatten them into peer information layers.
 
-### Epistemic Input
+### 6.1 Maintained Investment View
+The current user-owned structured company view.
 
-Research Knowledge / Understanding and its relevant Research-side credibility, applicability, conflict, uncertainty, and limitations.
+### 6.2 System Synthesis
+The current Stock_vis-generated synthesis available to support or challenge the user's view.
 
-Design consumes this characterization; it must not silently create a competing epistemic authority.
+### 6.3 Update Trigger / Signal
+Something that makes reconsideration potentially worthwhile: new evidence, event, price move, time decay, regime change, new competing opportunity, portfolio-context change, or user question.
 
-### Judgment-Bearing Relation
+A trigger is not automatically evidence against a company view.
 
-The explicit relation answering:
+### 6.4 Reference / Interpretive Context
+The baseline used to interpret information: prior state, expectation, management guidance, consensus, historical range, peer, regime, or another relevant reference.
 
-> **Which part of the current judgment does this information actually bear on?**
+### 6.5 Epistemic Input
+Research Knowledge / Understanding and relevant Research-side credibility, applicability, conflict, uncertainty, scope, and limitations.
 
-An input may support, challenge, qualify, narrow, broaden, create uncertainty, introduce a component, or have no meaningful bearing.
+Design consumes and represents this characterization; it does not create a competing epistemic authority.
 
-### Judgment Impact
+### 6.6 View-Bearing Relation
+Working replacement for earlier `Judgment-Bearing Relation` language at the persistent-view layer:
 
-The preferred Working Design interpretation of earlier `Significance / Materiality` language.
+> **Which part of the current Investment View does this information actually bear on?**
 
-Judgment Impact is **relational**, not an intrinsic score attached to an information item. Highly credible evidence can have low judgment impact if peripheral; weak conflicting evidence can affect a central driver mainly by increasing uncertainty rather than immediately changing direction.
+An input may support, challenge, qualify, narrow, broaden, introduce uncertainty, create a new component, or have no meaningful bearing.
 
-### Conviction and Uncertainty
+### 6.7 View Impact
+Working replacement for earlier `Judgment Impact` at the persistent-view layer.
 
-They remain distinct from judgment direction and should usually be local to the component they concern before any global summary.
+Impact is relational, not an intrinsic score attached to an information item. Strong evidence can have low View Impact if peripheral; weak conflicting evidence can mainly increase uncertainty in a central component rather than immediately reverse direction.
 
-### Update Trace / Lineage
+### 6.8 Conviction and Uncertainty
+Remain distinct from Research credibility and from eventual Decision confidence. They should usually remain local to the component they concern before any global summary.
 
-Material change should preserve enough history to answer what changed, why, based on what, under which reference, and through whose action / authority.
+### 6.9 Update Trace / Lineage
+Material change should preserve what changed, why, based on what, under which reference, and through whose action or authority.
 
-### Decision Context
+### 6.10 Decision Context
+Portfolio exposure, horizon, alternatives, valuation, constraints, opportunity cost, switching costs, and other decision-specific conditions combine downstream with relevant Understanding / maintained views to support Judgment.
 
-Portfolio, horizon, alternatives, constraints, opportunity cost, switching cost, and other decision-specific conditions remain downstream from the maintained company judgment.
+## 7. Maintained-View Update Logic
 
-## 5. Recommended Judgment Update Logic
-
-The strongest analytical loop is:
+The leading analytical maintenance loop is:
 
 ```text
-Current Judgment State
+Current Investment View
 + Trigger / Signal
 + relevant Research Knowledge / Understanding
-+ Decision Context when needed
         ↓
 Orient
         ↓
 Contextualize
         ↓
-Link to Judgment
+Link to affected View component
         ↓
-Assess Judgment Impact
+Assess View Impact
         ↓
 Revise / Retain / Mark Unresolved
         ↓
-Recalibrate Conviction & Uncertainty
+Recalibrate local conviction / uncertainty
         ↓
-Preserve Update Trace
+Preserve update trace
         ↓
-Updated Judgment State
+Updated Investment View
 ```
 
-This is **not** a mandatory screen sequence.
+This is not a mandatory UI sequence.
 
-Important outcomes include:
-
-- strengthen;
-- weaken;
-- retain after review;
-- add / remove / qualify;
-- narrow / broaden;
-- split into conditional cases;
-- increase / reduce uncertainty;
-- mark unresolved;
-- suspend judgment; and
-- not assessed.
+Valid outcomes include strengthen, weaken, retain after review, qualify, narrow, broaden, split into conditions, add/remove a component, increase/reduce uncertainty, unresolved, suspend view, and not assessed.
 
 `Retained after review` must remain distinguishable from `not reviewed`.
 
-## 6. Recommended Logical Experience Architecture
+## 8. Logical Experience Architecture
 
-The original `Adaptive Change Review` hypothesis survived, but only as one mode inside a broader architecture.
+The leading architecture becomes:
 
-The current leading architecture is:
-
-> **Persistent Judgment Workspace + Attention-Oriented Orientation + Formation / Maintenance + Adaptive Review + downstream Decision Context.**
+> **Persistent Investment View Workspace + Attention-Oriented Orientation + Formation / Maintenance + Adaptive Review + downstream Decision Context.**
 
 ```text
                        ORIENTATION
@@ -210,344 +200,258 @@ The current leading architecture is:
                           │
          ┌────────────────┼────────────────┐
          │                │                │
-   New company      Existing company   Cross-company need
+   New company      Existing company   Decision need
          │                │                │
          ▼                ▼                ▼
      FORMATION        MAINTENANCE      DECISION CONTEXT
-         │                │          comparison / portfolio
-         │       simple change → inline
-         │       complex/material → focused review
-         │                │
-         └───────────────┬┘
-                         ▼
-                JUDGMENT WORKSPACE
-                  maintained state
-                         │
-              evidence / provenance
-                         │
-               update trace / history
+         │                │           comparison / portfolio
+         │       simple change → inline      │
+         │       complex/material → review   │
+         │                │                   │
+         └───────────────┬┘                   │
+                         ▼                    │
+              INVESTMENT VIEW WORKSPACE      │
+                         │                    │
+          evidence / provenance / history    │
+                         │                    │
+                         └──────────────┬─────┘
+                                        ▼
+                                     JUDGMENT
+                                        ↓
+                                     DECISION
 ```
 
-### Orientation is attention allocation, not a news feed
+### Orientation guardrail
 
-Cross-company orientation should prioritize judgment-bearing change, consequential unresolved uncertainty, material System–User divergence, and user-defined monitoring conditions.
+Orientation prioritizes **review value / likely bearing**, not epistemic proof of importance.
 
-`Attention item ≠ task ≠ approval request.`
+`Low priority` must not imply `proven irrelevant`, and Quiet items should remain inspectable.
 
 ### Adaptive review depth
 
-- no user-facing relevance → silent system maintenance;
+- no material user-facing review value → silent system maintenance;
 - simple / low-consequence bearing → inline annotation;
 - multi-component, conflicting, consequential, or material System–User divergence → focused review;
-- portfolio / allocation / rotation reasoning → user-initiated Decision Context.
+- allocation / rotate / add / reduce question → explicit Decision Context and downstream Judgment.
 
-This avoids both alert-inbox fatigue and an overloaded universal company screen.
+## 9. Formation and Maintenance
 
-## 7. Formation, Maintenance, and Comparison
+### Formation
 
-### 7.1 Formation
-
-A new company has no prior user judgment. The product should begin from System Synthesis and guided exploration, not fabricate an artificial `change`.
-
-Useful access questions include:
+For a new company, System Synthesis may first expose what appears important without fabricating a user view. Useful guided questions include:
 
 - What matters most?
 - What could break the case?
 - What remains unknown?
-- What has recently changed that matters?
+- What conditions must hold for the opportunity to develop?
 
-The user may form only part of a view and leave the rest unresolved.
+The user may adopt, modify, or leave components unresolved.
 
-### 7.2 Maintenance
+### Maintenance
 
-Existing holdings benefit from change-driven orientation and adaptive review depth. The system should preserve the continuity of the maintained state across time.
+For an existing company, new information should connect to the maintained view rather than force the user to reconstruct the investment case from a chronological feed.
 
-### 7.3 Comparison belongs in Decision Context
+Simple changes may remain inline; complex changes may justify focused review.
 
-Comparison should consume maintained judgments without overwriting them.
+## 10. Forward-Looking Comparison and Decision Context
 
-It should preserve both:
+Comparison should not ask only which company looks stronger today.
 
-- genuinely comparable shared dimensions; and
-- asymmetric company-specific drivers / risks.
+The stronger downstream question is:
 
-Default comparison should not collapse immediately into a total score.
+> **Across plausible future states, which investment has the stronger forward opportunity, what conditions enable or block that path, and is the relative gap sufficiently meaningful and credible to matter for allocation or rotation?**
 
-## 8. Forward-Looking Comparison and Rotation
-
-The workstream identified that realistic comparison is inherently forward-looking.
-
-The key question is not only `Which company looks stronger today?`, but:
-
-> **Across plausible future states, which investment has the stronger forward opportunity, what must go right or could block it, and is the relative gap large and credible enough to justify reallocating capital?**
-
-### 8.1 Future scenario structure
-
-Prefer conditional scenarios to one deterministic future where possible:
+A Working representation is:
 
 ```text
-Possible Future
-→ Growth Opportunity
-→ Growth-Path Conditions
-→ Company-specific response
-→ Growth / Value Outcome
-→ Relative Future Opportunity
+Company A Understanding / Investment View
+        ↓
+Plausible Future Scenarios
+        ↓
+Opportunity
+→ Enablers
+→ Accelerators
+→ Bottlenecks / Delays
+→ Invalidation Conditions
+→ Value-Capture Conditions
+        ↓
+Possible Growth / Value Outcomes
+        ┐
+        │
+        ├── Relative Future Opportunity
+        │
+        ┘
+Company B ... same structure
+
+            +
+Current Valuation
+Uncertainty / credibility
+Time Horizon
+Portfolio Context
+Opportunity Cost
+Constraints / switching costs
+            ↓
+Comparative Judgment
+            ↓
+Decision
 ```
 
-### 8.2 Growth-path conditions
+### Growth is not enough
 
-A market opportunity should not be assumed to convert automatically into company growth.
+Business growth is not equivalent to investment value.
 
-The Working Design structure distinguishes:
+The experience should preserve, where material:
 
-- **Opportunity** — external / structural room for growth;
-- **Enablers** — conditions required to capture it;
-- **Accelerators** — conditions that increase speed / scale / economics;
-- **Bottlenecks / Delays** — constraints on size or timing without necessarily destroying the thesis;
-- **Invalidation Conditions** — conditions that materially break the scenario or central growth mechanism;
-- **Value-Capture Conditions** — whether business growth becomes durable shareholder / per-share value; and
-- **Monitoring Signals** — evidence showing whether those conditions are strengthening or weakening.
+- durability and conditions of growth;
+- timing;
+- capital needs and dilution;
+- downside / failure conditions;
+- current valuation;
+- uncertainty; and
+- whether business growth converts into durable shareholder / per-share value.
 
-This structure also connects future scenarios back to ongoing judgment maintenance: new evidence can strengthen an enabler, worsen a bottleneck, approach an invalidation condition, or change value capture.
+### No default deterministic winner
 
-### 8.3 Growth is not the optimization target by itself
+Conditional futures and traceable conditions are preferred to an unwarranted precise forecast or one total score.
 
-Conceptually:
+`Relative Opportunity Gap` remains a Working interaction concept, not a decision threshold or Research term.
 
-```text
-Business growth
-+ growth-path durability / conditions
-+ current valuation
-+ capital requirements / dilution
-+ downside / failure conditions
-+ timing
-+ uncertainty
-→ Forward Investment Opportunity
-```
-
-`Forward Investment Opportunity` remains a Working Design phrase, not Approved Research terminology.
-
-### 8.4 Relative Opportunity Gap
-
-Comparison should ask whether an alternative is merely somewhat better or sufficiently better to justify deeper rotation review.
-
-A small apparent advantage should not automatically produce portfolio churn.
-
-No investment-decision threshold or rotation rule is defined by this workstream.
-
-## 9. What Changed from Starting Hypotheses
+## 11. What Was Retained, Revised, and Rejected
 
 ### Retained
 
 - better judgment, not more information, as the Design objective;
-- persistent judgment structure;
-- importance of change, context, evidence, uncertainty, and conviction;
-- need for progressive disclosure;
-- comparison as an important capability; and
-- Design should support rather than replace judgment.
+- persistent company-level state;
+- progressive disclosure;
+- adaptive review;
+- authorship provenance;
+- unresolved states and disagreement;
+- traceable revision history;
+- comparison as a key capability; and
+- forward scenario / growth-path conditions.
 
 ### Revised
 
-- `Judgment = Structure` → **maintained state + internal structure + update process under Decision Context**;
-- `Materiality` as an information layer → **Judgment Impact as a relation**;
-- linear six-step journey → **analytical update loop, non-linear in the interface**;
-- `Adaptive Change Review` as the foundation → **adaptive review inside a broader Judgment Workspace**;
-- comparison of current state → **forward scenario / relative opportunity comparison**;
-- generic growth risks → **explicit growth-path conditions**.
+- `Persistent Judgment State` → **Maintained Investment View / equivalent Design concept**;
+- `Judgment Workspace` → **Investment View Workspace** as current Working label;
+- `Judgment Impact` at the persistent-state layer → **View Impact** Working wording;
+- `Decision Context downstream from company Judgment` → **Decision Context combines with Understanding / maintained views before cross-Lab Judgment**;
+- fixed six-step journey → non-linear analytical maintenance loop;
+- Change Review as foundation → Adaptive Review inside a broader workspace;
+- current-state comparison → future scenario / relative opportunity comparison;
+- generic risks → explicit growth-path conditions.
 
 ### Rejected as defaults
 
 - chronological news feed as the primary experience;
 - universal bullish / bearish label;
-- one scalar conviction / attractiveness score as the main representation;
-- always-visible System vs User dual columns;
-- every change requiring review / approval;
-- forcing the user to author a complete thesis before receiving value;
-- raw growth rate as equivalent to investment opportunity; and
-- deterministic future forecast as the default comparison model.
+- one scalar attractiveness / conviction score as the main representation;
+- every change requiring review or approval;
+- always-visible dual System / User columns;
+- forced complete user thesis creation;
+- raw business growth as equivalent to investment opportunity;
+- deterministic future forecast as the default; and
+- a Design-local redefinition of cross-Lab `Judgment`.
 
-## 10. Design Knowledge Candidates
+## 12. Design Knowledge Candidates
 
-The following findings have survived enough scenarios to be candidates for reusable Design Knowledge, but promotion is **not automatic**.
+Candidates for later promotion, not automatic Approved knowledge:
 
-1. **Investment judgment should be represented as maintained and revisable rather than episodic.** — Strong
-2. **Semantic objects and update processes should be separated.** — Strong
-3. **Judgment relevance / impact is relational, not an intrinsic information score.** — Strong
-4. **Orientation should allocate attention by judgment bearing rather than raw activity.** — Strong
-5. **Review depth should be consequence-adaptive.** — Strong
-6. **User judgment may be absent, partial, unresolved, or disagree with System Synthesis.** — Strong; authorship boundary itself is already Approved via DL-DR-0001.
-7. **Decision Context should remain distinguishable from underlying company judgment.** — Strong
-8. **Comparison should preserve both shared and asymmetric structure.** — Strong
-9. **Forward comparison should expose scenario conditions and growth-path blockers rather than only forecast outcomes.** — Strong
-10. **Default scalar ranking should remain subordinate to traceable relative trade-offs and uncertainty.** — Moderate–Strong
+1. A persistent and revisable company-level Investment View is useful for judgment support. — **Strong**
+2. Semantic objects and update processes should remain distinct. — **Strong**
+3. Relevance / impact is relational rather than an intrinsic information score. — **Strong**
+4. Orientation should allocate attention by likely bearing / review value rather than raw activity. — **Strong**
+5. Review depth should be consequence-adaptive. — **Strong**
+6. A user-owned view may be absent, partial, unresolved, or differ from System Synthesis. — **Strong**; authorship boundary already Approved via DL-DR-0001.
+7. Decision Context must remain semantically distinct and precede downstream Judgment. — **Very Strong**, Approved semantic boundary via DL-DR-0002.
+8. Comparison should preserve shared and asymmetric company structure. — **Strong**
+9. Forward comparison should expose scenario conditions and growth-path blockers rather than only forecast outcomes. — **Strong**
+10. Default scalar ranking should remain subordinate to traceable trade-offs and uncertainty. — **Moderate–Strong**
 
-A later promotion step should decide which of these deserve `03_design_knowledge/` and whether any need CEO-level approval.
-
-## 11. Research Trigger Candidates
+## 13. Research Trigger Candidates
 
 ### Trigger 1 — Future Scenario / Relative Opportunity Methodology
 
-> **What Research methodology should produce and evaluate future scenarios, growth-path conditions, predictive growth/value outcomes, and relative opportunity comparisons strongly enough for downstream Design and portfolio decision support?**
+What Research methodology should produce and evaluate future scenarios, growth-path conditions, predictive growth/value outcomes, and relative opportunity comparisons strongly enough for downstream Design and portfolio decision support?
 
-This includes, where appropriate:
+This may require work on scenario construction, predictive probability, forecast calibration, expected growth / return estimation, valuation-outcome mapping, causal / predictive status of growth-path conditions, and comparative-claim evaluation.
 
-- scenario construction;
-- predictive probability;
-- forecast calibration;
-- expected growth / return estimation;
-- valuation-outcome mapping;
-- probability weighting;
-- uncertainty aggregation;
-- causal / predictive status of growth-path conditions; and
-- epistemic evaluation of predictive / comparative Claims.
+### Trigger 2 — Decision-Support Evaluation
 
-Design Lab may design the experience for these outputs, but must not define their epistemic authority.
+As Stock_vis moves from maintained-view support toward comparative / portfolio decision support, Research may need to further define how downstream reasoning is warranted and evaluated without collapsing Research truth into product recommendation rules.
 
-### Trigger 2 — Downstream Decision-Support Methodology
+### Trigger 3 — System Synthesis Epistemic Boundary
 
-Research Lab Evaluation Methodology currently recognizes Decision-Support Evaluation as a later downstream family. If Stock_vis progresses from judgment support toward comparative / portfolio decision support, Research may need to define how such downstream reasoning is warranted and evaluated without collapsing Research truth into a product recommendation rule.
+When does a user-facing System Synthesis merely restate / organize an existing Research Understanding, and when does it create a new inferential Claim or epistemic structure requiring Research treatment?
 
-## 12. Failure Modes / Reversal Conditions
+## 14. Failure / Reversal Conditions
 
-Revise the architecture if real-user or Research evidence shows that:
+Revise this foundation if real-user or Research evidence shows that:
 
-- a persistent judgment structure creates anchoring stronger than the benefits of continuity;
-- users cannot distinguish System Synthesis from their own view despite authorship treatment;
-- progressive / adaptive depth feels unpredictable or hides important information;
-- focused reviews become a new inbox burden;
-- judgment-bearing links are too artificial or expensive to maintain;
-- revision lineage is not useful enough to justify complexity;
-- Formation / Maintenance / Decision Context feels fragmented compared with one universal contextual page;
-- structured future scenarios create false confidence rather than calibrated understanding;
-- growth-path condition taxonomy is cognitively too heavy;
-- relative-opportunity framing causes unnecessary portfolio churn; or
-- Research Lab develops a materially different structure for predictive / comparative reasoning.
+- persistent Investment Views create harmful anchoring or maintenance burden;
+- users cannot distinguish System Synthesis from their own view;
+- progressive / adaptive depth hides material information or feels unpredictable;
+- focused reviews become inbox work;
+- view-bearing relations or update lineage are too artificial / expensive;
+- Formation, Maintenance, and Decision Context feel fragmented;
+- scenario structures create false confidence;
+- growth-path conditions are cognitively too heavy;
+- relative-opportunity framing causes excessive churn; or
+- Research Lab formally changes the relevant semantic or predictive architecture.
 
-## 13. Design Lab Evolution Findings
+## 15. Design Lab Evolution Findings
 
-The Design Lab operating model performed adequately in this workstream.
+The operating model performed adequately.
 
-Useful operational learnings:
+- Batch-level exploration reduced CEO micro-consensus.
+- Separate batch documents improved reviewability.
+- Korean companion documents materially improved CEO review speed.
+- Prototypes exposed conceptual failures earlier than text-only discussion.
+- Cross-Lab semantic review should occur before promoting a Design mental model that reuses Research-adjacent terminology.
 
-- Batch-level exploration reduced CEO micro-consensus without losing consequential escalation.
-- Separating exploration files by batch became necessary once the workstream grew; one monolithic exploration file would be harder to review.
-- Korean companion documents materially improved CEO review speed and should remain standard for consequential Design Lab documents.
-- Prototype artifacts were valuable for revealing interaction failures that remained hidden in conceptual discussion, especially the limitation of a literal Change Review architecture.
-- No new permanent governance or agent taxonomy is justified by this workstream.
+No additional permanent governance layer is currently required.
 
-No structural Design Lab operating change is currently required.
+## 16. Decision Package
 
-## 14. Decision Package
+### Recommended Working Foundation
 
-### Recommended Structure
+Use the following for downstream Product Surface / IA exploration:
 
-Use the following as the leading **Investment Judgment Experience Foundation** for downstream Product Surface / IA exploration:
-
-> **Persistent and revisable Judgment Workspace**  
+> **Persistent and revisable Investment View Workspace**  
 > + **attention-oriented Orientation**  
-> + **Formation and Maintenance using the same underlying judgment semantics**  
-> + **consequence-adaptive review depth**  
-> + **traceable Research / Evidence / authorship / revision lineage**  
-> + **Decision Context kept downstream from company judgment**  
+> + **Formation / Maintenance with adaptive review depth**  
+> + **traceable Research / evidence / authorship / revision lineage**  
+> + **System Synthesis kept distinct from user-owned view**  
+> + **Understanding / maintained views + Decision Context → Judgment → Decision**  
 > + **forward-looking Comparison using scenarios, growth-path conditions, valuation, uncertainty, and relative opportunity.**
 
-### Recommendation Strength
+**Recommendation Strength: Strong**
 
-**Strong**
+### Main Alternative
 
-### Why
+A simpler episodic research assistant centered on search, alerts, and ad-hoc AI Q&A without a persistent Investment View.
 
-This model survived the widest range of scenarios tested so far:
+It has lower interaction and maintenance cost but currently performs worse on continuity, revision traceability, longitudinal learning, and comparison of changing opportunities.
 
-- no prior user judgment;
-- sharp price movement without thesis change;
-- mixed earnings;
-- material Human–AI disagreement;
-- multi-holding morning review;
-- cross-company comparison; and
-- possible portfolio rotation.
+### CEO Critical Decision
 
-It also preserves the approved Research–Design boundary and DL-DR-0001 Human–AI authority boundary.
+**None remaining for Workstream 001 at this stage.**
 
-### Main Alternatives
+DL-DR-0001 and DL-DR-0002 contain the consequential authority / semantic decisions already approved by the CEO.
 
-1. **Event / Feed-centered product** — simpler orientation, but weak judgment continuity and differentiation.
-2. **One integrated universal Judgment Home** — lower navigation cost, but risks overload during complex multi-component change and comparison.
-3. **AI-maintained single shared thesis** — lower user effort, but conflicts with approved semantic authorship unless very carefully constrained.
-4. **Score / ranking-centered comparison** — efficient, but risks false symmetry, false precision, and hidden trade-offs.
+### Deferred / AI-Owned
 
-### Key Trade-offs
-
-- continuity vs anchoring;
-- traceability vs complexity;
-- adaptive disclosure vs predictability;
-- user agency vs interaction burden;
-- structured comparison vs cognitive load;
-- forward-looking usefulness vs false precision;
-- opportunity optimization vs portfolio churn.
-
-## 15. Batch Consensus
-
-The Design Lab Lead recommends carrying the following forward as **Working Consensus** unless contradicted by CEO decision, user evidence, or Research authority:
-
-- maintained / revisable judgment as the core mental model;
-- semantic model separated from update process;
-- Judgment-Bearing Relation and relational Judgment Impact;
-- local conviction / uncertainty rather than default global scalar;
-- traceable update lineage;
-- attention-oriented Orientation;
-- adaptive review depth;
-- System Synthesis distinct from User Judgment per DL-DR-0001;
-- Decision Context separated from underlying company judgment;
-- forward-looking comparison with explicit growth-path conditions; and
-- no default total score or automatic rotation rule.
-
-## 16. CEO Critical Decision — Foundation Promotion
-
-### Decision
-
-Should the synthesized core mental model above be accepted as the **Working Design Foundation for the next Product Surface / IA workstream**, without yet promoting every component to Approved Design Knowledge or final Product IA?
-
-### Design Lab Lead Recommendation
-
-**Approve it as the next-workstream foundation, while keeping the architecture explicitly Working and falsifiable.**
-
-### Recommendation Strength
-
-**Strong**
-
-### Why this deserves CEO attention
-
-This is no longer a local interaction detail. It determines the organizing mental model from which later Dashboard / company surface / comparison / portfolio / monitoring IA may be derived.
-
-However, approving it as a **Working Foundation** is intentionally weaker than freezing a permanent Product IA or approving every term as durable Design Knowledge.
-
-### Strongest Counterargument
-
-The system may be over-structuring investment judgment before real users demonstrate that they want or can effectively use a persistent judgment model. A simpler AI research + alert + comparison experience may provide most of the value with much lower learning cost.
-
-### Failure / Reversal Conditions
-
-Approval should be revisited if prototypes / user tests show that persistent structured judgment:
-
-- creates harmful anchoring;
-- feels like maintenance work;
-- is not understood distinctly from AI opinion;
-- does not improve actual comparison / revision quality; or
-- is materially less useful than a simpler episodic experience.
-
-## 17. Deferred / AI-Owned
-
-The following remain delegated / reversible unless they become consequential:
-
-- final naming of Judgment Workspace, Formation, Maintenance, Change Review, Judgment Impact, Relative Opportunity Gap;
-- exact component taxonomy and visible component count;
-- visual treatment of conviction, uncertainty, provenance, and divergence;
-- exact adaptive-review thresholds;
-- whether modes are explicit navigation or contextual states in one surface;
-- morning-review grouping and ranking details;
+- final name of the persistent Design-side state;
+- component taxonomy and count;
+- final View Impact wording / taxonomy;
+- screen and navigation structure;
+- inline vs drawer vs dedicated review presentation;
+- exact authorship controls;
+- visual system;
 - comparison layout;
-- exact growth-path condition labels;
-- whether an aggregate comparison summary is useful;
-- mobile layout and interaction; and
-- implementation / storage schema.
+- scalar summaries, if any;
+- prototype implementation details.
+
+## 17. Next Step
+
+Open **Workstream 002 — Product Surface / Information Architecture Exploration** using this corrected Working Design Foundation as an upstream constraint, while continuing to challenge it rather than treating it as final Product Architecture.
