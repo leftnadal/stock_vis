@@ -6,6 +6,7 @@ import { MiniSparkline } from './MiniSparkline';
 import { NewsContextBadge } from './NewsContextBadge';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { AxisChipStrip } from './AxisChipStrip';
+import { buildTechnicalDetail } from './technicalLabels';
 import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 import type { SignalStock } from '@/types/eod';
 
@@ -42,6 +43,8 @@ export function StockRow({ stock, axisCount = 0 }: StockRowProps) {
   const isPositive = stock.change_percent >= 0;
   const marketCapText = formatCompactUSD(stock.market_cap);
   const dollarVolumeText = formatCompactUSD(stock.dollar_volume);
+  // 기술 칸 4값 전체(RSI·52주·MA) — technical 부재/전결측 시 빈 배열 → 무렌더(정칙 ⑴).
+  const technicalDetail = buildTechnicalDetail(stock.technical);
 
   return (
     <div className="group px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 rounded-lg transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
@@ -111,6 +114,13 @@ export function StockRow({ stock, axisCount = 0 }: StockRowProps) {
           <span>거래량 {formatVolume(stock.volume)}</span>
         </span>
       </div>
+
+      {/* 기술 칸: RSI·52주·MA 4값 전체(정칙 ⑴로 present만·매매어 없음 정칙 ⑵). technical 부재 시 무렌더. */}
+      {technicalDetail.length > 0 && (
+        <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1">
+          {technicalDetail.join(' · ')}
+        </p>
+      )}
 
       {/* 뉴스 컨텍스트 */}
       {stock.news_context?.headline && (

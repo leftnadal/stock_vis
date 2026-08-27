@@ -1,10 +1,16 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Layers } from 'lucide-react';
 import type { SignalStock } from '@/types/eod';
 import { CONFLUENCE_MIN_AXES } from './confluence';
 import { hasRealNews, newsRecencyLabel, validSector } from './scannerFilters';
+import {
+  formatRsi,
+  formatMaState,
+  RSI_STATE_CHIP,
+  MA_STATE_CHIP,
+} from './technicalLabels';
 
 /**
  * 직교 축 칩 슬롯 (D-SCANNER-SELECT-UX ② · 축 슬롯 행).
@@ -65,8 +71,24 @@ export const AXIS_SLOTS: AxisSlot[] = [
         ? chip('news', newsRecencyLabel(stock), 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800')
         : null,
   },
+  // ── 기술 축(SCAN-B2-FE) — RSI 상태 + MA 상태 칩(≤2 절제·행 과밀 방지, 52주 상세는 패널 칸) ──
+  {
+    id: 'rsi',
+    render: ({ stock }) => {
+      const tech = stock.technical;
+      if (!tech) return null; // 정칙 ⑴ — technical 부재 시 완전 생략
+      const rsiLabel = formatRsi(tech);
+      const maLabel = formatMaState(tech);
+      if (!rsiLabel && !maLabel) return null;
+      return (
+        <Fragment key="tech">
+          {rsiLabel && tech.rsi_state && chip('rsi', rsiLabel, RSI_STATE_CHIP[tech.rsi_state])}
+          {maLabel && tech.ma_state && chip('ma', maLabel, MA_STATE_CHIP[tech.ma_state])}
+        </Fragment>
+      );
+    },
+  },
   // ── 미래 슬롯(②③단계 additive) — 현재 데이터 배선 전이라 null(정칙 ⑴) ──
-  { id: 'rsi', render: () => null }, // ②: RSI 과열/침체 상태 서술
   { id: 'valuation', render: () => null }, // ②: 비교군 명시 상대 밸류(정칙 ⑶)
   { id: 'quality', render: () => null }, // ②: ROE·성장·부채
   { id: 'relation', render: () => null }, // ③: 관계 강도 우선(정칙 ⑹)

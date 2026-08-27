@@ -8,6 +8,92 @@
 
 ---
 
+## [2026-08-27] D-EODUNIV-S1S2-DEGEN — 백필 구간 S1/S2 섹터 degeneracy 처분 A(기록·관찰) [monitor][stocks][observation]
+
+> 출처: DIRECTIVE-DECISIONS-REG-0827 E1. 사실 근거 = STEP0-RECON-0827 R1-7.
+
+**결정 (처분 A = 기록·관찰, 즉시 수리 안 함)**: EODUNIV-P15-V01 백필 커맨드(`backfill_eod_signals_universe`)가 생성한 비SP500 3종 EODSignal의 relation 시그널 S1(섹터상대강도)·S2(섹터소외주) **degeneracy를 즉시 수리하지 않는다**. daily-forward(전체 유니버스) **20거래일** 축적 후 S1/S2 발화율을 재측정하여 재평가한다. **재평가 트리거일 = 2026-08-27 + 20거래일.**
+
+- **사실(R1-7 실측)**: TLN 백필 구간(2025-08~2026-08-26, 286행) — **S1 발화 0 · S2 발화 0 · S4 1**. 원인 = 백필 시 심볼 스코프를 [대상종목 ∪ SPY]로 좁혀 섹터 피어(SP500 전체)가 부재 → 섹터 평균이 자기 자신으로 degenerate(EODUNIV-P15-V01 보고서 문서화 한계와 동일 근인). advisor가 실제 쓰는 3필드(composite/change_pct/dollar_vol)·나머지 11시그널은 무영향.
+- **기각: B(스코프 재정의 + 백필 재실행)** — 첫 daily-forward 관측을 오염시키고, 관측이 뒤집을 수 있는 결정을 조기 확정하는 위험.
+
+**Why**: 백필 degeneracy는 과거 스냅 한정이고 daily-forward는 전체 유니버스 안에서 계산되므로 구조적으로 정상이어야 한다. 조기 수리(B)는 아직 관측되지 않은 daily-forward 발화율을 전제로 스코프를 바꾸는 것 = 미측정 기반 결정. 20거래일 관측이 실제 발화율을 주면 그때 처분(수리 불요 vs 소급 재백필)을 근거 위에서 확정한다.
+
+**How to apply**: 재평가 시 = daily-forward EODSignal(08-27 이후)에서 3종 S1/S2 발화율 측정 → 정상이면 백필 과거값은 그대로 두고 종결, 비정상이면 소급 재백필 검토. cf. [[project_eoduniv_p15_v01]]·[[lesson_advisor_coverage_needs_indicatorreading_ingest]].
+
+## [2026-08-27] D-REPORT-CHANNEL-CHAT — CC 보고 = 채팅 붙여넣기/스크린샷 전용 [harness][process]
+
+> 출처: DIRECTIVE-DECISIONS-REG-0827 E2-1 (교훈 등재).
+
+**결정**: CC의 recon·검증·상태 보고는 **채팅 직접 붙여넣기 또는 스크린샷**으로만 전달한다. **파일 첨부 금지.**
+
+**Why**: 파일 첨부 경로에서 빈 문서 유실 5회 실증 — 보고 본문이 첨부로 빠지면 병진이 못 받는다.
+
+**How to apply**: 측정 결과·판정·요약은 응답 본문 코드펜스로. 산출물이 커도 요약은 본문에 두고, 상세는 repo 커밋(claude/*.md 등)으로 남기되 "보고" 자체는 첨부하지 않는다. cf. [[feedback_ephemeral_output_scratchpad]].
+
+## [2026-08-27] D-SUBAGENT-SURFACE-DISCLOSURE — 라우트·스키마·API 표면 신설 = 상위 보고 필수 [harness][process]
+
+> 출처: DIRECTIVE-DECISIONS-REG-0827 E2-2 (교훈 등재).
+
+**결정**: 하위 에이전트가 **신규 라우트·스키마·API 표면**을 만들면 상위 보고의 **필수 항목**으로 명시한다(구현 디테일로 흡수 금지).
+
+**Why**: swap 라우트(`/monitor/[id]/swap`) 신설이 옴니버스 FE 커밋(5b03754b)에 번들되어 **재량 신고 2회 누수** — 표면 신설은 계약·라우팅 결정이라 상위 판단 대상.
+
+**How to apply**: 하위 에이전트 스펙에 "신규 라우트/스키마/엔드포인트는 보고서 상단에 명시" 지시를 포함. 상위는 표면 신설을 승인 스펙 대비 대조. cf. EODUNIV-P15-V01 PART 0.2.
+
+## [2026-08-27] DSS-QUADRANT 확정 결정 5건 — 섹터 사분면 화면 (QUAD-IMPL-1 0게이트) [dashboard][dss][chainsight]
+
+> 출처: 지시서 QUAD-IMPL-1. 문안 변경 금지(디렉터 확정). 구현 = Slice 1~3.
+
+- **D-DSS-QUAD-PLACE**: 대시보드 첫 화면 최상단 섹션(네비 무수정).
+- **D-DSS-QUAD-TEMPORAL**: 점 + 전주 화살표. 화살표 양끝 = 양 축 모두 주간 스냅샷 쌍(전주 금↔당주 금). 어느 한쪽 anchor의 flat_ratio ≥ 90%면 화살표 숨김+각주(DSS-FLAT-OBS-1 §2 기계 기준 재사용 — 신규 파라미터 0).
+- **D-DSS-QUAD-ENCODE**: ②·④ 구역 하이라이트. 경계 x = 당일 heat 비null 값의 중앙값, y = breadth 0. 임계 파라미터 0.
+- **D-DSS-TAU 종결**: status 라벨·τ=0.10 화면 미소비, DB 원장 동결(가역). dead zone 도입 트리거 = 경계 인접 주간 깜빡임 관찰. 3라벨·트레일 재검토 트리거 = 클린 6쌍 성숙.
+- **커버리지 방침**: heat 미산출 섹터는 차트 밖 하단 목록.
+
+**Why**: 사분면은 Heat(관심)·수요 breadth(전망 방향) 2축 배치로 섹터 상대 위치를 드러낸다. 임계·파라미터 0 원칙(경계=중앙값·breadth 0·suppression=§2 재사용)으로 신규 튜닝 노브 없이 기존 원장을 그대로 투영 — 조기 과적합 회피. τ·status는 화면 미소비(원장 가역 동결)로 라벨 계단화 리스크 차단, 성숙(클린 6쌍) 후 재검토. 가이드 JSON 2문항 초안은 QUAD-IMPL-1.md 부기(가이드 렌더러 트랙 첫 소비 예약).
+
+**How to apply**: 정본 지시서 = docs/instructions/QUAD-IMPL-1.md. 삽입점 = `app/page.tsx`(root `/`) 최상단. suppression 판정 = 서버측(§2 flat_ratio≥90%). heat 데이터 = ThemeHeatScore(apps.chain_sight), 수요 = ThemeDemandScore/SymbolDemandSignal. cf. [[DSS-FLAT-OBS-1]] §2.
+
+## [2026-08-27] D-BOUNDARY-TRIAGE-FREEZE — shared 경계 회귀 #6 동결 격리 [ops][boundary][harness]
+
+**결정**: `packages/shared/stocks/services/eod_signal_calculator.py → apps.monitor.models.monitor` 경계 위반(7ec24c62, EODUNIV-P15-V01 08-26 유입)을 **KNOWN_VIOLATIONS 동결로 격리**한다 — test SSOT(`tests/architecture/test_shared_boundary.py`) + `scripts/health_check.py` 양쪽 동시. 위반 코드 자체 수정은 범위 밖 — 소진 트랙 `BOUNDARY-BURNDOWN-EOD`로 예약(방향 결정=디렉터).
+
+- **경위(0-3 사실·판단 없음)**: 7ec24c62 커밋 메시지에 **경계 red 인지/신고 문구 부재**. `eod_universe_symbols()`가 Monitor union 기능(A-2) 추가 중 lazy import로 위반 유입. health·아키텍처 가드 red 채로 착지.
+- **Why**: 동결 = 임시 격리 — green 회복으로 회귀 가드 복원·다른 트랙(QUAD-IMPL-1 등 health FAIL HALT) 차단 해제. 실제 수리는 방향 판단(주입 vs 승격)이 필요해 별도 사이클. 등록 없는 red 방치는 가드 무력화이므로 즉시 동결로 SSOT 정합 회복.
+- **How to apply**: 동결 키 = `("stocks/services/eod_signal_calculator.py", "apps.monitor.models.monitor")` 양쪽 동기(한쪽만 갱신 시 어긋남). 소진 = TASKQUEUE `BOUNDARY-BURNDOWN-EOD`. 착지 규칙 = common-bugs #121(등록 없는 red 착지 금지). cf. BOUNDARY-1~3(#1~#5 청소 완료 선례).
+## [2026-08-27] D-MP-V2-NAV — Market Pulse 네비 목적지 v2 전환(옵션 B) + GUIDE-S1 검수 승인 [frontend][product][process]
+
+**결정 ⑴ (GUIDE-S1 검수 승인)**: 병진 검수 결과 5화면 가이드 문구 **승인** → `reviewStatus: 'draft' → 'confirmed'`. 단 **marketPulse는 v1 기준 초안을 폐기**하고 v2 기준 문구(7영역)로 **교체 후** confirmed. 승인 근거 주석 = `// 병진 검수 승인 2026-08-27 (GUIDE-S1C)`.
+
+**결정 ⑵ (네비 = 옵션 B)**: `Header.tsx`·`MobileNav.tsx`의 Market Pulse href를 `/market-pulse` → **`/market-pulse-v2`**. 라벨 불변. **v1 라우트는 존치**(리다이렉트 금지). 가이드 데이터는 v2에만 두고 **v1에는 두지 않는다 = 은퇴 신호**(오버레이가 데이터 없는 화면에 `?` 버튼을 안 띄우므로 추가 코드 0).
+
+**Why**: 가중합 **B 7.5 vs C 7.8**, 마진 **0.3 < 0.4**(자동 결정 임계 미달) → 타이브레이커 적용. 타이브레이커 = **v1 참조가 아직 미측정**이었으므로 **가역성 우선**. 리다이렉트(C)는 v1 직접 진입 경로를 즉시 없애 되돌리기 비용이 크고, 미측정 참조가 깨질 위험을 떠안는다. B는 목적지만 바꾸므로 한 줄로 원복 가능하다. 참조 전수 측정(아래)을 끝낸 뒤 v1 은퇴(리다이렉트)를 별도 결정한다.
+
+**측정 결과(GUIDE-S1C §4, read-only)**: **사용자를 v1으로 보내는 실동선 = 0건.** 네비 전환 후 frontend에 `/market-pulse` 라우트로 향하는 Link·href·router.push 없음. 백엔드 알림 렌더러(`apps/market_pulse/alert_renderers.py:44`)는 **이미 v2**를 가리킨다. manifest·middleware·next.config에 참조 없음. `MobileNav.tsx:26`의 `startsWith('/market-pulse')`는 **목적지가 아니라 active 판정 prefix**. docs/ 라우트성 언급 64행/37파일은 전부 과거 감사 리포트(운영 런북 아님). → **v1 은퇴(리다이렉트)의 기술적 장애물 없음**; 실행은 BOUNDARY 성격 결정이므로 별도 항목(TASKQUEUE `MP-V1-RETIRE`).
+
+**관측 사실(억지 통일하지 않음)**: v1(`/market-pulse`)에 직접 접근하면 **Header는 Market Pulse 비활성**(판정식이 `pathname.startsWith(item.href)`인데 href가 v2라 불성립), **MobileNav는 활성**(판정 prefix가 `'/market-pulse'` 하드코딩이라 v1·v2 모두 매칭). 두 컴포넌트의 판정식이 원래 다른 데서 오는 차이다. 코드로 맞추지 않고 **테스트로 고정**(`__tests__/guide/navMarketPulse.test.tsx`) — v1 은퇴 결정 시 함께 정리한다.
+
+**How to apply**: 가이드 문구 수정은 여전히 `frontend/lib/guide/*.ts` 단일 지점. v1에 가이드를 되살리지 말 것(은퇴 신호가 무의미해진다). v2 이관이 확정되면 `MP-V1-RETIRE` 항목에서 리다이렉트·active 판정식·docs를 한 번에 처리. cf. [[project_guide_track]]·D-GUIDE-TRACK.
+
+## [2026-08-27] D-GUIDE-TRACK — 유저 가이드 = 허브 + 화면별 오버레이 (옵션 C) [frontend][product][process]
+
+**결정**: 유저 가이드를 **옵션 C = 허브(`/guide`) + 화면별 `?` 오버레이** 구조로 구축한다. 가이드 텍스트는 산문이 아니라 **구조화 데이터**(`frontend/lib/guide/`)로 관리하며, **이 데이터가 이후 야간 도그푸딩 에이전트의 채점 루브릭 단일 출처**가 된다. 진행 순서 = **가이드 먼저 → 에이전트 나중**.
+
+- 데이터 계약 = `GuideScreen{ id, route, title, flowStage 1..5, coreQuestion, learnings[], regions[{anchor,title,desc}], nextAction?, reviewStatus }`.
+- `coreQuestion` = "이 화면이 답하는 질문" — **에이전트 채점 루브릭의 기준 문장**. 바꾸면 평가 기준이 바뀐다.
+- 오버레이 위치 지정은 **CSS 셀렉터 결합 금지** → 대상 요소에 `data-guide="<anchor>"` 속성만 부여하고 그것만 참조(리팩터링 내성).
+- 오버레이는 **附加 전용**: 가이드 OFF 상태에서 기존 화면 DOM·동작 완전 동일(행위보존). `data-guide` 속성 추가는 허용(렌더 결과 불변).
+- `reviewStatus: 'draft' | 'confirmed'` — 병진 검수 전 = `draft`. draft→confirmed 전환은 검수 후 별도 슬라이스.
+
+**Why**: 가중합 비교에서 **C = 7.85** (A=6.45 · B=6.40). 가중치 = 이해가치 .35 / 유지보수 .25 / 제품정의 .25 / 구현 .15. 마진 1.40 > 1 → **자동 결정**(재심의 불요). 가이드를 먼저 세우는 이유 = 에이전트가 "무엇이 좋은 화면인가"를 채점하려면 기준 문장이 선행해야 하며, 그 기준을 사람이 읽는 가이드와 **같은 파일**에 두면 기준·문구 drift가 구조적으로 불가능해진다(복제 = drift, 규약 10장).
+
+**How to apply**:
+- 가이드 문구 수정 = `frontend/lib/guide/*.ts` 단일 지점. 별도 산문 문서 신설 금지(복제 금지).
+- 새 화면 추가 시 `GuideScreen` 1건 등재 → 허브·오버레이 **자동 반영**(허브 하드코딩 금지).
+- `coreQuestion`이 안 써지는 화면·영역은 **억지로 짓지 말고 "질문 불성립"으로 보고** → KEEP/CUT 조사의 입력.
+- 후속: 야간 도그푸딩 에이전트(옵션 B+C 결합 — 관찰 후보 0~5개 + 성적 원장)는 **별도 지시서**. cf. 슬라이스 1 착지 = 본 세션.
+
 ## [2026-08-26] D-SCAN-B2TECH-CONTRACT — 기술 축 baked JSON 계약 (SCAN-B2-TECH-BE 착지) [dashboard][platform][data]
 
 **계약 (baked preview_stock에 nested `technical` 블록·additive·SCAN-B2-FE 입력 정본)**:
@@ -6836,3 +6922,32 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **전제 반증(Q19)**: RC-A-0/A-1 실측이 Q19-DISCOVERY-REACT·Q19-WIDTH-STAGNATION의 "유니버스 포화·신규 0·9562 고정" 전제를 반증 — 08-10 co-mention 신규생성 재점화(1,679), 이후 매일 56~226, RC 13.7k→17.3k. 유입 정지는 경로 차단이 아니라 뉴스 유니버스/추출의 7월 공백(08-10 재개). → discovery는 "고장"이 아니라 "유니버스 확장 선택 문제"로 격하(TASKQUEUE).
 
 - **D-RC-DEPLOY-WINDOW (디렉터 정정 08-27·전부 director-reserved·순서 엄수)**: 스케일 마이그(0033)는 **코드↔DB 스케일 결합** 배포 — 순서를 어기면 혼재 창(mixed-scale window)이 열린다. ⓐ 머지 후 worker 먼저 재기동→migrate면 "새 코드([0,1] 기대)×옛 DB([0,85] 값)" 창에서 새 임계 0.85가 옛 값 85와 비교되고 새 writer가 [0,1]을 미변환 테이블에 오염. ⓑ migrate 먼저→옛 worker면 [0,85]를 변환 테이블에 쓰는 역방향 오염. **정답=창 닫기**: ①sess-rc-a1→main 머지+push(ff 불가 시 merge commit·RC-A-1 명기) → ②**worker·beat 정지** → ③migrate 0033 → ④**worker·beat 재기동**(새 코드×새 DB로만 재개) → ⑤`dispose_price_correlated --archive <ops> --apply` → ⑥Neo4j `MATCH ()-[r:PRICE_CORRELATED]->() DELETE r`(1,356) → ⑦after-snapshot(read-only·CC 가능) → ⑧09-19 감쇠 beat 로그 확인(stale 전이 0·DECAYABLE 외 무변=폭탄 최종 봉인). ②~④ 놓친 beat는 다음 주기 자연 회복(손실 0). **데드라인**: 늦어도 09-12 주간 초 권고(C8 게이트 겹침)·절대 시한 09-19 이전. Why 화이트리스트가 이 창의 방어선이기도: PART1이 배포돼야 감쇠 오발도 막힘.
+---
+
+## D-EVT-SCOPE-U (2026-08-24) — 캘린더 수집 유니버스 스코프
+- **결정**: 캘린더 수집은 **전량 저장**(수집 시 유니버스 필터 없음), 필터는 **소비(읽기) 계층**에 둔다.
+- **근거**: RelationConfidence distinct 1,126 종목 > 현행 유니버스 503 — EVT-CHAIN(Phase 2)이 1-hop 이웃 이벤트를 커버하려면 유니버스 밖 종목의 이벤트도 원장에 있어야 한다. 수집 시 유니버스로 잘라내면 이웃 커버리지가 깨진다.
+- **부수 효과**: 수집 태스크가 유니버스 모델(apps.chain_sight.UniverseSnapshot)을 import할 필요 없음 → shared 경계 유지(수집 오케스트레이션이 apps 미의존). 저장량 비용 = 어닝 8일 1,057건 실측 기준 수용 가능.
+- 앵커 §11 오픈 이슈 2 해소.
+
+## D-EVT-CAP-1 (2026-08-27) — 캘린더 캡 방어 확정형
+- **결정**: 캡 방어 = **count ≥ 4000 감지 + 적응형 이분(bisect-on-truncation)**. 절단 감지 시 창을 이분 재귀 재수집. 가드: 재귀 깊이 ≤ 4 · 런당 추가 콜 ≤ 12 · 창 ≤ 3일에서도 절단이면 실패 마킹+알림. span 이상(min_date 지연)은 절단이 아니라 **경고 로그**(span_anomaly).
+- **근거**: EVT-IMPL-2 dry-run 실측 — Q3 어닝 피크 밀도 ~200행/일. **고정 청크는 계절 취약**(45일 = 8월 2,302행 vs 11월 4,000+ 캡 도달·앞 ~24일 소실). 고정 크기로는 피크를 못 버팀 → 적응형 이분이 유일한 근본책. 설계 앵커 §3 "창 이분 재시도" 원안의 복원(EVT-IMPL-2 원지시서가 STEP 3에 미배선한 누락 보정 = 보정1).
+- **텔레메트리**: 성분별 bisect_depth·extra_calls — 3호 관찰 게이트 지표.
+## [2026-08-27] D-INC-P16-2 — 09:13 429 근인 = FE 루프 아님·외부/수동 반복 문서 로드 + INC-P16 트랙 종결 [frontend][infra][incident][forensic]
+
+> 포렌식(read-only) 판정 채택. INC-P16-1-FIX(`9e2e98f3`) 랜딩 후 08-27 09:13 429 재발의 근인 규명.
+
+- **판정**: **FE 재실행 루프 부재(코드 확정)**. i18n(staleTime 24h·gcTime 25h) 쿼리가 14초에 23회 fetch = 빈 캐시(신규 QueryClient) 23회 = **전체 문서 로드 23회**뿐이 유일 설명(React 내부 refetch는 24h-fresh 쿼리 재fetch 물리적 불가). market-pulse-v2 렌더 트리에 auto-reload/refetch/interval/invalidate 코드 전무 → **구동원=페이지 코드 밖(하드리프레시 연타 = 외부 반복 문서 로드)**.
+- **가설 기각(코드 줄 근거)**: H-A(QueryClient 재생성) = `QueryProvider.tsx`가 `useState(()=>new QueryClient)` 유지, INC-P16-1 diff는 retry 2줄뿐(인스턴스화 무접촉). H-B(인증 리마운트) = AuthContext verifyToken 마운트 1회·401 시 clear만·market-pulse-v2는 AuthGuard 미래핑. H-C(refetch 설정) = refetchInterval 0·refetchOnWindowFocus false·staleTime 김. H-D = market-pulse-v2 트리에 `window.location.reload` 0건.
+- **INC-P16-1-FIX 무죄 + 실전 유효**: auth/provider/reload 경로 = pre-serving(`d83a0c63`)과 동일(내 커밋 외 접촉 0) → **신규 회귀 아님**. 병진 실기기 PASS(429 무증폭·2초 소멸·playbook lazy 정합·보통 속도 5회 무에러·스로틀 창 회복).
+
+**디렉터 오류 2건 병기(교훈)**:
+- ⑴ **"사람 소거" 단정 오판**: INC-P16-2 지시서가 "사람·재시도 소거 완료"를 전제로 FE 루프를 1순위로 세웠으나, **자기 지시(하드리프레시 연타) 시나리오를 미대조**. 코드에 auto 기전이 없으면 외부/수동이 유일 귀결인데 이를 배제. → 교훈: **판정 프레임의 전제(사람 배제)부터 자기 행위 이력과 대조**.
+- ⑵ **불가능한 합격 기준 출제**: INC-P16-1 검증 기준에 "연타 무에러"를 포함했으나, 연타=분당 수백 요청은 throttle(120/min) 초과가 **물리 산수상 정상** → 통과 불가능한 기준. → 교훈: **검증 기준은 물리 산수로 선검산**(달성 가능성 확인 후 출제). SMOKE-BROWSER-PATH 재현 기준을 "분당 ~5회 현실 새로고침"으로 정정(연타는 429 무증폭·회복만 검증).
+
+**부수건**: `web.log`(stdout·블록버퍼) vs `web-error.log`(stderr) desync → "전부 200" 착시. 해소 = `daphne-web.sh` `PYTHONUNBUFFERED=1`(INC-P16-CLOSE Part 2). common-bugs 채번 대기 등재.
+
+**INC-P16-CLOSE(소품 3)**: ① QueryProvider 안정성 회귀 테스트(같은 자리 3번째 인시던트 코드 차단) ② access 로그 flush(위) ③ page.tsx 에러 원인 구분(429="요청이 많아 잠시 제한됐어요"·401="로그인이 필요합니다"·기타=기존 문구, HTTP transport status 분기는 시장 판단 아님 → 단일소스 원칙 무관). vitest 전체 **1138**·tsc 0·lint 0. **랜딩=병진 승인 후**(런북 준비·이 랜딩 sv sync가 현행 드리프트 WARN도 자연 해소).
+
+**★ INC-P16 트랙 종결 + Phase 1.6 종결**: 1.6-S0(C-lite 배지)·1.6-S1(Playbook)·INC-P16-1(핫픽스)·INC-P16-2(포렌식)·INC-P16-CLOSE(마감) 전건 완료.

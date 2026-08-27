@@ -84,3 +84,42 @@ describe('StockRow — 신설 요소 (정칙 ⑸ 체급 결박 + 축 칩)', () =
     expect(screen.getByText(/대금 \$800M/)).toBeInTheDocument(); // 대금은 유지
   });
 });
+
+describe('StockRow — 기술 축(SCAN-B2-FE · 정칙 ⑴/⑵)', () => {
+  it('technical 부재(현 라이브 JSON 상태) → 기술 칩·칸 완전 무렌더(정칙 ⑴ 1급)', () => {
+    // mk()는 technical 미지정 = undefined → bake 전 라이브와 동일 상태
+    render(<StockRow stock={mk()} axisCount={0} />);
+    expect(screen.queryByText(/RSI/)).toBeNull();
+    expect(screen.queryByText(/52주/)).toBeNull();
+    expect(screen.queryByText(/정배열|역배열|골든크로스|데드크로스/)).toBeNull();
+  });
+
+  it('technical present → RSI/MA 칩 + 기술 칸 4값 라인', () => {
+    render(<StockRow stock={mk({ technical: { rsi: 72, rsi_state: 'overbought', dist_52w_high_pct: 98.1, ma_state: 'above' } })} />);
+    // 칩(RSI·MA) + 상세 라인 둘 다 RSI/정배열 텍스트 포함 → getAllByText
+    expect(screen.getAllByText(/RSI 72 · 과매수/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/정배열/).length).toBeGreaterThanOrEqual(1);
+    // 52주는 칸에만
+    expect(screen.getByText(/52주 고점 −1\.9%/)).toBeInTheDocument();
+  });
+
+  it('부분 결측(RSI만) → RSI만 렌더, 52주/MA 생략(정칙 ⑴)', () => {
+    render(<StockRow stock={mk({ technical: { rsi: 28, rsi_state: 'oversold' } })} />);
+    expect(screen.getAllByText(/RSI 28 · 과매도/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText(/52주/)).toBeNull();
+    expect(screen.queryByText(/정배열|역배열/)).toBeNull();
+  });
+
+  it('신고가(dist ≥100) → "52주 신고가" 표기', () => {
+    render(<StockRow stock={mk({ technical: { dist_52w_high_pct: 100 } })} />);
+    expect(screen.getByText(/52주 신고가/)).toBeInTheDocument();
+  });
+
+  it('기술 칸 신설분에 매매 지시어 미노출 — 정칙 ⑵ (과매수 상태어 허용·기존 ConfidenceBadge 라벨은 범위 밖)', () => {
+    // 정칙 ⑵는 신설분에만 적용 → 기존 ConfidenceBadge("강력 매수" 등)는 무변·범위 밖.
+    // 기술 상세 라인(신설분)만 스코프하여 단독 매수/매도 지시어 부재 검증.
+    render(<StockRow stock={mk({ technical: { rsi: 72, rsi_state: 'overbought', dist_52w_high_pct: 98.1, ma_state: 'golden_cross' } })} />);
+    const detailLine = screen.getByText('RSI 72 · 과매수 · 52주 고점 −1.9% · 골든크로스');
+    expect(detailLine.textContent).not.toMatch(/(?<!과)매수|(?<!과)매도/);
+  });
+});

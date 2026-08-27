@@ -232,7 +232,7 @@ export function SignalDetailSheet({ card, onClose, confluenceMap }: SignalDetail
         {/* 축 커버리지 명시(정칙 ⑴ 정보판) + 정직성 한 줄(고정) */}
         <div className="px-5 py-2.5 border-t border-gray-100 dark:border-gray-700 flex-shrink-0 bg-gray-50/70 dark:bg-gray-800/50">
           <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
-            이 화면 축: <span className="font-medium">기술 합류 · 섹터 · 뉴스</span>
+            이 화면 축: <span className="font-medium">기술 합류 · 섹터 · 뉴스 · 기술(RSI·52주·이동평균)</span>
             <span className="text-gray-400 dark:text-gray-500"> · 미커버(곧): 가치평가 · 퀄리티 · 관계</span>
           </p>
           <p className="mt-1 text-[10px] italic text-gray-400 dark:text-gray-500">{HONESTY_LINE}</p>

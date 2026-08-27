@@ -85,7 +85,7 @@ export function AnomalyPanel({ data, labels }: { data: AnomalySection; labels?: 
   const tone = MODE_TONE[data.mode] ?? MODE_TONE.CALM
   const textTone = MODE_TEXT[data.mode] ?? MODE_TEXT.CALM
   return (
-    <section className={`mt-4 rounded-lg border ${tone} p-4`}>
+    <section data-guide="marketPulse.anomaly" className={`mt-4 rounded-lg border ${tone} p-4`}>
       <header className="flex items-center gap-2 mb-2">
         <span className={`text-xs font-semibold uppercase ${textTone}`}>
           {translate(`mode.${data.mode}`, labels, data.mode)}

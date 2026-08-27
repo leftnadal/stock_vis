@@ -38,6 +38,9 @@ Design Lab은 Stock_vis의 더 넓은 목적인 **Better Investment Decisions**�
   - [`Exploration Batch 04 — Judgment Experience Interaction Architecture`](02_workstreams/001_investment_judgment_experience/batch_04_interaction_architecture_ko.md)
   - [`Exploration Batch 05 — Low-Fidelity Wireflow / Prototype Exploration`](02_workstreams/001_investment_judgment_experience/batch_05_wireflow_prototype_ko.md)
   - [`Prototype 01 — Interactive Judgment Experience`](02_workstreams/001_investment_judgment_experience/prototype_01_judgment_experience.html) — Working prototype artifact
+  - [`Exploration Batch 06 — Generalization Stress Test`](02_workstreams/001_investment_judgment_experience/batch_06_generalization_stress_test_ko.md)
+  - [`Batch 06 Addendum — Future Opportunity Comparison & Rotation Context`](02_workstreams/001_investment_judgment_experience/batch_06_future_opportunity_comparison_addendum_ko.md)
+  - [`Prototype 02 — Generalized Judgment Workspace`](02_workstreams/001_investment_judgment_experience/prototype_02_generalized_judgment_workspace.html) — Working prototype artifact
   - [`Synthesis`](02_workstreams/001_investment_judgment_experience/synthesis_ko.md)
 
 Workstream 자료와 prototype artifact는 기본적으로 **Working** 상태이며, 자동으로 Approved Design Knowledge나 제품 architecture가 되지 않는다.

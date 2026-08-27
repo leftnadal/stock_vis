@@ -5,11 +5,57 @@
 
 ---
 
-## INC-P16-1 후속 (2026-08-24, 홈 429 캐스케이드 핫픽스)
+## DSS-QUADRANT — 섹터 사분면 화면 (착수, QUAD-IMPL-1 2026-08-27) [dashboard][dss][chainsight]
+- 확정 결정 5건(DECISIONS DSS-QUADRANT). Heat×수요 breadth 2축, ②·④ 하이라이트, 전주 화살표(flat≥90% 숨김), 미산출 하단 목록.
+- Slice 1(BE read-only API `/api/v1/chainsight/theme-heat/quadrant/`) → Slice 2(공용 컴포넌트 `components/charts/SectorQuadrant`) → Slice 3(app/page.tsx 최상단 삽입).
+- 상태: **Slice 1~3 구현 완료**. 검증 GREEN — pytest 4(quadrant)+chainsight/architecture 791·vitest 12(신규)/1145(전)·tsc0·eslint0·next build OK. 최초 STEP 0 경계 FAIL은 BOUNDARY-TRIAGE-1 동결로 해소(green). arrow suppression 라이브 작동(08-14 flat 99.60% → 화살표 전건 숨김).
+
+## QUAD-VISUAL-CHECK — 섹터 사분면 라이브 육안 검증 (등재, QUAD-IMPL-1 2026-08-27) [dashboard][qa] — 병진 몫
+- F2-VISUAL-CHECK 동일 패턴. **자동 테스트로 못 잡는 시각 정합**(점/구역 색·화살표 숨김 각주·미산출 하단 목록·반응형)을 라이브 렌더로 검수. 트리거 = 배포(web 리빌드) 후.
+- 현 데이터 특성: heat 6/11 산출(5 하단 목록)·arrow 전건 suppressed(각주 노출)·경계 x=heat 중앙값 50. 배포 전엔 신 UI 미표시가 정상(#62).
+
+## BOUNDARY-BURNDOWN-EOD — shared 경계 동결 #6 소진 (등재, BOUNDARY-TRIAGE-1 2026-08-27) [ops][boundary][harness]
+- **동결 1건**: `packages/shared/stocks/services/eod_signal_calculator.py:50` → `apps.monitor.models.monitor` (7ec24c62 EODUNIV-P15-V01, 08-26 유입). BOUNDARY-TRIAGE-1이 KNOWN_VIOLATIONS 양쪽 동결(green 회복).
+- **소진 재료(0-4)**: 위반 함수 = `eod_universe_symbols()` — `Monitor(scope=stock).target_ref`를 union. 호출자 전부 packages/shared 내부(`backfill_eod_signals_universe`·`eod_pipeline:297,570`). `apps.monitor.Monitor` = user-data 모델(scope/target_ref).
+- **방향 후보(결정=디렉터)**: 방향2(주입=호출자가 watch symbols를 `eod_universe_symbols(extra=...)`로 주입 → shared 무의존) / 방향C(승격=VIXProvider식 포트+등록 패턴 의존역전, BOUNDARY-3 선례). 방향1(소비자 이동)=호출자가 shared 내부라 난도 높음.
+- **통지 필요**: EODUNIV-P15 트랙(원 유입)과 소진 방향 조율.
+- **목표**: 동결 1→0, green 유지(동결=임시 격리). 상태: **등재(방향 결정 대기)**.
+## GUIDE 트랙 (2026-08-27 개설, D-GUIDE-TRACK)
+
+> 출처: D-GUIDE-TRACK(DECISIONS 2026-08-27). 목표 = 옵션 C(허브 + 화면별 `?` 오버레이). 가이드 데이터 = **야간 도그푸딩 에이전트 루브릭 단일 출처**. 순서 = 가이드 → 에이전트.
 
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |----|------|-------|------------|--------|-----------|
-| SMOKE-BROWSER-PATH | 브라우저 경로 재현 스모크 보강 — 동시 다엔드포인트 + 하드리프레시 반복 시나리오를 헤드리스로 자동 재현(429 발생 시 캐스케이드/전면에러 부재 관측). 단건 curl은 이 유형을 **구조적으로 못 잡음**(200 정상)이 교훈 | @qa (browse) | INC-P16-1 랜딩 | 🆕 **todo(등재)** | INC-P16-1이 무자동화(수동 절차·react-query 실행 루프 결정론 테스트로 갈음). 후속 자동화로 회귀 지속 감시. cf. D-INC-P16-1·common-bugs(채번 대기 INC-P16-1) |
+| GUIDE-S1 | 슬라이스 1 — 데이터 계약(`lib/guide/`) + 렌더러(GuideOverlay·GuideHub) + 네비 삽입 + 핵심 5화면 | @frontend | D-GUIDE-TRACK | ✅ **완료·main 착지 `8aa46ab8`(GUIDE-S1C 동반)** | vitest 1164·tsc 0·lint 순증 0. 행위보존 기계 증명 12/12. |
+| GUIDE-S1-REVIEW | 5화면 문구 병진 검수 → `reviewStatus` draft → confirmed 전환 | 병진(사용자) | GUIDE-S1 | ✅ **승인 완료(2026-08-27)** | 5화면 승인. marketPulse만 v1 초안 폐기→v2 문구 교체 후 confirmed. 허브 "초안" 배지 전건 소멸(테스트 고정). |
+| GUIDE-S1-SHOT | 5화면 + 허브 라이브 스크린샷 증적 | @qa | GUIDE-S1 랜딩 | 🆕 **todo(잔여)** | [[feedback_ui_slice_live_screenshot]]. browse 데몬 무출력·Chrome 확장 미연결로 S1에서 미수행. HTML 렌더 검증으로 갈음(6라우트 200·`?` 버튼 5/5·`/guide` 미노출 1/1). |
+| GUIDE-S2 | 슬라이스 2 — 잔여 사용자-대면 화면 가이드 확장(31화면) | @frontend | GUIDE-S1-REVIEW(done) | 🆕 **todo(선행 해소·착수 가능)** | 톤 확정됨. 권고 순서 = `/stocks/[symbol]`(4단계 갭) → Monitor 심화 4 → Chain Sight 심화 → 나머지. |
+| GUIDE-STAGE4-GAP | 플로우 4단계(1차 검증)에 **독립 라우트 부재** — 검증 UI는 `/stocks/[symbol]` 내부 섹션. 허브가 "가이드 준비 중"으로 정직 표시 중 | 미배정 | 설계 | 🔭 **관찰(KEEP/CUT 입력)** | 심볼 없이는 진입 불가 → 플로우 한 바퀴가 끊긴다. 라우트 신설 vs 플로우 정의 수정 = 제품 결정. |
+| GUIDE-MP-V1V2 | `/market-pulse` v1↔v2 이중 — 가이드를 어디에 붙일지 | 미배정 | — | ✅ **해소(D-MP-V2-NAV, S1C)** | 가이드·네비 모두 v2로 이설. v1은 가이드 미제공 = 은퇴 신호. 후속 = `MP-V1-RETIRE`. |
+| MP-V1-RETIRE | **v1(`/market-pulse`) 은퇴 결정·집행** — 리다이렉트 여부 + MobileNav active prefix 정리 + docs 정리 | 미배정 | GUIDE-S1C §4 측정(done) | 🆕 **todo(결정 대기·재료 확보됨)** | 측정 결과 **실동선 0건**(네비 전환 후 v1로 보내는 Link/href/push 없음·백엔드 알림은 이미 v2·manifest/middleware 무참조). 기술 장애물 없음 → **결정만 남음**(디렉터). 함께 정리할 것 = Header/MobileNav active 판정식 불일치(v1에서 Header 비활성·MobileNav 활성). |
+| GUIDE-S1C-RUNTIME | 런타임 동기(3트리 `418b2a8e`→`8aa46ab8`) + web 프로덕션 리빌드 | 병진(수동) | main 착지(done) | 🆕 **상신 완료·집행 대기** | CC 자기 집행 금지(서비스·launchctl / sv sync 명시 승인 인용 필요). **마이그 0건·`migrate --plan` no-op·lock 무변** 실측 → 안전 확인됨. 명령문 = scratchpad `GUIDE_S1C_런타임동기_상신_20260827.md`(DEPLOY.md 2.1+2.2). 이 동기는 SCAN-B2-FE·CS-UNIVERSE-EXCLUDE·R2-PRE-A·BOUNDARY-TRIAGE-1도 함께 반영. |
+| GUIDE-S1C-SHOT | 허브 + 5화면 오버레이 라이브 스크린샷 증적 | @qa | GUIDE-S1C-RUNTIME | 🆕 **todo(잔여·도구 제약)** | S1에서 browse 데몬 무출력·Chrome 확장 미연결로 2회 시도 후 중단. 대체 증적 확보됨: ⑴ 실 페이지 통합 테스트(v2 7영역 앵커 전건 해소 + 배지 7/7) ⑵ 라이브 HTTP 7라우트(`?` 노출/미노출 매트릭스). GUIDE-S1-SHOT 승계. |
+| GUIDE-AGENT | 야간 도그푸딩 에이전트(옵션 B+C: 관찰 후보 0~5개 + 성적 원장) — 루브릭 = `coreQuestion` | 미배정 | GUIDE-S1-REVIEW | 🆕 **todo(별도 지시서)** | 검수된 coreQuestion 없이 착수 금지(기준 문장이 흔들리면 채점이 무의미). |
+
+
+### 질문 불성립 파생 — 앱 백로그 (GUIDE-S1 조사 산출, 2026-08-27 · **등재만·구현 금지**)
+
+> 출처: GUIDE-S1 부록 A. "이 영역이 답하는 질문"이 정직하게 안 써진 자리 = 제품 결함 후보. 가이드 트랙이 아니라 **해당 앱 소관**.
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| DASH-STRIP-KEEPCUT | 대시보드 3스트립(Coverage·Macro·News) KEEP/CUT — 전부 fail-quiet이라 "무엇을 결정하게 해주는지"가 안 써짐. 배경 장식인지 판단 재료인지 불명 | @frontend (dashboard) | — | 🔭 **관찰(등재만)** | 질문 부여(KEEP) or 제거(CUT). 가이드 regions에서 제외된 상태. |
+| PF-TODAY-GAIN | 포트폴리오 "오늘 수익"이 **항상 0** — `app/portfolio/page.tsx`의 `todayGain={0} // TODO`·`todayGainPercent={0} // TODO` 하드코딩 | @frontend (portfolio) | — | 🔭 **관찰(등재만)** | 표시는 되는데 값이 언제나 0 = "거짓을 조용히 보여주는" 상태. 구현하거나 숨기거나 둘 중 하나. |
+| CS-ATTENTION-DEF | Chain Sight 카드 "관심도"(`avg_score`)의 정의가 화면에 없음 — 무엇을 0~100으로 매긴 값인지 답 불가 | chain_sight | — | 🔭 **관찰(등재만)** | 툴팁·범례로 정의 노출 필요. 가이드는 "세 숫자"로 뭉뚱그려 우회. |
+| GUIDE-STAGE4-ROUTE | 플로우 4단계(1차 검증) 독립 라우트 부재 — 검증 UI는 `/stocks/[symbol]` 내부 섹션뿐 | 미배정 | 설계 | 🔭 **관찰(등재만)** | GUIDE-STAGE4-GAP과 동일 사안. 라우트 신설 vs 플로우 정의 수정 = 제품 결정. |
+
+## INC-P16 후속 (2026-08-24~27, 홈 429 트랙 — 종결)
+
+> INC-P16-1(핫픽스 A+B+C, `9e2e98f3` 08-26 랜딩)·INC-P16-2(포렌식: FE 루프 부재 확정)·INC-P16-CLOSE(소품 3+등재) 종결. **Phase 1.6 종결**. cf. D-INC-P16-1·D-INC-P16-2.
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| SMOKE-BROWSER-PATH | 브라우저 경로 재현 스모크 보강 — **재현 기준 = 분당 ~5회 "현실적 새로고침"**(사용자 실사용 상한)에서 429/전면에러 부재 관측. **하드리프레시 연타는 재현 대상 아님**(INC-P16-2 확정: 연타=외부 반복 문서 로드로 throttle 초과가 물리적 정상 — 이때 검증 대상은 "429 무증폭·2초 내 회복"뿐). 단건 curl은 이 유형을 **구조적으로 못 잡음**(200 정상)이 교훈 | @qa (browse) | ✅ INC-P16-1 랜딩(`9e2e98f3`, 08-26) | 🆕 **todo(명세 갱신)** | react-query 실행 루프 결정론 테스트 + provider 안정성 회귀 테스트(INC-P16-CLOSE)로 1차 방어, 브라우저 자동화는 후속. cf. D-INC-P16-1·D-INC-P16-2·common-bugs(채번 대기 INC-P16-1/2) |
 
 ## SCANNER-SELECT-UX 트랙 (2026-08-20 개설, D-SCANNER-SELECT-UX)
 
@@ -1412,7 +1458,8 @@
 - **SELFLOOP-DBCONSTRAINT self-loop DB 제약 승격** — 현행 앱 레벨 `SelfLoopError`(save() create 차단)를 DB `CheckConstraint(symbol_a≠symbol_b)`로 승격(마이그 동반). 레거시 13행 excluded 완료라 신규 제약 적용 안전. (신규·CS-P4 A-1 후속)
 - **CS-UNIVERSE-EXCLUDE-FLAG 유니버스 제외 2단 승격**(하이브리드 ③ 2단·**R2-PRE-A 후속**) — 1단 착지=`apps/chain_sight/constants.py UNIVERSE_EXCLUDED_INDUSTRIES` industry 필터(`0f07b83e`류, 레버리지 ETF 3종). **2단 = `Stock` 제외 플래그(BooleanField)+사유코드(예: `LEVERAGED_ETF`) 신설** → 카드 유니버스 쿼리가 industry 문자열 대신 플래그 참조로 전환. **SELFLOOP-DBCONSTRAINT 마이그 번들에 편승**(별도 마이그 회피). **DoD**: ⑴Stock 플래그+사유코드 마이그(additive) ⑵3종 플래그 세팅(비파괴·병진 prod-write) ⑶카드 유니버스 쿼리 플래그 참조로 전환 ⑷**1단 필터 상수(`UNIVERSE_EXCLUDED_INDUSTRIES`)+참조 전부 제거** ⑸회귀 0. (신규·병진 마이그 대기)
 - **CS-P5-FE-CARD 후속 고도화** — ⑴~~카드 필터·정렬~~ **✅ R1 Phase C**(연결수/그룹수 정렬·연결 유/무 필터·`mindmapConfig`) ⑵ 테마 슬롯 로직(**VOCAB-TAU 선행 대기**·잔여) ⑶ 카드 시각 고도화(잔여) ⑷ 접근성·가상화(잔여). ⑸~~sector 한글화~~ **✅ R1 C-3**(`constants/categoryMap.ts` 13). ⑹~~신규 연결 배지~~ **✅ R1 C-2**(new_conn_7d·recent_new_connections_7d).
-- **CS-INDUSTRY-HANGUL-REVIEW industry 137 한글 매핑 검수**(R1 C-3 후속) — distinct industry **137**(Biotechnology 53·Banks-Regional 46·Semiconductors 26 등). FE `INDUSTRY_LABELS` 스켈레톤(빈 dict·영문 fallback) 상태. 목록 정본 = **`docs/fe/INDUSTRY-LIST-137.md`**(R2-PRE Phase C-3 라이브 DB 재추출·2026-08-26·distinct 137·무industry 6·총 757) → 디렉터 한글 초안 작성 후 채움(자동 번역 금지). (신규·검수 대기)
+- ~~**CS-INDUSTRY-HANGUL-REVIEW industry 137 한글 매핑 검수**(R1 C-3 후속)~~ → **✅ 완료(2026-08-27, R2-PRE-B Phase B, `f8ba6eed`)**: 사용자 승인 부록 A 137건 → `categoryMap.ts INDUSTRY_LABELS` 채움 + `MindmapTreeBoard` `getLabelForIndustry` 배선(sector 선례 동일 패턴·표시만 한글·정렬키 영문). 미매핑 영문 fallback. tsc0·vitest 1138 GREEN. **FE 빌드+재시작=병진**(Rule A·prod web-runtime).
+- **CS-INDUSTRY-NORMALIZE 중복 industry 라벨 정규화**(R2-PRE-B Phase A) — 대문자/일반 변형 5행 → 정규 FMP 표기 UPDATE(TSLA `AUTO MANUFACTURERS`→`Auto - Manufacturers`·IREN `CAPITAL MARKETS`→`Financial - Capital Markets`·AAPL `CONSUMER ELECTRONICS`→`Consumer Electronics`·NVDA `SEMICONDUCTORS`→`Semiconductors`·TLN `UTILITIES - INDEPENDENT POWER PRODUCERS`→`Independent Power Producers`). distinct 137→132·반도체 26+1→27. **1차 = 병진 실행 대기**(classifier가 공유DB write 차단·[[lesson_dev_prod_shared_db]]): 스크립트 `scratchpad/phaseA_normalize_5rows.py`(스냅샷+트랜잭션 가드·각1행 검증·되돌림 재료 포함). 마이그0(데이터 UPDATE만)·서빙 반영 api 재기동 병진. **2차 후보 CS-INDUSTRY-NORMALIZE-2**: `Technology`(2=MSFT·GOOGL)·`Chemicals`(1=DOW) 정규 매핑 확정 시 + **sector 대문자 위생**(이 8종 sector도 대문자 `TECHNOLOGY`/`CONSUMER CYCLICAL` 등·트리 canon_label이 표시 흡수하나 원본 오염 잔존·GICS-유형 소스 유래 유력). (신규·1차 병진 대기)
 - **CS-COMENTION-SOURCE-DECISION R2 연료 소스 결정 사이클**(R1 Phase D 후속) — 조사 완료 `docs/news/CS-COMENTION-SOURCE-SURVEY.md`(AV broad multi 9,523 견인·Marketaux native但단일심볼붕괴·FMP 단일태깅·Polygon tickers[]+insights·Alpaca symbols[]). 디렉터 스코어카드로 소스 채택 결정(추천 미기재). (신규·결정 대기) — **★R2-PRE 재프레이밍(2026-08-26)**: "AV broad 동결" 전제 정정 → 동결은 **과거 구간(04-25~07-06)**·의도적 per-symbol 제거 후 07-06 broad 재개로 **이미 복원, 현재 활성 주력**(collect-av-broad-news last_run 08-26·CoMentionEdge 33,555·last 08-24). 따라서 결정 프레임 = **"대체(replacement)" 아닌 "증강(augmentation) 여부"**. Marketaux 403도 R2-PRE probe에서 재현 안 됨(HTTP 200·native 7엔티티 확증 → 일시적 엣지 차단이었음). 증강 후보=Marketaux(정규화 계층 선행)·Polygon(per-ticker sentiment 최상·계정 필요). Marketaux native 다중티커 실증 샘플=`docs/fe/mkx_multi_entity_sample_20260826.json`(1기사 7엔티티·match_score 비정규 8.99~62.79).
 - ~~**CS-RESIDUAL-RC-POLLUTION-SWEEP 잔여 RC 오염 sweep**~~ → **✅ 완료(2026-08-20, R-2 한정쓰기)**: fuzzy-era 오매칭 pair 유래 선착지 RC evidence SEC4종 전수 실측 17후보 → **backing SCE 최대유사도 정밀화**로 clear-pollution **15행 비파괴 excluded**(ORCL↔INCY·ALGN 계열[Ablecom/Amkor/IBASE]·AVY↔PPL·DDOG↔SNDK·LII↔PCAR·WDAY→MU[Remote]·WST→ROP 등), **ambiguous 2행 보호**(`FTNT↔MU`=Micron 정당 백킹 sim100·v2 current 존재→보존). evidence 3343→3328·excluded 14→29. 신규 오염 클래스 0(HALT 없음). **R-2 사각 근본**=SCE `current()` 값만 대조하고 supersession 전 선착지 RC 잔존을 미대조(D-SCE-POLLUTION-CLEANUP 부기).
 - ~~**CS-SECTOR-BACKFILL 미분류 154 sector 백필**~~ → **✅ 완료(2026-08-24, R1 Phase A)**: sector 154→**0**·**148 FMP** `get_company_profile`(shared 래퍼) + **6 SP500** GICS→FMP(sector만). mindmap sector_count 14→13(미분류 소멸). 잔여 no-industry 6(SP500 6·저우선). 콜 accounting=148.
@@ -1451,3 +1498,4 @@
 - 💤 **[EVT-P2] Phase 2 백로그** (상세=앵커 §7): P2-i 컨센서스 리비전×어닝 · P2-ii 어닝 반응 히스토리 · P2-iii 어닝콜 AI 요약 · P2-iv 주간 이벤트 브리핑 · P2-v 이벤트행 뉴스 밀도 배지. 진입 게이트 = **G-EVT-2 프로브**(read-only ~6콜: ①transcript ②M&A latest/search ③어닝 서프라이즈 이력 EP).
 - 💤 **[EVT-CHAIN] Phase 2 관계망 이벤트 타임라인** (상세=앵커 §6): 시드+RelationConfidence 1-hop 이웃 이벤트, Postgres 단독 조인. v1 파라미터(truth_score≥85·confirmed·top-k10·EARNINGS만·부호중립) 확정=D-EVT-CHAIN-THRESH(실데이터 관찰 게이트). 원장 재작업 0(Phase 1 스키마 충족).
 - 💤 **[OPS] FMP 영속 예산 원장 부재** — 현재 in-memory 카운터(`get_rate_limit_status`)뿐, DB 영속 원장 없음. 캘린더 수집 확대 시 일일 소비 추적 재료 부족 → 영속 예산 원장 신설 검토 (백로그).
+- 💤 **[EVT-SESSION] earnings session(BMO/AMC) 원천 부재** — FMP 캘린더 응답에 세션·시각 필드 없음(EVT-IMPL-2 dry-run 실측: date/symbol/eps*/revenue*/lastUpdated만). v1은 `session=UNKNOWN` 표기. 보강 원천 후보: transcript dates·프레스릴리스(이연 표 §9 준용). 트리거 = 세션 표기 요구 발생.

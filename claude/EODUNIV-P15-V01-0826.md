@@ -105,17 +105,32 @@
 | 마이그레이션 | 무발생 | PART A/B/C 전부 `makemigrations --check`=No changes |
 | 브리핑 수치 계약 | 무변 | `_fmt_price` 접두만·숫자 원문 보존·기존 substring 무충돌 |
 
-## 배포 게이트 (미실행 — 사용자 명시 '배포 승인' 대기)
+## 배포 실행 (✅ 완료 2026-08-27 — 사용자 배포 승인 후 CC 대행, 단계별 게이트)
+> ⚠️ **A-3/A-4 예측 정정 (Stage⑴ 게이트가 포착)**: EODSignal 백필**만으로는 9/9 불가**. advisor는 EODSignal-파생 3종을 **IndicatorReading robust-Z**(`score_indicator_from_model`, readings≥5)로 채점 — EODSignal 행을 직접 안 읽음. `source_row_count`(EODSignal 존재) 게이트는 **bounded 지표에만** 적용. 따라서 **`ingest_readings`(EODSignal→IndicatorReading)까지** 해야 충분(일일 refresh도 매일 수행). TLN Stage⑴에서 6/9 발견→이식 후 9/9 확인→사용자 승인으로 IONQ/IREN 동형 진행.
+
+- **⑴ TLN**: EODSignal 백필 286행 → S1/S2 degeneracy 문서대로 확증(발화 0/0·S4=1) → 6/9 발견 → `ingest_readings --days 120`(83 readings×3) → **9/9 확정**.
+- **⑵ IONQ·IREN**: EODSignal 백필 572행(286×2) + 이식(83×3 각) → **각 9/9**. 뉴스 백필(FMP days=120): TLN 29·IONQ 41·IREN 38 저장(108). (경미: FMP `published_at` naive datetime 경고 — 기존 provider 동작·저장 정상.)
+- **⑶ 배포**: `worker_sync.sh`(3트리 9e2e98f3→**418b2a8e** re-detach + celery-worker/beat/daphne kickstart·inspect ping✓·daphne 401✓) + FE prod 빌드(sv-web-runtime/frontend·node v22.19.0·성공) + `com.stockvis.web-frontend` kickstart(:3000 **200**). 런타임 트리에 내 코드 실증(eod_universe_symbols·v1.2·formatPctRule). ET 03:05(beat 창 회피).
+- **✅ 6×9 매트릭스 = 54/54** (TLN·IONQ·IREN 각 9/9 DB 실측 + SP500 3종 기존 9/9).
+- **⑷ 익일 브리핑 TLN "지표 9/9"·통화($) 문면 = 사용자 관찰** (남은 유일 항목).
+- ⚠️ 배포는 현 origin/main(418b2a8e) 전체를 반영 — 타 세션 병합분(SCAN-B2-FE·EVT·INC-P16-1 등) 동반 배포(런타임=origin/main 추적 모델, #67).
+
+<details><summary>구 "배포 게이트 대기" 블록 (해소됨 → 위 실행으로 대체)</summary>
+
+### (원 대기 블록 — RESOLVED @배포 2026-08-27)
 커밋·push·main ff까지만 자율 수행. **아래는 승인 후 병진 절차**:
 1. **PART A-3 소급 재계산 prod 실행** — `python manage.py backfill_eod_signals_universe --symbols IONQ,IREN,TLN --commit` (855행, 첫 실행 좁은 범위 스모크 권장).
 2. **A-5 뉴스 백필** — 커버리지 확인됨·write는 병진(수집 태스크/aggregator).
 3. **FE 빌드 반영**(:3000 prod 번들) + **워커 재시작**(v1.2 프롬프트·유니버스 union 일일 경로 점등).
 4. 배포 후 검수 ⑹: 익일 브리핑에서 TLN "지표 9/9" 문면 확인(사용자 관찰).
 
+</details>
+
 ## DECISIONS 흡수 대상 (관리 세션 반영용)
 - **D-EODUNIV-UNIVERSE**: EOD 시그널 유니버스 = SP500 active ∪ Monitor(scope=stock) — 신규 감시등록 자동 편입, 하드코딩 금지. 단일 소스 `eod_universe_symbols()`.
 - **D-EODUNIV-BACKFILL-SCOPE**: 백필 커맨드는 심볼 스코프 축소로 S1/S2 degeneracy(문서화)·일일 경로는 full union이라 정상.
 - **D-P15-FORMAT-TYPE-BASED**: monitor 숫자 표기 = 타입 기반 단일 유틸(`utils/formatters.ts`) 경유. -0.00·▲0.00·정밀도 병존 금지.
 - **D-BRIEFING-CURRENCY-V1.2**: 브리핑 가격 통화 접두(Stock.currency)·PROMPT_VERSION v1.2·수치 인용 계약 무변.
-- **A-5/A-3 write = 게이트**: 공유 prod DB write는 D-DEV-PROD-SHARED-DB로 병진 수동.
+- **A-5/A-3 write = 게이트**: 공유 prod DB write는 D-DEV-PROD-SHARED-DB로 병진 수동. (본 건은 사용자 배포 승인 후 CC 대행으로 집행 완료.)
+- **★common-bugs 흡수 권고 — advisor 9/9 = IndicatorReading 이식**: EOD 유니버스 확장 + EODSignal 백필만으론 9/9 불가. advisor는 EODSignal-파생 3종을 `score_indicator_from_model`(IndicatorReading robust-Z·readings≥5)로 채점하고 `source_row_count` 게이트는 bounded 지표에만 적용 → `ingest_readings`(EODSignal→IndicatorReading)까지 필수. 검증은 카탈로그 대조가 아니라 실제 `build_context` 경로로. (memory: lesson_advisor_coverage_needs_indicatorreading_ingest)
 

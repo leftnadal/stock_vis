@@ -1592,11 +1592,25 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 1. **전수성 검증**: 목록을 `head -N`으로 자르지 말고 `wc -l` 대조 또는 필터+정렬로 전량 확인. 절단 출력으로 '없음' 단정 금지.
 2. **의미 기반 재탐색**: 이름 패턴 grep이 비면 테이블명·db_table·행 존재(SQL)·소비처 grep 등 **다른 축**으로 교차 확인.
 3. 판정을 후속 결정의 전제로 쓰기 전 **행이 증거**(DB 실행 수·last_run 타임스탬프)로 재확인.
+
+---
+
+## 지시서 파일 의존물 규율 — 배치 경로 + §0 존재 확인 명문화 (2026-08-24, EVT-IMPL-1 회고)
+
+**증상**: 지시서가 외부 전달 파일(설계 앵커 등)에 의존하는데 **정확한 배치 경로가 미명시**되면, 실행 세션이 파일을 못 찾아 §0 게이트에서 HALT. 착수 지연.
+
+**사례**: EVT-IMPL-1 §0-5가 "사용자 전달 파일 event_calendar_design.md"만 언급하고 **어디에 두는지(Desktop? 채팅 첨부?)를 미명시** → 실행 세션이 Desktop·Downloads·scratchpad·git 전수 탐색 후 부재 확인 HALT. 사용자가 채팅에 전문 붙여넣어 재개.
+
+**규율**: 지시서가 의존 파일을 요구할 때 —
+1. **정확한 배치 경로 명시**: "`~/Desktop/<파일명>`에 저장" 또는 "채팅에 전문 첨부" 등 전달 방식을 못박는다.
+2. **§0에 존재 확인 스텝**: 착수 전 `test -f`/헤더 grep으로 존재·버전을 검증하고, 부재 시 HALT 조건으로 명시.
+3. 의존물이 repo 내 산출물이면 커밋 해시·경로를 함께 적어 재현 가능하게 한다.
 ## health WARN 유형 판정 기준 — 환경·동기화 신호성=보고 후 진행 / 신규 발생 WARN·FAIL=명목 HALT (채번 후보, DSS-FLAT-OBS-1 2026-08-24) [harness][process][ops]
+## health WARN 유형 판정 기준 — 환경·동기화 신호성=보고 후 진행 / 신규 발생 WARN·FAIL=명목 HALT (#119, DSS-FLAT-OBS-1 2026-08-24) [harness][process][ops]
 
 health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 미푸시 세션 상태로 인한 sync 계열)은 보고 후 진행 가능. (ii) 시스템 검사에서 신규 발생한 WARN/FAIL은 명목 HALT. STEP 0 보고에 유형 구분을 명시한다. 실증: MGMT-LEDGER-1 STEP 0-2 (08-19).
 
-## 비-mgmt 세션 지시서의 common-bugs #NN 사전 지정 금지 — '채번 후보'로 작성, 번호는 mgmt 배치 실측+1 (채번 후보, DSS-FLAT-OBS-1 2026-08-24) [harness][process][git]
+## 비-mgmt 세션 지시서의 common-bugs #NN 사전 지정 금지 — '채번 후보'로 작성, 번호는 mgmt 배치 실측+1 (#120, DSS-FLAT-OBS-1 2026-08-24) [harness][process][git]
 
 비-mgmt 세션 지시서에 common-bugs #NN 번호 사전 지정 금지. 비-mgmt 세션은 '채번 후보'로 작성하고 번호 부여는 mgmt 배치에서 실측+1로 수행(D-NUMBERING-MGMT-ONLY·훅 가드 준수). 실증: DSS-FLAT-OBS-1 커밋 2 훅 차단 (08-24).
 ## 한 화면이 마운트에 N개 엔드포인트 동시 fetch + RQ 재시도 증폭 + 하드리프레시 반복 → throttle 초과 → 429 캐스케이드 → 게이팅 쿼리 isError → 전면 에러 (채번 대기, INC-P16-1 2026-08-24) `[frontend][infra][performance]`
@@ -1630,3 +1644,66 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 **원인**: 스케일/enum은 **코드의 해석과 DB의 값이 한 계약**인데 무중단 배포는 둘을 원자적으로 못 바꿈. 창의 길이만큼 잘못된 스케일의 read(임계 비교)·write(신규 행 삽입)가 누적.
 
 **해소(창 닫기)**: 값-도메인 마이그레이션은 **worker·beat 정지 → migrate → 재기동** 순으로 창을 물리적으로 닫는다(정지 중 놓친 주기 태스크는 다음 주기 자연 회복=손실 0). 순서: 머지 → 정지 → migrate → 재기동 → (후속 데이터 정리/삭제). **규칙**: 마이그레이션이 "기존 행의 값 의미를 바꾸는가(스케일·enum·단위)"를 물으라 — 그렇다면 무중단 배포 금지, 정지-창 필수. additive nullable(값 의미 불변)만 무중단 안전. cf. D-RC-DEPLOY-WINDOW·common-bugs #41(모듈 상수 변경=재기동 필수).
+---
+
+## 지시서-앵커 drift 규율 — 지시서 작성 시 앵커 하드 요건 체크리스트 대조 필수 (2026-08-27, EVT-IMPL-2 회고)
+
+**증상**: 설계 앵커의 **하드 요건이 구현 지시서에 미배선**되면, 코드는 요건을 flag만 하고 실제 방어를 안 해 무언 데이터 소실이 남는다. dry-run에서야 포착.
+
+**사례**: EVT-IMPL-2가 앵커 §3의 캡 방어 원안("창 이분 재시도")을 STEP 3에 미배선(detect_truncation을 flag-only로 단순화하고 재시도를 미연결) → dry-run 실측에서 earnings chunk2(45일)가 4,000 캡 도달·앞 ~24일 소실 → HALT로 포착 → 보정1(적응형 이분 배선)으로 복원.
+
+**규율**:
+1. **지시서 작성 시 앵커 하드 요건 체크리스트 대조**: 앵커의 "하드 요건·게이트·불변" 항목을 지시서 STEP에 1:1 매핑했는지 확인. flag만 하고 방어 미배선인 항목 색출.
+2. **dry-run은 하드 요건의 실증 게이트**: 계절·규모 의존 요건(밀도·캡 등)은 실측(dry-run)으로만 드러난다 → 실측 전 "안전" 단정 금지.
+3. drift 발견 시 = 신규 결정이 아니라 **앵커 원안 복원**(보정)으로 처리, 기존 커밋 유지하고 이어서 배선.
+## 경계 red 착지 회귀 — 세션 종료 전 health·아키텍처 가드 GREEN 확인은 착지 조건 (#121, BOUNDARY-TRIAGE-1 2026-08-27) [process][harness][ops]
+
+경계 red 착지 회귀 — 세션 종료 전 health·아키텍처 가드 GREEN 확인은 착지 조건. 위반이 불가피하면 KNOWN_VIOLATIONS 동결+소진 등재를 착지 커밋에 동반한다(등록 없는 red 착지 금지). 실증: 7ec24c62(08-26) → BOUNDARY-TRIAGE-1 동결(08-27).
+## "속성만 추가" 슬라이스에서 wrapper `<div>`를 끼우면 행위보존이 깨진다 — 앵커는 대상 컴포넌트 루트에 속성으로, 증명은 diff-modulo-token으로 (채번 후보, GUIDE-S1 2026-08-27) `[frontend][process][harness]`
+
+**증상**: "기존 화면 렌더 결과 불변" 계약의 슬라이스에서 앵커(`data-guide` 등)를 붙이려고 페이지 JSX에 `<div data-guide="..."><Component /></div>` 래퍼를 끼움. 속성만 넣은 것 같지만 **DOM 트리가 바뀐다** — 대상이 grid/flex 직계 자식이면 `lg:col-span-2` 같은 클래스가 래퍼에 먹혀 레이아웃이 조용히 깨지고, `space-y-*` 간격·`:first-child` 계열 셀렉터도 어긋난다. 테스트가 통과해도 시각 회귀는 남는다.
+
+**규율**:
+1. 앵커는 **대상 컴포넌트의 최외곽 요소에 속성으로만** 부여한다(`<div data-guide="x" className="기존값">`). 래퍼 신설 금지. 컴포넌트 파일을 건드리게 되더라도 그쪽이 옳다.
+2. props로 넘기면 안 된다 — `<PortfolioSummary data-guide="..."/>`는 컴포넌트가 스프레드하지 않으면 **DOM에 도달하지 않고 조용히 사라진다**(무소음 실패).
+3. 증명은 눈이 아니라 기계로. 변경 파일마다 `git show <base>:<path>`와 **속성 토큰만 제거한 현재 파일**을 문자열 비교해 전부 일치하면 "삽입 외 변경 0"이 증명된다:
+   ```python
+   strip = re.compile(r'\s*data-guide="[^"]*"')
+   assert strip.sub('', open(f).read()) == git_show(base, f)
+   ```
+   GUIDE-S1 실증: 앵커 편집 12파일 전건 통과.
+4. 데이터의 앵커 목록과 소스의 속성이 따로 움직이면 배지가 **말없이 사라진다** → 양방향 집합 일치 테스트(선언⊆소스, 소스⊆선언, 파일 중복 금지)를 함께 심는다.
+
+## 이 repo의 eslint `react-hooks/set-state-in-effect` — 신규 컴포넌트의 localStorage 읽기·레이아웃 측정은 effect 본문 setState 금지 (채번 후보, GUIDE-S1 2026-08-27) `[frontend]`
+
+**증상**: 하이드레이션 안전 관용구(`useEffect(() => { setX(localStorage.getItem(k)) }, [])`)를 새 컴포넌트에 쓰면 lint 오류. 기존 `Header.tsx`·`MobileNav.tsx`가 같은 패턴으로 **선존 오류를 이미 갖고 있어** 전체 lint 총계만 보면 자기 신규분이 묻힌다.
+
+**해소**:
+- 외부 저장소(localStorage) 구독 → `useSyncExternalStore(subscribe, clientSnapshot, () => 서버기본값)`. 같은 탭 쓰기는 `storage` 이벤트가 안 뜨므로 **모듈 수준 리스너 Set으로 직접 통지**. 서버 스냅샷을 "숨김" 쪽으로 두면 하이드레이션 불일치도 함께 해결된다.
+- 레이아웃 측정(`getBoundingClientRect`) → effect 본문이 아니라 `requestAnimationFrame` 콜백에서 setState. 규칙이 "콜백 안 setState"는 허용한다. 단 테스트는 다음 프레임을 기다려야 하므로 `await waitFor(...)`로 바꾼다.
+- prop 변화에 따른 리셋은 effect가 아니라 **렌더 중 이전값 비교**(`if (last !== cur) { setLast(cur); ... }`) 패턴.
+
+**측정 규율**: 신규분 판정은 총계가 아니라 **기준선 대조**로. `git stash -u` → `npm run lint` → pop 하여 origin/main 총계와 비교(GUIDE-S1: 327 → 327, 순증 0).
+
+## 네비 링크의 href를 바꾸면 active 표시가 컴포넌트마다 갈린다 — 파생 판정식(startsWith(item.href)) vs 하드코딩 prefix (채번 후보, GUIDE-S1C 2026-08-27) `[frontend]`
+
+**증상**: Market Pulse 네비 목적지를 `/market-pulse` → `/market-pulse-v2`로 바꿨더니, **구 경로에 직접 접근했을 때 활성 표시가 두 컴포넌트에서 달라졌다.**
+- `Header.tsx`: 판정식이 `pathname.startsWith(item.href)` — href에서 **파생**되므로 href를 바꾸면 판정도 같이 바뀐다 → 구 경로에서 **비활성**.
+- `MobileNav.tsx`: 판정식이 `active: pathname.startsWith('/market-pulse')` — **하드코딩 prefix**라 href와 무관 → 구 경로에서도 **활성**.
+
+한 줄만 고쳤는데 두 표면의 동작이 갈리고, 새 경로(`/market-pulse-v2`)에서는 둘 다 활성이라 **정상 동선만 보면 발견되지 않는다**. 구 경로 직접 접근이라는 잔여 경로에서만 드러난다.
+
+**규율**:
+1. 네비 항목의 href를 바꿀 때는 **그 항목의 active 판정식이 href 파생인지 하드코딩인지 전 표면에서 확인**한다(Header·MobileNav·사이드바·브레드크럼 등). "링크 한 줄"이 아니다.
+2. 구 경로를 존치(리다이렉트 없이)하는 전환에서는 **구 경로 직접 접근 시의 활성 표시를 테스트로 고정**한다. 통일할지 말지는 은퇴 결정과 함께 — 임시로 코드를 맞춰 두면 은퇴 시 되돌릴 근거가 사라진다.
+3. 활성 여부 단언은 **클래스 토큰 일치**로. `className.toContain('text-blue-600')`은 `hover:text-blue-600`에 **오탐**한다 → `className.split(/\s+/).includes('text-blue-600')`.
+
+**부기(같은 세션 실측)**: 계약 테스트에 임의 상한을 박으면 나중에 **승인된 콘텐츠를 자기 테스트가 막는다**. GUIDE-S1이 `regions 3~5개`로 둔 상한이 S1C에서 승인된 7영역 문구를 red로 만들었다 — 상한을 7로 완화하고 "S1의 5는 임의값"임을 주석에 남겼다. 계약 테스트의 수치 경계는 **근거가 있을 때만** 박을 것.
+
+## daphne access log(stdout·블록버퍼) vs error log(stderr·라인버퍼) desync → 로그 실시간 판독 시 "전부 200" 착시 (채번 대기, INC-P16-2/CLOSE 2026-08-27) `[infra][observability][ops]`
+
+**증상**: 09:13 인시던트 로그 판독 시 `web.log`(access)는 09:13:20에서 끊겨 market-pulse 요청이 "전부 200·429 0건"으로 보였으나, `web-error.log`(Django logger)에는 같은 시각 09:13:21~23에 429("Too Many Requests") 18건이 존재. 두 소스가 429 경계에서 상반된 그림 → 잘못된 1차 판정 위험.
+
+**원인**: `com.stockvis.web.plist`가 daphne의 stdout=`web.log`(access), stderr=`web-error.log`로 분리. **비-TTY에서 Python stdout은 블록 버퍼링** → access 라인이 청크 단위로 밀려, 읽는 순간 버퍼 미flush분(09:13:21~)이 파일에 아직 안 보임. stderr는 라인/무버퍼라 즉시 기록. = 데이터 유실이 아닌 **버퍼 desync**.
+
+**해소**: `scripts/daphne-web.sh`에 `export PYTHONUNBUFFERED=1`(exec 직전) → stdout 즉시 flush. 랜딩 후 재기동 필요(#41). **판독 규칙**: 인시던트 로그 대조 시 access·error 두 소스를 **항상 교차** 확인(한 소스의 절단을 다른 소스가 메움). cf. INC-P16-2 부수건.
