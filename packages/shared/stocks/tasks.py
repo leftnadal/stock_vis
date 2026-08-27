@@ -1,3 +1,4 @@
+import datetime as _dt
 import os
 import time
 
@@ -807,3 +808,250 @@ def bulk_generate_korean_overviews(self, batch_size: int = 50, force: bool = Fal
     except Exception as exc:
         logger.exception(f"bulk_generate_korean_overviews failed: {exc}")
         raise self.retry(exc=exc)
+
+
+# ============================================================
+# EVT 트랙 — 이벤트 캘린더 수집 (설계 앵커 docs/design/event_calendar_design.md §3)
+# 성분 4개(earnings 선행 45×2 청킹 / dividends 90 / splits 90 / earnings 트레일링 10),
+# 성분별 try/except 격리. dry_run=True: fetch·정규화·would-be 카운터만(DB 쓰기 0).
+# D-EVT-SCOPE-U: 전량 저장(유니버스 필터 없음) → apps 모델 무의존(shared 경계 유지).
+# ============================================================
+
+# 청킹 규약(§3-2): earnings 선행 90일 = 45일 2청크. 갭·중복 없음.
+_EARNINGS_CHUNK_DAYS = 45
+_FORWARD_DAYS = 90
+_TRAILING_DAYS = 10
+
+
+def _chunk_windows(d0, total_days, chunk_days):
+    """[d0, d0+total_days) 를 chunk_days 단위로 분할. 갭·중복 없는 (from, to) 날짜쌍 목록.
+
+    예: d0, total=90, chunk=45 → [(d0, d0+44), (d0+45, d0+89)]. to는 inclusive.
+    """
+    windows = []
+    offset = 0
+    while offset < total_days:
+        w_from = d0 + _dt.timedelta(days=offset)
+        span = min(chunk_days, total_days - offset)
+        w_to = d0 + _dt.timedelta(days=offset + span - 1)
+        windows.append((w_from, w_to))
+        offset += span
+    return windows
+
+
+def _normalize_earnings(row):
+    """FMP earnings-calendar 행 → CalendarEvent 필드. session 필드 없음(SURVEY-0) → UNKNOWN."""
+    from .models import CalendarEvent
+
+    d = _parse_fmp_date(row.get("date"))
+    if d is None or not row.get("symbol"):
+        return None
+    eps_actual = row.get("epsActual")
+    return {
+        "event_type": CalendarEvent.EventType.EARNINGS,
+        "symbol": str(row["symbol"]).upper(),
+        "event_date": d,
+        "defaults": {
+            "eps_estimated": row.get("epsEstimated"),
+            "eps_actual": eps_actual,
+            "revenue_estimated": row.get("revenueEstimated"),
+            "revenue_actual": row.get("revenueActual"),
+            "session": CalendarEvent.Session.UNKNOWN,  # 응답에 세션/시각 필드 부재
+            "source": "fmp",
+        },
+        "fmp_last_updated": row.get("lastUpdated"),
+        "has_actual": eps_actual is not None,
+    }
+
+
+def _normalize_dividend(row):
+    from .models import CalendarEvent
+
+    d = _parse_fmp_date(row.get("date"))
+    if d is None or not row.get("symbol"):
+        return None
+    return {
+        "event_type": CalendarEvent.EventType.DIVIDEND,
+        "symbol": str(row["symbol"]).upper(),
+        "event_date": d,  # ex-date
+        "defaults": {
+            "dividend_amount": row.get("dividend"),
+            "payment_date": _parse_fmp_date(row.get("paymentDate")),
+            "record_date": _parse_fmp_date(row.get("recordDate")),
+            "frequency": row.get("frequency") or "",
+            "source": "fmp",
+        },
+        "fmp_last_updated": None,
+        "has_actual": False,
+    }
+
+
+def _normalize_split(row):
+    from .models import CalendarEvent
+
+    d = _parse_fmp_date(row.get("date"))
+    if d is None or not row.get("symbol"):
+        return None
+    return {
+        "event_type": CalendarEvent.EventType.SPLIT,
+        "symbol": str(row["symbol"]).upper(),
+        "event_date": d,
+        "defaults": {
+            "split_numerator": row.get("numerator"),
+            "split_denominator": row.get("denominator"),
+            "source": "fmp",
+        },
+        "fmp_last_updated": None,
+        "has_actual": False,
+    }
+
+
+def _parse_fmp_date(value):
+    if not value:
+        return None
+    try:
+        return _dt.date.fromisoformat(str(value)[:10])
+    except (ValueError, TypeError):
+        return None
+
+
+def _persist_event(norm, dry_run):
+    """정규화 1행 → 원장 upsert(비-dry_run). 반환: 'created'|'updated'|'occurred'|'would_write'.
+
+    dry_run이면 DB 무접촉 — 'would_write'만 반환.
+    """
+    from .models import CalendarEvent
+
+    if dry_run:
+        return "would_write"
+
+    defaults = dict(norm["defaults"])
+    if norm.get("fmp_last_updated"):
+        defaults["fmp_last_updated"] = _parse_fmp_datetime(norm["fmp_last_updated"])
+
+    obj, created = CalendarEvent.record_observation(
+        event_type=norm["event_type"],
+        symbol=norm["symbol"],
+        event_date=norm["event_date"],
+        defaults=defaults,
+    )
+    # eps_actual null→값 전이 시 status=occurred (downgrade 없음).
+    if (
+        norm["event_type"] == CalendarEvent.EventType.EARNINGS
+        and norm.get("has_actual")
+        and obj.status != CalendarEvent.Status.OCCURRED
+    ):
+        obj.status = CalendarEvent.Status.OCCURRED
+        obj.save(update_fields=["status"])
+        return "occurred"
+    return "created" if created else "updated"
+
+
+def _parse_fmp_datetime(value):
+    from django.utils.dateparse import parse_datetime
+
+    if not value:
+        return None
+    try:
+        return parse_datetime(str(value)) or None
+    except (ValueError, TypeError):
+        return None
+
+
+@shared_task(bind=True, max_retries=3, soft_time_limit=600, time_limit=660)
+def collect_calendar_events(self, as_of=None, dry_run=False):
+    """이벤트 캘린더 수집 (EVT 트랙). 성분별 격리 + 캡 감지 + 조건부 stale 스윕.
+
+    as_of: ET 기준 기준일 문자열(YYYY-MM-DD). 기본 = UTC 오늘(기계 시계, #89).
+    dry_run: True면 fetch·정규화·would-be 카운터까지, DB 쓰기 0.
+    반환: 성분별 {fetched, written, truncated, ok} + stale_swept 요약 dict.
+    """
+    from django.conf import settings
+    from django.utils import timezone
+
+    from packages.shared.api_request.providers.fmp.calendar_cap import detect_truncation
+    from packages.shared.api_request.providers.fmp.client import FMPClient
+    from .models import CalendarEvent
+
+    run_start = timezone.now()  # UTC 앵커(#89). 재관측 last_seen_at >= run_start.
+    d0 = _parse_fmp_date(as_of) or run_start.date()
+
+    client = FMPClient(api_key=settings.FMP_API_KEY)
+    result = {"as_of": d0.isoformat(), "dry_run": dry_run, "components": {}}
+    # 성분별 fetch 성공 여부 — stale 스윕 가드용(유형 단위).
+    fetch_ok = {
+        CalendarEvent.EventType.EARNINGS: True,
+        CalendarEvent.EventType.DIVIDEND: True,
+        CalendarEvent.EventType.SPLIT: True,
+    }
+
+    def _run_component(name, fetcher, normalizer, etype, w_from, w_to):
+        rec = {"fetched": 0, "written": 0, "truncated": False, "ok": True}
+        try:
+            rows = fetcher(w_from.isoformat(), w_to.isoformat())
+            rec["fetched"] = len(rows)
+            rec["truncated"] = detect_truncation(w_from.isoformat(), w_to.isoformat(), rows)
+            for row in rows:
+                norm = normalizer(row)
+                if norm is None:
+                    continue
+                _persist_event(norm, dry_run)
+                rec["written"] += 1
+        except Exception as exc:  # 성분 격리
+            rec["ok"] = False
+            fetch_ok[etype] = False
+            logger.warning("collect_calendar_events 성분 실패 [%s]: %s", name, exc)
+        result["components"][name] = rec
+        return rec
+
+    # 성분 1·2: earnings 선행 45×2 청킹
+    fwd_windows = _chunk_windows(d0, _FORWARD_DAYS, _EARNINGS_CHUNK_DAYS)
+    for i, (wf, wt) in enumerate(fwd_windows, start=1):
+        r = _run_component(
+            f"earnings_fwd_{i}", client.get_earnings_calendar, _normalize_earnings,
+            CalendarEvent.EventType.EARNINGS, wf, wt,
+        )
+        if not r["ok"]:
+            fetch_ok[CalendarEvent.EventType.EARNINGS] = False
+
+    # 성분 3: dividends 90일 단일
+    _run_component(
+        "dividends", client.get_dividends_calendar, _normalize_dividend,
+        CalendarEvent.EventType.DIVIDEND, d0, d0 + _dt.timedelta(days=_FORWARD_DAYS - 1),
+    )
+    # 성분 4: splits 90일 단일
+    _run_component(
+        "splits", client.get_splits_calendar, _normalize_split,
+        CalendarEvent.EventType.SPLIT, d0, d0 + _dt.timedelta(days=_FORWARD_DAYS - 1),
+    )
+    # 성분 5: earnings 트레일링 10일 (actual 채움 → occurred 전이)
+    _run_component(
+        "earnings_trailing", client.get_earnings_calendar, _normalize_earnings,
+        CalendarEvent.EventType.EARNINGS, d0 - _dt.timedelta(days=_TRAILING_DAYS), d0,
+    )
+
+    # stale 스윕(비-dry_run): 선행 창 scheduled 중 금회 미관측 → stale.
+    # 가드(하드): 해당 유형 fetch 성공 시에만 스윕(API 실패발 대량 오염 차단).
+    swept = {}
+    if not dry_run:
+        fwd_end = d0 + _dt.timedelta(days=_FORWARD_DAYS - 1)
+        for etype in (
+            CalendarEvent.EventType.EARNINGS,
+            CalendarEvent.EventType.DIVIDEND,
+            CalendarEvent.EventType.SPLIT,
+        ):
+            if not fetch_ok[etype]:
+                swept[etype] = "skipped(fetch_failed)"
+                continue
+            n = CalendarEvent.objects.filter(
+                event_type=etype,
+                status=CalendarEvent.Status.SCHEDULED,
+                event_date__gte=d0,
+                event_date__lte=fwd_end,
+                last_seen_at__lt=run_start,
+            ).update(status=CalendarEvent.Status.STALE)
+            swept[etype] = n
+    result["stale_swept"] = swept
+
+    logger.info("collect_calendar_events done: %s", result)
+    return result
