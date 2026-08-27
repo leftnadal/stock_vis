@@ -179,6 +179,69 @@ def _density_fetcher(density):
     return f
 
 
+@pytest.mark.django_db
+class TestRobustness:
+    def test_overflow_eps_nulled_but_row_kept(self, monkeypatch):
+        """FMP eps 이상치(오버플로) → 필드 null, 행은 유지(사실 보존). nulled 카운터 반영."""
+        _patch_client(monkeypatch, earnings=[_earn("2026-09-15", "ADTX", eps_actual=None)])
+        # eps_estimated를 필드 용량 초과값으로 주입
+        rows = [{"date": "2026-09-15", "symbol": "ADTX",
+                 "epsEstimated": -224553600000, "epsActual": None,
+                 "revenueEstimated": "1000000", "revenueActual": None, "lastUpdated": "2026-09-01"}]
+        _patch_client(monkeypatch, earnings=rows)
+        res = tasks_mod.collect_calendar_events(as_of=AS_OF)
+        obj = CalendarEvent.objects.get(event_type="EARNINGS", symbol="ADTX")
+        assert obj.eps_estimated is None          # 오버플로 필드 null
+        assert obj.status == "scheduled"          # 행 유지
+        # nulled 카운터가 어느 earnings 성분에 잡힘
+        nulled = sum(c["nulled"] for c in res["components"].values())
+        assert nulled >= 1
+
+    def test_row_exception_skipped_component_continues(self, monkeypatch):
+        """행 persist 예외 → 그 행만 skip, 성분은 나머지 행 계속."""
+        _patch_client(monkeypatch, earnings=[_earn("2026-09-15", "GOOD"), _earn("2026-09-16", "BAD")])
+        orig = tasks_mod._persist_event
+
+        def flaky(norm, dry_run):
+            if norm["symbol"] == "BAD":
+                raise RuntimeError("boom row")
+            return orig(norm, dry_run)
+        monkeypatch.setattr(tasks_mod, "_persist_event", flaky)
+        res = tasks_mod.collect_calendar_events(as_of=AS_OF)
+        assert CalendarEvent.objects.filter(symbol="GOOD").exists()   # 정상 행 persist
+        assert not CalendarEvent.objects.filter(symbol="BAD").exists()  # 예외 행 skip
+        skipped = sum(c["skipped"] for c in res["components"].values())
+        assert skipped >= 1
+
+    def test_skipped_gt0_skips_stale_sweep(self, monkeypatch):
+        """유형에 skip 발생 → 그 유형 stale 스윕 생략(미persist 행 오탐 방지)."""
+        old = CalendarEvent.objects.create(
+            event_type="EARNINGS", symbol="OLD", event_date=dt.date(2026, 9, 10), status="scheduled")
+        CalendarEvent.objects.filter(pk=old.pk).update(
+            last_seen_at=dt.datetime(2020, 1, 1, tzinfo=dt.timezone.utc))
+        _patch_client(monkeypatch, earnings=[_earn("2026-09-15", "BAD")])
+        orig = tasks_mod._persist_event
+        monkeypatch.setattr(tasks_mod, "_persist_event",
+                            lambda n, d: (_ for _ in ()).throw(RuntimeError("x")) if n["symbol"] == "BAD" else orig(n, d))
+        res = tasks_mod.collect_calendar_events(as_of=AS_OF)
+        old.refresh_from_db()
+        assert old.status == "scheduled"  # 스윕 생략 → 미오염
+        assert "rows_skipped" in str(res["stale_swept"]["EARNINGS"])
+
+    def test_anomaly_threshold_warning(self, monkeypatch, caplog):
+        """nulled+skipped > max(50, 1%) → anomaly 플래그 + 경고."""
+        import logging
+        bad = [{"date": "2026-09-15", "symbol": f"OV{i}",
+                "epsEstimated": 10 ** 12, "epsActual": None,
+                "revenueEstimated": None, "revenueActual": None, "lastUpdated": "2026-09-01"}
+               for i in range(60)]
+        _patch_client(monkeypatch, earnings=bad)
+        with caplog.at_level(logging.WARNING):
+            res = tasks_mod.collect_calendar_events(as_of=AS_OF)
+        assert any(c["anomaly"] for c in res["components"].values())
+        assert any("이상 임계 초과" in r.message for r in caplog.records)
+
+
 class TestBisect:
     def test_recurses_and_merges_full_coverage(self):
         """넓은 창=캡 도달 → 이분 재귀 → 서브창 병합이 요청 span 전량 커버(소실 0)."""
