@@ -256,7 +256,7 @@
 | RC-DECAY-EVIDENCE-TS | 감쇠 근본 해소 — `evidence_last_observed_at`(관측 시각) 필드 분리해 감쇠 시계를 auto_now("save 시각")에서 독립. RC-A-1 PART1은 타입 게이트로 오발만 차단(증상), 근본은 시계 의미 분리 | @backend | RC-A-1 배포 후 | 🆕 **후속 후보 등재(2026-08-27)** | D-RC-DECAY-SEMANTIC. auto_now 리셋을 마이그레이션이 밀면 재발 가능 → 관측 시각 별도 필드가 정본. 마이그 동반(additive nullable) |
 | RC-SURVEY-0 | RelationConfidence 해자 실측(read-only) | 읽기 전용 | — | ✅ **CLOSE(2026-08-27, RC-A-1로 소진)** | RC-A-0 리콘으로 흡수·처분 완료. 약점 TRUTHSCORE-NORM→D-RC-SCALE, PRICE_CORRELATED 잉여→D-RC-PC-DISPOSE, 감쇠→D-RC-DECAY-SEMANTIC 해소 |
 | RC-A-0 | 점수 눈금 위생 설계 실측(read-only) | 읽기 전용 | RC-SURVEY-0 | ✅ **CLOSE(2026-08-27)** | 리콘 완료(scratchpad `RC_A0_RECON_REPORT.md`). 디렉터 회부 3건 → RC-A-1 집행 |
-| RC-A-1 | 점수 눈금 위생 실행(write) | @backend/chainsight | RC-A-0 | ✅ **로컬 완료·병진 배포 대기(2026-08-27)** | D-RC-DECAY-SEMANTIC·D-RC-SCALE·D-RC-PC-DISPOSE. 커밋 `a396e748`·`23318e25`·`4efdc4c9`. ⚠ **폭탄(09-19 감쇠 오발 2,054행) 해제=배포 후**. 병진=main 머지+migrate 0033+worker 재기동+PC dispose --apply+Neo4j Cypher 정리 |
+| RC-A-1 | 점수 눈금 위생 실행(write) | @backend/chainsight | RC-A-0 | ✅ **로컬 완료·병진 배포 대기(2026-08-27)** | D-RC-DECAY-SEMANTIC·D-RC-SCALE·D-RC-PC-DISPOSE. 커밋 `a396e748`·`23318e25`·`4efdc4c9`·`0d414e62`·A-0보고서 `90558ef9`. ⚠ **폭탄(09-19 감쇠 오발 2,054행) 해제=배포 후**. **병진 순서(D-RC-DEPLOY-WINDOW·혼재창 닫기)**: ①머지 ②worker·beat 정지 ③migrate 0033 ④worker·beat 재기동 ⑤dispose --apply ⑥Neo4j Cypher ⑦after-snapshot(CC) ⑧09-19 beat 확인. 데드라인 09-12 주초 권고·절대 09-19 |
 
 ---
 
