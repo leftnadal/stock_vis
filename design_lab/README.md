@@ -43,6 +43,7 @@ The Design Lab exists to study and improve how Stock_vis supports better investm
 - [`Brief`](02_workstreams/002_product_surface_ia/brief.md) · [한국어](02_workstreams/002_product_surface_ia/brief_ko.md)
 - [`Batch 01 — Surface Responsibility & IA Families`](02_workstreams/002_product_surface_ia/batch_01_surface_architecture.md) · [한국어](02_workstreams/002_product_surface_ia/batch_01_surface_architecture_ko.md)
 - [`Batch 02 — Cross-Domain Analogical Benchmark & Idea Pool`](02_workstreams/002_product_surface_ia/batch_02_cross_domain_idea_pool.md) · [한국어](02_workstreams/002_product_surface_ia/batch_02_cross_domain_idea_pool_ko.md)
+- [`Batch 03 — Cross-Domain Architecture Generation & Stress Test`](02_workstreams/002_product_surface_ia/batch_03_cross_domain_architecture_generation.md) · [한국어](02_workstreams/002_product_surface_ia/batch_03_cross_domain_architecture_generation_ko.md)
 
 Workstream material and prototype artifacts are Working by default and do not become approved Design Knowledge or product architecture automatically.
 
