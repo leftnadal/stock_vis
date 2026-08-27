@@ -1619,3 +1619,16 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 **원인**: 페이지 마운트 시 **동시 4엔드포인트**(overview·regime/stress·regime/analog·playbook) fetch. 각 쿼리는 TanStack Query 전역 `retry: 2`로 실패 시 최대 3배 요청 증폭. 하드리프레시를 빠르게 반복하면 분당 요청이 `market_pulse_user` throttle(당시 60/min)을 초과 → 429. **429에도 RQ가 재시도**하면 rate window 안에서 예산을 더 태워 429가 눈덩이(캐스케이드). 게이팅 쿼리(useOverview)가 isError로 떨어지면 page.tsx가 **전면 에러**로 게이팅. 1.6-S1이 4번째 엔드포인트(playbook)를 추가해 footprint를 3→4로 올린 것이 촉진자(근인은 선존 fragility).
 
 **해소(A+B+C 3중)**: **A** 전역 retry를 함수형(`shouldRetryQuery`)으로 — 429는 즉시 무재시도(그 외 실패는 기존 최대 2회 보존). 429에 재시도 안 함이 정답(백오프해도 window 내 재소비). **B** fold 아래 카드(PlaybookCardContainer)는 `useInViewOnce`로 뷰포트 진입 시점까지 fetch 지연 → 초기 동시 요청 감소(렌더 불변, fetch 시점만 늦춤). **C** `market_pulse_user` 60→120/min(예산 2배 보험). **재발 방지 규칙**: 신규 홈/랜딩 엔드포인트 추가 시 = ⑴ lazy(뷰포트 진입 fetch) 우선 검토 or ⑵ throttle 예산 재점검 필수. 단건 curl은 이 유형을 구조적으로 못 잡음 → 브라우저 경로 스모크(SMOKE-BROWSER-PATH) 필요. DRF ScopedRateThrottle은 429에 Retry-After 세팅 → 향후 Retry-After 존중 재시도로 고도화 여지. cf. common-bugs #23(FMP 402)·#41(모듈 상수 변경=재기동 필수).
+
+---
+
+## 지시서-앵커 drift 규율 — 지시서 작성 시 앵커 하드 요건 체크리스트 대조 필수 (2026-08-27, EVT-IMPL-2 회고)
+
+**증상**: 설계 앵커의 **하드 요건이 구현 지시서에 미배선**되면, 코드는 요건을 flag만 하고 실제 방어를 안 해 무언 데이터 소실이 남는다. dry-run에서야 포착.
+
+**사례**: EVT-IMPL-2가 앵커 §3의 캡 방어 원안("창 이분 재시도")을 STEP 3에 미배선(detect_truncation을 flag-only로 단순화하고 재시도를 미연결) → dry-run 실측에서 earnings chunk2(45일)가 4,000 캡 도달·앞 ~24일 소실 → HALT로 포착 → 보정1(적응형 이분 배선)으로 복원.
+
+**규율**:
+1. **지시서 작성 시 앵커 하드 요건 체크리스트 대조**: 앵커의 "하드 요건·게이트·불변" 항목을 지시서 STEP에 1:1 매핑했는지 확인. flag만 하고 방어 미배선인 항목 색출.
+2. **dry-run은 하드 요건의 실증 게이트**: 계절·규모 의존 요건(밀도·캡 등)은 실측(dry-run)으로만 드러난다 → 실측 전 "안전" 단정 금지.
+3. drift 발견 시 = 신규 결정이 아니라 **앵커 원안 복원**(보정)으로 처리, 기존 커밋 유지하고 이어서 배선.

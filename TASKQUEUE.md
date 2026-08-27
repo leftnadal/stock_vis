@@ -1446,3 +1446,4 @@
 - 💤 **[EVT-P2] Phase 2 백로그** (상세=앵커 §7): P2-i 컨센서스 리비전×어닝 · P2-ii 어닝 반응 히스토리 · P2-iii 어닝콜 AI 요약 · P2-iv 주간 이벤트 브리핑 · P2-v 이벤트행 뉴스 밀도 배지. 진입 게이트 = **G-EVT-2 프로브**(read-only ~6콜: ①transcript ②M&A latest/search ③어닝 서프라이즈 이력 EP).
 - 💤 **[EVT-CHAIN] Phase 2 관계망 이벤트 타임라인** (상세=앵커 §6): 시드+RelationConfidence 1-hop 이웃 이벤트, Postgres 단독 조인. v1 파라미터(truth_score≥85·confirmed·top-k10·EARNINGS만·부호중립) 확정=D-EVT-CHAIN-THRESH(실데이터 관찰 게이트). 원장 재작업 0(Phase 1 스키마 충족).
 - 💤 **[OPS] FMP 영속 예산 원장 부재** — 현재 in-memory 카운터(`get_rate_limit_status`)뿐, DB 영속 원장 없음. 캘린더 수집 확대 시 일일 소비 추적 재료 부족 → 영속 예산 원장 신설 검토 (백로그).
+- 💤 **[EVT-SESSION] earnings session(BMO/AMC) 원천 부재** — FMP 캘린더 응답에 세션·시각 필드 없음(EVT-IMPL-2 dry-run 실측: date/symbol/eps*/revenue*/lastUpdated만). v1은 `session=UNKNOWN` 표기. 보강 원천 후보: transcript dates·프레스릴리스(이연 표 §9 준용). 트리거 = 세션 표기 요구 발생.
