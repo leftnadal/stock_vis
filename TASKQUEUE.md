@@ -5,6 +5,11 @@
 
 ---
 
+## DSS-QUADRANT — 섹터 사분면 화면 (착수, QUAD-IMPL-1 2026-08-27) [dashboard][dss][chainsight]
+- 확정 결정 5건(DECISIONS DSS-QUADRANT). Heat×수요 breadth 2축, ②·④ 하이라이트, 전주 화살표(flat≥90% 숨김), 미산출 하단 목록.
+- Slice 1(BE read-only API `/api/v1/chainsight/theme-heat/quadrant/`) → Slice 2(공용 컴포넌트 `components/charts/SectorQuadrant`) → Slice 3(app/page.tsx 최상단 삽입).
+- 상태: **0게이트 착지·Slice 1~3 연속 집행 중**. 최초 STEP 0 경계 FAIL은 BOUNDARY-TRIAGE-1 동결로 해소(green).
+
 ## BOUNDARY-BURNDOWN-EOD — shared 경계 동결 #6 소진 (등재, BOUNDARY-TRIAGE-1 2026-08-27) [ops][boundary][harness]
 - **동결 1건**: `packages/shared/stocks/services/eod_signal_calculator.py:50` → `apps.monitor.models.monitor` (7ec24c62 EODUNIV-P15-V01, 08-26 유입). BOUNDARY-TRIAGE-1이 KNOWN_VIOLATIONS 양쪽 동결(green 회복).
 - **소진 재료(0-4)**: 위반 함수 = `eod_universe_symbols()` — `Monitor(scope=stock).target_ref`를 union. 호출자 전부 packages/shared 내부(`backfill_eod_signals_universe`·`eod_pipeline:297,570`). `apps.monitor.Monitor` = user-data 모델(scope/target_ref).

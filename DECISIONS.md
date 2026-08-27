@@ -8,6 +8,20 @@
 
 ---
 
+## [2026-08-27] DSS-QUADRANT 확정 결정 5건 — 섹터 사분면 화면 (QUAD-IMPL-1 0게이트) [dashboard][dss][chainsight]
+
+> 출처: 지시서 QUAD-IMPL-1. 문안 변경 금지(디렉터 확정). 구현 = Slice 1~3.
+
+- **D-DSS-QUAD-PLACE**: 대시보드 첫 화면 최상단 섹션(네비 무수정).
+- **D-DSS-QUAD-TEMPORAL**: 점 + 전주 화살표. 화살표 양끝 = 양 축 모두 주간 스냅샷 쌍(전주 금↔당주 금). 어느 한쪽 anchor의 flat_ratio ≥ 90%면 화살표 숨김+각주(DSS-FLAT-OBS-1 §2 기계 기준 재사용 — 신규 파라미터 0).
+- **D-DSS-QUAD-ENCODE**: ②·④ 구역 하이라이트. 경계 x = 당일 heat 비null 값의 중앙값, y = breadth 0. 임계 파라미터 0.
+- **D-DSS-TAU 종결**: status 라벨·τ=0.10 화면 미소비, DB 원장 동결(가역). dead zone 도입 트리거 = 경계 인접 주간 깜빡임 관찰. 3라벨·트레일 재검토 트리거 = 클린 6쌍 성숙.
+- **커버리지 방침**: heat 미산출 섹터는 차트 밖 하단 목록.
+
+**Why**: 사분면은 Heat(관심)·수요 breadth(전망 방향) 2축 배치로 섹터 상대 위치를 드러낸다. 임계·파라미터 0 원칙(경계=중앙값·breadth 0·suppression=§2 재사용)으로 신규 튜닝 노브 없이 기존 원장을 그대로 투영 — 조기 과적합 회피. τ·status는 화면 미소비(원장 가역 동결)로 라벨 계단화 리스크 차단, 성숙(클린 6쌍) 후 재검토. 가이드 JSON 2문항 초안은 QUAD-IMPL-1.md 부기(가이드 렌더러 트랙 첫 소비 예약).
+
+**How to apply**: 정본 지시서 = docs/instructions/QUAD-IMPL-1.md. 삽입점 = `app/page.tsx`(root `/`) 최상단. suppression 판정 = 서버측(§2 flat_ratio≥90%). heat 데이터 = ThemeHeatScore(apps.chain_sight), 수요 = ThemeDemandScore/SymbolDemandSignal. cf. [[DSS-FLAT-OBS-1]] §2.
+
 ## [2026-08-27] D-BOUNDARY-TRIAGE-FREEZE — shared 경계 회귀 #6 동결 격리 [ops][boundary][harness]
 
 **결정**: `packages/shared/stocks/services/eod_signal_calculator.py → apps.monitor.models.monitor` 경계 위반(7ec24c62, EODUNIV-P15-V01 08-26 유입)을 **KNOWN_VIOLATIONS 동결로 격리**한다 — test SSOT(`tests/architecture/test_shared_boundary.py`) + `scripts/health_check.py` 양쪽 동시. 위반 코드 자체 수정은 범위 밖 — 소진 트랙 `BOUNDARY-BURNDOWN-EOD`로 예약(방향 결정=디렉터).
