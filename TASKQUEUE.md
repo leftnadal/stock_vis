@@ -251,8 +251,12 @@
 | Q19-REDUNDANT-SIGNAL | 잉여 신호층 정리: PRICE_CORRELATED 3,784쌍 **전부** PEER_OF와 겹침(구조 엣지 0 기여) → truth_score 정규화/가중 재설계에 연결 | @backend | 정규화 트랙 | **todo** | ⑱ 검산·⑲ S3 weight=max(truth,market) 확인. 정규화 트랙과 얽힘(단독 착수 금지) |
 | Q19-SD-LINKPRED | S-D 링크예측 재도전 — 시간분할 검증(과거→예측→미래 확인) | @backend | RPS 궤적 견고화 + discovery 재가동 | **예약(트리거 대기)** | ⑱ 기각(궤적 깊이 부족). 트리거: RPS 주간 궤적 ~3-4개월 축적 **또는** discovery 재가동(Q19-DISCOVERY-REACT) |
 | Q19-A3-SECTOR-MOCKUP | A3 섹터 그래프(Sector 모드 Neo4j) 존치/전환 판단 → 전체 조망 목업 트랙(⑳)으로 회부 | @UI-UX-designer | ⑳ 목업 | **회부** | ⑱ A3 카드: Sector 모드 Neo4j 잔존, PG 전환 비용 중. 살릴지 = 병진 가치판단 |
-| Q19-DISCOVERY-REACT | discovery 해자 폭 재성장 — 신규 RC 유입 재가동(고정 S&P500 유니버스 포화 극복) | @backend | 별도 결정 | **todo(조치 보류)** | ⑲ S4: 태스크 전부 enabled·최근 실행이나 **신규 0(분류 b)**. co-mention 입력 04-25~07-08 단절 후 broad 재개(07-08)·유니버스 포화. 재성장=유니버스 확장/신규 소스(대) |
-| Q19-WIDTH-STAGNATION | 해자 폭 정체 실측 — RelationPairSnapshot 매 period **9562행 고정** | @backend | Q19-DISCOVERY-REACT 연계 | **🔍 정찰 등재(2026-08-10)** | SUNMON-RECON 부수 발견: 궤적 **깊이는 건강**(07-01~08-09 매일 9562·실패0·#28 해소)이나 **폭=신규 페어 유입 0**(9562 고정). 근원=유니버스 포화·co-mention 입력 04-25~07-08 단절. 저장=PG `chainsight_relation_pair_snapshot`(Neo4j 비의존). 조치=Q19-DISCOVERY-REACT(유니버스 확장/신규 소스)와 통합 결정 |
+| Q19-DISCOVERY-REACT | discovery 해자 폭 재성장 — 신규 RC 유입 재가동 | @backend | 별도 결정 | **격하: 유니버스 확장 선택 문제(2026-08-27, RC-A-1)** | ⑲ S4 판정 "유니버스 포화·신규 0"는 **RC-A-0/A-1 실측 반증** — 08-10 co-mention 신규생성 재점화(1,679), 이후 매일 56~226, RC 13.7k→17.3k(08-27). 유입 정지는 경로 차단 아니라 7월 뉴스 유니버스/추출 공백(08-10 재개). ⇒ "고장" 아님, 유니버스 확장은 **선택**. cf. DECISIONS [2026-08-27] RC-A-1 |
+| Q19-WIDTH-STAGNATION | 해자 폭 정체 실측 — RelationPairSnapshot 매 period 9562행 고정 | @backend | Q19-DISCOVERY-REACT 연계 | **전제 반증(2026-08-27, RC-A-1)** | ~~9562 고정~~ 반증: RPS 555,399행(08-27)·매일 궤적 성장·신규 페어 유입 재개(08-10~). "폭 정체"는 7월 공백 스냅샷의 일시 현상. 저장=PG `chainsight_relation_pair_snapshot`(Neo4j 비의존). cf. Q19-DISCOVERY-REACT 격하 |
+| RC-DECAY-EVIDENCE-TS | 감쇠 근본 해소 — `evidence_last_observed_at`(관측 시각) 필드 분리해 감쇠 시계를 auto_now("save 시각")에서 독립. RC-A-1 PART1은 타입 게이트로 오발만 차단(증상), 근본은 시계 의미 분리 | @backend | RC-A-1 배포 후 | 🆕 **후속 후보 등재(2026-08-27)** | D-RC-DECAY-SEMANTIC. auto_now 리셋을 마이그레이션이 밀면 재발 가능 → 관측 시각 별도 필드가 정본. 마이그 동반(additive nullable) |
+| RC-SURVEY-0 | RelationConfidence 해자 실측(read-only) | 읽기 전용 | — | ✅ **CLOSE(2026-08-27, RC-A-1로 소진)** | RC-A-0 리콘으로 흡수·처분 완료. 약점 TRUTHSCORE-NORM→D-RC-SCALE, PRICE_CORRELATED 잉여→D-RC-PC-DISPOSE, 감쇠→D-RC-DECAY-SEMANTIC 해소 |
+| RC-A-0 | 점수 눈금 위생 설계 실측(read-only) | 읽기 전용 | RC-SURVEY-0 | ✅ **CLOSE(2026-08-27)** | 리콘 완료(scratchpad `RC_A0_RECON_REPORT.md`). 디렉터 회부 3건 → RC-A-1 집행 |
+| RC-A-1 | 점수 눈금 위생 실행(write) | @backend/chainsight | RC-A-0 | ✅ **로컬 완료·병진 배포 대기(2026-08-27)** | D-RC-DECAY-SEMANTIC·D-RC-SCALE·D-RC-PC-DISPOSE. 커밋 `a396e748`·`23318e25`·`4efdc4c9`. ⚠ **폭탄(09-19 감쇠 오발 2,054행) 해제=배포 후**. 병진=main 머지+migrate 0033+worker 재기동+PC dispose --apply+Neo4j Cypher 정리 |
 
 ---
 
