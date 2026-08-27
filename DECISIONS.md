@@ -8,6 +8,39 @@
 
 ---
 
+## [2026-08-27] D-EODUNIV-S1S2-DEGEN — 백필 구간 S1/S2 섹터 degeneracy 처분 A(기록·관찰) [monitor][stocks][observation]
+
+> 출처: DIRECTIVE-DECISIONS-REG-0827 E1. 사실 근거 = STEP0-RECON-0827 R1-7.
+
+**결정 (처분 A = 기록·관찰, 즉시 수리 안 함)**: EODUNIV-P15-V01 백필 커맨드(`backfill_eod_signals_universe`)가 생성한 비SP500 3종 EODSignal의 relation 시그널 S1(섹터상대강도)·S2(섹터소외주) **degeneracy를 즉시 수리하지 않는다**. daily-forward(전체 유니버스) **20거래일** 축적 후 S1/S2 발화율을 재측정하여 재평가한다. **재평가 트리거일 = 2026-08-27 + 20거래일.**
+
+- **사실(R1-7 실측)**: TLN 백필 구간(2025-08~2026-08-26, 286행) — **S1 발화 0 · S2 발화 0 · S4 1**. 원인 = 백필 시 심볼 스코프를 [대상종목 ∪ SPY]로 좁혀 섹터 피어(SP500 전체)가 부재 → 섹터 평균이 자기 자신으로 degenerate(EODUNIV-P15-V01 보고서 문서화 한계와 동일 근인). advisor가 실제 쓰는 3필드(composite/change_pct/dollar_vol)·나머지 11시그널은 무영향.
+- **기각: B(스코프 재정의 + 백필 재실행)** — 첫 daily-forward 관측을 오염시키고, 관측이 뒤집을 수 있는 결정을 조기 확정하는 위험.
+
+**Why**: 백필 degeneracy는 과거 스냅 한정이고 daily-forward는 전체 유니버스 안에서 계산되므로 구조적으로 정상이어야 한다. 조기 수리(B)는 아직 관측되지 않은 daily-forward 발화율을 전제로 스코프를 바꾸는 것 = 미측정 기반 결정. 20거래일 관측이 실제 발화율을 주면 그때 처분(수리 불요 vs 소급 재백필)을 근거 위에서 확정한다.
+
+**How to apply**: 재평가 시 = daily-forward EODSignal(08-27 이후)에서 3종 S1/S2 발화율 측정 → 정상이면 백필 과거값은 그대로 두고 종결, 비정상이면 소급 재백필 검토. cf. [[project_eoduniv_p15_v01]]·[[lesson_advisor_coverage_needs_indicatorreading_ingest]].
+
+## [2026-08-27] D-REPORT-CHANNEL-CHAT — CC 보고 = 채팅 붙여넣기/스크린샷 전용 [harness][process]
+
+> 출처: DIRECTIVE-DECISIONS-REG-0827 E2-1 (교훈 등재).
+
+**결정**: CC의 recon·검증·상태 보고는 **채팅 직접 붙여넣기 또는 스크린샷**으로만 전달한다. **파일 첨부 금지.**
+
+**Why**: 파일 첨부 경로에서 빈 문서 유실 5회 실증 — 보고 본문이 첨부로 빠지면 병진이 못 받는다.
+
+**How to apply**: 측정 결과·판정·요약은 응답 본문 코드펜스로. 산출물이 커도 요약은 본문에 두고, 상세는 repo 커밋(claude/*.md 등)으로 남기되 "보고" 자체는 첨부하지 않는다. cf. [[feedback_ephemeral_output_scratchpad]].
+
+## [2026-08-27] D-SUBAGENT-SURFACE-DISCLOSURE — 라우트·스키마·API 표면 신설 = 상위 보고 필수 [harness][process]
+
+> 출처: DIRECTIVE-DECISIONS-REG-0827 E2-2 (교훈 등재).
+
+**결정**: 하위 에이전트가 **신규 라우트·스키마·API 표면**을 만들면 상위 보고의 **필수 항목**으로 명시한다(구현 디테일로 흡수 금지).
+
+**Why**: swap 라우트(`/monitor/[id]/swap`) 신설이 옴니버스 FE 커밋(5b03754b)에 번들되어 **재량 신고 2회 누수** — 표면 신설은 계약·라우팅 결정이라 상위 판단 대상.
+
+**How to apply**: 하위 에이전트 스펙에 "신규 라우트/스키마/엔드포인트는 보고서 상단에 명시" 지시를 포함. 상위는 표면 신설을 승인 스펙 대비 대조. cf. EODUNIV-P15-V01 PART 0.2.
+
 ## [2026-08-27] DSS-QUADRANT 확정 결정 5건 — 섹터 사분면 화면 (QUAD-IMPL-1 0게이트) [dashboard][dss][chainsight]
 
 > 출처: 지시서 QUAD-IMPL-1. 문안 변경 금지(디렉터 확정). 구현 = Slice 1~3.
