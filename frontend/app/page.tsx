@@ -14,6 +14,8 @@ import { NewsStrip } from '@/components/strip/NewsStrip';
 import { MacroStrip } from '@/components/strip/MacroStrip';
 import { EODSkeleton } from '@/components/eod/EODSkeleton';
 import { CoverageStrip } from '@/components/dashboard/CoverageStrip';
+import { SectorQuadrant } from '@/components/charts/SectorQuadrant';
+import { useSectorQuadrant } from '@/hooks/useSectorQuadrant';
 import type { SignalCategory, SignalCard } from '@/types/eod';
 
 const VALID_CATEGORIES: Set<string> = new Set([
@@ -22,6 +24,7 @@ const VALID_CATEGORIES: Set<string> = new Set([
 
 function HomeContent() {
   const { data, isLoading, error } = useEODDashboard();
+  const quadrant = useSectorQuadrant();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -85,6 +88,13 @@ function HomeContent() {
           generatedAt={data.generated_at}
           isStale={data.is_stale}
         />
+
+        {/* DSS-QUADRANT 섹터 사분면 (QUAD-IMPL-1, D-DSS-QUAD-PLACE 최상단 섹션) — fail-quiet */}
+        {quadrant.data && (
+          <div className="mt-4">
+            <SectorQuadrant data={quadrant.data} />
+          </div>
+        )}
 
         {/* Level 1.5: 추천 커버리지 스트립 (STRIP-REHOME, D-DASH-SURFACE-UNIFY) — fail-quiet, 본체 무영향 */}
         <CoverageStrip />

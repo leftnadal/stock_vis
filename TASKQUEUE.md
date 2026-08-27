@@ -8,7 +8,11 @@
 ## DSS-QUADRANT — 섹터 사분면 화면 (착수, QUAD-IMPL-1 2026-08-27) [dashboard][dss][chainsight]
 - 확정 결정 5건(DECISIONS DSS-QUADRANT). Heat×수요 breadth 2축, ②·④ 하이라이트, 전주 화살표(flat≥90% 숨김), 미산출 하단 목록.
 - Slice 1(BE read-only API `/api/v1/chainsight/theme-heat/quadrant/`) → Slice 2(공용 컴포넌트 `components/charts/SectorQuadrant`) → Slice 3(app/page.tsx 최상단 삽입).
-- 상태: **0게이트 착지·Slice 1~3 연속 집행 중**. 최초 STEP 0 경계 FAIL은 BOUNDARY-TRIAGE-1 동결로 해소(green).
+- 상태: **Slice 1~3 구현 완료**. 검증 GREEN — pytest 4(quadrant)+chainsight/architecture 791·vitest 12(신규)/1145(전)·tsc0·eslint0·next build OK. 최초 STEP 0 경계 FAIL은 BOUNDARY-TRIAGE-1 동결로 해소(green). arrow suppression 라이브 작동(08-14 flat 99.60% → 화살표 전건 숨김).
+
+## QUAD-VISUAL-CHECK — 섹터 사분면 라이브 육안 검증 (등재, QUAD-IMPL-1 2026-08-27) [dashboard][qa] — 병진 몫
+- F2-VISUAL-CHECK 동일 패턴. **자동 테스트로 못 잡는 시각 정합**(점/구역 색·화살표 숨김 각주·미산출 하단 목록·반응형)을 라이브 렌더로 검수. 트리거 = 배포(web 리빌드) 후.
+- 현 데이터 특성: heat 6/11 산출(5 하단 목록)·arrow 전건 suppressed(각주 노출)·경계 x=heat 중앙값 50. 배포 전엔 신 UI 미표시가 정상(#62).
 
 ## BOUNDARY-BURNDOWN-EOD — shared 경계 동결 #6 소진 (등재, BOUNDARY-TRIAGE-1 2026-08-27) [ops][boundary][harness]
 - **동결 1건**: `packages/shared/stocks/services/eod_signal_calculator.py:50` → `apps.monitor.models.monitor` (7ec24c62 EODUNIV-P15-V01, 08-26 유입). BOUNDARY-TRIAGE-1이 KNOWN_VIOLATIONS 양쪽 동결(green 회복).
