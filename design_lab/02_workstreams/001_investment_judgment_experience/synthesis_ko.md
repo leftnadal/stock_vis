@@ -2,230 +2,210 @@
 
 > **한국어 Companion 문서**  
 > 원문: [`synthesis.md`](synthesis.md)  
-> 이 문서는 영어 canonical document의 빠른 검토를 위한 한국어 companion이다. 독립적인 authority를 만들지 않는다. 영어와 한국어 사이에 의미 차이가 생기면 관련 CEO-approved semantic intent와 authoritative Design / Research decision을 기준으로 두 문서를 다시 정합시킨다.
+> 이 문서는 영어 canonical document의 빠른 검토를 위한 한국어 companion이다. 독립 authority를 만들지 않는다. 의미 차이가 생기면 CEO-approved semantic intent와 관련 Design / Research authority를 기준으로 두 문서를 정합시킨다.
 
-**Status:** Working Synthesis / Foundation promotion에 대한 CEO 결정 대기  
+**Status:** Working Design Foundation / Research-aligned  
 **Source Synced:** 2026-08-27  
 **Synthesized:** 2026-08-27  
+**Semantic Alignment:** DL-DR-0002 effective 2026-08-27  
 **Owner:** Stock_vis Design Lab
 
 ## 1. Executive Synthesis
 
-Workstream 001은 다음 질문에서 시작했다.
+Workstream 001은 Stock_vis가 사용자의 판단을 대신하지 않으면서 투자대상에 대한 view를 형성하고, 유지하고, 수정하고, 비교하고, 실제 decision에 사용하도록 어떻게 도울지를 탐색했다.
 
-> Stock_vis는 사용자의 investment judgment를 대신하지 않으면서 어떻게 처음 형성하고, 유지하고, 수정하고, 비교하고, 실제 판단에 사용하도록 도울 것인가?
+6개의 exploration batch, adversarial scenario, Research Lab consistency check, low-fidelity prototype을 거친 뒤 현재 leading direction은 다음과 같다.
 
-6개의 exploration batch, adversarial scenario, Research Lab boundary check, 2개의 low-fidelity prototype을 거친 뒤 현재 가장 강하게 살아남은 방향은 다음이다.
+> **Stock_vis는 각 투자대상에 대해 추적 가능하고 수정 가능한 Investment View Workspace를 유지하고, 사용자가 의미 있는 변화에 attention을 쓰도록 돕고, 최초 Formation과 지속적인 Maintenance를 adaptive depth로 지원하며, Human–AI authorship boundary를 보존하고, 실제 Judgment와 Decision은 관련 Understanding / maintained view가 Decision Context와 결합될 때 downstream에서 형성되도록 해야 한다.**
 
-> **Stock_vis는 각 투자대상에 대해 traceable하고 수정 가능한 Judgment Workspace를 유지하고, 사용자가 judgment-bearing change에 attention을 배분하도록 돕고, 최초 Formation과 ongoing revision을 상황에 맞는 깊이로 지원하며, Human–AI authorship boundary를 보존하고, Comparison / Portfolio reasoning은 forward scenario와 relative opportunity를 포함할 수 있는 downstream Decision Context에서 처리한다.**
+Forward comparison은 하나의 forecast나 score를 정답처럼 쓰기보다 plausible future, growth-path condition, valuation, uncertainty, relative opportunity를 구조적으로 비교하는 방향이 현재 가장 강하다.
 
-이것은 **Design mental model + logical experience architecture**다. 최종 Product IA, navigation, 화면 이름, DB schema를 의미하지 않는다.
+이 문서는 **Working Design Foundation**이다. 최종 Product IA, navigation, screen naming, ontology, database schema, investment-decision rule을 승인한 것이 아니다.
 
 **Overall Recommendation Strength: Strong**
 
-Very Strong이 아닌 이유는 real-user validation이 아직 부족하고, user-visible granularity가 미확정이며, future scenario / relative opportunity methodology는 Design Lab이 임의로 만들 수 없는 Research Lab 영역이 남아 있기 때문이다.
+## 2. Research-aligned Semantic Boundary
 
-## 2. Recommended Problem Framing
+Workstream 001 초기에는 `Judgment State`, `Judgment Workspace`, `User Judgment`라는 표현을 persistent company-level state에 사용했다.
 
-### 추천 framing
+하지만 최신 Approved Research Lab 구조와 대조하면 cross-Lab `Judgment`는 다음 관계를 가진다.
+
+```text
+Understanding
++ Decision Context
+→ Judgment
+→ Decision
+→ Action
+```
+
+따라서 **DL-DR-0002**에 따라 Design Lab은 Decision Context 이전부터 존재하는 persistent company state를 cross-Lab `Judgment`라고 정의하지 않는다.
+
+교정된 구조는:
+
+```text
+Research Knowledge / Understanding
+        ↓
+System Synthesis
+        ↕
+Maintained User Investment View
+        +
+Decision Context
+        ↓
+Judgment
+        ↓
+Decision
+        ↓
+Action
+```
+
+이다.
+
+`Investment View`는 현재 Working Design label이며 아직 최종 governed term이 아니다.
+
+과거 Workstream 문서에는 exploration history를 보존하기 위해 이전 terminology가 남을 수 있다. 하지만 이후 reusable / authoritative Design Knowledge는 정렬된 의미를 사용한다.
+
+## 3. Recommended Problem Framing
 
 핵심 문제는 단순한 정보 부족이나 `어떤 주식이 오를까?`가 아니다.
 
-더 강한 formulation은:
+더 강한 framing은:
 
-> **투자자는 제한된 attention을 배분하고, 새로운 정보를 기존 expectation과 context에 대입해 해석하고, uncertainty 아래에서 belief를 수정하며, 왜 판단이 바뀌었는지를 보존하고, salience나 AI synthesis가 자신의 판단으로 조용히 바뀌지 않도록 하면서 현재 보유종목과 미래 대안을 비교해야 한다.**
+> **투자자는 제한된 attention을 배분하고, 변화하는 현실을 기존 Understanding과 expectation에 대입해 해석하고, uncertainty 아래에서 수정 가능한 company view를 유지하며, 왜 그 view가 바뀌었는지를 보존하고, 실제 선택이 필요할 때 그 view를 구체적인 Decision Context와 결합해야 한다.**
 
 따라서 Stock_vis가 지원해야 할 것은:
 
 - attention allocation
-- evidence-to-judgment traceability
-- belief / judgment revision
-- uncertainty와 unresolved state의 명시
-- persistent judgment memory
+- Research / Understanding에서 user-facing synthesis까지의 traceability
+- persistent but revisable Investment View memory
+- uncertainty와 unresolved state
 - Human–AI authorship clarity
-- Decision Context 아래의 forward-looking comparison
-- company growth와 investment value의 구분
+- meaningful change에 대한 adaptive review
+- downstream Decision Context
+- forward-looking comparative opportunity
+- company growth와 shareholder / investment value의 구분
 
 이다.
 
-### 좁히거나 기각한 framing
+## 4. Maintained Investment View Model
 
-#### More information이 핵심 해결책
+Persistent Design-side state에는 필요할 때 다음이 포함될 수 있다.
 
-불충분하다. 더 많은 정보는 overload, salience bias, reactive decision을 오히려 키울 수 있다.
-
-#### News / event feed가 primary organizing object
-
-Orientation / Trigger 역할로 축소했다. Event는 최근 발생했기 때문이 아니라 **현재 Judgment에 어떤 bearing이 있는가** 때문에 중요하다.
-
-#### Judgment = 하나의 score 또는 bullish / bearish
-
-기본값으로 기각했다. 중요한 component는 서로 다른 방향으로 움직일 수 있고 uncertainty / conviction도 다를 수 있다.
-
-#### 고정된 linear user journey
-
-축소했다. `Orient → Understand → Judge`는 shorthand로는 유용하지만 mandatory screen flow로는 살아남지 못했다.
-
-## 3. Recommended Judgment Model
-
-### 3.1 Investment Judgment는 maintained & revisable state
-
-`state / structure / process 중 하나`를 고르는 문제로 보는 framing 자체를 기각했다.
-
-더 강한 모델은:
-
-> **Investment Judgment = internal structure를 가진 maintained state + 그것을 수정하는 update process + Decision Context에 따라 달라지는 downstream relevance**
-
-이다.
-
-필요한 경우 Maintained Judgment에는:
-
-- 중요한 driver / claim
+- 중요한 driver / proposition
 - risk / invalidation condition
-- dependency / condition
+- dependency / enabling condition
 - unresolved question / alternative
 - local conviction / uncertainty
 - System–User divergence
-- material revision history
+- relevant scenario condition
+- revision history / provenance
 
-등을 포함할 수 있다.
+User는 다음 상태도 가질 수 있다.
 
-### 3.2 Semantic Model과 Update Process는 분리한다
-
-초기 모델은 object, relation, evaluation, process를 한 구조에 섞고 있었다.
-
-현재 추천은:
-
-1. **Judgment Semantic Model** — 무엇이 존재하고 어떻게 연결되는가
-2. **Judgment Update Logic** — trigger가 maintained state를 어떻게 revise / retain / qualify / unresolved하게 만드는가
-
-를 구분하는 것이다.
-
-이는 Research Lab의 process–object separation과도 정합적이다.
-
-### 3.3 System Synthesis와 User Judgment는 의미상 구분된다
-
-이 부분은 이미 `DL-DR-0001 — Human–AI Judgment Authority Boundary`로 Approved 상태다.
-
-AI는 자율적으로 research, synthesis, challenge, monitoring을 하고 **System Synthesis**를 업데이트할 수 있다. 그러나 material한 **User-owned Judgment**를 조용히 귀속하거나 덮어써서는 안 된다.
-
-User의 명시적 판단이 아직 없는 것도 정상적인 상태다.
-
-- 아직 view 없음
-- partial view
+- 아직 explicit view 없음
+- partial view만 있음
 - 일부 unresolved
-- 일부는 system과 agreement
+- 일부는 System Synthesis와 agreement
 - 일부는 disagreement
 
-가 모두 가능해야 한다.
+사용자가 가치를 얻기 위해 완전한 thesis를 먼저 작성하도록 강제하지 않는다.
 
-## 4. Recommended Information Model
+## 5. System Synthesis와 User-Owned View
 
-필요한 것은 peer information layer 목록이 아니라 서로 다른 의미를 가진 object와 relation이다.
+DL-DR-0001의 Human–AI authority boundary는 DL-DR-0002의 의미 정렬 아래 그대로 유효하다.
 
-### Maintained Judgment State
+AI는 자율적으로 research, structure, summary, monitoring, challenge를 수행하고 **System Synthesis**를 유지할 수 있다.
 
-현재 구조화된 투자 판단.
+그러나 그것을 사용자의 maintained Investment View로 조용히 귀속하거나 덮어써서는 안 된다.
 
-### Update Trigger / Signal
+Material한 user-owned change에는 실제 user control 또는 scope가 보이고 reversible하며 traceable한 명시적 delegation이 필요하다.
 
-재검토가 가치 있을 수 있음을 알리는 signal. Price move, news, time decay, competitor, portfolio context change, user question 등이 trigger가 될 수 있다.
+System–User disagreement는 남아 있을 수 있다.
 
-Trigger 자체는 thesis 반증 evidence가 아니다.
+또한 향후에는 System Synthesis가 단순히 Research Understanding을 presentation / translation하는 경우와, 새로운 inferential Claim을 생성하는 경우를 구분해야 한다. 후자는 Research epistemic treatment가 필요할 수 있다.
 
-### Reference / Interpretive Context
+## 6. Recommended Information / Relationship Model
 
-정보를 무엇과 비교해 해석하는지 나타내는 baseline. Prior judgment, prior expectation, guidance, consensus, peer, historical range, regime 등이 될 수 있다.
+서로 다른 기능을 peer information layer로 납작하게 만들지 않는다.
 
-### Epistemic Input
+### 6.1 Maintained Investment View
+현재 user-owned company view.
 
-Research Knowledge / Understanding과 관련 credibility, applicability, conflict, uncertainty, limitation.
+### 6.2 System Synthesis
+사용자의 view를 지원하거나 challenge할 수 있는 Stock_vis-generated synthesis.
 
-Design은 이를 소비하고 표현하지 별도의 product-side epistemic authority를 만들어서는 안 된다.
+### 6.3 Update Trigger / Signal
+재검토 가치가 있을 수 있음을 알리는 signal. Evidence, event, price move, time decay, regime change, 새로운 competing opportunity, portfolio-context change, user question 등이 포함될 수 있다.
 
-### Judgment-Bearing Relation
+Trigger 자체가 company view를 반박하는 evidence는 아니다.
 
-다음 질문에 답하는 명시적 관계다.
+### 6.4 Reference / Interpretive Context
+정보를 해석할 때 사용한 baseline. Prior state, expectation, guidance, consensus, historical range, peer, regime 등이 될 수 있다.
 
-> **이 정보가 현재 Judgment의 어느 부분에 실제로 영향을 주는가?**
+### 6.5 Epistemic Input
+Research Knowledge / Understanding과 Research-side credibility, applicability, conflict, uncertainty, scope, limitation.
 
-Input은 support / challenge / qualify / narrow / broaden / uncertainty 증가 / 새로운 component 추가 / no meaningful bearing 등의 관계를 가질 수 있다.
+Design은 이를 소비하고 표현하지 별도의 epistemic authority를 만들지 않는다.
 
-### Judgment Impact
+### 6.6 View-Bearing Relation
+이전 `Judgment-Bearing Relation`의 persistent-view layer 표현을 교정한 Working concept.
 
-기존 `Significance / Materiality`를 더 정확하게 표현하는 Working Design concept다.
+> **이 정보가 현재 Investment View의 어느 부분에 실제로 영향을 주는가?**
 
-Judgment Impact는 정보 자체에 붙어 있는 fixed score가 아니라 **현재 Judgment에 대한 relational assessment**다.
+support / challenge / qualify / narrow / broaden / uncertainty 증가 / component 추가 / no meaningful bearing 등을 가질 수 있다.
 
-매우 credible한 evidence도 peripheral component에 관한 것이면 impact가 작을 수 있다. 반대로 central driver에 관한 약한 conflicting evidence는 방향을 즉시 바꾸기보다 uncertainty를 높일 수 있다.
+### 6.7 View Impact
+이전 `Judgment Impact`를 persistent-view layer에서 교정한 Working wording.
 
-### Conviction / Uncertainty
+Impact는 정보 자체의 fixed score가 아니라 현재 View에 대한 relational assessment다.
 
-Judgment direction과 분리하며, 가능하면 global scalar보다 affected component에 local하게 연결한다.
+### 6.8 Conviction / Uncertainty
+Research credibility와도, 실제 Decision confidence와도 구분한다. 기본적으로 affected component에 local하게 연결하는 방향이 강하다.
 
-### Update Trace / Lineage
+### 6.9 Update Trace / Lineage
+무엇이, 왜, 어떤 근거 / reference로, 누구의 action 또는 authority를 통해 바뀌었는지 material한 경우 추적 가능해야 한다.
 
-Material change가 생기면 무엇이, 왜, 무엇을 근거로, 어떤 reference 아래에서, 누구의 action / authority로 바뀌었는지 추적 가능해야 한다.
+### 6.10 Decision Context
+Portfolio exposure, horizon, alternatives, valuation, constraints, opportunity cost, switching cost 등의 decision-specific condition은 relevant Understanding / maintained view와 downstream에서 결합해 Judgment를 지원한다.
 
-### Decision Context
+## 7. Maintained-View Update Logic
 
-Portfolio, horizon, alternatives, constraints, opportunity cost, switching cost 등의 decision-specific 조건은 company judgment와 구분된 downstream layer로 둔다.
-
-## 5. Recommended Judgment Update Logic
-
-현재 가장 강한 analytical loop는:
+현재 가장 강한 analytical maintenance loop는:
 
 ```text
-Current Judgment State
+Current Investment View
 + Trigger / Signal
 + relevant Research Knowledge / Understanding
-+ 필요할 경우 Decision Context
         ↓
 Orient
         ↓
 Contextualize
         ↓
-Link to Judgment
+Affected View component에 연결
         ↓
-Assess Judgment Impact
+View Impact 평가
         ↓
 Revise / Retain / Mark Unresolved
         ↓
-Recalibrate Conviction & Uncertainty
+Local conviction / uncertainty 재조정
         ↓
-Preserve Update Trace
+Update trace 보존
         ↓
-Updated Judgment State
+Updated Investment View
 ```
 
 이다.
 
-이것은 mandatory UI sequence가 아니다.
+이는 mandatory UI sequence가 아니다.
 
-Valid outcome은:
+Valid outcome은 strengthen, weaken, retain after review, qualify, narrow, broaden, conditional split, add/remove component, uncertainty 증가/감소, unresolved, suspend view, not assessed 등이 될 수 있다.
 
-- strengthen
-- weaken
-- retain after review
-- add / remove / qualify
-- narrow / broaden
-- conditional case로 split
-- uncertainty 증가 / 감소
-- unresolved
-- suspend judgment
-- not assessed
+`검토 후 유지`와 `아직 검토하지 않음`은 구분한다.
 
-등이 될 수 있다.
-
-`검토 후 유지`와 `아직 검토하지 않음`은 반드시 구분한다.
-
-## 6. Recommended Logical Experience Architecture
-
-`Adaptive Change Review`는 살아남았지만 전체 foundation이 아니라 broader architecture 안의 한 mode로 자리 잡았다.
+## 8. Logical Experience Architecture
 
 현재 leading architecture는:
 
-> **Persistent Judgment Workspace + Attention-Oriented Orientation + Formation / Maintenance + Adaptive Review + downstream Decision Context**
+> **Persistent Investment View Workspace + Attention-Oriented Orientation + Formation / Maintenance + Adaptive Review + downstream Decision Context**
 
 다.
 
@@ -235,361 +215,262 @@ Valid outcome은:
                           │
          ┌────────────────┼────────────────┐
          │                │                │
-   New company      Existing company   Cross-company need
+   New company      Existing company    Decision need
          │                │                │
          ▼                ▼                ▼
      FORMATION        MAINTENANCE      DECISION CONTEXT
-         │                │          comparison / portfolio
-         │       simple change → inline
-         │       complex/material → focused review
-         │                │
-         └───────────────┬┘
-                         ▼
-                JUDGMENT WORKSPACE
-                  maintained state
-                         │
-              evidence / provenance
-                         │
-               update trace / history
+         │                │           comparison / portfolio
+         │       simple change → inline      │
+         │       complex/material → review   │
+         │                │                   │
+         └───────────────┬┘                   │
+                         ▼                    │
+              INVESTMENT VIEW WORKSPACE      │
+                         │                    │
+          evidence / provenance / history    │
+                         │                    │
+                         └──────────────┬─────┘
+                                        ▼
+                                     JUDGMENT
+                                        ↓
+                                     DECISION
 ```
 
-### Orientation = News Feed가 아니라 Attention Allocation
+### Orientation guardrail
 
-여러 종목을 볼 때 raw activity가 아니라:
+Orientation은 `이게 중요하다는 사실이 증명되었다`는 뜻이 아니라 **review value / likely bearing에 따라 attention을 배분하는 것**이다.
 
-- current judgment에 material bearing
-- consequential해진 unresolved uncertainty
-- material System–User divergence
-- user-defined monitoring condition
+`Low priority ≠ proven irrelevant`이며 Quiet item도 펼쳐볼 수 있어야 한다.
 
-등을 우선한다.
+### Adaptive Review
 
-**Attention item ≠ task ≠ approval request**다.
-
-### Adaptive review depth
-
-- user attention 가치 없음 → silent system maintenance
-- simple / low-consequence bearing → inline annotation
-- multi-component / conflict / consequential / material divergence → focused review
-- allocation / comparison / rotation reasoning → user-initiated Decision Context
+- user-facing review 가치 거의 없음 → silent system maintenance
+- simple / low-consequence bearing → inline
+- multi-component / conflicting / consequential / material divergence → focused review
+- allocation / rotate / add / reduce 질문 → explicit Decision Context + downstream Judgment
 
 으로 깊이를 바꾼다.
 
-## 7. Formation, Maintenance, Comparison
+## 9. Formation과 Maintenance
 
-### 7.1 Formation
+### Formation
 
-처음 보는 기업에는 prior User Judgment가 없다. 따라서 artificial `change`를 만들지 않고 System Synthesis + guided exploration에서 시작한다.
+처음 보는 기업에서 System Synthesis는 먼저 중요한 구조를 보여줄 수 있지만 user view를 자동 생성하지 않는다.
 
-좋은 access question 후보는:
+Useful guided question:
 
 - 무엇이 가장 중요한가?
-- 무엇 때문에 이 investment case가 깨질 수 있는가?
+- 무엇 때문에 이 case가 깨질 수 있는가?
 - 아직 무엇을 모르는가?
-- 최근 무엇이 중요하게 변했는가?
+- 성장하려면 어떤 조건이 성립해야 하는가?
 
-이다.
+User는 일부만 채택하거나 unresolved로 남길 수 있다.
 
-User는 일부 component에 대해서만 view를 만들고 나머지는 unresolved로 둘 수 있다.
+### Maintenance
 
-### 7.2 Maintenance
+기존 종목에서는 chronological feed를 다시 조립하게 하지 않고 새로운 정보를 maintained view의 affected component와 연결한다.
 
-기존 보유종목은 change-driven orientation + adaptive review depth가 유리하다. 핵심은 current state의 continuity를 시간에 따라 보존하는 것이다.
+Simple change는 inline, complex change는 focused review가 현재 leading direction이다.
 
-### 7.3 Comparison은 Decision Context에 속한다
+## 10. Forward-Looking Comparison과 Decision Context
 
-Comparison은 두 maintained judgment를 input으로 사용하고 underlying company judgment를 덮어쓰지 않는다.
+Comparison은 현재 어느 회사가 더 좋아 보이는지만 묻지 않는다.
 
-비교에서는:
+더 강한 downstream question은:
 
-- 실제 comparable한 shared dimension
-- company-specific asymmetric driver / risk
+> **가능한 미래에서 어느 투자가 더 강한 forward opportunity를 가지며, 무엇이 그 경로를 가능하게 하거나 막고, 그 상대적 차이가 실제 allocation / rotation에 의미가 있을 만큼 충분히 크고 신뢰할 수 있는가?**
 
-를 모두 보존한다.
-
-Default comparison을 total score 하나로 압축하지 않는다.
-
-## 8. Forward-Looking Comparison과 Rotation
-
-실제 투자 비교는 inherently forward-looking하다는 결론이 강해졌다.
-
-핵심 질문은 단순히 `오늘 어느 회사가 더 좋아 보이는가?`가 아니라:
-
-> **가능한 미래에서 어느 투자가 더 강한 forward opportunity를 가지며, 무엇이 잘되어야 하고 무엇이 그 기회를 방해할 수 있으며, 그 상대적 차이가 capital allocation을 바꿀 만큼 충분히 크고 신뢰할 수 있는가?**
-
-이다.
-
-### 8.1 Future Scenario Structure
-
-가능하면 하나의 deterministic future보다 conditional scenario를 우선한다.
+Working representation:
 
 ```text
-Possible Future
-→ Growth Opportunity
-→ Growth-Path Conditions
-→ Company-specific response
-→ Growth / Value Outcome
-→ Relative Future Opportunity
+Company A Understanding / Investment View
+        ↓
+Plausible Future Scenarios
+        ↓
+Opportunity
+→ Enablers
+→ Accelerators
+→ Bottlenecks / Delays
+→ Invalidation Conditions
+→ Value-Capture Conditions
+        ↓
+Possible Growth / Value Outcomes
+        ┐
+        │
+        ├── Relative Future Opportunity
+        │
+        ┘
+Company B ... 동일 구조
+
+            +
+Current Valuation
+Uncertainty / credibility
+Time Horizon
+Portfolio Context
+Opportunity Cost
+Constraints / switching costs
+            ↓
+Comparative Judgment
+            ↓
+Decision
 ```
 
-### 8.2 Growth-Path Conditions
+### Growth만 보면 안 된다
 
-시장 opportunity가 자동으로 company growth가 된다고 가정하지 않는다.
+Business growth와 investment value는 동일하지 않다.
 
-Working Design structure는 다음을 구분한다.
+필요할 때 다음을 보존한다.
 
-- **Opportunity** — 외부 / 구조적 성장 가능성
-- **Enablers** — opportunity를 실제로 가져가기 위해 필요한 조건
-- **Accelerators** — growth speed / scale / economics를 높이는 조건
-- **Bottlenecks / Delays** — thesis를 깨지는 않지만 성장 크기 / 시점을 제한하는 조건
-- **Invalidation Conditions** — scenario 또는 핵심 growth mechanism을 materially 깨는 조건
-- **Value-Capture Conditions** — business growth가 durable shareholder / per-share value로 전환되는 조건
-- **Monitoring Signals** — 위 조건들이 실제로 강화 / 약화되는지 보여주는 evidence
+- growth durability / condition
+- timing
+- capital needs / dilution
+- downside / failure condition
+- current valuation
+- uncertainty
+- business growth가 durable shareholder / per-share value로 실제 전환되는가
 
-이 구조는 Future Comparison과 기존 Judgment maintenance를 연결한다. New evidence는 Enabler를 강화하거나, Bottleneck을 악화하거나, Invalidation에 가까워지거나, Value Capture를 바꾸는 signal로 읽을 수 있다.
+### Deterministic winner를 기본으로 만들지 않는다
 
-### 8.3 Growth 자체가 optimization target은 아니다
+하나의 precise forecast나 total score보다 conditional future와 traceable condition을 우선한다.
 
-개념적으로:
+`Relative Opportunity Gap`은 Working interaction concept이지 decision threshold / Research term이 아니다.
 
-```text
-Business growth
-+ growth-path durability / conditions
-+ current valuation
-+ capital requirement / dilution
-+ downside / failure conditions
-+ timing
-+ uncertainty
-→ Forward Investment Opportunity
-```
+## 11. Retained / Revised / Rejected
 
-`Forward Investment Opportunity`는 Working Design phrase이며 Approved Research term이 아니다.
+### Retained
 
-### 8.4 Relative Opportunity Gap
-
-Comparison은 alternative가 단순히 조금 더 좋은지, 아니면 실제 rotation을 deeper review할 만큼 충분히 좋은지를 구분해야 한다.
-
-작은 apparent advantage가 자동 portfolio churn으로 이어져서는 안 된다.
-
-이번 Workstream은 rotation threshold나 investment decision rule을 정의하지 않는다.
-
-## 9. Starting Hypothesis에서 무엇이 바뀌었는가
-
-### 유지
-
-- More information보다 Better Judgment가 목표
-- persistent judgment structure
-- change / context / evidence / uncertainty / conviction의 중요성
+- more information보다 better judgment support
+- persistent company-level state
 - progressive disclosure
-- comparison의 중요성
-- Design은 judgment를 지원하되 대신하지 않음
+- adaptive review
+- authorship provenance
+- unresolved / disagreement 허용
+- revision history
+- Comparison의 중요성
+- forward scenario / growth-path condition
 
-### 수정
+### Revised
 
-- `Judgment = Structure` → **maintained state + internal structure + update process under Decision Context**
-- `Materiality` information layer → **relational Judgment Impact**
-- linear 6-step journey → **analytical update loop, UI에서는 non-linear**
-- `Adaptive Change Review` foundation → **broader Judgment Workspace 안의 adaptive review**
-- current-state comparison → **forward scenario / relative opportunity comparison**
-- generic growth risk → **explicit Growth-Path Conditions**
+- `Persistent Judgment State` → **Maintained Investment View / equivalent Design concept**
+- `Judgment Workspace` → **Investment View Workspace** Working label
+- `Judgment Impact` at persistent layer → **View Impact** Working wording
+- `Decision Context downstream from company Judgment` → **Understanding / maintained view + Decision Context 이후 cross-Lab Judgment**
+- fixed six-step journey → non-linear maintenance loop
+- Change Review foundation → broader workspace 안의 Adaptive Review
+- current-state comparison → future scenario / relative opportunity comparison
+- generic risk → explicit growth-path conditions
 
-### 기본값으로 기각
+### Rejected as defaults
 
-- chronological news feed가 primary experience
+- chronological news feed를 primary experience로 사용
 - universal bullish / bearish label
-- 하나의 global conviction / attractiveness score
-- 항상 두 칼럼으로 System vs User 표시
-- 모든 change가 review / approval 필요
-- User가 full thesis를 작성해야만 가치 제공
-- raw growth rate = investment opportunity
-- deterministic future forecast가 default comparison
+- 하나의 scalar attractiveness / conviction score
+- 모든 change마다 review / approval
+- 항상 System / User dual column 노출
+- 완전한 thesis 작성 강제
+- raw business growth = investment opportunity
+- deterministic future forecast
+- Design-local `Judgment` 재정의
 
-## 10. Design Knowledge Candidates
+## 12. Design Knowledge Candidates
 
-아래 finding은 여러 scenario에서 반복적으로 살아남아 reusable Design Knowledge 후보가 됐다. 하지만 자동 승격하지 않는다.
+아직 자동으로 Approved Knowledge가 되는 것은 아니다.
 
-1. **Investment judgment는 episodic answer보다 maintained / revisable state로 다루는 것이 우세하다.** — Strong
-2. **Semantic object와 update process를 분리한다.** — Strong
-3. **Judgment relevance / impact는 intrinsic information score가 아니라 relation이다.** — Strong
-4. **Orientation은 raw activity보다 judgment bearing을 기준으로 attention을 배분한다.** — Strong
-5. **Review depth는 consequence에 따라 adaptive해야 한다.** — Strong
-6. **User Judgment는 absent / partial / unresolved / disagreement 상태를 가질 수 있다.** — Strong. Human–AI authorship boundary는 DL-DR-0001로 이미 Approved.
-7. **Decision Context는 underlying company judgment와 분리한다.** — Strong
-8. **Comparison은 shared + asymmetric structure를 동시에 보존한다.** — Strong
-9. **Forward Comparison은 forecast 결과뿐 아니라 scenario condition과 growth blocker를 보여준다.** — Strong
-10. **Default scalar rank는 traceable relative trade-off와 uncertainty보다 하위에 둔다.** — Moderate–Strong
+1. Persistent & revisable company-level Investment View는 judgment support에 유용하다. — **Strong**
+2. Semantic object와 update process를 분리한다. — **Strong**
+3. Relevance / impact는 intrinsic score보다 relation이다. — **Strong**
+4. Orientation은 raw activity보다 likely bearing / review value로 attention을 배분한다. — **Strong**
+5. Review depth는 consequence-adaptive해야 한다. — **Strong**
+6. User-owned view는 absent / partial / unresolved / System과 disagreement 상태가 가능하다. — **Strong**, authorship boundary는 DL-DR-0001 Approved
+7. Decision Context는 구분되어야 하며 downstream Judgment보다 앞선다. — **Very Strong**, DL-DR-0002 Approved
+8. Comparison은 shared + asymmetric structure를 모두 보존한다. — **Strong**
+9. Forward comparison은 outcome만이 아니라 scenario condition / blocker를 보여줘야 한다. — **Strong**
+10. Scalar ranking은 traceable trade-off / uncertainty보다 subordinate해야 한다. — **Moderate–Strong**
 
-다음 promotion 단계에서 무엇을 `03_design_knowledge/`로 옮길지, 어떤 항목이 CEO approval을 필요로 하는지 결정한다.
-
-## 11. Research Trigger Candidates
+## 13. Research Trigger Candidates
 
 ### Trigger 1 — Future Scenario / Relative Opportunity Methodology
 
-> **Future scenario, Growth-Path Condition, predictive growth/value outcome, Relative Opportunity Comparison을 downstream Design과 Portfolio Decision Support에서 사용할 만큼 충분히 강하게 생성·평가하려면 Research Lab에 어떤 methodology가 필요한가?**
+Future scenario, growth-path condition, predictive growth/value outcome, relative opportunity comparison을 downstream에서 사용할 만큼 충분히 강하게 생성·평가하려면 어떤 Research methodology가 필요한가?
 
-여기에는 필요에 따라:
+Scenario construction, predictive probability, forecast calibration, expected growth / return estimation, valuation-outcome mapping, growth-path condition의 causal / predictive status, comparative Claim evaluation 등이 포함될 수 있다.
 
-- scenario construction
-- predictive probability
-- forecast calibration
-- expected growth / return estimation
-- valuation-outcome mapping
-- probability weighting
-- uncertainty aggregation
-- Growth-Path Condition의 causal / predictive status
-- predictive / comparative Claim의 epistemic evaluation
+### Trigger 2 — Decision-Support Evaluation
 
-이 포함될 수 있다.
+Stock_vis가 maintained-view support에서 comparative / portfolio decision support로 확장될수록 downstream reasoning을 어떻게 warrant / evaluate할지 Research에서 추가 정의가 필요할 수 있다.
 
-Design Lab은 이를 어떻게 보여주고 비교할지는 연구할 수 있지만 epistemic authority를 정의해서는 안 된다.
+### Trigger 3 — System Synthesis Epistemic Boundary
 
-### Trigger 2 — Downstream Decision-Support Methodology
+User-facing System Synthesis가 단순히 기존 Research Understanding을 정리 / 표현하는 경우와 새로운 inferential Claim / structure를 만드는 경우를 어떻게 구분할 것인가?
 
-Research Lab Evaluation Methodology는 Decision-Support Evaluation을 향후 downstream family로 이미 인식하고 있다. Stock_vis가 Judgment Support에서 Comparative / Portfolio Decision Support로 확장될 경우, Research truth와 product recommendation rule을 섞지 않으면서 downstream reasoning을 어떻게 warrant / evaluate할지 Research methodology가 필요할 수 있다.
+## 14. Failure / Reversal Conditions
 
-## 12. Failure / Reversal Conditions
+다음이 확인되면 Foundation을 수정한다.
 
-다음 evidence가 나오면 architecture를 수정한다.
+- persistent Investment View가 continuity보다 harmful anchoring / maintenance burden을 크게 만듦
+- System Synthesis와 user-owned view를 사용자가 구분하지 못함
+- adaptive depth가 중요한 정보를 숨기거나 unpredictability를 만듦
+- focused review가 inbox workload가 됨
+- view-bearing relation / update lineage 유지 비용이 너무 큼
+- Formation / Maintenance / Decision Context가 지나치게 fragmented함
+- scenario structure가 calibration보다 false confidence를 증가시킴
+- growth-path condition이 너무 복잡함
+- relative-opportunity framing이 과도한 churn을 유도함
+- Research Lab이 관련 semantic / predictive architecture를 공식 변경함
 
-- persistent judgment structure가 continuity보다 harmful anchoring을 더 크게 만듦
-- authorship treatment가 있어도 User가 System Synthesis와 자신의 view를 구분하지 못함
-- adaptive depth가 unpredictable하거나 중요한 정보를 과도하게 숨김
-- focused review가 새로운 inbox burden이 됨
-- Judgment-Bearing Relation이 너무 artificial / costly함
-- revision lineage가 complexity를 정당화할 만큼 유용하지 않음
-- Formation / Maintenance / Decision Context가 하나의 contextual universal page보다 fragmented하게 느껴짐
-- Future Scenario가 calibrated understanding보다 false confidence를 만듦
-- Growth-Path taxonomy가 cognitive load만 증가시킴
-- Relative Opportunity framing이 불필요한 portfolio churn을 유도
-- Research Lab이 predictive / comparative reasoning에 materially 다른 architecture를 제시
+## 15. Design Lab Evolution Findings
 
-## 13. Design Lab Evolution Findings
+현재 운영 방식은 잘 작동했다.
 
-현재 Design Lab Operating Model은 이번 Workstream에서 큰 문제 없이 작동했다.
+- Batch exploration은 CEO micro-consensus를 줄였다.
+- Batch별 문서 분리는 reviewability를 개선했다.
+- 한글 companion은 CEO review speed를 크게 높였다.
+- Prototype은 text discussion에서 안 보이던 interaction failure를 빠르게 발견했다.
+- Research-adjacent terminology를 재사용하는 Design mental model은 promotion 전에 cross-Lab semantic review가 필요하다.
 
-주요 운영 learning:
+현재 추가 permanent governance layer는 필요하지 않다.
 
-- Batch exploration이 CEO micro-consensus를 줄이면서 consequential escalation은 보존했다.
-- Workstream이 커지면서 Batch별 파일 분리가 필요해졌고, 하나의 monolithic exploration file보다 review가 쉬웠다.
-- 한국어 companion은 CEO review 속도를 실제로 높였으므로 consequential Design 문서의 기본 운영으로 유지하는 것이 좋다.
-- Prototype은 conceptual discussion에서 보이지 않던 failure를 발견하는 데 큰 가치가 있었다. 특히 literal Change Review foundation의 한계를 Prototype에서 확인했다.
-- 새로운 permanent governance나 agent taxonomy를 추가할 이유는 현재 없다.
+## 16. Decision Package
 
-따라서 현재 Design Lab 구조 자체의 structural change는 필요 없다.
+### Recommended Working Foundation
 
-## 14. Decision Package
+다음 구조를 Product Surface / IA exploration의 upstream working foundation으로 사용한다.
 
-### Recommended Structure
+> **Persistent & revisable Investment View Workspace**  
+> + **attention-oriented Orientation**  
+> + **Formation / Maintenance + adaptive review depth**  
+> + **traceable Research / evidence / authorship / revision lineage**  
+> + **System Synthesis와 user-owned view 분리**  
+> + **Understanding / maintained view + Decision Context → Judgment → Decision**  
+> + **scenario, growth-path condition, valuation, uncertainty, relative opportunity를 이용한 forward Comparison**
 
-다음 구조를 downstream Product Surface / IA exploration을 위한 **leading Investment Judgment Experience Foundation**으로 가져가는 것을 추천한다.
+**Recommendation Strength: Strong**
 
-> **Persistent & revisable Judgment Workspace**  
-> + **Attention-oriented Orientation**  
-> + **동일 semantic model을 공유하는 Formation / Maintenance**  
-> + **Consequence-adaptive review depth**  
-> + **Research / Evidence / authorship / revision lineage traceability**  
-> + **Company Judgment와 구분된 downstream Decision Context**  
-> + **Scenario, Growth-Path Conditions, Valuation, Uncertainty, Relative Opportunity를 사용하는 forward-looking Comparison**
+### Main Alternative
 
-### Recommendation Strength
+Persistent Investment View 없이 search / alert / ad-hoc AI Q&A 중심으로 동작하는 더 단순한 episodic research assistant.
 
-**Strong**
+Interaction / maintenance cost는 낮지만 현재까지 continuity, revision traceability, longitudinal learning, changing opportunity comparison에서는 약했다.
 
-### Why
+### CEO Critical Decision
 
-현재까지 다음 scenario를 가장 넓게 통과했다.
+**Workstream 001에 남아 있는 CEO Critical Decision 없음.**
 
-- prior user judgment 없음
-- thesis change 없는 급락
-- mixed earnings
-- material Human–AI disagreement
-- 여러 보유종목 Morning Review
-- cross-company comparison
-- possible portfolio rotation
+Consequential한 Human–AI authority decision과 cross-Lab Judgment semantic decision은 각각 DL-DR-0001, DL-DR-0002로 이미 승인되었다.
 
-또한 Approved Research–Design boundary와 DL-DR-0001 Human–AI authority boundary를 보존한다.
+### Deferred / AI-Owned
 
-### Main Alternatives
+- persistent Design-side state의 최종 이름
+- component taxonomy / count
+- View Impact 최종 wording / taxonomy
+- screen / navigation structure
+- inline / drawer / dedicated review 표현
+- exact authorship controls
+- visual system
+- comparison layout
+- scalar summary 사용 여부
+- prototype implementation detail
 
-1. **Event / Feed-centered product** — orientation은 단순하지만 judgment continuity와 differentiation이 약함
-2. **One integrated universal Judgment Home** — navigation cost는 낮지만 complex multi-component change / comparison에서 overload 위험
-3. **AI-maintained single shared thesis** — user effort는 낮지만 semantic authorship를 매우 조심스럽게 보존해야 함
-4. **Score / Ranking-centered Comparison** — 빠르지만 false symmetry / false precision / hidden trade-off 위험
+## 17. Next Step
 
-### Key Trade-offs
-
-- continuity vs anchoring
-- traceability vs complexity
-- adaptive disclosure vs predictability
-- user agency vs interaction burden
-- structured comparison vs cognitive load
-- forward usefulness vs false precision
-- opportunity optimization vs portfolio churn
-
-## 15. Batch Consensus
-
-CEO decision, real-user evidence, Research authority가 반박하지 않는 한 다음을 **Working Consensus**로 유지하는 것을 추천한다.
-
-- maintained / revisable judgment core mental model
-- Semantic Model과 Update Process 분리
-- Judgment-Bearing Relation + relational Judgment Impact
-- default global scalar보다 local conviction / uncertainty
-- traceable update lineage
-- attention-oriented Orientation
-- adaptive review depth
-- DL-DR-0001에 따른 System Synthesis ≠ User Judgment
-- Decision Context와 company judgment 분리
-- explicit Growth-Path Conditions를 포함한 forward-looking Comparison
-- default total score / automatic rotation rule 없음
-
-## 16. CEO Critical Decision — Foundation Promotion
-
-### 결정할 것
-
-위에서 synthesis한 core mental model을 **다음 Product Surface / IA Workstream의 Working Design Foundation으로 받아들일 것인가?**
-
-단, 모든 component를 Approved Design Knowledge로 승격하거나 최종 Product IA로 고정하는 것은 아니다.
-
-### Design Lab Lead Recommendation
-
-**Working Foundation으로 승인하고, 계속 falsifiable하게 유지하는 것을 추천한다.**
-
-### Recommendation Strength
-
-**Strong**
-
-### 왜 CEO 판단인가
-
-이제는 local interaction detail이 아니라 향후 Dashboard / Company Surface / Comparison / Portfolio / Monitoring IA가 어떤 mental model에서 파생될지를 결정하는 수준이기 때문이다.
-
-하지만 이번 승인은 **Working Foundation**이므로 permanent Product IA를 잠그거나 모든 용어를 durable knowledge로 승인하는 것보다 훨씬 reversible하다.
-
-### Strongest Counterargument
-
-Real user가 persistent judgment model을 실제로 원하거나 잘 사용할 수 있다는 evidence가 충분하지 않은 상태에서 Stock_vis가 투자 판단을 과도하게 구조화할 위험이 있다. 더 단순한 AI research + alert + comparison experience가 훨씬 낮은 learning cost로 대부분의 가치를 제공할 수도 있다.
-
-### Failure / Reversal Conditions
-
-다음이 prototype / user test에서 확인되면 Working Foundation 승인을 재검토한다.
-
-- persistent structured judgment가 harmful anchoring을 만듦
-- 사용자에게 maintenance work처럼 느껴짐
-- AI opinion과 User Judgment의 차이가 이해되지 않음
-- comparison / revision quality를 실제로 개선하지 못함
-- simpler episodic experience보다 materially 덜 유용함
-
-## 17. Deferred / AI-Owned
-
-다음은 consequential해지지 않는 한 계속 delegated / reversible detail로 둔다.
-
-- Judgment Workspace / Formation / Maintenance / Change Review / Judgment Impact / Relative Opportunity Gap의 최종 naming
-- exact component taxonomy / visible component count
-- conviction / uncertainty / provenance / divergence visual treatment
-- adaptive-review precise threshold
-- explicit mode navigation인지 one surface의 contextual state인지
-- Morning Review grouping / ranking detail
-- Comparison visual layout
-- exact Growth-Path Condition label
-- aggregate comparison summary의 유용성
-- mobile interaction
-- implementation / storage schema
+이 corrected Working Foundation을 upstream constraint로 사용하되 최종 Product Architecture로 고정하지 않고 계속 challenge하면서 **Workstream 002 — Product Surface / Information Architecture Exploration**을 연다.
