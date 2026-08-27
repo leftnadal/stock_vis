@@ -18,7 +18,7 @@ The Design Lab exists to study and improve how Stock_vis supports better investm
 
 1. [`00_foundation/foundation.md`](00_foundation/foundation.md) · [한국어](00_foundation/foundation_ko.md)
 2. [`01_operating_system/operating_model.md`](01_operating_system/operating_model.md) · [한국어](01_operating_system/operating_model_ko.md)
-3. [`01_operating_system/agent_protocol.md`](01_operating_system/agent_protocol.md) · [한국어](01_operating_system/agent_protocol_ko.md)
+3. [`01_operating_system/agent_protocol.md`](01_operating_system/operating_model_ko.md)
 4. [`01_operating_system/knowledge_lifecycle.md`](01_operating_system/knowledge_lifecycle.md) · [한국어](01_operating_system/knowledge_lifecycle_ko.md)
 5. [`01_operating_system/evolution.md`](01_operating_system/evolution.md) · [한국어](01_operating_system/evolution_ko.md)
 
@@ -42,6 +42,7 @@ The Design Lab exists to study and improve how Stock_vis supports better investm
 
 - [`Brief`](02_workstreams/002_product_surface_ia/brief.md) · [한국어](02_workstreams/002_product_surface_ia/brief_ko.md)
 - [`Batch 01 — Surface Responsibility & IA Families`](02_workstreams/002_product_surface_ia/batch_01_surface_architecture.md) · [한국어](02_workstreams/002_product_surface_ia/batch_01_surface_architecture_ko.md)
+- [`Batch 02 — Cross-Domain Analogical Benchmark & Idea Pool`](02_workstreams/002_product_surface_ia/batch_02_cross_domain_idea_pool.md) · [한국어](02_workstreams/002_product_surface_ia/batch_02_cross_domain_idea_pool_ko.md)
 
 Workstream material and prototype artifacts are Working by default and do not become approved Design Knowledge or product architecture automatically.
 
