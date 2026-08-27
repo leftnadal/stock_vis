@@ -6820,3 +6820,11 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **검증**: vitest 전체 **1080 passed**(신규 A 8 + B 2)·tsc 0·lint 0·playbook pytest 15. 재현 검증=react-query 실행 루프에 predicate 물려 429 무재시도(1회)·500 재시도(3회) 결정론 입증(브라우저 수동 재현 갈음, 후속=SMOKE-BROWSER-PATH 자동화).
 
 **Why C 추가**: A+B로 반복 refresh 5회 ≈ 15~25/min « 60이 산수상 충분하나, throttle 예산 2배는 재현 변동(캐시 miss·동시 탭)에 대한 저비용 보험(settings 1줄). 근인 완화는 A/B, C는 여유 예산. **랜딩=병진 수동**(main 머지 + sv sync + **api 재기동(#41)** + web 리빌드 + 스모크). 실행 세션은 배포/서비스 op 자기집행 금지([[feedback_deploy_approval_explicit_quote]]·[[feedback_service_op_submit_not_execute]]).
+
+---
+
+## D-EVT-SCOPE-U (2026-08-24) — 캘린더 수집 유니버스 스코프
+- **결정**: 캘린더 수집은 **전량 저장**(수집 시 유니버스 필터 없음), 필터는 **소비(읽기) 계층**에 둔다.
+- **근거**: RelationConfidence distinct 1,126 종목 > 현행 유니버스 503 — EVT-CHAIN(Phase 2)이 1-hop 이웃 이벤트를 커버하려면 유니버스 밖 종목의 이벤트도 원장에 있어야 한다. 수집 시 유니버스로 잘라내면 이웃 커버리지가 깨진다.
+- **부수 효과**: 수집 태스크가 유니버스 모델(apps.chain_sight.UniverseSnapshot)을 import할 필요 없음 → shared 경계 유지(수집 오케스트레이션이 apps 미의존). 저장량 비용 = 어닝 8일 1,057건 실측 기준 수용 가능.
+- 앵커 §11 오픈 이슈 2 해소.
