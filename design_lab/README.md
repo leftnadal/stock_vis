@@ -44,6 +44,8 @@ The Design Lab exists to study and improve how Stock_vis supports better investm
 - [`Batch 01 — Surface Responsibility & IA Families`](02_workstreams/002_product_surface_ia/batch_01_surface_architecture.md) · [한국어](02_workstreams/002_product_surface_ia/batch_01_surface_architecture_ko.md)
 - [`Batch 02 — Cross-Domain Analogical Benchmark & Idea Pool`](02_workstreams/002_product_surface_ia/batch_02_cross_domain_idea_pool.md) · [한국어](02_workstreams/002_product_surface_ia/batch_02_cross_domain_idea_pool_ko.md)
 - [`Batch 03 — Cross-Domain Architecture Generation & Stress Test`](02_workstreams/002_product_surface_ia/batch_03_cross_domain_architecture_generation.md) · [한국어](02_workstreams/002_product_surface_ia/batch_03_cross_domain_architecture_generation_ko.md)
+- [`Batch 04 — IA Prototype Competition`](02_workstreams/002_product_surface_ia/batch_04_ia_prototype_competition.md) · [한국어](02_workstreams/002_product_surface_ia/batch_04_ia_prototype_competition_ko.md)
+- [`Prototype 03 — H1 / H2 / H5 IA Competition`](02_workstreams/002_product_surface_ia/prototype_03_ia_competition.html) — Working prototype artifact
 
 Workstream material and prototype artifacts are Working by default and do not become approved Design Knowledge or product architecture automatically.
 
