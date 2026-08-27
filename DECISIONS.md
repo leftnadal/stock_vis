@@ -6860,6 +6860,18 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 
 **Why C 추가**: A+B로 반복 refresh 5회 ≈ 15~25/min « 60이 산수상 충분하나, throttle 예산 2배는 재현 변동(캐시 miss·동시 탭)에 대한 저비용 보험(settings 1줄). 근인 완화는 A/B, C는 여유 예산. **랜딩=병진 수동**(main 머지 + sv sync + **api 재기동(#41)** + web 리빌드 + 스모크). 실행 세션은 배포/서비스 op 자기집행 금지([[feedback_deploy_approval_explicit_quote]]·[[feedback_service_op_submit_not_execute]]).
 
+---
+
+## D-EVT-SCOPE-U (2026-08-24) — 캘린더 수집 유니버스 스코프
+- **결정**: 캘린더 수집은 **전량 저장**(수집 시 유니버스 필터 없음), 필터는 **소비(읽기) 계층**에 둔다.
+- **근거**: RelationConfidence distinct 1,126 종목 > 현행 유니버스 503 — EVT-CHAIN(Phase 2)이 1-hop 이웃 이벤트를 커버하려면 유니버스 밖 종목의 이벤트도 원장에 있어야 한다. 수집 시 유니버스로 잘라내면 이웃 커버리지가 깨진다.
+- **부수 효과**: 수집 태스크가 유니버스 모델(apps.chain_sight.UniverseSnapshot)을 import할 필요 없음 → shared 경계 유지(수집 오케스트레이션이 apps 미의존). 저장량 비용 = 어닝 8일 1,057건 실측 기준 수용 가능.
+- 앵커 §11 오픈 이슈 2 해소.
+
+## D-EVT-CAP-1 (2026-08-27) — 캘린더 캡 방어 확정형
+- **결정**: 캡 방어 = **count ≥ 4000 감지 + 적응형 이분(bisect-on-truncation)**. 절단 감지 시 창을 이분 재귀 재수집. 가드: 재귀 깊이 ≤ 4 · 런당 추가 콜 ≤ 12 · 창 ≤ 3일에서도 절단이면 실패 마킹+알림. span 이상(min_date 지연)은 절단이 아니라 **경고 로그**(span_anomaly).
+- **근거**: EVT-IMPL-2 dry-run 실측 — Q3 어닝 피크 밀도 ~200행/일. **고정 청크는 계절 취약**(45일 = 8월 2,302행 vs 11월 4,000+ 캡 도달·앞 ~24일 소실). 고정 크기로는 피크를 못 버팀 → 적응형 이분이 유일한 근본책. 설계 앵커 §3 "창 이분 재시도" 원안의 복원(EVT-IMPL-2 원지시서가 STEP 3에 미배선한 누락 보정 = 보정1).
+- **텔레메트리**: 성분별 bisect_depth·extra_calls — 3호 관찰 게이트 지표.
 ## [2026-08-27] D-INC-P16-2 — 09:13 429 근인 = FE 루프 아님·외부/수동 반복 문서 로드 + INC-P16 트랙 종결 [frontend][infra][incident][forensic]
 
 > 포렌식(read-only) 판정 채택. INC-P16-1-FIX(`9e2e98f3`) 랜딩 후 08-27 09:13 429 재발의 근인 규명.
