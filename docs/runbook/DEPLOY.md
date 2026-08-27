@@ -84,6 +84,7 @@ package.json/lock 변경 시 `npm install` 선행(worker_sync가 경고).
 |------|------|------|------|
 | `sync-audit.log` | `~/Library/Logs/stockvis/` | `sv sync` 집행마다 시각·pid·ppid(부모명)·tty·전 트리 HEAD | 미귀속 동기 사건 발생 시 시각으로 대조 → 누가 실행했나 즉시 특정 |
 | `runtime_check.log` | `~/Library/Logs/stockvis/` | 감지 실행마다 JSON 1줄(시각·종합·항목별 판정·behind) | 드리프트 지속시간·고아 발생 이력 추적 |
+| `web.log`(access) | `~/Library/Logs/stockvis/` | daphne access 라인(stdout). `daphne-web.sh` `PYTHONUNBUFFERED=1`로 **즉시 flush**(INC-P16-CLOSE Part 2) | 랜딩 후 검증: daphne 재기동 뒤 요청 1건 발생 → `tail -f web.log`에 **지연 없이** 라인 출현(버퍼 desync 재발 아님) |
 
 **귀속 확인 절차** (08-18 14:57 사건류 재발 시): ⑴ `sync-audit.log`에서 해당 시각 엔트리 →
 pid·ppid·tty로 실행 주체 특정(과거엔 이 로그가 없어 reflog+web.log+프로세스 포렌식 3중 대조

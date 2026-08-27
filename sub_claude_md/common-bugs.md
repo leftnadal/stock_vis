@@ -1650,3 +1650,11 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 3. 활성 여부 단언은 **클래스 토큰 일치**로. `className.toContain('text-blue-600')`은 `hover:text-blue-600`에 **오탐**한다 → `className.split(/\s+/).includes('text-blue-600')`.
 
 **부기(같은 세션 실측)**: 계약 테스트에 임의 상한을 박으면 나중에 **승인된 콘텐츠를 자기 테스트가 막는다**. GUIDE-S1이 `regions 3~5개`로 둔 상한이 S1C에서 승인된 7영역 문구를 red로 만들었다 — 상한을 7로 완화하고 "S1의 5는 임의값"임을 주석에 남겼다. 계약 테스트의 수치 경계는 **근거가 있을 때만** 박을 것.
+
+## daphne access log(stdout·블록버퍼) vs error log(stderr·라인버퍼) desync → 로그 실시간 판독 시 "전부 200" 착시 (채번 대기, INC-P16-2/CLOSE 2026-08-27) `[infra][observability][ops]`
+
+**증상**: 09:13 인시던트 로그 판독 시 `web.log`(access)는 09:13:20에서 끊겨 market-pulse 요청이 "전부 200·429 0건"으로 보였으나, `web-error.log`(Django logger)에는 같은 시각 09:13:21~23에 429("Too Many Requests") 18건이 존재. 두 소스가 429 경계에서 상반된 그림 → 잘못된 1차 판정 위험.
+
+**원인**: `com.stockvis.web.plist`가 daphne의 stdout=`web.log`(access), stderr=`web-error.log`로 분리. **비-TTY에서 Python stdout은 블록 버퍼링** → access 라인이 청크 단위로 밀려, 읽는 순간 버퍼 미flush분(09:13:21~)이 파일에 아직 안 보임. stderr는 라인/무버퍼라 즉시 기록. = 데이터 유실이 아닌 **버퍼 desync**.
+
+**해소**: `scripts/daphne-web.sh`에 `export PYTHONUNBUFFERED=1`(exec 직전) → stdout 즉시 flush. 랜딩 후 재기동 필요(#41). **판독 규칙**: 인시던트 로그 대조 시 access·error 두 소스를 **항상 교차** 확인(한 소스의 절단을 다른 소스가 메움). cf. INC-P16-2 부수건.

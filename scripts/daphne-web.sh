@@ -39,6 +39,10 @@ echo "======================================"
 export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-config.settings}"
 # macOS Postgres GSS 행 방지(공통 버그 #25) — fork 없는 ASGI라도 DB 연결 안정화.
 export PGGSSENCMODE="${PGGSSENCMODE:-disable}"
+# INC-P16-CLOSE Part 2: stdout(access log) 블록 버퍼링 제거 → launchd StandardOutPath
+# (web.log)로 즉시 flush. 버퍼링 시 access log가 청크로 밀려, 실시간 판독 때
+# stderr(web-error.log)와 desync("전부 200" 착시)를 유발(INC-P16-2 부수건).
+export PYTHONUNBUFFERED=1
 
 # exec으로 daphne 실행 (PID 유지 → launchd KeepAlive 정상 동작)
 exec "$VENV_DIR/bin/daphne" -p "$PORT" -v 1 config.asgi:application

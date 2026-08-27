@@ -6859,3 +6859,21 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **검증**: vitest 전체 **1080 passed**(신규 A 8 + B 2)·tsc 0·lint 0·playbook pytest 15. 재현 검증=react-query 실행 루프에 predicate 물려 429 무재시도(1회)·500 재시도(3회) 결정론 입증(브라우저 수동 재현 갈음, 후속=SMOKE-BROWSER-PATH 자동화).
 
 **Why C 추가**: A+B로 반복 refresh 5회 ≈ 15~25/min « 60이 산수상 충분하나, throttle 예산 2배는 재현 변동(캐시 miss·동시 탭)에 대한 저비용 보험(settings 1줄). 근인 완화는 A/B, C는 여유 예산. **랜딩=병진 수동**(main 머지 + sv sync + **api 재기동(#41)** + web 리빌드 + 스모크). 실행 세션은 배포/서비스 op 자기집행 금지([[feedback_deploy_approval_explicit_quote]]·[[feedback_service_op_submit_not_execute]]).
+
+## [2026-08-27] D-INC-P16-2 — 09:13 429 근인 = FE 루프 아님·외부/수동 반복 문서 로드 + INC-P16 트랙 종결 [frontend][infra][incident][forensic]
+
+> 포렌식(read-only) 판정 채택. INC-P16-1-FIX(`9e2e98f3`) 랜딩 후 08-27 09:13 429 재발의 근인 규명.
+
+- **판정**: **FE 재실행 루프 부재(코드 확정)**. i18n(staleTime 24h·gcTime 25h) 쿼리가 14초에 23회 fetch = 빈 캐시(신규 QueryClient) 23회 = **전체 문서 로드 23회**뿐이 유일 설명(React 내부 refetch는 24h-fresh 쿼리 재fetch 물리적 불가). market-pulse-v2 렌더 트리에 auto-reload/refetch/interval/invalidate 코드 전무 → **구동원=페이지 코드 밖(하드리프레시 연타 = 외부 반복 문서 로드)**.
+- **가설 기각(코드 줄 근거)**: H-A(QueryClient 재생성) = `QueryProvider.tsx`가 `useState(()=>new QueryClient)` 유지, INC-P16-1 diff는 retry 2줄뿐(인스턴스화 무접촉). H-B(인증 리마운트) = AuthContext verifyToken 마운트 1회·401 시 clear만·market-pulse-v2는 AuthGuard 미래핑. H-C(refetch 설정) = refetchInterval 0·refetchOnWindowFocus false·staleTime 김. H-D = market-pulse-v2 트리에 `window.location.reload` 0건.
+- **INC-P16-1-FIX 무죄 + 실전 유효**: auth/provider/reload 경로 = pre-serving(`d83a0c63`)과 동일(내 커밋 외 접촉 0) → **신규 회귀 아님**. 병진 실기기 PASS(429 무증폭·2초 소멸·playbook lazy 정합·보통 속도 5회 무에러·스로틀 창 회복).
+
+**디렉터 오류 2건 병기(교훈)**:
+- ⑴ **"사람 소거" 단정 오판**: INC-P16-2 지시서가 "사람·재시도 소거 완료"를 전제로 FE 루프를 1순위로 세웠으나, **자기 지시(하드리프레시 연타) 시나리오를 미대조**. 코드에 auto 기전이 없으면 외부/수동이 유일 귀결인데 이를 배제. → 교훈: **판정 프레임의 전제(사람 배제)부터 자기 행위 이력과 대조**.
+- ⑵ **불가능한 합격 기준 출제**: INC-P16-1 검증 기준에 "연타 무에러"를 포함했으나, 연타=분당 수백 요청은 throttle(120/min) 초과가 **물리 산수상 정상** → 통과 불가능한 기준. → 교훈: **검증 기준은 물리 산수로 선검산**(달성 가능성 확인 후 출제). SMOKE-BROWSER-PATH 재현 기준을 "분당 ~5회 현실 새로고침"으로 정정(연타는 429 무증폭·회복만 검증).
+
+**부수건**: `web.log`(stdout·블록버퍼) vs `web-error.log`(stderr) desync → "전부 200" 착시. 해소 = `daphne-web.sh` `PYTHONUNBUFFERED=1`(INC-P16-CLOSE Part 2). common-bugs 채번 대기 등재.
+
+**INC-P16-CLOSE(소품 3)**: ① QueryProvider 안정성 회귀 테스트(같은 자리 3번째 인시던트 코드 차단) ② access 로그 flush(위) ③ page.tsx 에러 원인 구분(429="요청이 많아 잠시 제한됐어요"·401="로그인이 필요합니다"·기타=기존 문구, HTTP transport status 분기는 시장 판단 아님 → 단일소스 원칙 무관). vitest 전체 **1138**·tsc 0·lint 0. **랜딩=병진 승인 후**(런북 준비·이 랜딩 sv sync가 현행 드리프트 WARN도 자연 해소).
+
+**★ INC-P16 트랙 종결 + Phase 1.6 종결**: 1.6-S0(C-lite 배지)·1.6-S1(Playbook)·INC-P16-1(핫픽스)·INC-P16-2(포렌식)·INC-P16-CLOSE(마감) 전건 완료.
