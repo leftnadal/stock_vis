@@ -8,6 +8,7 @@ from .ego_views import EgoGraphView
 from .event_views import EventBoardView, EventRankingView
 from .heat_views import ThemeHeatBarView, ThemeHeatCardView
 from .mindmap_views import MindmapCardView, MindmapTreeView
+from .quadrant_views import SectorQuadrantView
 from .views import (
     ChainSightGraphView,
     ChainSightSuggestionView,
@@ -27,6 +28,8 @@ urlpatterns = [
     path("events/<str:theme>/stocks/", EventRankingView.as_view(), name="chainsight-event-ranking"),
     # Theme Heat API (TH-15, 고정 경로 — 동적 symbol 경로보다 먼저)
     path("theme-heat/", ThemeHeatBarView.as_view(), name="chainsight-theme-heat-bar"),
+    # DSS-QUADRANT (QUAD-IMPL-1) — 고정 경로, 동적 <theme>보다 먼저.
+    path("theme-heat/quadrant/", SectorQuadrantView.as_view(), name="chainsight-theme-heat-quadrant"),
     path("theme-heat/<str:theme>/", ThemeHeatCardView.as_view(), name="chainsight-theme-heat-card"),
     # 마켓 뷰 (고정 경로 먼저)
     path("seeds/", SeedListView.as_view(), name="chainsight-seeds"),
