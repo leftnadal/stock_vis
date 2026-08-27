@@ -1,7 +1,7 @@
 # Stock_vis Design Lab
 
 > **한국어 Companion 문서**  
-> 이 문서는 [`README.md`](README.md)의 한국어 companion이다. 영어 파일은 canonical repository document로 유지하지만, 영어 문구 자체가 승인된 의미보다 우선하지는 않는다. 영어와 한국어 사이에 의미 차이가 발견되면 관련 CEO-approved semantic intent와 authoritative Design / Research decision을 기준으로 두 문서를 다시 정합시킨다. 한국어 companion 자체가 별도의 독립 authority를 만들지는 않는다.
+> 이 문서는 [`README.md`](README.md)의 한국어 companion이다. 영어 파일은 canonical repository document로 유지하지만, 영어 문구 자체가 승인된 의미보다 우선하지는 않는다. 의미 차이가 발견되면 관련 CEO-approved semantic intent와 authoritative Design / Research decision을 기준으로 두 문서를 다시 정합시킨다. 한국어 companion 자체가 별도의 독립 authority를 만들지는 않는다.
 
 **Source Synced:** 2026-08-27
 
@@ -19,35 +19,39 @@ Design Lab은 Stock_vis의 더 넓은 목적인 **Better Investment Decisions**�
 
 ## Bootstrap 읽기 순서
 
-한글로 빠르게 검토하려면 아래 companion 문서를 읽는다.
-
 1. [`00_foundation/foundation_ko.md`](00_foundation/foundation_ko.md)
 2. [`01_operating_system/operating_model_ko.md`](01_operating_system/operating_model_ko.md)
 3. [`01_operating_system/agent_protocol_ko.md`](01_operating_system/agent_protocol_ko.md)
 4. [`01_operating_system/knowledge_lifecycle_ko.md`](01_operating_system/knowledge_lifecycle_ko.md)
 5. [`01_operating_system/evolution_ko.md`](01_operating_system/evolution_ko.md)
 
-영어 원문은 각각 같은 이름의 `_ko`가 없는 파일이다.
+## Workstreams
 
-## 현재 Active Workstream
+### Workstream 001 — Investment Judgment Experience Foundation
 
-- [`Workstream 001 — Investment Judgment Experience Foundation`](02_workstreams/001_investment_judgment_experience/brief_ko.md)
-  - [`Exploration Log / Batch 01`](02_workstreams/001_investment_judgment_experience/exploration_ko.md)
-  - [`Exploration Batch 02 — Judgment Update Logic & Information Model`](02_workstreams/001_investment_judgment_experience/batch_02_judgment_update_logic_ko.md)
-  - [`Exploration Batch 03 — Judgment Structure Granularity & Human–AI Authorship Boundary`](02_workstreams/001_investment_judgment_experience/batch_03_authorship_granularity_ko.md)
-  - [`Exploration Batch 04 — Judgment Experience Interaction Architecture`](02_workstreams/001_investment_judgment_experience/batch_04_interaction_architecture_ko.md)
-  - [`Exploration Batch 05 — Low-Fidelity Wireflow / Prototype Exploration`](02_workstreams/001_investment_judgment_experience/batch_05_wireflow_prototype_ko.md)
-  - [`Prototype 01 — Interactive Judgment Experience`](02_workstreams/001_investment_judgment_experience/prototype_01_judgment_experience.html) — Working prototype artifact
-  - [`Exploration Batch 06 — Generalization Stress Test`](02_workstreams/001_investment_judgment_experience/batch_06_generalization_stress_test_ko.md)
-  - [`Batch 06 Addendum — Future Opportunity Comparison & Rotation Context`](02_workstreams/001_investment_judgment_experience/batch_06_future_opportunity_comparison_addendum_ko.md)
-  - [`Prototype 02 — Generalized Judgment Workspace`](02_workstreams/001_investment_judgment_experience/prototype_02_generalized_judgment_workspace.html) — Working prototype artifact
-  - [`Synthesis`](02_workstreams/001_investment_judgment_experience/synthesis_ko.md)
+- [`Brief`](02_workstreams/001_investment_judgment_experience/brief_ko.md)
+- [`Exploration Log / Batch 01`](02_workstreams/001_investment_judgment_experience/exploration_ko.md)
+- [`Batch 02 — Judgment Update Logic & Information Model`](02_workstreams/001_investment_judgment_experience/batch_02_judgment_update_logic_ko.md)
+- [`Batch 03 — Judgment Structure Granularity & Human–AI Authorship Boundary`](02_workstreams/001_investment_judgment_experience/batch_03_authorship_granularity_ko.md)
+- [`Batch 04 — Judgment Experience Interaction Architecture`](02_workstreams/001_investment_judgment_experience/batch_04_interaction_architecture_ko.md)
+- [`Batch 05 — Low-Fidelity Wireflow / Prototype Exploration`](02_workstreams/001_investment_judgment_experience/batch_05_wireflow_prototype_ko.md)
+- [`Prototype 01 — Interactive Judgment Experience`](02_workstreams/001_investment_judgment_experience/prototype_01_judgment_experience.html) — Working prototype artifact
+- [`Batch 06 — Generalization Stress Test`](02_workstreams/001_investment_judgment_experience/batch_06_generalization_stress_test_ko.md)
+- [`Batch 06 Addendum — Future Opportunity Comparison & Rotation Context`](02_workstreams/001_investment_judgment_experience/batch_06_future_opportunity_comparison_addendum_ko.md)
+- [`Prototype 02 — Generalized Judgment Workspace`](02_workstreams/001_investment_judgment_experience/prototype_02_generalized_judgment_workspace.html) — Working prototype artifact
+- [`Research-aligned Synthesis / Working Foundation`](02_workstreams/001_investment_judgment_experience/synthesis_ko.md)
+
+### Workstream 002 — Product Surface / Information Architecture Exploration — **Active**
+
+- [`Brief`](02_workstreams/002_product_surface_ia/brief_ko.md)
+- [`Batch 01 — Surface Responsibility & IA Families`](02_workstreams/002_product_surface_ia/batch_01_surface_architecture_ko.md)
 
 Workstream 자료와 prototype artifact는 기본적으로 **Working** 상태이며, 자동으로 Approved Design Knowledge나 제품 architecture가 되지 않는다.
 
 ## Approved Decision Records
 
 - [`DL-DR-0001 — Human–AI Judgment Authority Boundary`](04_decision_records/DL-DR-0001_human_ai_judgment_authority_ko.md)
+- [`DL-DR-0002 — Cross-Lab Judgment Semantic Boundary`](04_decision_records/DL-DR-0002_cross_lab_judgment_semantic_boundary_ko.md)
 
 Approved Decision Record는 명시된 scope 안에서 수정되거나 supersede되기 전까지 downstream Design work의 durable constraint로 취급한다.
 
