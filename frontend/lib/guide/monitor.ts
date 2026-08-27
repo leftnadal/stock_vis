@@ -39,6 +39,7 @@ export const MONITOR_GUIDE: GuideScreen[] = [
       },
     ],
     nextAction: { label: '유지하기로 한 판단을 실제 보유에 반영하기 (포트폴리오)', route: '/portfolio' },
-    reviewStatus: 'draft',
+    // 병진 검수 승인 2026-08-27 (GUIDE-S1C)
+    reviewStatus: 'confirmed',
   },
 ];

@@ -33,6 +33,19 @@ describe('GuideOverlay 노출 조건', () => {
     expect(screen.queryByTestId('guide-toggle')).toBeNull()
   })
 
+  // GUIDE-S1C(D-MP-V2-NAV): Market Pulse 가이드는 v2에만. v1은 가이드 미제공 = 은퇴 신호.
+  it('Market Pulse v2에는 ? 버튼이 노출된다', () => {
+    pathname = '/market-pulse-v2'
+    render(<GuideOverlay />)
+    expect(screen.getByTestId('guide-toggle')).toBeInTheDocument()
+  })
+
+  it('Market Pulse v1(/market-pulse)에는 ? 버튼이 노출되지 않는다', () => {
+    pathname = '/market-pulse'
+    render(<GuideOverlay />)
+    expect(screen.queryByTestId('guide-toggle')).toBeNull()
+  })
+
   it('OFF 상태에서는 패널을 렌더하지 않는다', () => {
     render(<GuideOverlay />)
     expect(screen.queryByTestId('guide-panel')).toBeNull()

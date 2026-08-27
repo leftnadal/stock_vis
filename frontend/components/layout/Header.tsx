@@ -14,7 +14,8 @@ import { MySubNav, isMyPage } from '@/components/layout/MySubNav';
 // 포트폴리오·마이페이지는 top nav에서 제거 → My 서브탭·아바타로 이동.
 const NAV_PUBLIC = [
   { href: '/', label: '대시보드', exact: true },
-  { href: '/market-pulse', label: 'Market Pulse' },
+  // D-MP-V2-NAV(옵션 B, GUIDE-S1C): 네비 목적지를 v2로 전환. v1 라우트는 존치(리다이렉트 없음).
+  { href: '/market-pulse-v2', label: 'Market Pulse' },
   { href: '/chainsight', label: 'Chain Sight' },
   { href: '/news', label: '뉴스' },
   { href: '/screener', label: '스크리너' },

@@ -15,12 +15,13 @@ describe('GUIDE_SCREENS 계약', () => {
     }
   })
 
-  it('learnings 2~4개 · regions 3~5개', () => {
+  // 상한 7 = S1C 승인 문구(marketPulse v2 7영역) 기준. S1의 5는 임의 상한이었음.
+  it('learnings 2~4개 · regions 3~7개', () => {
     for (const s of GUIDE_SCREENS) {
       expect(s.learnings.length, `${s.id} learnings`).toBeGreaterThanOrEqual(2)
       expect(s.learnings.length, `${s.id} learnings`).toBeLessThanOrEqual(4)
       expect(s.regions.length, `${s.id} regions`).toBeGreaterThanOrEqual(3)
-      expect(s.regions.length, `${s.id} regions`).toBeLessThanOrEqual(5)
+      expect(s.regions.length, `${s.id} regions`).toBeLessThanOrEqual(7)
     }
   })
 
@@ -36,6 +37,17 @@ describe('GUIDE_SCREENS 계약', () => {
     for (const s of GUIDE_SCREENS) {
       if (s.nextAction) expect(known.has(s.nextAction.route), `${s.id} → ${s.nextAction.route}`).toBe(true)
     }
+  })
+
+  it('S1C: 검수 승인분은 전건 confirmed (draft 잔류 없음)', () => {
+    const drafts = GUIDE_SCREENS.filter((s) => s.reviewStatus !== 'confirmed').map((s) => s.id)
+    expect(drafts, `draft 잔류: ${drafts.join(', ')}`).toEqual([])
+  })
+
+  it('S1C: Market Pulse 가이드는 v2 라우트에만 존재한다 (v1 은퇴 신호)', () => {
+    const routes = GUIDE_SCREENS.map((s) => s.route)
+    expect(routes).toContain('/market-pulse-v2')
+    expect(routes).not.toContain('/market-pulse')
   })
 
   it('조회 헬퍼는 정확 일치만 인정한다', () => {

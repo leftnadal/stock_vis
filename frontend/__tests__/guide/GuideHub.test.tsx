@@ -41,3 +41,13 @@ describe('GuideHub', () => {
     }
   })
 })
+
+// GUIDE-S1C: 검수 승인 후 '초안' 배지가 사라졌는지 (허브의 정직 표시가 상태를 따라가는가)
+describe('GuideHub 검수 상태 반영 (S1C)', () => {
+  it('confirmed 화면에는 "초안" 배지를 붙이지 않는다', () => {
+    render(<GuideHub />)
+    for (const s of GUIDE_SCREENS.filter((x) => x.reviewStatus === 'confirmed')) {
+      expect(screen.queryByTestId(`guide-draft-${s.id}`)).toBeNull()
+    }
+  })
+})

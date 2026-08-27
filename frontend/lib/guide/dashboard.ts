@@ -44,6 +44,7 @@ export const DASHBOARD_GUIDE: GuideScreen[] = [
       },
     ],
     nextAction: { label: '이 움직임이 어디까지 번졌는지 보기 (Chain Sight)', route: '/chainsight' },
-    reviewStatus: 'draft',
+    // 병진 검수 승인 2026-08-27 (GUIDE-S1C)
+    reviewStatus: 'confirmed',
   },
 ];

@@ -81,7 +81,7 @@ export default function MarketPulseV2Page() {
         <StatusBanner status={meta.status} reason={meta.status_reason} labels={labels} />
 
         {/* ③ Regime hero (full-width) — D-MP2-SURFACE 변형1 위계 1번 */}
-        <div className="mt-4">
+        <div data-guide="marketPulse.regime" className="mt-4">
           <RegimeCardSummary
             data={overview.cards.regime}
             labels={labels}
@@ -97,7 +97,7 @@ export default function MarketPulseV2Page() {
         </div>
 
         {/* ③b Delta Card — 어제와 달라진 것 (MP2-DELTA Slice 1) */}
-        <div className="mt-4">
+        <div data-guide="marketPulse.delta" className="mt-4">
           <DeltaCard
             regime={overview.cards.regime}
             sectorDeltas={overview.sector_deltas}
@@ -111,7 +111,7 @@ export default function MarketPulseV2Page() {
         <AnomalyPanel data={overview.anomaly} labels={labels} />
 
         {/* ④a Macro Playbook — 다신호 합류 체인 (1.6-S1). anomaly와 구분(합류 부분점등). */}
-        <div className="mt-4">
+        <div data-guide="marketPulse.playbook" className="mt-4">
           <PlaybookCardContainer />
         </div>
 
@@ -124,7 +124,7 @@ export default function MarketPulseV2Page() {
         </div>
 
         {/* ⑦ Grid: Breadth + Concentration — 위계 5번 */}
-        <section className="mt-4 grid gap-3 sm:grid-cols-2">
+        <section data-guide="marketPulse.breadth-concentration" className="mt-4 grid gap-3 sm:grid-cols-2">
           <BreadthCardSummary
             data={overview.cards.breadth}
             labels={labels}
@@ -140,7 +140,7 @@ export default function MarketPulseV2Page() {
         </section>
 
         {/* ⑦.5 유사 국면 카드 (MP2-ANALOG Slice B) — 결정론 코어, 라벨 슬롯 Slice C */}
-        <section className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
+        <section data-guide="marketPulse.analog-brief" className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
           <AnalogCardContainer />
         </section>
 

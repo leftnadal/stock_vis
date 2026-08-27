@@ -22,7 +22,8 @@ export default function MobileNav() {
   // 홈 · Market Pulse · Chain Sight · 뉴스 · 가이드 · My. (포트폴리오·내정보는 My/아바타로 이동)
   const navItems = [
     { name: '홈', href: '/', icon: Home, active: pathname === '/' },
-    { name: 'Market Pulse', href: '/market-pulse', icon: Activity, active: pathname.startsWith('/market-pulse') },
+    // D-MP-V2-NAV(옵션 B, GUIDE-S1C): 목적지 v2 전환. active는 v1/v2 공통 prefix 유지(아래 주석 참조).
+    { name: 'Market Pulse', href: '/market-pulse-v2', icon: Activity, active: pathname.startsWith('/market-pulse') },
     { name: 'Chain Sight', href: '/chainsight', icon: Link2, active: pathname.startsWith('/chainsight') },
     { name: '뉴스', href: '/news', icon: Newspaper, active: pathname.startsWith('/news') },
     { name: '가이드', href: '/guide', icon: HelpCircle, active: pathname.startsWith('/guide') },

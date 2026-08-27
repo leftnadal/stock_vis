@@ -34,6 +34,7 @@ export const CHAINSIGHT_GUIDE: GuideScreen[] = [
       },
     ],
     nextAction: { label: '눈에 든 대상을 계속 추적하기 (Monitor)', route: '/monitor' },
-    reviewStatus: 'draft',
+    // 병진 검수 승인 2026-08-27 (GUIDE-S1C)
+    reviewStatus: 'confirmed',
   },
 ];

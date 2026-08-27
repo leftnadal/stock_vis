@@ -39,7 +39,7 @@ export function MarketMoversSection() {
   };
 
   return (
-    <section data-guide="marketPulse.movers" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+    <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
       {/* 헤더 */}
       <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between">

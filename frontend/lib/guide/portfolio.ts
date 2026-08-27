@@ -39,6 +39,7 @@ export const PORTFOLIO_GUIDE: GuideScreen[] = [
       },
     ],
     nextAction: { label: '어긋나기 시작한 판단 다시 추적하기 (Monitor)', route: '/monitor' },
-    reviewStatus: 'draft',
+    // 병진 검수 승인 2026-08-27 (GUIDE-S1C)
+    reviewStatus: 'confirmed',
   },
 ];
