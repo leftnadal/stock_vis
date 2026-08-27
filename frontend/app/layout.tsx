@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import GuideOverlay from "@/components/guide/GuideOverlay";
 import Header from "@/components/layout/Header";
 import MobileNav from "@/components/layout/MobileNav";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -61,6 +62,8 @@ export default function RootLayout({
               {children}
             </main>
             <MobileNav />
+            {/* 화면별 가이드 오버레이 — 가이드 데이터가 있는 라우트에서만 자체 렌더(附加 전용) */}
+            <GuideOverlay />
           </AuthProvider>
         </QueryProvider>
       </body>

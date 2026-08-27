@@ -38,7 +38,7 @@ export default function PortfolioSummary({
   };
 
   return (
-    <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white mb-6">
+    <div data-guide="portfolio.summary" className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white mb-6">
       {/* 총 자산 */}
       <div className="mb-6">
         <p className="text-blue-100 text-sm mb-2">총 포트폴리오 가치</p>

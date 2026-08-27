@@ -1610,3 +1610,28 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 ## 경계 red 착지 회귀 — 세션 종료 전 health·아키텍처 가드 GREEN 확인은 착지 조건 (#121, BOUNDARY-TRIAGE-1 2026-08-27) [process][harness][ops]
 
 경계 red 착지 회귀 — 세션 종료 전 health·아키텍처 가드 GREEN 확인은 착지 조건. 위반이 불가피하면 KNOWN_VIOLATIONS 동결+소진 등재를 착지 커밋에 동반한다(등록 없는 red 착지 금지). 실증: 7ec24c62(08-26) → BOUNDARY-TRIAGE-1 동결(08-27).
+## "속성만 추가" 슬라이스에서 wrapper `<div>`를 끼우면 행위보존이 깨진다 — 앵커는 대상 컴포넌트 루트에 속성으로, 증명은 diff-modulo-token으로 (채번 후보, GUIDE-S1 2026-08-27) `[frontend][process][harness]`
+
+**증상**: "기존 화면 렌더 결과 불변" 계약의 슬라이스에서 앵커(`data-guide` 등)를 붙이려고 페이지 JSX에 `<div data-guide="..."><Component /></div>` 래퍼를 끼움. 속성만 넣은 것 같지만 **DOM 트리가 바뀐다** — 대상이 grid/flex 직계 자식이면 `lg:col-span-2` 같은 클래스가 래퍼에 먹혀 레이아웃이 조용히 깨지고, `space-y-*` 간격·`:first-child` 계열 셀렉터도 어긋난다. 테스트가 통과해도 시각 회귀는 남는다.
+
+**규율**:
+1. 앵커는 **대상 컴포넌트의 최외곽 요소에 속성으로만** 부여한다(`<div data-guide="x" className="기존값">`). 래퍼 신설 금지. 컴포넌트 파일을 건드리게 되더라도 그쪽이 옳다.
+2. props로 넘기면 안 된다 — `<PortfolioSummary data-guide="..."/>`는 컴포넌트가 스프레드하지 않으면 **DOM에 도달하지 않고 조용히 사라진다**(무소음 실패).
+3. 증명은 눈이 아니라 기계로. 변경 파일마다 `git show <base>:<path>`와 **속성 토큰만 제거한 현재 파일**을 문자열 비교해 전부 일치하면 "삽입 외 변경 0"이 증명된다:
+   ```python
+   strip = re.compile(r'\s*data-guide="[^"]*"')
+   assert strip.sub('', open(f).read()) == git_show(base, f)
+   ```
+   GUIDE-S1 실증: 앵커 편집 12파일 전건 통과.
+4. 데이터의 앵커 목록과 소스의 속성이 따로 움직이면 배지가 **말없이 사라진다** → 양방향 집합 일치 테스트(선언⊆소스, 소스⊆선언, 파일 중복 금지)를 함께 심는다.
+
+## 이 repo의 eslint `react-hooks/set-state-in-effect` — 신규 컴포넌트의 localStorage 읽기·레이아웃 측정은 effect 본문 setState 금지 (채번 후보, GUIDE-S1 2026-08-27) `[frontend]`
+
+**증상**: 하이드레이션 안전 관용구(`useEffect(() => { setX(localStorage.getItem(k)) }, [])`)를 새 컴포넌트에 쓰면 lint 오류. 기존 `Header.tsx`·`MobileNav.tsx`가 같은 패턴으로 **선존 오류를 이미 갖고 있어** 전체 lint 총계만 보면 자기 신규분이 묻힌다.
+
+**해소**:
+- 외부 저장소(localStorage) 구독 → `useSyncExternalStore(subscribe, clientSnapshot, () => 서버기본값)`. 같은 탭 쓰기는 `storage` 이벤트가 안 뜨므로 **모듈 수준 리스너 Set으로 직접 통지**. 서버 스냅샷을 "숨김" 쪽으로 두면 하이드레이션 불일치도 함께 해결된다.
+- 레이아웃 측정(`getBoundingClientRect`) → effect 본문이 아니라 `requestAnimationFrame` 콜백에서 setState. 규칙이 "콜백 안 setState"는 허용한다. 단 테스트는 다음 프레임을 기다려야 하므로 `await waitFor(...)`로 바꾼다.
+- prop 변화에 따른 리셋은 effect가 아니라 **렌더 중 이전값 비교**(`if (last !== cur) { setLast(cur); ... }`) 패턴.
+
+**측정 규율**: 신규분 판정은 총계가 아니라 **기준선 대조**로. `git stash -u` → `npm run lint` → pop 하여 origin/main 총계와 비교(GUIDE-S1: 327 → 327, 순증 0).

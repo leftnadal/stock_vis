@@ -15,6 +15,23 @@
 - **경위(0-3 사실·판단 없음)**: 7ec24c62 커밋 메시지에 **경계 red 인지/신고 문구 부재**. `eod_universe_symbols()`가 Monitor union 기능(A-2) 추가 중 lazy import로 위반 유입. health·아키텍처 가드 red 채로 착지.
 - **Why**: 동결 = 임시 격리 — green 회복으로 회귀 가드 복원·다른 트랙(QUAD-IMPL-1 등 health FAIL HALT) 차단 해제. 실제 수리는 방향 판단(주입 vs 승격)이 필요해 별도 사이클. 등록 없는 red 방치는 가드 무력화이므로 즉시 동결로 SSOT 정합 회복.
 - **How to apply**: 동결 키 = `("stocks/services/eod_signal_calculator.py", "apps.monitor.models.monitor")` 양쪽 동기(한쪽만 갱신 시 어긋남). 소진 = TASKQUEUE `BOUNDARY-BURNDOWN-EOD`. 착지 규칙 = common-bugs #121(등록 없는 red 착지 금지). cf. BOUNDARY-1~3(#1~#5 청소 완료 선례).
+## [2026-08-27] D-GUIDE-TRACK — 유저 가이드 = 허브 + 화면별 오버레이 (옵션 C) [frontend][product][process]
+
+**결정**: 유저 가이드를 **옵션 C = 허브(`/guide`) + 화면별 `?` 오버레이** 구조로 구축한다. 가이드 텍스트는 산문이 아니라 **구조화 데이터**(`frontend/lib/guide/`)로 관리하며, **이 데이터가 이후 야간 도그푸딩 에이전트의 채점 루브릭 단일 출처**가 된다. 진행 순서 = **가이드 먼저 → 에이전트 나중**.
+
+- 데이터 계약 = `GuideScreen{ id, route, title, flowStage 1..5, coreQuestion, learnings[], regions[{anchor,title,desc}], nextAction?, reviewStatus }`.
+- `coreQuestion` = "이 화면이 답하는 질문" — **에이전트 채점 루브릭의 기준 문장**. 바꾸면 평가 기준이 바뀐다.
+- 오버레이 위치 지정은 **CSS 셀렉터 결합 금지** → 대상 요소에 `data-guide="<anchor>"` 속성만 부여하고 그것만 참조(리팩터링 내성).
+- 오버레이는 **附加 전용**: 가이드 OFF 상태에서 기존 화면 DOM·동작 완전 동일(행위보존). `data-guide` 속성 추가는 허용(렌더 결과 불변).
+- `reviewStatus: 'draft' | 'confirmed'` — 병진 검수 전 = `draft`. draft→confirmed 전환은 검수 후 별도 슬라이스.
+
+**Why**: 가중합 비교에서 **C = 7.85** (A=6.45 · B=6.40). 가중치 = 이해가치 .35 / 유지보수 .25 / 제품정의 .25 / 구현 .15. 마진 1.40 > 1 → **자동 결정**(재심의 불요). 가이드를 먼저 세우는 이유 = 에이전트가 "무엇이 좋은 화면인가"를 채점하려면 기준 문장이 선행해야 하며, 그 기준을 사람이 읽는 가이드와 **같은 파일**에 두면 기준·문구 drift가 구조적으로 불가능해진다(복제 = drift, 규약 10장).
+
+**How to apply**:
+- 가이드 문구 수정 = `frontend/lib/guide/*.ts` 단일 지점. 별도 산문 문서 신설 금지(복제 금지).
+- 새 화면 추가 시 `GuideScreen` 1건 등재 → 허브·오버레이 **자동 반영**(허브 하드코딩 금지).
+- `coreQuestion`이 안 써지는 화면·영역은 **억지로 짓지 말고 "질문 불성립"으로 보고** → KEEP/CUT 조사의 입력.
+- 후속: 야간 도그푸딩 에이전트(옵션 B+C 결합 — 관찰 후보 0~5개 + 성적 원장)는 **별도 지시서**. cf. 슬라이스 1 착지 = 본 세션.
 
 ## [2026-08-26] D-SCAN-B2TECH-CONTRACT — 기술 축 baked JSON 계약 (SCAN-B2-TECH-BE 착지) [dashboard][platform][data]
 

@@ -185,14 +185,14 @@ function MarketPulseContent() {
 
         {/* Section 1: Fear & Greed + Yield Curve */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
+          <div data-guide="marketPulse.fear-greed" className="lg:col-span-1">
             {data?.fear_greed ? (
               <FearGreedGauge data={data.fear_greed} />
             ) : (
               <SectionSkeleton title="Fear & Greed Index" subtitle="시장 심리 지표" />
             )}
           </div>
-          <div className="lg:col-span-2">
+          <div data-guide="marketPulse.yield-curve" className="lg:col-span-2">
             {data?.interest_rates ? (
               <YieldCurveChart data={data.interest_rates} />
             ) : (
@@ -217,7 +217,7 @@ function MarketPulseContent() {
 
         {/* Section 4: Economic Calendar */}
         {data?.calendar ? (
-          <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+          <section data-guide="marketPulse.calendar" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
             <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Economic Calendar</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">이번 주 주요 경제 일정</p>

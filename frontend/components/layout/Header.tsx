@@ -70,6 +70,10 @@ export default function Header() {
                 </Link>
               );
             })}
+            {/* 가이드 (D-GUIDE-TRACK) — My 왼쪽 고정 슬롯 */}
+            <Link href="/guide" className={linkClass(pathname.startsWith('/guide'))}>
+              가이드
+            </Link>
             {/* My = 마지막 서브페이지 직행 + 활성 표시 */}
             <Link href={myHref} className={linkClass(isMyPage(pathname))}>
               My

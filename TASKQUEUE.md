@@ -11,6 +11,19 @@
 - **방향 후보(결정=디렉터)**: 방향2(주입=호출자가 watch symbols를 `eod_universe_symbols(extra=...)`로 주입 → shared 무의존) / 방향C(승격=VIXProvider식 포트+등록 패턴 의존역전, BOUNDARY-3 선례). 방향1(소비자 이동)=호출자가 shared 내부라 난도 높음.
 - **통지 필요**: EODUNIV-P15 트랙(원 유입)과 소진 방향 조율.
 - **목표**: 동결 1→0, green 유지(동결=임시 격리). 상태: **등재(방향 결정 대기)**.
+## GUIDE 트랙 (2026-08-27 개설, D-GUIDE-TRACK)
+
+> 출처: D-GUIDE-TRACK(DECISIONS 2026-08-27). 목표 = 옵션 C(허브 + 화면별 `?` 오버레이). 가이드 데이터 = **야간 도그푸딩 에이전트 루브릭 단일 출처**. 순서 = 가이드 → 에이전트.
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| GUIDE-S1 | 슬라이스 1 — 데이터 계약(`lib/guide/`) + 렌더러(GuideOverlay·GuideHub) + 네비 삽입 + 핵심 5화면 초안 | @frontend | D-GUIDE-TRACK | ✅ **구현 완료(브랜치 `monorepo/sess-guide-s1`·main 미머지)** | vitest 1136(+22)·tsc 0·lint 순증 0. 행위보존 기계 증명(앵커 12파일 = `data-guide` 삽입 외 0). 스크린샷 잔여(browse 데몬 무응답). |
+| GUIDE-S1-REVIEW | 5화면 문구 병진 검수 → `reviewStatus` draft → confirmed 전환 | 병진(사용자) | GUIDE-S1 | 🆕 **todo(검수 대기)** | 검수 전까지 허브에 "초안" 배지 표시. 문구 = `frontend/lib/guide/*.ts` 단일 지점. |
+| GUIDE-S1-SHOT | 5화면 + 허브 라이브 스크린샷 증적 | @qa | GUIDE-S1 랜딩 | 🆕 **todo(잔여)** | [[feedback_ui_slice_live_screenshot]]. browse 데몬 무출력·Chrome 확장 미연결로 S1에서 미수행. HTML 렌더 검증으로 갈음(6라우트 200·`?` 버튼 5/5·`/guide` 미노출 1/1). |
+| GUIDE-S2 | 슬라이스 2 — 잔여 사용자-대면 화면 가이드 확장(하단 목록) | @frontend | GUIDE-S1-REVIEW | 🆕 **todo(대기)** | 검수로 문구 톤 확정 후 확장(초안 대량 생산 방지). |
+| GUIDE-STAGE4-GAP | 플로우 4단계(1차 검증)에 **독립 라우트 부재** — 검증 UI는 `/stocks/[symbol]` 내부 섹션. 허브가 "가이드 준비 중"으로 정직 표시 중 | 미배정 | 설계 | 🔭 **관찰(KEEP/CUT 입력)** | 심볼 없이는 진입 불가 → 플로우 한 바퀴가 끊긴다. 라우트 신설 vs 플로우 정의 수정 = 제품 결정. |
+| GUIDE-MP-V1V2 | `/market-pulse`(v1)에 v2 이관 배너 상주 — 가이드를 v1에 붙인 상태 | 미배정 | MP-UNIFY 결정 | 🔭 **관찰(KEEP/CUT 입력)** | v2로 이관 확정 시 `marketPulse.main` route를 `/market-pulse-v2`로 이설 필요. |
+| GUIDE-AGENT | 야간 도그푸딩 에이전트(옵션 B+C: 관찰 후보 0~5개 + 성적 원장) — 루브릭 = `coreQuestion` | 미배정 | GUIDE-S1-REVIEW | 🆕 **todo(별도 지시서)** | 검수된 coreQuestion 없이 착수 금지(기준 문장이 흔들리면 채점이 무의미). |
 
 ## INC-P16-1 후속 (2026-08-24, 홈 429 캐스케이드 핫픽스)
 

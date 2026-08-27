@@ -59,7 +59,7 @@ export function DataFreshnessBadge({
 
   if (isStale) {
     return (
-      <div className="mb-3 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+      <div data-guide="dashboard.freshness" className="mb-3 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
         <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0" />
         <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0">
           <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
@@ -74,7 +74,7 @@ export function DataFreshnessBadge({
   }
 
   return (
-    <div className="mb-3 flex items-center justify-between">
+    <div data-guide="dashboard.freshness" className="mb-3 flex items-center justify-between">
       <h1 className="text-lg font-bold text-gray-900 dark:text-white">
         오늘의 시그널
       </h1>
