@@ -958,6 +958,51 @@ def _parse_fmp_datetime(value):
         return None
 
 
+# 적응형 이분 가드(§3 캡 방어 원안 복원, D-EVT-CAP-1).
+_BISECT_MAX_DEPTH = 4          # 재귀 최대 깊이
+_BISECT_RUN_CALL_CAP = 12      # 런당 추가 콜 상한(성분 전체 공유)
+_BISECT_MIN_SPAN_DAYS = 3      # 창 ≤3일에서도 절단이면 실패 마킹(밀도상 사실상 불능)
+
+
+def _fetch_with_bisect(fetcher, w_from, w_to, budget, depth=0):
+    """fetch → 절단(count≥4000)이면 창 이분 재귀. 서브창 병합은 upsert 멱등키가 흡수.
+
+    guards(하드): 깊이 ≤ _BISECT_MAX_DEPTH · 런당 추가콜 ≤ _BISECT_RUN_CALL_CAP ·
+    창 ≤ _BISECT_MIN_SPAN_DAYS 에서도 절단이면 실패 마킹(재귀 종료).
+    반환: (rows, meta{bisect_depth, extra_calls, failed:[(from,to)...]}).
+    """
+    from packages.shared.api_request.providers.fmp.calendar_cap import detect_truncation
+
+    rows = fetcher(w_from.isoformat(), w_to.isoformat())
+    if not detect_truncation(w_from.isoformat(), w_to.isoformat(), rows):
+        return rows, {"bisect_depth": depth, "extra_calls": 0, "failed": []}
+
+    span_days = (w_to - w_from).days
+    # 종료 가드: 깊이·최소창 초과 → 실패 마킹(더 못 쪼갬).
+    if depth >= _BISECT_MAX_DEPTH or span_days <= _BISECT_MIN_SPAN_DAYS:
+        logger.warning(
+            "collect_calendar_events 이분 실패 마킹 [%s..%s] depth=%d span=%dd (캡 잔존)",
+            w_from, w_to, depth, span_days,
+        )
+        return rows, {"bisect_depth": depth, "extra_calls": 0, "failed": [(w_from.isoformat(), w_to.isoformat())]}
+    # 콜 예산 가드.
+    if budget["extra"] < 2:
+        logger.warning(
+            "collect_calendar_events 이분 콜 상한 도달 [%s..%s] — 실패 마킹", w_from, w_to,
+        )
+        return rows, {"bisect_depth": depth, "extra_calls": 0, "failed": [(w_from.isoformat(), w_to.isoformat())], "budget_exhausted": True}
+
+    mid = w_from + _dt.timedelta(days=span_days // 2)
+    budget["extra"] -= 2
+    left_rows, lmeta = _fetch_with_bisect(fetcher, w_from, mid, budget, depth + 1)
+    right_rows, rmeta = _fetch_with_bisect(fetcher, mid + _dt.timedelta(days=1), w_to, budget, depth + 1)
+    return left_rows + right_rows, {
+        "bisect_depth": max(lmeta["bisect_depth"], rmeta["bisect_depth"]),
+        "extra_calls": 2 + lmeta["extra_calls"] + rmeta["extra_calls"],
+        "failed": lmeta["failed"] + rmeta["failed"],
+    }
+
+
 @shared_task(bind=True, max_retries=3, soft_time_limit=600, time_limit=660)
 def collect_calendar_events(self, as_of=None, dry_run=False):
     """이벤트 캘린더 수집 (EVT 트랙). 성분별 격리 + 캡 감지 + 조건부 stale 스윕.
@@ -969,7 +1014,6 @@ def collect_calendar_events(self, as_of=None, dry_run=False):
     from django.conf import settings
     from django.utils import timezone
 
-    from packages.shared.api_request.providers.fmp.calendar_cap import detect_truncation
     from packages.shared.api_request.providers.fmp.client import FMPClient
     from .models import CalendarEvent
 
@@ -978,6 +1022,8 @@ def collect_calendar_events(self, as_of=None, dry_run=False):
 
     client = FMPClient(api_key=settings.FMP_API_KEY)
     result = {"as_of": d0.isoformat(), "dry_run": dry_run, "components": {}}
+    # 이분 추가콜 예산 — 런 전체 공유(성분 간 합산).
+    bisect_budget = {"extra": _BISECT_RUN_CALL_CAP}
     # 성분별 fetch 성공 여부 — stale 스윕 가드용(유형 단위).
     fetch_ok = {
         CalendarEvent.EventType.EARNINGS: True,
@@ -986,11 +1032,19 @@ def collect_calendar_events(self, as_of=None, dry_run=False):
     }
 
     def _run_component(name, fetcher, normalizer, etype, w_from, w_to):
-        rec = {"fetched": 0, "written": 0, "truncated": False, "ok": True}
+        rec = {
+            "fetched": 0, "written": 0, "truncated": False, "ok": True,
+            "bisect_depth": 0, "extra_calls": 0, "failed_subwindows": [],
+        }
         try:
-            rows = fetcher(w_from.isoformat(), w_to.isoformat())
+            # 적응형 이분: 절단 시 창을 쪼개 재수집(§3 캡 방어, D-EVT-CAP-1).
+            rows, meta = _fetch_with_bisect(fetcher, w_from, w_to, bisect_budget)
             rec["fetched"] = len(rows)
-            rec["truncated"] = detect_truncation(w_from.isoformat(), w_to.isoformat(), rows)
+            rec["bisect_depth"] = meta["bisect_depth"]
+            rec["extra_calls"] = meta["extra_calls"]
+            rec["failed_subwindows"] = meta["failed"]
+            # 이분 후에도 남은 실패 서브창이 있으면 truncated=True(소실 잔존 = 관찰/알림).
+            rec["truncated"] = bool(meta["failed"])
             for row in rows:
                 norm = normalizer(row)
                 if norm is None:

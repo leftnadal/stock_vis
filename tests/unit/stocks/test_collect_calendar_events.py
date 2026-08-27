@@ -163,3 +163,55 @@ class TestChunkBoundary:
                      (dt.date(2026, 10, 16), dt.date(2026, 11, 29))]
         # 갭·중복 0: chunk2 시작 = chunk1 끝 + 1일
         assert (w[1][0] - w[0][1]).days == 1
+
+
+def _density_fetcher(density):
+    """창 폭 × density 행 반환(캡 4000 상한). 날짜는 창 전체에 분산."""
+    from packages.shared.api_request.providers.fmp.calendar_cap import FMP_CALENDAR_ROW_CAP
+
+    def f(frm, to):
+        a = dt.date.fromisoformat(frm)
+        b = dt.date.fromisoformat(to)
+        span = (b - a).days + 1
+        n = min(span * density, FMP_CALENDAR_ROW_CAP)
+        return [{"date": (a + dt.timedelta(days=i % span)).isoformat(), "symbol": f"S{i}"}
+                for i in range(n)]
+    return f
+
+
+class TestBisect:
+    def test_recurses_and_merges_full_coverage(self):
+        """넓은 창=캡 도달 → 이분 재귀 → 서브창 병합이 요청 span 전량 커버(소실 0)."""
+        wf, wt = dt.date(2026, 10, 11), dt.date(2026, 11, 24)  # 45일
+        budget = {"extra": tasks_mod._BISECT_RUN_CALL_CAP}
+        rows, meta = tasks_mod._fetch_with_bisect(_density_fetcher(150), wf, wt, budget)
+        assert meta["failed"] == []          # 실패 마킹 없음
+        assert meta["bisect_depth"] >= 1     # 최소 1회 이분
+        assert meta["extra_calls"] <= tasks_mod._BISECT_RUN_CALL_CAP
+        dates = sorted({r["date"] for r in rows})
+        # 서브창 합집합 == 요청 span (소실 0 입증)
+        assert dates[0] == wf.isoformat()
+        assert dates[-1] == wt.isoformat()
+
+    def test_depth_scales_with_density(self):
+        wf, wt = dt.date(2026, 10, 11), dt.date(2026, 11, 24)
+        budget = {"extra": tasks_mod._BISECT_RUN_CALL_CAP}
+        _, meta = tasks_mod._fetch_with_bisect(_density_fetcher(400), wf, wt, budget)
+        assert meta["bisect_depth"] >= 2
+
+    def test_call_cap_and_min_span_guard_marks_failed(self):
+        """극단 밀도 → 이분해도 캡 잔존 → 실패 마킹(콜 상한/최소창 가드)."""
+        wf, wt = dt.date(2026, 10, 11), dt.date(2026, 11, 24)
+        budget = {"extra": tasks_mod._BISECT_RUN_CALL_CAP}
+        rows, meta = tasks_mod._fetch_with_bisect(_density_fetcher(5000), wf, wt, budget)
+        assert meta["failed"]                                   # 실패 서브창 존재
+        assert meta["extra_calls"] <= tasks_mod._BISECT_RUN_CALL_CAP  # 콜 상한 준수
+
+    def test_no_truncation_no_extra_calls(self):
+        """캡 미도달 → 이분 없음, extra_calls 0."""
+        wf, wt = dt.date(2026, 10, 11), dt.date(2026, 11, 24)
+        budget = {"extra": tasks_mod._BISECT_RUN_CALL_CAP}
+        rows, meta = tasks_mod._fetch_with_bisect(_density_fetcher(10), wf, wt, budget)
+        assert meta["failed"] == []
+        assert meta["bisect_depth"] == 0
+        assert meta["extra_calls"] == 0
