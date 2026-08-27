@@ -49,6 +49,7 @@ Design Lab은 Stock_vis의 더 넓은 목적인 **Better Investment Decisions**�
 - [`Batch 03 — Cross-Domain Architecture Generation & Stress Test`](02_workstreams/002_product_surface_ia/batch_03_cross_domain_architecture_generation_ko.md)
 - [`Batch 04 — IA Prototype Competition`](02_workstreams/002_product_surface_ia/batch_04_ia_prototype_competition_ko.md)
 - [`Prototype 03 — H1 / H2 / H5 IA Competition`](02_workstreams/002_product_surface_ia/prototype_03_ia_competition.html) — Working prototype artifact
+- [`Batch 05 — H5 Architectural Provenance & Evaluation Readiness`](02_workstreams/002_product_surface_ia/batch_05_h5_provenance_evaluation_readiness_ko.md)
 
 Workstream 자료와 prototype artifact는 기본적으로 **Working** 상태이며, 자동으로 Approved Design Knowledge나 제품 architecture가 되지 않는다.
 
