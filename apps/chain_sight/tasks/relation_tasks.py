@@ -14,6 +14,30 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
+# D-RC-DECAY-SEMANTIC (RC-A-1 PART 1): 감쇠(하향 전이) 대상 relation_type 화이트리스트.
+# ── 왜 화이트리스트인가 ──
+# 감쇠 판정은 last_observed_at(auto_now="행 마지막 save 시각")을 신선도 대리값으로 읽는다.
+# 이 값은 "관계가 마지막 재관측된 시각"이 아니라 "행이 마지막 저장된 시각"이므로, 재기록자
+# (주기적으로 그 타입 행을 재-save 하는 파이프라인)가 없는 타입은 구조 마이그레이션 시점에
+# 동결되어 임의 시점에 오발 감쇠한다. 실측(RC-A-0): PEER_OF·PRICE_CORRELATED 전량이
+# 2026-06-20(D2 재설계 랜딩)에 동결 → 90일 뒤 일괄 confirmed→stale 오발이 예약됐었다.
+#
+# ★ 등재 규칙: 재기록자(active writer)가 있는 타입만 등재한다. 신규 타입 추가 시 반드시
+#   "그 타입을 주기적으로 재-save 하는 경로가 있는가"를 확인한 뒤 등재할 것.
+#   - CO_MENTIONED: update_relation_confidence(매일 11:00)가 update_or_create로 재-save → 재기록자 O
+#   - SEC 4종(SUPPLIES_TO/COMPETES_WITH/DEPENDS_ON/PARTNER_WITH): seed_relations_to_chainsight
+#     (10-K seed) + extract_8k_relations 가 update_or_create로 재-save → 재기록자 O
+#   - PEER_OF: 착지 루프 D2에서 제거됨 → 재기록자 X → 제외
+#   - PRICE_CORRELATED: 착지 은퇴(신규/갱신 중단) → 재기록자 X → 제외 (RC-A-1 PART 3에서 처분)
+#   - ACQUIRED/PEER/HAS_THEME/HELD_BY_SAME_FUND 등: RC 재기록자 부재 → 제외
+DECAYABLE_RELATION_TYPES = [
+    "CO_MENTIONED",
+    "SUPPLIES_TO",
+    "COMPETES_WITH",
+    "DEPENDS_ON",
+    "PARTNER_WITH",
+]
+
 
 @shared_task(bind=True, max_retries=1, soft_time_limit=1800, time_limit=1860)
 def extract_co_mentions(self, days_back: int = 90):
@@ -290,16 +314,27 @@ def update_relation_confidence(self):
 def check_stale_and_decay(self):
     """
     CS-2-4: Stale 하향 전이. Celery Beat: 주 1회 (일요일 04:30).
+
+    D-RC-DECAY-SEMANTIC (RC-A-1 PART 1): 감쇠 대상을 DECAYABLE_RELATION_TYPES(재기록자
+    보유 타입)로 게이트한다. 재기록자 없는 타입(PEER_OF·PRICE_CORRELATED 등)은
+    last_observed_at이 아무리 낡아도 status를 건드리지 않는다 — auto_now 동결로 인한
+    오발 감쇠 차단. 목록 근거·등재 규칙은 모듈 상수 DECAYABLE_RELATION_TYPES 주석 참조.
     """
     from apps.chain_sight.models import RelationConfidence
 
     now = timezone.now()
     decayed = 0
 
+    # 빈 화이트리스트면 no-op (등재 타입 0 → 감쇠 0). 방어적 조기 반환.
+    if not DECAYABLE_RELATION_TYPES:
+        logger.info("Stale decay: DECAYABLE_RELATION_TYPES 비어있음 → no-op")
+        return {"decayed": 0}
+
     # audit P0 #9: queryset.update()는 save() 미호출 → neo4j_dirty 수동 토글
-    # confirmed → stale (90일)
+    # confirmed → stale (90일) — 재기록자 보유 타입만
     stale = RelationConfidence.objects.filter(
         relation_status="confirmed",
+        relation_type__in=DECAYABLE_RELATION_TYPES,
         last_observed_at__lt=now - timedelta(days=90),
     )
     decayed += stale.update(relation_status="stale", neo4j_dirty=True)
@@ -307,6 +342,7 @@ def check_stale_and_decay(self):
     # probable → weak (60일)
     weak = RelationConfidence.objects.filter(
         relation_status="probable",
+        relation_type__in=DECAYABLE_RELATION_TYPES,
         last_observed_at__lt=now - timedelta(days=60),
     )
     decayed += weak.update(relation_status="weak", neo4j_dirty=True)
@@ -314,11 +350,12 @@ def check_stale_and_decay(self):
     # weak → hidden (30일)
     hidden = RelationConfidence.objects.filter(
         relation_status="weak",
+        relation_type__in=DECAYABLE_RELATION_TYPES,
         last_observed_at__lt=now - timedelta(days=30),
     )
     decayed += hidden.update(relation_status="hidden", neo4j_dirty=True)
 
-    logger.info(f"Stale decay: {decayed}건 하향 전이")
+    logger.info(f"Stale decay: {decayed}건 하향 전이 (대상 타입={DECAYABLE_RELATION_TYPES})")
     return {"decayed": decayed}
 
 
