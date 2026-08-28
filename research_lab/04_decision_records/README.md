@@ -10,3 +10,4 @@ This directory records significant research, methodology, architecture, governan
 - [DR-0004: Adopt the Stock_vis Research Lab Research Methodology v1](DR-0004-adopt-research-methodology-v1.md) — Approved 2026-08-24
 - [DR-0005: Adopt the Stock_vis Research Lab Evaluation Methodology v1](DR-0005-adopt-evaluation-methodology-v1.md) — Approved 2026-08-24
 - [DR-0006: Separate Epistemic Authority from Consequential Governance](DR-0006-separate-epistemic-authority-consequential-governance.md) — Approved 2026-08-27
+- [DR-0007: Adopt the Stock_vis Research Lab Operational Record Specification v1](DR-0007-adopt-operational-record-specification-v1.md) — Approved 2026-08-28
