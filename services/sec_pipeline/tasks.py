@@ -340,6 +340,12 @@ def seed_relations_to_chainsight():
     """매칭된 SupplyChainEvidence → RelationConfidence 레코드 생성."""
     from apps.chain_sight.models import RelationConfidence
     from apps.chain_sight.services.upward_learning import HIGHSCORE_THRESHOLD
+    from apps.chain_sight.services.score_scale import (
+        GRADE_CONFIRMED_MIN,
+        GRADE_LIKELY_MIN,
+        GRADE_OBSERVED_MIN,
+        SCORE_VERSION_CURRENT,
+    )
     from apps.chain_sight.utils import normalize_pair
 
     from .models import SupplyChainEvidence as SCE
@@ -371,8 +377,13 @@ def seed_relations_to_chainsight():
         if sym_a == sym_b:
             continue
 
-        score_map = {"high": 85, "medium": 60, "low": 35}
-        score = score_map.get(ev.confidence_grade, 60)
+        # D-RC-SCALE: [0,1] 단위 계단(단일 소스 score_scale). default=medium(0.60).
+        score_map = {
+            "high": GRADE_CONFIRMED_MIN,
+            "medium": GRADE_LIKELY_MIN,
+            "low": GRADE_OBSERVED_MIN,
+        }
+        score = score_map.get(ev.confidence_grade, GRADE_LIKELY_MIN)
 
         # T-3b ⓓ-2 B-1: seed의 relation_status 권위 제거 (flap 소멸).
         #   - 기존 pair(update 경로): relation_status 무접촉 — score/관측치/evidence만 갱신.
@@ -384,6 +395,7 @@ def seed_relations_to_chainsight():
             "relation_category": "truth",
             "canonical_direction": direction,
             "truth_score": score,
+            "score_version": SCORE_VERSION_CURRENT,  # D-RC-SCALE: 신규 행은 태생이 [0,1]·v3.0
             "evidence_tier_best": 1,
             "has_supply_chain_source": True,
             "relation_basis_summary": f"SEC 10-K: {ev.evidence_text[:100]}",

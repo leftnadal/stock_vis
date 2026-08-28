@@ -10,19 +10,27 @@ RelationPairSnapshot에 period별 멱등 upsert한다.
 
 from __future__ import annotations
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def compute_pair_relevance(truth_max, market_max) -> tuple[float, float]:
     """
-    truth_max/market_max([0,100], None→0) → (relevance_opp, relevance_risk) ([0,1]).
+    truth_max/market_max([0,1], None→0) → (relevance_opp, relevance_risk) ([0,1]).
 
     opp  = max(0, t-m) * t   (진실이 시장을 앞선 정도 × 진실 강도 = 기회)
     risk = max(0, m-t) * m   (시장이 진실을 앞선 정도 × 시장 강도 = 과열 위험)
 
     곱(게이트 AND)이라 가중합이 아니다 — 한쪽이 0이면 신호도 0.
     t==m이면 둘 다 0이라 opp/risk는 상호배타.
+
+    D-RC-SCALE(RC-A-1 PART 2): 점수 도메인이 [0,1]로 통일돼 /100 스케일 제거.
+    (구 [0,100] 시절엔 truth_max/100·market_max/100 이었으나 실 최대가 85라 0.85에
+     고착됐다 — RC-A-0 실측. 이제 태생 [0,1]이라 곧바로 사용.)
     """
-    t = (truth_max or 0.0) / 100.0
-    m = (market_max or 0.0) / 100.0
+    t = truth_max or 0.0
+    m = market_max or 0.0
     opp = max(0.0, t - m) * t
     risk = max(0.0, m - t) * m
     return opp, risk
@@ -37,6 +45,7 @@ def aggregate_relation_pairs(period, dry_run: bool = False) -> dict:
     dry_run=True면 아무것도 쓰지 않고 쌍 수 + opp/risk 분포만 반환한다.
     """
     from apps.chain_sight.models import RelationConfidence, RelationPairSnapshot
+    from apps.chain_sight.services.score_scale import SCORE_VERSION_CURRENT
     from apps.chain_sight.utils import normalize_pair
 
     # 전 행을 한 번에 당겨 Python group-by (N+1 금지).
@@ -47,11 +56,18 @@ def aggregate_relation_pairs(period, dry_run: bool = False) -> dict:
         "truth_score",
         "market_score",
         "last_observed_at",
+        "score_version",
     )
+
+    # D-RC-SCALE 버전 게이팅(RC-A-1 PART 2 item 10): 전 행을 훑는 유일 공통 경로에
+    # 혼재 감시를 둔다. version != 현재("3.0")인 행은 [0,1] 스케일 미보장 → 경고(예외 아님).
+    stale_version_count = 0
 
     # 정규화 쌍 → 누적 dict
     agg: dict[tuple[str, str], dict] = {}
-    for sym_a, sym_b, category, truth_score, market_score, last_obs in rows.iterator():
+    for sym_a, sym_b, category, truth_score, market_score, last_obs, score_version in rows.iterator():
+        if score_version != SCORE_VERSION_CURRENT:
+            stale_version_count += 1
         key = normalize_pair(sym_a, sym_b)
         bucket = agg.get(key)
         if bucket is None:
@@ -75,6 +91,16 @@ def aggregate_relation_pairs(period, dry_run: bool = False) -> dict:
             prev = bucket["last_observed_at"]
             if prev is None or last_obs > prev:
                 bucket["last_observed_at"] = last_obs
+
+    # D-RC-SCALE 버전 혼재 감시(경고만 — 집계는 계속). version!=3.0 행이 남아있으면
+    # 마이그레이션 미적용 or 구 스케일 writer 잔존 신호.
+    if stale_version_count:
+        logger.warning(
+            "RC score_version 혼재 감지: %d행이 %s가 아님 — [0,1] 스케일 미보장. "
+            "0033 마이그레이션 적용/구 writer 확인 필요.",
+            stale_version_count,
+            SCORE_VERSION_CURRENT,
+        )
 
     if dry_run:
         opp_values, risk_values = [], []

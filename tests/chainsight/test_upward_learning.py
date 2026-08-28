@@ -122,7 +122,8 @@ class TestApplyUpwardLearning:
     def test_return_is_path_string_or_none(self):
         """반환 규격: 승급 경로 문자열 또는 None(구 bool 진리값 호환)."""
         up = _pair("weak")
-        assert apply_upward_learning(up, {"t": 1}, score=60, is_tier1=True) == "fastpath"
+        # D-RC-SCALE: score [0,1] — UPWARD(0.60)≤score<HIGHSCORE(0.85) & tier1 → fastpath
+        assert apply_upward_learning(up, {"t": 1}, score=0.60, is_tier1=True) == "fastpath"
         noop = _pair("weak")
         assert apply_upward_learning(noop, evidence_this_tick=None, score=99) is None
 

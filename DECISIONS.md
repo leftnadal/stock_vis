@@ -6923,6 +6923,21 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 
 **Why C 추가**: A+B로 반복 refresh 5회 ≈ 15~25/min « 60이 산수상 충분하나, throttle 예산 2배는 재현 변동(캐시 miss·동시 탭)에 대한 저비용 보험(settings 1줄). 근인 완화는 A/B, C는 여유 예산. **랜딩=병진 수동**(main 머지 + sv sync + **api 재기동(#41)** + web 리빌드 + 스모크). 실행 세션은 배포/서비스 op 자기집행 금지([[feedback_deploy_approval_explicit_quote]]·[[feedback_service_op_submit_not_execute]]).
 
+## [2026-08-27] RC-A-1 점수 눈금 위생 실행 — D-RC-DECAY-SEMANTIC · D-RC-SCALE · D-RC-PC-DISPOSE + RC-TRACK-ORDER [chainsight][해자]
+
+> 트랙: RC-A-1(write 세션·데드라인 09-19). worktree `monorepo/sess-rc-a1` base origin/main `d6365630` 이후(`69605758`). 커밋 스택: PART1 `a396e748` · PART2 `23318e25` · PART3 `4efdc4c9`. ⚠ **공유 DB(dev=prod) — migrate·삭제=prod-write는 미실행·병진 스테이징**([[lesson_dev_prod_shared_db]]). 실측 근거 = RC-A-0 리콘(scratchpad `RC_A0_RECON_REPORT.md`).
+
+- **RC-TRACK-ORDER (P1′ 순서, 08-24 승인 등재)**: RC 해자 위생 실행 순서 = ① 감쇠 오발 차단(폭탄 해제, 데드라인) → ② 눈금 통일 → ③ PC 처분 → ④ 하네스. P1′=감쇠 수리를 최우선(09-19 beat 오발 전 배포 필요)으로 앞세운 순서. **B 착수 게이트 ③(점수 눈금 위생 + 감쇠 정합) = RC-A-1 PART 1·2 완료로 충족**(디렉터 08-24 승인 게이트 구조 기준; 원 게이트 정의와 상이 시 회부).
+
+- **D-RC-DECAY-SEMANTIC**: `check_stale_and_decay`가 `last_observed_at`(auto_now="행 마지막 save 시각")을 신선도 대리로 읽어, 재기록자 없는 타입(PEER_OF·PRICE_CORRELATED)이 D2 재설계(06-20)에 동결→90일 뒤 일괄 오발 감쇠 예약(실측 2,054행 09-18). **결정**: 감쇠 대상을 `DECAYABLE_RELATION_TYPES`(재기록자 보유 타입=CO_MENTIONED+SEC 4종) 화이트리스트로 게이트. **Why**: last_observed_at은 "save 시각"이지 "관측 시각"이 아니므로 재확인 파이프라인 없는 타입에 90일 시계는 무의미(마이그레이션 재저장 시점이 시계 리셋). 순차 `.update()` cascade는 무변경(기존 로직 보존). 근본 해소(evidence_last_observed_at 분리)는 후속(TASKQUEUE).
+
+- **D-RC-SCALE**: truth_score·market_score 도메인 [0,100] 이산 계단 {0,35,60,85}을 [0,1] {0,0.35,0.60,0.85}로 통일, score_version "3.0". **Why**: 소비처마다 눈금 가정 상이(ego_views 리터럴 85/60/35 · pair_aggregation·expand /100 · advisory ×0.60)로 잠재 결함 — 특히 실 최대 85를 /100해 relevance/expansion이 0.85 고착, advisory conf가 [0,85]로 base 지배(설계 불변식 0.48은 [0,1] 가정). **단일 소스** `apps/chain_sight/services/score_scale.py`(GRADE_*_MIN·SCORE_VERSION_CURRENT·to_unit_scale 멱등·apply_scale_normalization). 마이그 0033(전행 정규화+default 3.0). writer 3+1곳·소비처 6곳 동반이동. 버전 게이팅=pair_aggregation 경고 로그. **advisory 교정 실측**(w=0,entry=ccy=0.5): placement 51.2→0.71(high)·36.2→0.56(med)·21.2→0.41(low) — conf 지배 해소. **outlier**: relation_type="PEER" 2행(0.5/0.6, 이미 [0,1])은 /100 제외(멱등 규칙 v>1만), 전역 순서보존 깨는 오염 재확인(relation_type 정정은 후속).
+
+- **D-RC-PC-DISPOSE**: PRICE_CORRELATED 3,784행(전량 market·context·PEER_OF 100% 중복=구조적 잉여, D2 은퇴·P1B sync_strength가 강도 담당) 처분. **결정**: 아카이브(복원경로) 후 삭제 = 관리 커맨드 `dispose_price_correlated`(dry-run 기본·--archive read-only·--apply prod-write). **삭제영향 실측**(scale-independent): PC 유일 market edge **3,005쌍**(market_max 소멸)·max 337·무영향 442. strip θ 60→85 상향. RPS FK 없음→고아 0·과거 궤적 불변. **Why 삭제 가역**: 아카이브 jsonl 전 컬럼 + pg 백업. **⚠ Neo4j PC 엣지 1,356개 잔존**(PG 삭제로 자동소거 안 됨 → 병진 시 별도 Cypher `MATCH ()-[r:PRICE_CORRELATED]->() DELETE r`). **실삭제·Neo4j 정리·after-snapshot = 병진 배포(0033 적용 후)**.
+
+- **전제 반증(Q19)**: RC-A-0/A-1 실측이 Q19-DISCOVERY-REACT·Q19-WIDTH-STAGNATION의 "유니버스 포화·신규 0·9562 고정" 전제를 반증 — 08-10 co-mention 신규생성 재점화(1,679), 이후 매일 56~226, RC 13.7k→17.3k. 유입 정지는 경로 차단이 아니라 뉴스 유니버스/추출의 7월 공백(08-10 재개). → discovery는 "고장"이 아니라 "유니버스 확장 선택 문제"로 격하(TASKQUEUE).
+
+- **D-RC-DEPLOY-WINDOW (디렉터 정정 08-27·전부 director-reserved·순서 엄수)**: 스케일 마이그(0033)는 **코드↔DB 스케일 결합** 배포 — 순서를 어기면 혼재 창(mixed-scale window)이 열린다. ⓐ 머지 후 worker 먼저 재기동→migrate면 "새 코드([0,1] 기대)×옛 DB([0,85] 값)" 창에서 새 임계 0.85가 옛 값 85와 비교되고 새 writer가 [0,1]을 미변환 테이블에 오염. ⓑ migrate 먼저→옛 worker면 [0,85]를 변환 테이블에 쓰는 역방향 오염. **정답=창 닫기**: ①sess-rc-a1→main 머지+push(ff 불가 시 merge commit·RC-A-1 명기) → ②**worker·beat 정지** → ③migrate 0033 → ④**worker·beat 재기동**(새 코드×새 DB로만 재개) → ⑤`dispose_price_correlated --archive <ops> --apply` → ⑥Neo4j `MATCH ()-[r:PRICE_CORRELATED]->() DELETE r`(1,356) → ⑦after-snapshot(read-only·CC 가능) → ⑧09-19 감쇠 beat 로그 확인(stale 전이 0·DECAYABLE 외 무변=폭탄 최종 봉인). ②~④ 놓친 beat는 다음 주기 자연 회복(손실 0). **데드라인**: 늦어도 09-12 주간 초 권고(C8 게이트 겹침)·절대 시한 09-19 이전. Why 화이트리스트가 이 창의 방어선이기도: PART1이 배포돼야 감쇠 오발도 막힘.
 ---
 
 ## D-EVT-SCOPE-U (2026-08-24) — 캘린더 수집 유니버스 스코프

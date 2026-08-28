@@ -25,7 +25,8 @@ def test_co_mention_lands_without_neo4j():
     assert set(com.values_list("serving_layer", flat=True)) == {"evidence"}
     # 임계 밴드 보존(count>=10 confirmed / >=5 probable / >=2 weak)
     assert com.get(symbol_a="AAA", symbol_b="BBB").relation_status == "confirmed"
-    assert com.get(symbol_a="AAA", symbol_b="BBB").market_score == 85
+    # D-RC-SCALE: count>=10 → market_score 0.85 ([0,1] 계단)
+    assert com.get(symbol_a="AAA", symbol_b="BBB").market_score == 0.85
     assert com.get(symbol_a="CCC", symbol_b="DDD").relation_status == "probable"
     assert com.get(symbol_a="EEE", symbol_b="FFF").relation_status == "weak"
     # count<2 미착지

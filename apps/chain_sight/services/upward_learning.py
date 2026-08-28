@@ -15,8 +15,14 @@ from django.utils import timezone
 # 강도 사다리 (hidden < weak < probable < confirmed). stale = confirmed cold(측면).
 LADDER = ["hidden", "weak", "probable", "confirmed"]
 
-# 임계 (정책표 근거 — probable 대표값 60. 상향 = 하향 + margin의 anti-whipsaw 이중 임계).
-UPWARD_THRESHOLD = 60   # score([0,100]) ≥ 이 값이어야 상향 후보
+# 임계 (정책표 근거 — probable 대표값. 상향 = 하향 + margin의 anti-whipsaw 이중 임계).
+# D-RC-SCALE(RC-A-1 PART 2): 점수 도메인 [0,100]→[0,1] 통일. 임계는 score_scale 단일 소스 참조.
+from apps.chain_sight.services.score_scale import (  # noqa: E402
+    GRADE_CONFIRMED_MIN,
+    GRADE_LIKELY_MIN,
+)
+
+UPWARD_THRESHOLD = GRADE_LIKELY_MIN   # score([0,1]) ≥ 이 값이어야 상향 후보 (0.60)
 STREAK_MIN = 3          # 연속 재확인 ≥ 이 틱(B 보수 — 하루살이 신호 차단)
 
 # T-3b ⓓ-2 B-2: 구 seed(≥85→confirmed) 규칙을 엔진으로 이관 — score≥이 값이면 confirmed 직행.
@@ -28,7 +34,7 @@ STREAK_MIN = 3          # 연속 재확인 ≥ 이 틱(B 보수 — 하루살이
 #     seed(sec_pipeline)는 기존 pair status 무기록 — flap 소멸.
 #   - market status 관할 = update_relation_confidence 베이스라인(매 틱 직접 재산정,
 #     upward 제외 대상 — 이중관리 방지). 본 엔진 밖(비-market만 처리).
-HIGHSCORE_THRESHOLD = 85
+HIGHSCORE_THRESHOLD = GRADE_CONFIRMED_MIN  # 0.85 (D-RC-SCALE 단일 소스)
 
 
 def upgrade_one_step(status: str) -> str:
