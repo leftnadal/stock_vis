@@ -6936,3 +6936,14 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **INC-P16-CLOSE(소품 3)**: ① QueryProvider 안정성 회귀 테스트(같은 자리 3번째 인시던트 코드 차단) ② access 로그 flush(위) ③ page.tsx 에러 원인 구분(429="요청이 많아 잠시 제한됐어요"·401="로그인이 필요합니다"·기타=기존 문구, HTTP transport status 분기는 시장 판단 아님 → 단일소스 원칙 무관). vitest 전체 **1138**·tsc 0·lint 0. **랜딩=병진 승인 후**(런북 준비·이 랜딩 sv sync가 현행 드리프트 WARN도 자연 해소).
 
 **★ INC-P16 트랙 종결 + Phase 1.6 종결**: 1.6-S0(C-lite 배지)·1.6-S1(Playbook)·INC-P16-1(핫픽스)·INC-P16-2(포렌식)·INC-P16-CLOSE(마감) 전건 완료.
+
+## [2026-08-28] D-CS-STORY-SOURCE — "이 종목의 이야기"(R2-S1) 소스 = 엣지 직접 집계 [chainsight]
+
+> R2-S1 STEP 0 실측 후 디렉터 확정(A안). 카드 패널 "이 종목의 이야기"의 데이터 소스 결정.
+
+- **결정**: 패널 소스 = **CoMentionEdge 엣지 직접 집계**(종목의 co-mention 파트너 스레드). EventGroup 아님.
+- **근거(실측)**: EventGroup은 **매일 재빌드되나(동결 아님) 조감용 sparse 클러스터** — jaccard 코어-위성이 고차수 허브를 **의도적으로 배제**(cohesion 게이팅). 커버 170/757(22%)·종목당 1그룹·**NVDA·AAPL·MRNA=0그룹**. → 카드 패널 소스로 쓰면 78% 종목(주요 허브 포함)에서 빈 패널.
+- **EventGroup 처분**: 폐기 아님 — **S2 카드 유형(명명된 조감 클러스터) 후보로 보존**. 허브 배제는 버그가 아니라 의도된 설계(코어 응집도 게이팅).
+- **활동 지표 구현**(마이그0): 90d count·마지막일 = CoMentionEdge(일일 재집계·3ms). **7일 count만** NewsEntity 라이브 집계(표시 후보 top24 bounded). 서비스 층 `services/story_activity.py get_symbol_story_threads` — 뷰 인라인 금지·**S2 전역 뷰 소스로 재사용**.
+- **비용/한계**: 전형 <50ms·최악 허브 NVDA ~250ms(수용·카드 lazy fetch). **S2 전역 뷰(전 종목 집계)는 라이브 불가 → 물질화 캐시 필요**(마이그 번들 = CS-STORY-ACTIVITY-CACHE 후속).
+- **표시 원칙**: 활동 게이지·7일 수치는 실측에서만(규칙 6). 7일 0=조용함(게이지 대신 마지막일)·파트너 0=빈 상태. 신뢰 위계(SEC 근거 연결 vs 동시언급 이야기) 시각 분리 유지.
