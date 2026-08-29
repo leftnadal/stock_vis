@@ -1708,6 +1708,19 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 
 **해소**: `scripts/daphne-web.sh`에 `export PYTHONUNBUFFERED=1`(exec 직전) → stdout 즉시 flush. 랜딩 후 재기동 필요(#41). **판독 규칙**: 인시던트 로그 대조 시 access·error 두 소스를 **항상 교차** 확인(한 소스의 절단을 다른 소스가 메움). cf. INC-P16-2 부수건.
 
+---
+
+## 외부 원장 적재 규율 — 성분-레벨 격리만으로 불충분, 행-레벨 격리 + 필드 용량 가드 필수 (2026-08-27, EVT-IMPL-3 보정2)
+
+**증상**: 외부 API 배치 적재에서 **단일 쓰레기 행**이 성분(배치) 전체를 중단시켜 대량 데이터 소실. dry-run은 통과(무쓰기라 필드 용량 검증 안 됨).
+
+**사례**: EVT-IMPL-3 초회 적재 — FMP earnings-calendar의 `ADTX epsEstimated=−2.2×10^11`(비유동 종목 쓰레기값) → `DecimalField(12,4)` 오버플로 DataError → 성분-레벨 try/except가 **첫 쓰레기 행에서 성분 전체 중단** → ~973행 소실. dry-run(EVT-IMPL-2)은 fetch까지만 봐서 못 잡음.
+
+**규율**:
+1. **행-레벨 격리**: 배치 persist 루프는 **행별 try/except + transaction.atomic()** — 한 행 예외가 배치를 잃지 않게. skipped 카운터로 관찰.
+2. **필드 용량 가드**: 외부 수치를 DB 필드에 넣기 전 **용량 초과·비수치를 null**(`_safe_decimal(value, max_abs)`). 값 보존이 아니라 **사실(행) 보존 + 쓰레기 무해화**.
+3. **dry-run 한계 인지**: dry-run은 fetch·정규화까지만 검증. **필드 용량·DB 제약은 실쓰기(초회 적재)에서만 드러난다** → dry-run 통과 ≠ 적재 안전.
+4. **오탐 방지**: skip 발생 유형은 파생 스윕(stale 등) 생략(미persist 행이 오탐 유발). 이상 임계(nulled+skipped 과다) = 스키마 drift 경고.
 ## HTML 문구 매칭으로 화면 상태를 판정할 때 — 부분 토큰 마커와 Next RSC 인라인 페이로드가 전 라우트를 거짓 fail로 만든다 (채번 후보, AGENT-S1 2026-08-27) `[frontend][ops][agent]`
 
 **증상**: 야간 점검 러너가 "화면에 실패 문구가 노출됐는가"를 SSR HTML 문자열 포함으로 판정했더니 **점검 대상 7개 라우트가 전부 fail**로 나왔다. 실제로는 전부 정상이었다. 두 번 연속 다른 원인으로 재현됐다.

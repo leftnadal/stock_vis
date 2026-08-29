@@ -1,4 +1,5 @@
 import datetime as _dt
+import decimal as _decimal
 import os
 import time
 
@@ -839,28 +840,62 @@ def _chunk_windows(d0, total_days, chunk_days):
     return windows
 
 
+# 필드 용량 가드(D-EVT-ROBUST-1). |value| ≥ max_abs = 정수부 자릿수 초과 → 오버플로.
+# eps DecimalField(12,4)→10^8 · revenue(20,2)→10^18 · dividend(12,6)→10^6 · split(15,6)→10^9.
+_EPS_MAX_ABS = 10 ** 8
+_REVENUE_MAX_ABS = 10 ** 18
+_DIVIDEND_MAX_ABS = 10 ** 6
+_SPLIT_MAX_ABS = 10 ** 9
+
+
+def _safe_decimal(value, max_abs, symbol, field, counter):
+    """필드 용량 초과·비수치 값 → None(사실 보존: 행은 유지, 필드만 null). counter['nulled'] += 1 + 로그.
+
+    FMP 이상치(예: ADTX epsEstimated=-2.2×10^11)를 원천 무해화. 정상 None/빈값은 카운트 안 함.
+    """
+    if value is None or value == "":
+        return None
+    try:
+        d = _decimal.Decimal(str(value))
+    except (_decimal.InvalidOperation, ValueError, TypeError):
+        d = None
+    if d is None or d.is_nan() or d.is_infinite() or abs(d) >= max_abs:
+        counter["nulled"] += 1
+        logger.warning(
+            "collect_calendar_events 필드 null(용량초과/비수치) [%s %s=%r]", symbol, field, value,
+        )
+        return None
+    return d
+
+
 def _normalize_earnings(row):
-    """FMP earnings-calendar 행 → CalendarEvent 필드. session 필드 없음(SURVEY-0) → UNKNOWN."""
+    """FMP earnings-calendar 행 → CalendarEvent 필드. session 필드 없음(SURVEY-0) → UNKNOWN.
+
+    반환 dict의 '_nulled' = 이 행에서 용량초과로 null 처리된 필드 수(성분 집계용).
+    """
     from .models import CalendarEvent
 
     d = _parse_fmp_date(row.get("date"))
     if d is None or not row.get("symbol"):
         return None
-    eps_actual = row.get("epsActual")
+    sym = str(row["symbol"]).upper()
+    cnt = {"nulled": 0}
+    eps_actual = _safe_decimal(row.get("epsActual"), _EPS_MAX_ABS, sym, "eps_actual", cnt)
     return {
         "event_type": CalendarEvent.EventType.EARNINGS,
-        "symbol": str(row["symbol"]).upper(),
+        "symbol": sym,
         "event_date": d,
         "defaults": {
-            "eps_estimated": row.get("epsEstimated"),
+            "eps_estimated": _safe_decimal(row.get("epsEstimated"), _EPS_MAX_ABS, sym, "eps_estimated", cnt),
             "eps_actual": eps_actual,
-            "revenue_estimated": row.get("revenueEstimated"),
-            "revenue_actual": row.get("revenueActual"),
+            "revenue_estimated": _safe_decimal(row.get("revenueEstimated"), _REVENUE_MAX_ABS, sym, "revenue_estimated", cnt),
+            "revenue_actual": _safe_decimal(row.get("revenueActual"), _REVENUE_MAX_ABS, sym, "revenue_actual", cnt),
             "session": CalendarEvent.Session.UNKNOWN,  # 응답에 세션/시각 필드 부재
             "source": "fmp",
         },
         "fmp_last_updated": row.get("lastUpdated"),
         "has_actual": eps_actual is not None,
+        "_nulled": cnt["nulled"],
     }
 
 
@@ -870,12 +905,14 @@ def _normalize_dividend(row):
     d = _parse_fmp_date(row.get("date"))
     if d is None or not row.get("symbol"):
         return None
+    sym = str(row["symbol"]).upper()
+    cnt = {"nulled": 0}
     return {
         "event_type": CalendarEvent.EventType.DIVIDEND,
-        "symbol": str(row["symbol"]).upper(),
+        "symbol": sym,
         "event_date": d,  # ex-date
         "defaults": {
-            "dividend_amount": row.get("dividend"),
+            "dividend_amount": _safe_decimal(row.get("dividend"), _DIVIDEND_MAX_ABS, sym, "dividend_amount", cnt),
             "payment_date": _parse_fmp_date(row.get("paymentDate")),
             "record_date": _parse_fmp_date(row.get("recordDate")),
             "frequency": row.get("frequency") or "",
@@ -883,6 +920,7 @@ def _normalize_dividend(row):
         },
         "fmp_last_updated": None,
         "has_actual": False,
+        "_nulled": cnt["nulled"],
     }
 
 
@@ -892,17 +930,20 @@ def _normalize_split(row):
     d = _parse_fmp_date(row.get("date"))
     if d is None or not row.get("symbol"):
         return None
+    sym = str(row["symbol"]).upper()
+    cnt = {"nulled": 0}
     return {
         "event_type": CalendarEvent.EventType.SPLIT,
-        "symbol": str(row["symbol"]).upper(),
+        "symbol": sym,
         "event_date": d,
         "defaults": {
-            "split_numerator": row.get("numerator"),
-            "split_denominator": row.get("denominator"),
+            "split_numerator": _safe_decimal(row.get("numerator"), _SPLIT_MAX_ABS, sym, "split_numerator", cnt),
+            "split_denominator": _safe_decimal(row.get("denominator"), _SPLIT_MAX_ABS, sym, "split_denominator", cnt),
             "source": "fmp",
         },
         "fmp_last_updated": None,
         "has_actual": False,
+        "_nulled": cnt["nulled"],
     }
 
 
@@ -1012,6 +1053,7 @@ def collect_calendar_events(self, as_of=None, dry_run=False):
     반환: 성분별 {fetched, written, truncated, ok} + stale_swept 요약 dict.
     """
     from django.conf import settings
+    from django.db import transaction
     from django.utils import timezone
 
     from packages.shared.api_request.providers.fmp.client import FMPClient
@@ -1030,10 +1072,17 @@ def collect_calendar_events(self, as_of=None, dry_run=False):
         CalendarEvent.EventType.DIVIDEND: True,
         CalendarEvent.EventType.SPLIT: True,
     }
+    # 유형별 skip 누적 — skipped>0이면 그 유형 stale 스윕 생략(미persist 행 오탐 방지, A-2).
+    type_skipped = {
+        CalendarEvent.EventType.EARNINGS: 0,
+        CalendarEvent.EventType.DIVIDEND: 0,
+        CalendarEvent.EventType.SPLIT: 0,
+    }
 
     def _run_component(name, fetcher, normalizer, etype, w_from, w_to):
         rec = {
-            "fetched": 0, "written": 0, "truncated": False, "ok": True,
+            "fetched": 0, "written": 0, "skipped": 0, "nulled": 0,
+            "truncated": False, "ok": True, "anomaly": False,
             "bisect_depth": 0, "extra_calls": 0, "failed_subwindows": [],
         }
         try:
@@ -1049,9 +1098,27 @@ def collect_calendar_events(self, as_of=None, dry_run=False):
                 norm = normalizer(row)
                 if norm is None:
                     continue
-                _persist_event(norm, dry_run)
-                rec["written"] += 1
-        except Exception as exc:  # 성분 격리
+                rec["nulled"] += norm.pop("_nulled", 0)
+                # 행-레벨 격리(A-2): 한 행 예외가 성분 전체를 잃지 않게. atomic으로 트랜잭션 오염 차단.
+                try:
+                    with transaction.atomic():
+                        _persist_event(norm, dry_run)
+                    rec["written"] += 1
+                except Exception as row_exc:
+                    rec["skipped"] += 1
+                    type_skipped[etype] += 1
+                    logger.warning(
+                        "collect_calendar_events 행 skip [%s %s]: %s",
+                        norm["symbol"], norm["event_date"], row_exc,
+                    )
+            # 이상 임계(A-3): nulled+skipped > max(50, 행수 1%) → 경고(스키마 drift 신호, HALT 아님).
+            if rec["nulled"] + rec["skipped"] > max(50, rec["fetched"] // 100):
+                rec["anomaly"] = True
+                logger.warning(
+                    "collect_calendar_events 이상 임계 초과 [%s] nulled=%d skipped=%d of fetched=%d",
+                    name, rec["nulled"], rec["skipped"], rec["fetched"],
+                )
+        except Exception as exc:  # 성분 격리(fetch 단계)
             rec["ok"] = False
             fetch_ok[etype] = False
             logger.warning("collect_calendar_events 성분 실패 [%s]: %s", name, exc)
@@ -1085,7 +1152,8 @@ def collect_calendar_events(self, as_of=None, dry_run=False):
     )
 
     # stale 스윕(비-dry_run): 선행 창 scheduled 중 금회 미관측 → stale.
-    # 가드(하드): 해당 유형 fetch 성공 시에만 스윕(API 실패발 대량 오염 차단).
+    # 가드(하드): 해당 유형 fetch 성공 AND skip 0 일 때만 스윕
+    # (API 실패발 대량 오염 + 미persist 행 last_seen 미갱신 오탐 차단, A-2).
     swept = {}
     if not dry_run:
         fwd_end = d0 + _dt.timedelta(days=_FORWARD_DAYS - 1)
@@ -1096,6 +1164,9 @@ def collect_calendar_events(self, as_of=None, dry_run=False):
         ):
             if not fetch_ok[etype]:
                 swept[etype] = "skipped(fetch_failed)"
+                continue
+            if type_skipped[etype] > 0:
+                swept[etype] = f"skipped(rows_skipped={type_skipped[etype]})"
                 continue
             n = CalendarEvent.objects.filter(
                 event_type=etype,
