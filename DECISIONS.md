@@ -6983,3 +6983,13 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **활동 지표 구현**(마이그0): 90d count·마지막일 = CoMentionEdge(일일 재집계·3ms). **7일 count만** NewsEntity 라이브 집계(표시 후보 top24 bounded). 서비스 층 `services/story_activity.py get_symbol_story_threads` — 뷰 인라인 금지·**S2 전역 뷰 소스로 재사용**.
 - **비용/한계**: 전형 <50ms·최악 허브 NVDA ~250ms(수용·카드 lazy fetch). **S2 전역 뷰(전 종목 집계)는 라이브 불가 → 물질화 캐시 필요**(마이그 번들 = CS-STORY-ACTIVITY-CACHE 후속).
 - **표시 원칙**: 활동 게이지·7일 수치는 실측에서만(규칙 6). 7일 0=조용함(게이지 대신 마지막일)·파트너 0=빈 상태. 신뢰 위계(SEC 근거 연결 vs 동시언급 이야기) 시각 분리 유지.
+
+## [2026-08-29] D-P2-ENTRY-1 — Phase 2 진입 순서 = D-lite(E2E 안전망) → A(MP2-SUBPAGES) [frontend][infra][process]
+
+> Phase 2 진입 사이클 1(프로젝트 캐시 `claude/p2_entry_decision_c1.md`) 확정, 병진 승인 2026-08-29.
+
+- **결정**: Phase 2 진입 = **D-lite 선행 → A 후행**. 채점 A 3.85 · D 3.75(마진 **0.10 < 0.40** = 근소). 타이브레이커 = ⑴ MP2-E2E-SAFETYNET 원장 문구("Phase 2 화면 변경 **전** 자동 회귀망 우선") ⑵ SMOKE-BROWSER-PATH 명세 갱신 직후 연속성 ⑶ 두 트랙 동일 인프라(브라우저 자동화) 1세션 소진.
+- **의도**: #3(서브페이지)로 홈 fetch 표면을 넓히기 **전에** — ① 화면 회귀를 수동 눈확인→자동, ② INC-P16 유형(429)을 브라우저 경로에서 재현·감시.
+- **D-lite 집행 결과(본 세션 P2-DLITE)**: Playwright 안전망(데스크탑+Pixel5 모바일) + 429 브라우저 스모크(①현실 새로고침 무증폭 ②429 무재시도·회복). **route interception 설계** 채택 — 근거: market-pulse 엔드포인트가 IsAuthenticated + 워크트리 `.env` 부재 + 공유DB/런타임 무접촉 제약 → 격리 authed 백엔드 재현 불가. 브라우저 경로 계약(단건 curl이 구조적으로 못 잡는 그 경로)을 모킹으로 결정론 검증. **한계 명기**: 실백엔드 throttle 통합은 미검증(FE 계약·무증폭·회복만 검증). 프로덕션 코드 diff 0(테스트·설정·devDep만).
+- **관측 실증**: 429 시 overview 호출 **1회**(retry:2였다면 3 — INC-P16-1 A 무재시도 실증)·회복 **~680ms**(<2s)·로드당 요청 5 일정(무증폭).
+- **다음**: MP2-SUBPAGES(#3·A) 트리거 충족(#1·#2 = D-lite land 후). CI 편입은 후속 별건(이 세션 범위 밖).

@@ -10,6 +10,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "playwright test",
+    "e2e:report": "playwright show-report",
     "gen:coach-schema": "cd .. && poetry run python manage.py spectacular --file frontend/lib/coach/schema.yml",
     "gen:coach-types": "npm run gen:coach-schema && openapi-typescript lib/coach/schema.yml -o lib/coach/api-types.ts",
     "gen:advisory-schema": "cd .. && poetry run python manage.py spectacular --file frontend/lib/advisory/schema.yml",
@@ -34,6 +36,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

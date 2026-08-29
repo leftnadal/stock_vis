@@ -20,6 +20,12 @@
 # production
 /build
 
+# playwright e2e (P2-DLITE)
+/playwright-report/
+/test-results/
+/blob-report/
+/playwright/.cache/
+
 # misc
 .DS_Store
 *.pem
