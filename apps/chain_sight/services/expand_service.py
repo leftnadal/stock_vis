@@ -77,9 +77,10 @@ def find_expansion_candidates(source_ticker, excluded_tickers, limit=10):
 
 
 def _compute_expansion_score(truth_score, heat_score, rel_type, relation_count):
+    # D-RC-SCALE(RC-A-1 PART 2): truth_score가 [0,1]로 통일돼 /100 제거.
     rel_priority = RELATION_PRIORITY.get(rel_type, 0)
     return (
-        0.40 * (truth_score / 100.0)
+        0.40 * (truth_score or 0.0)
         + 0.30 * heat_score
         + 0.20 * (rel_priority / 5.0)
         + 0.10 * min(relation_count / 3.0, 1.0)

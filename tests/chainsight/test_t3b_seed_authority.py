@@ -74,7 +74,7 @@ def test_h_seed_updates_score_but_not_status_on_existing():
     rc = RelationConfidence.objects.get(
         symbol_a=a.pk, symbol_b=b.pk, relation_type="SUPPLIES_TO")
     assert rc.relation_status == "confirmed"  # status 무접촉
-    assert rc.truth_score == 60               # score는 갱신됨 (defaults 경로)
+    assert rc.truth_score == 0.60             # score는 갱신됨 (defaults 경로, D-RC-SCALE [0,1])
 
 
 @pytest.mark.django_db

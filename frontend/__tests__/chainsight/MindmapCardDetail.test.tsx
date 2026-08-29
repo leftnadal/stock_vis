@@ -34,6 +34,18 @@ function card(partial: Partial<MindmapCardResponse> = {}): MindmapCardResponse {
     groups: [{ other: 'AMD', other_name: 'AMD Inc', co_mention_count: 12 }],
     group_total: 1,
     group_capped: false,
+    story: {
+      threads: [
+        {
+          partner: 'AMD', partner_name: 'AMD Inc', count_7d: 5, count_90d: 40,
+          weekly_avg_90d: 3.11, activity_ratio: 1.61,
+          last_co_mention_date: '2026-08-27', days_since: 1, quiet: false,
+        },
+      ],
+      thread_total: 1,
+      threads_capped: false,
+      shown: 1,
+    },
     ...partial,
   };
 }
@@ -57,19 +69,57 @@ describe('MindmapCardDetail (CS-P5-FE-CARD B4)', () => {
     expect(screen.getByText(/계약일 2026-03-01/)).toBeInTheDocument();
   });
 
-  it('같은 그룹은 연결과 분리 + "관계 아님" 캡션', () => {
+  it('이 종목의 이야기: 활동 스레드 + "관계 아님" 캡션 + 게이지 수치', () => {
     render(<MindmapCardDetail symbol="NVDA" onSelectOther={onSelectOther} onClose={onClose} />);
+    expect(screen.getByText('이 종목의 이야기')).toBeInTheDocument();
     expect(screen.getByText(/관계 아님 · 동시 언급/)).toBeInTheDocument();
-    expect(screen.getByText(/AMD/)).toBeInTheDocument();
+    expect(screen.getByText('AMD')).toBeInTheDocument();
+    expect(screen.getByText('7일 5회')).toBeInTheDocument();
+    expect(screen.getByText('주간평균 3.11')).toBeInTheDocument();
+    expect(screen.getByText('어제')).toBeInTheDocument(); // days_since=1
   });
 
-  it('group_capped: "상위 20 / 전체 N" 표기', () => {
+  it('threads_capped: "상위 N / 전체 M" 표기', () => {
     cardResult = {
-      data: card({ group_capped: true, group_total: 172 }),
+      data: card({ story: { threads: [], thread_total: 172, threads_capped: true, shown: 10 } }),
       isLoading: false, isError: false, refetch: vi.fn(),
     };
     render(<MindmapCardDetail symbol="NVDA" onSelectOther={onSelectOther} onClose={onClose} />);
-    expect(screen.getByText('상위 20 / 전체 172')).toBeInTheDocument();
+    expect(screen.getByText('상위 10 / 전체 172')).toBeInTheDocument();
+  });
+
+  it('7일 활동 0(quiet) → 게이지 대신 "최근 조용함 · 마지막"', () => {
+    cardResult = {
+      data: card({
+        story: {
+          threads: [{
+            partner: 'CCC', partner_name: 'CCC Co', count_7d: 0, count_90d: 8,
+            weekly_avg_90d: 0.62, activity_ratio: null,
+            last_co_mention_date: '2026-07-10', days_since: 49, quiet: true,
+          }],
+          thread_total: 1, threads_capped: false, shown: 1,
+        },
+      }),
+      isLoading: false, isError: false, refetch: vi.fn(),
+    };
+    render(<MindmapCardDetail symbol="NVDA" onSelectOther={onSelectOther} onClose={onClose} />);
+    expect(screen.getByText(/최근 조용함 · 마지막 2026-07-10/)).toBeInTheDocument();
+    expect(screen.queryByText(/7일/)).not.toBeInTheDocument();
+  });
+
+  it('그룹 0개 → "아직 관찰된 이야기 없음" 빈 상태', () => {
+    cardResult = {
+      data: card({ story: { threads: [], thread_total: 0, threads_capped: false, shown: 0 } }),
+      isLoading: false, isError: false, refetch: vi.fn(),
+    };
+    render(<MindmapCardDetail symbol="NVDA" onSelectOther={onSelectOther} onClose={onClose} />);
+    expect(screen.getByText('아직 관찰된 이야기 없음')).toBeInTheDocument();
+  });
+
+  it('이야기 스레드 클릭 → onSelectOther(partner) 호출', () => {
+    render(<MindmapCardDetail symbol="NVDA" onSelectOther={onSelectOther} onClose={onClose} />);
+    fireEvent.click(screen.getByText('AMD'));
+    expect(onSelectOther).toHaveBeenCalledWith('AMD');
   });
 
   it('ACQUIRED 빈 배열 → "인수 관계 없음" 빈 상태(구조는 항상 렌더)', () => {

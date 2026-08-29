@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 
 from apps.chain_sight.constants import UNIVERSE_EXCLUDED_INDUSTRIES
 from apps.chain_sight.models import RelationConfidence
+from apps.chain_sight.services.story_activity import get_symbol_story_threads
 
 # D-CARD-GATE 정본(B1-2 실측 enum). ACQUIRED은 방향 관계지만 현재 착지 0(D-ACQ-DIR·빈 상태).
 SEC4_TYPES = ("COMPETES_WITH", "PARTNER_WITH", "SUPPLIES_TO", "DEPENDS_ON")
@@ -257,6 +258,12 @@ class MindmapCardView(APIView):
         group_total = len(groups)
         groups = groups[:20]  # 허브(NVDA 172) 대비 캡
 
+        # R2-S1: "이 종목의 이야기" — co-mention 파트너 활동 스레드(엣지 직접·additive).
+        # 기존 groups(CO_MENTIONED)는 하위호환 유지·FE는 story로 전환.
+        story = get_symbol_story_threads(symbol)
+        for t in story["threads"]:
+            t["partner_name"] = name_map.get(t["partner"], t["partner"])
+
         return Response(
             {
                 "symbol": symbol,
@@ -269,5 +276,6 @@ class MindmapCardView(APIView):
                 "groups": groups,
                 "group_total": group_total,
                 "group_capped": group_total > 20,
+                "story": story,
             }
         )

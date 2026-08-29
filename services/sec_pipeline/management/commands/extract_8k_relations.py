@@ -38,6 +38,11 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         from apps.chain_sight.models import RelationConfidence
         from apps.chain_sight.services.upward_learning import HIGHSCORE_THRESHOLD
+        from apps.chain_sight.services.score_scale import (
+            GRADE_CONFIRMED_MIN,
+            GRADE_LIKELY_MIN,
+            SCORE_VERSION_CURRENT,
+        )
         from apps.chain_sight.utils import normalize_pair
         from packages.shared.stocks.models import Stock
         from services.sec_pipeline.models import (
@@ -158,7 +163,8 @@ class Command(BaseCommand):
                 would_land += 1
                 if not apply:
                     continue
-                score = 85 if c["confidence"] >= 0.8 else 60
+                # D-RC-SCALE: [0,1] 단위 계단(단일 소스 score_scale).
+                score = GRADE_CONFIRMED_MIN if c["confidence"] >= 0.8 else GRADE_LIKELY_MIN
                 if rel_type == "COMPETES_WITH":
                     sym_a, sym_b = normalize_pair(company, ticker)
                     direction = "both"
@@ -177,6 +183,7 @@ class Command(BaseCommand):
                     "relation_category": "truth",
                     "canonical_direction": direction,
                     "truth_score": score,
+                    "score_version": SCORE_VERSION_CURRENT,  # D-RC-SCALE: 신규 행 태생 [0,1]·v3.0
                     "evidence_tier_best": 1,
                     "serving_layer": "evidence",
                     "has_supply_chain_source": rel_type == "SUPPLIES_TO",

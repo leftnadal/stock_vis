@@ -1621,6 +1621,29 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 
 **해소(A+B+C 3중)**: **A** 전역 retry를 함수형(`shouldRetryQuery`)으로 — 429는 즉시 무재시도(그 외 실패는 기존 최대 2회 보존). 429에 재시도 안 함이 정답(백오프해도 window 내 재소비). **B** fold 아래 카드(PlaybookCardContainer)는 `useInViewOnce`로 뷰포트 진입 시점까지 fetch 지연 → 초기 동시 요청 감소(렌더 불변, fetch 시점만 늦춤). **C** `market_pulse_user` 60→120/min(예산 2배 보험). **재발 방지 규칙**: 신규 홈/랜딩 엔드포인트 추가 시 = ⑴ lazy(뷰포트 진입 fetch) 우선 검토 or ⑵ throttle 예산 재점검 필수. 단건 curl은 이 유형을 구조적으로 못 잡음 → 브라우저 경로 스모크(SMOKE-BROWSER-PATH) 필요. DRF ScopedRateThrottle은 429에 Retry-After 세팅 → 향후 Retry-After 존중 재시도로 고도화 여지. cf. common-bugs #23(FMP 402)·#41(모듈 상수 변경=재기동 필수).
 
+## auto_now 필드를 감쇠(신선도) 시계로 쓰면 마이그레이션 재저장이 시계를 리셋 → 임의 시점 일괄 오발 (채번 후보, RC-A-1 2026-08-27) `[backend][chainsight][harness]`
+
+**증상**: `check_stale_and_decay`가 `RelationConfidence.last_observed_at`(auto_now="행 마지막 save 시각") < now−90일이면 confirmed→stale 하향. 실측(RC-A-0): PEER_OF·PRICE_CORRELATED 전량이 D2 재설계(2026-06-20)에 동결(재기록자 없는 타입)→06-20+90일=09-18에 confirmed 2,054행이 **단일 beat 실행에서 일괄 stale 오발** 예약. 관계가 변해서가 아니라 시계가 마이그레이션/재설계 재저장 시점에 리셋됐기 때문.
+
+**원인**: auto_now는 "관측 시각"이 아니라 "저장 시각". 주기적으로 그 타입 행을 재-save 하는 파이프라인(재기록자)이 있는 타입(CO_MENTIONED=매일 update_or_create·SEC 4종=재추출)은 정상 신선도지만, 재기록자 없는 타입(PEER_OF 착지루프 D2 제거·PRICE_CORRELATED 은퇴)은 시계가 마지막 구조 마이그레이션에 동결 → 90일 시계가 "마지막 마이그레이션 이후 경과일"이라는 무의미한 값이 됨. `.update()`(bulk)는 auto_now 미발화라 감쇠 자체는 시계를 안 밀지만, 문제는 감쇠가 **읽는** 필드의 의미.
+
+**해소(증상)**: 감쇠 대상을 `DECAYABLE_RELATION_TYPES`(재기록자 보유 타입) 화이트리스트로 게이트(`relation_tasks.py`). **근본**: 관측 시각을 auto_now와 분리한 별도 필드(`evidence_last_observed_at`, additive nullable)로 감쇠 판정(TASKQUEUE RC-DECAY-EVIDENCE-TS). **규칙**: auto_now/auto_now_add 필드를 "마지막 관측/발생 시각"의 대리로 쓰지 말 것 — 재저장 경로(마이그·백필·리팩터)가 의미를 오염시킨다. 신선도는 이벤트 발생 시각을 명시 필드로 기록. cf. [[lesson_auto_now_selection_self_contamination]](auto_now 선별쿼리 자가오염)·D-RC-DECAY-SEMANTIC.
+
+## 코드 상수 최대(85)를 /100 하는 소비처 = 눈금 가정 불일치의 신호 (채번 후보, RC-A-1 2026-08-27) `[backend][chainsight]`
+
+**증상**: RelationConfidence 점수가 이산 계단 {0,35,60,85}(코드 상수 최대 85)인데 소비처마다 눈금 가정이 상이 — pair_aggregation·expand_service는 `score/100`(도메인 [0,100] 가정), advisory_engine은 `CONF_WEIGHT(0.60)×conf`(불변식 주석 "신뢰도 0.48 최대"는 conf∈[0,1] 가정), ego_views는 리터럴 임계 `>=85/60/35`. 실 최대가 85라 /100 소비처는 relevance/expansion이 **0.85에 고착**(1.0 미도달), advisory는 conf가 [0,85]로 base를 지배(entry/ccy 성분 무력화).
+
+**원인**: 점수의 "눈금(scale)"이 단일 소스 없이 writer와 소비처에 암묵 분산. writer는 [0,100] 계단을 쓰는데 일부 소비처는 /100해 [0,1]을 기대, 일부는 리터럴로 [0,100]을 기대 → 실제 최대값(85≠100)과 정규화 상수(100)가 어긋나도 조용히 작동(값이 그럴듯해 안 잡힘).
+
+**해소**: 눈금을 [0,1]로 통일(D-RC-SCALE)·**단일 소스** `apps/chain_sight/services/score_scale.py`(계단 상수·버전·to_unit_scale). **탐지 규칙**: 점수를 `/100`(또는 임의 상수로 나눔)하는 소비처를 보면 "그 점수의 실제 도메인 최대가 100이 맞는가"를 실측하라 — 코드 상수 최대(85)를 /100하면 눈금 가정 불일치 신호. 정규화 시 **동반이동 상수를 전수 grep**(리터럴 임계·스케일 제수·가중치)해 단일 소스로 수렴. cf. D-RC-SCALE·[[lesson_llm_numeric_quote_contract]].
+
+## 스케일/enum 변환 마이그레이션은 코드↔DB 결합 배포 — worker 정지 없이 migrate하면 혼재 창(mixed-scale window)이 데이터 오염 (채번 후보, RC-A-1 2026-08-27) `[backend][infra][deploy][chainsight]`
+
+**증상**: 값 도메인을 바꾸는 마이그레이션(예 [0,100]→[0,1], enum 리라벨)을 무중단으로 배포하면 코드 배포와 migrate 사이에 "새 코드 × 옛 DB" 또는 "옛 코드 × 새 DB" 창이 열려 그 창 안의 read/write가 오염. 실측(RC-A-1 0033): ⓐ worker 먼저 재기동→migrate면 새 임계 0.85가 옛 값 85와 비교되고 새 writer가 [0,1]을 미변환 테이블에 씀. ⓑ migrate 먼저→옛 worker면 [0,85]를 변환 테이블에 씀(역방향 오염).
+
+**원인**: 스케일/enum은 **코드의 해석과 DB의 값이 한 계약**인데 무중단 배포는 둘을 원자적으로 못 바꿈. 창의 길이만큼 잘못된 스케일의 read(임계 비교)·write(신규 행 삽입)가 누적.
+
+**해소(창 닫기)**: 값-도메인 마이그레이션은 **worker·beat 정지 → migrate → 재기동** 순으로 창을 물리적으로 닫는다(정지 중 놓친 주기 태스크는 다음 주기 자연 회복=손실 0). 순서: 머지 → 정지 → migrate → 재기동 → (후속 데이터 정리/삭제). **규칙**: 마이그레이션이 "기존 행의 값 의미를 바꾸는가(스케일·enum·단위)"를 물으라 — 그렇다면 무중단 배포 금지, 정지-창 필수. additive nullable(값 의미 불변)만 무중단 안전. cf. D-RC-DEPLOY-WINDOW·common-bugs #41(모듈 상수 변경=재기동 필수).
 ---
 
 ## 지시서-앵커 drift 규율 — 지시서 작성 시 앵커 하드 요건 체크리스트 대조 필수 (2026-08-27, EVT-IMPL-2 회고)
@@ -1698,3 +1721,19 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 2. **필드 용량 가드**: 외부 수치를 DB 필드에 넣기 전 **용량 초과·비수치를 null**(`_safe_decimal(value, max_abs)`). 값 보존이 아니라 **사실(행) 보존 + 쓰레기 무해화**.
 3. **dry-run 한계 인지**: dry-run은 fetch·정규화까지만 검증. **필드 용량·DB 제약은 실쓰기(초회 적재)에서만 드러난다** → dry-run 통과 ≠ 적재 안전.
 4. **오탐 방지**: skip 발생 유형은 파생 스윕(stale 등) 생략(미persist 행이 오탐 유발). 이상 임계(nulled+skipped 과다) = 스키마 drift 경고.
+## HTML 문구 매칭으로 화면 상태를 판정할 때 — 부분 토큰 마커와 Next RSC 인라인 페이로드가 전 라우트를 거짓 fail로 만든다 (채번 후보, AGENT-S1 2026-08-27) `[frontend][ops][agent]`
+
+**증상**: 야간 점검 러너가 "화면에 실패 문구가 노출됐는가"를 SSR HTML 문자열 포함으로 판정했더니 **점검 대상 7개 라우트가 전부 fail**로 나왔다. 실제로는 전부 정상이었다. 두 번 연속 다른 원인으로 재현됐다.
+
+**원인 ⑴ — 부분 토큰 마커**: 실패 마커에 `"500"`을 넣음. tailwind 클래스(`text-gray-500`)·티커명(`SP500`)·인라인 CSS(`font-weight:500`)에 전부 걸린다. 마커는 **화면에 실제로 뜨는 문구 전체**여야 한다.
+
+**원인 ⑵ — Next.js RSC 인라인 페이로드**: `"This page could not be found"`로 바꿨더니 **여전히 7/7 fail**. Next.js는 RSC 플라이트 데이터와 not-found 컴포넌트 문자열을 `self.__next_f.push(...)` 형태로 **모든 페이지의 인라인 `<script>`에** 실어 보낸다. 원문 HTML에 매칭하면 정상 페이지에서도 404 문구가 잡힌다.
+
+**해소**: 판정 전 `<script>`·`<style>` 블록을 제거하고 태그를 벗긴 **가시 텍스트에만** 매칭한다.
+```python
+_SCRIPT_OR_STYLE = re.compile(r"<(script|style)\b.*?</\1>", re.S | re.I)
+text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
+```
+**규율**: ⑴ 마커는 12자 이상 전체 문구만(테스트로 강제 — `test_error_markers_have_no_short_tokens`). ⑵ 셸 마커(있어야 정상)도 같은 가시 텍스트로 판정. ⑶ **매일 발송되는 자동 점검에서 거짓 경보는 곧 그 점검의 폐기**다 — 임계·마커는 도입 전에 실데이터로 1회 돌려 오탐 0을 확인하고 넣는다.
+
+**부기**: SSR HTML로는 **클라이언트 렌더 데이터가 안 보인다**. 대시보드·모니터·포트폴리오는 마운트 후 fetch하므로 HTML에는 셸/로딩만 있고 `data-guide` 앵커도 없다. 따라서 HTTP 전용 점검의 사거리는 "셸이 뜨는가 · 에러 문구가 없는가"까지이고, 데이터 유무는 **API·baked JSON을 따로 봐야** 한다(AGENT-S1이 그렇게 나눈 이유).

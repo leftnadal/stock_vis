@@ -2,12 +2,13 @@
 
 import { useMindmapCard } from '@/hooks/useMindmap';
 import { acquiredRoleLabel, directionLabel, relationTypeLabel } from './mindmapConfig';
-import type { MindmapConnection, MindmapGroup } from '@/types/chainsight';
+import type { MindmapConnection, MindmapStoryThread } from '@/types/chainsight';
 
 /**
- * 마인드맵 카드 상세 패널 (CS-P5-FE-CARD B4).
+ * 마인드맵 카드 상세 패널 (CS-P5-FE-CARD B4 · R2-S1 이야기 패널).
  *
- * "확인된 연결"(게이트 통과) vs "같은 그룹"(CO_MENTIONED, 관계 아님)을 시각적으로 분리.
+ * "확인된 연결"(게이트 통과·SEC 근거) vs "이 종목의 이야기"(co-mention 활동, 관계 아님)를
+ * 시각적으로 분리(신뢰 위계 유지).
  * ACQUIRED 방향 구조는 빈 배열이어도 항상 렌더(구조는 존재, 데이터 착지 시 자동 표시).
  * 테마 슬롯은 placeholder만(VOCAB-TAU 선행 대기 — 로직·페치 금지).
  */
@@ -105,21 +106,23 @@ export default function MindmapCardDetail({
             )}
           </section>
 
-          {/* 같은 그룹(CO_MENTIONED) — 연결과 시각적으로 명확히 구분 */}
+          {/* 이 종목의 이야기(co-mention 활동 스레드) — 근거 층과 시각적으로 명확히 구분 */}
           <section className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 p-3">
             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">
-              같은 그룹{' '}
+              이 종목의 이야기{' '}
               <span className="text-[11px] text-gray-400 tabular-nums">
-                {data.group_capped ? `상위 20 / 전체 ${data.group_total}` : data.group_total}
+                {data.story.threads_capped
+                  ? `상위 ${data.story.shown} / 전체 ${data.story.thread_total}`
+                  : data.story.thread_total}
               </span>
             </h3>
             <p className="text-[11px] text-gray-400 mb-2">관계 아님 · 동시 언급</p>
-            {data.groups.length === 0 ? (
-              <p className="text-xs text-gray-400">같은 그룹으로 언급된 종목이 없습니다</p>
+            {data.story.thread_total === 0 ? (
+              <p className="text-xs text-gray-400">아직 관찰된 이야기 없음</p>
             ) : (
-              <ul className="flex flex-wrap gap-1.5">
-                {data.groups.map((g) => (
-                  <GroupChip key={g.other} group={g} onSelectOther={onSelectOther} />
+              <ul className="space-y-1.5">
+                {data.story.threads.map((t) => (
+                  <StoryThreadRow key={t.partner} thread={t} onSelectOther={onSelectOther} />
                 ))}
               </ul>
             )}
@@ -169,21 +172,66 @@ function ConnectionRow({
   );
 }
 
-function GroupChip({
-  group,
+/** days_since → 사람이 읽는 최신성. null이면 빈 문자열(규칙 6: 없으면 숨김). */
+function recencyLabel(daysSince: number | null): string {
+  if (daysSince == null) return '';
+  if (daysSince <= 0) return '오늘';
+  if (daysSince === 1) return '어제';
+  return `${daysSince}일 전`;
+}
+
+/** activity_ratio(7일 vs 90일 주간평균)를 0~100% 게이지 폭으로. ratio 2+ = 만폭. */
+function gaugeWidthPct(ratio: number | null): number {
+  if (ratio == null || ratio <= 0) return 0;
+  return Math.min(ratio, 2) / 2 * 100;
+}
+
+function StoryThreadRow({
+  thread,
   onSelectOther,
 }: {
-  group: MindmapGroup;
+  thread: MindmapStoryThread;
   onSelectOther: (symbol: string) => void;
 }) {
+  const active = !thread.quiet;
   return (
     <li>
       <button
-        onClick={() => onSelectOther(group.other)}
-        className="px-2 py-1 text-[11px] rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-400 transition"
-        title={group.other_name}
+        onClick={() => onSelectOther(thread.partner)}
+        className="w-full text-left p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:shadow-sm transition"
+        title={thread.partner_name}
       >
-        {group.other} <span className="text-gray-400">· {group.co_mention_count}</span>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <span className="min-w-0 truncate">
+            <span className="font-medium text-sm">{thread.partner}</span>
+            <span className="text-[11px] text-gray-500 ml-1.5 truncate">{thread.partner_name}</span>
+          </span>
+          <span className="shrink-0 text-[10px] text-gray-400 tabular-nums">90일 {thread.count_90d}</span>
+        </div>
+        {active ? (
+          <>
+            {/* 활동 게이지 — 7일 활동 / 90일 주간평균 비율(규칙 6: 실측 수치에서만) */}
+            <div
+              className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
+              role="progressbar"
+              aria-label={`활동 ${thread.count_7d}회`}
+            >
+              <div
+                className="h-full rounded-full bg-emerald-500"
+                style={{ width: `${gaugeWidthPct(thread.activity_ratio)}%` }}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-gray-400 mt-1">
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">7일 {thread.count_7d}회</span>
+              <span>주간평균 {thread.weekly_avg_90d}</span>
+              {recencyLabel(thread.days_since) && <span>{recencyLabel(thread.days_since)}</span>}
+            </div>
+          </>
+        ) : (
+          <div className="text-[11px] text-gray-400">
+            최근 조용함{thread.last_co_mention_date ? ` · 마지막 ${thread.last_co_mention_date}` : ''}
+          </div>
+        )}
       </button>
     </li>
   );

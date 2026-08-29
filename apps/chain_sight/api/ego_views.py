@@ -22,6 +22,11 @@ from apps.chain_sight.models import (
     SymbolCentrality,
 )
 from apps.chain_sight.services.industry_buckets import industry_to_bucket
+from apps.chain_sight.services.score_scale import (
+    GRADE_CONFIRMED_MIN,
+    GRADE_LIKELY_MIN,
+    GRADE_OBSERVED_MIN,
+)
 from apps.chain_sight.utils import normalize_pair
 from packages.shared.stocks.models import Stock
 
@@ -40,14 +45,18 @@ GRADE_UNVERIFIED = "unverified"
 
 
 def _grade_by_score(score):
-    """표시점수 계단값 → 등급 코드(FE가 문구로 렌더). 원점수 체계는 불변."""
+    """표시점수 계단값 → 등급 코드(FE가 문구로 렌더). 원점수 체계는 불변.
+
+    D-RC-SCALE(RC-A-1 PART 2): 임계는 [0,1] 단위(단일 소스 score_scale).
+    구 [0,100] 리터럴 85/60/35 → 0.85/0.60/0.35.
+    """
     if score is None:
         return GRADE_UNVERIFIED
-    if score >= 85:
+    if score >= GRADE_CONFIRMED_MIN:
         return GRADE_CONFIRMED
-    if score >= 60:
+    if score >= GRADE_LIKELY_MIN:
         return GRADE_LIKELY
-    if score >= 35:
+    if score >= GRADE_OBSERVED_MIN:
         return GRADE_OBSERVED
     return GRADE_UNVERIFIED
 

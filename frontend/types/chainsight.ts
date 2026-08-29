@@ -283,6 +283,26 @@ export interface MindmapGroup {
   co_mention_count: number;
 }
 
+/** R2-S1 "이 종목의 이야기" — co-mention 파트너 활동 스레드 */
+export interface MindmapStoryThread {
+  partner: string;
+  partner_name: string;
+  count_7d: number;
+  count_90d: number;
+  weekly_avg_90d: number;
+  activity_ratio: number | null;
+  last_co_mention_date: string | null;
+  days_since: number | null;
+  quiet: boolean;
+}
+
+export interface MindmapStory {
+  threads: MindmapStoryThread[];
+  thread_total: number;
+  threads_capped: boolean;
+  shown: number;
+}
+
 /** GET /api/v1/chainsight/mindmap/card/{symbol}/ 응답 */
 export interface MindmapCardResponse {
   symbol: string;
@@ -293,4 +313,5 @@ export interface MindmapCardResponse {
   groups: MindmapGroup[];
   group_total: number;
   group_capped: boolean;
+  story: MindmapStory;
 }

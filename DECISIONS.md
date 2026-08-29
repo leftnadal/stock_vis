@@ -8,6 +8,39 @@
 
 ---
 
+## [2026-08-27] D-EODUNIV-S1S2-DEGEN — 백필 구간 S1/S2 섹터 degeneracy 처분 A(기록·관찰) [monitor][stocks][observation]
+
+> 출처: DIRECTIVE-DECISIONS-REG-0827 E1. 사실 근거 = STEP0-RECON-0827 R1-7.
+
+**결정 (처분 A = 기록·관찰, 즉시 수리 안 함)**: EODUNIV-P15-V01 백필 커맨드(`backfill_eod_signals_universe`)가 생성한 비SP500 3종 EODSignal의 relation 시그널 S1(섹터상대강도)·S2(섹터소외주) **degeneracy를 즉시 수리하지 않는다**. daily-forward(전체 유니버스) **20거래일** 축적 후 S1/S2 발화율을 재측정하여 재평가한다. **재평가 트리거일 = 2026-08-27 + 20거래일.**
+
+- **사실(R1-7 실측)**: TLN 백필 구간(2025-08~2026-08-26, 286행) — **S1 발화 0 · S2 발화 0 · S4 1**. 원인 = 백필 시 심볼 스코프를 [대상종목 ∪ SPY]로 좁혀 섹터 피어(SP500 전체)가 부재 → 섹터 평균이 자기 자신으로 degenerate(EODUNIV-P15-V01 보고서 문서화 한계와 동일 근인). advisor가 실제 쓰는 3필드(composite/change_pct/dollar_vol)·나머지 11시그널은 무영향.
+- **기각: B(스코프 재정의 + 백필 재실행)** — 첫 daily-forward 관측을 오염시키고, 관측이 뒤집을 수 있는 결정을 조기 확정하는 위험.
+
+**Why**: 백필 degeneracy는 과거 스냅 한정이고 daily-forward는 전체 유니버스 안에서 계산되므로 구조적으로 정상이어야 한다. 조기 수리(B)는 아직 관측되지 않은 daily-forward 발화율을 전제로 스코프를 바꾸는 것 = 미측정 기반 결정. 20거래일 관측이 실제 발화율을 주면 그때 처분(수리 불요 vs 소급 재백필)을 근거 위에서 확정한다.
+
+**How to apply**: 재평가 시 = daily-forward EODSignal(08-27 이후)에서 3종 S1/S2 발화율 측정 → 정상이면 백필 과거값은 그대로 두고 종결, 비정상이면 소급 재백필 검토. cf. [[project_eoduniv_p15_v01]]·[[lesson_advisor_coverage_needs_indicatorreading_ingest]].
+
+## [2026-08-27] D-REPORT-CHANNEL-CHAT — CC 보고 = 채팅 붙여넣기/스크린샷 전용 [harness][process]
+
+> 출처: DIRECTIVE-DECISIONS-REG-0827 E2-1 (교훈 등재).
+
+**결정**: CC의 recon·검증·상태 보고는 **채팅 직접 붙여넣기 또는 스크린샷**으로만 전달한다. **파일 첨부 금지.**
+
+**Why**: 파일 첨부 경로에서 빈 문서 유실 5회 실증 — 보고 본문이 첨부로 빠지면 병진이 못 받는다.
+
+**How to apply**: 측정 결과·판정·요약은 응답 본문 코드펜스로. 산출물이 커도 요약은 본문에 두고, 상세는 repo 커밋(claude/*.md 등)으로 남기되 "보고" 자체는 첨부하지 않는다. cf. [[feedback_ephemeral_output_scratchpad]].
+
+## [2026-08-27] D-SUBAGENT-SURFACE-DISCLOSURE — 라우트·스키마·API 표면 신설 = 상위 보고 필수 [harness][process]
+
+> 출처: DIRECTIVE-DECISIONS-REG-0827 E2-2 (교훈 등재).
+
+**결정**: 하위 에이전트가 **신규 라우트·스키마·API 표면**을 만들면 상위 보고의 **필수 항목**으로 명시한다(구현 디테일로 흡수 금지).
+
+**Why**: swap 라우트(`/monitor/[id]/swap`) 신설이 옴니버스 FE 커밋(5b03754b)에 번들되어 **재량 신고 2회 누수** — 표면 신설은 계약·라우팅 결정이라 상위 판단 대상.
+
+**How to apply**: 하위 에이전트 스펙에 "신규 라우트/스키마/엔드포인트는 보고서 상단에 명시" 지시를 포함. 상위는 표면 신설을 승인 스펙 대비 대조. cf. EODUNIV-P15-V01 PART 0.2.
+
 ## [2026-08-27] DSS-QUADRANT 확정 결정 5건 — 섹터 사분면 화면 (QUAD-IMPL-1 0게이트) [dashboard][dss][chainsight]
 
 > 출처: 지시서 QUAD-IMPL-1. 문안 변경 금지(디렉터 확정). 구현 = Slice 1~3.
@@ -29,6 +62,22 @@
 - **경위(0-3 사실·판단 없음)**: 7ec24c62 커밋 메시지에 **경계 red 인지/신고 문구 부재**. `eod_universe_symbols()`가 Monitor union 기능(A-2) 추가 중 lazy import로 위반 유입. health·아키텍처 가드 red 채로 착지.
 - **Why**: 동결 = 임시 격리 — green 회복으로 회귀 가드 복원·다른 트랙(QUAD-IMPL-1 등 health FAIL HALT) 차단 해제. 실제 수리는 방향 판단(주입 vs 승격)이 필요해 별도 사이클. 등록 없는 red 방치는 가드 무력화이므로 즉시 동결로 SSOT 정합 회복.
 - **How to apply**: 동결 키 = `("stocks/services/eod_signal_calculator.py", "apps.monitor.models.monitor")` 양쪽 동기(한쪽만 갱신 시 어긋남). 소진 = TASKQUEUE `BOUNDARY-BURNDOWN-EOD`. 착지 규칙 = common-bugs #121(등록 없는 red 착지 금지). cf. BOUNDARY-1~3(#1~#5 청소 완료 선례).
+## [2026-08-27] D-AGENT-S1 — 야간 도그푸딩 에이전트 1단계(정량 체크 + 메일 + diff 원장) [ops][agent][frontend]
+
+**결정 ⑴ (단계 도입)**: 야간 도그푸딩 에이전트를 **옵션 B+C 결합·3단계**로 도입한다. **1단계 = 정량 체크**(라우트 매트릭스·데이터 신선도·API 헬스) → 2단계 = 루브릭 채점 → 3단계 = 관찰 후보 + 성적 원장. 메일은 **매일**. 1단계부터 메일을 보내는 이유 = 보고 습관과 노이즈 수준을 먼저 검증해야 2단계 채점이 읽히기 때문.
+
+**결정 ⑵ (점검 대상의 단일 출처)**: 점검 화면 목록을 **별도로 두지 않고 `frontend/lib/guide/`(confirmed GuideScreen)에서 읽는다**(`auto_agent_system/dogfood/targets.py`). 가이드 데이터가 이미 루브릭 단일 출처(D-GUIDE-TRACK)이므로, 점검 대상까지 같은 파일에서 나오면 **루브릭과 점검 범위가 구조적으로 어긋날 수 없다**(복제 = drift). 형식이 바뀌어 0건이 되면 조용히 통과하지 않고 `RuntimeError`로 터진다 + 테스트가 화면 수를 고정한다.
+
+**결정 ⑶ (Playwright 불필요)**: 1단계는 **HTTP + baked JSON + API 프로브만**으로 충분하다. 헤드리스 브라우저를 도입하지 않는다 — SSR HTML의 셸 마커 존재·실패 문구 부재로 "빈 화면/에러 화면"을 잡을 수 있고, 데이터 유무는 baked `dashboard.json`과 API로 직접 본다. 브라우저는 2단계(루브릭 채점)에서 필요해지면 그때 도입한다.
+
+**결정 ⑷ (휴장일 스킵)**: 미국장 휴장(주말·NYSE 정규 휴장 9종 + Juneteenth)에는 **점검을 건너뛰고 메일도 보내지 않는다**(`--force`로 우회 가능). 장이 안 열린 날은 EOD가 갱신되지 않아 신선도 판정이 무의미하고, 연 110일가량의 무의미한 통지가 섞이면 메일이 안 읽힌다. 캘린더 패키지가 repo에 없어 **표준 라이브러리로 NYSE 규칙을 직접 구현**했다(`market_calendar.py`, observed 이동·Good Friday 포함, 유닛 테스트로 고정).
+
+**결정 ⑸ (인증 축소 모드)**: 화면이 쓰는 핵심 API는 전부 인증 게이트다. 토큰이 없으면 **401 = 엔드포인트 존재**로 판정하고 메일에 "무인증 모드" 고지를 넣는다. `DOGFOOD_API_USER/PASSWORD`가 env에 있으면 로그인해 200·스키마·빈 응답까지 본다. **credential은 코드에 넣지 않는다**(repo는 PUBLIC — [[reference_repo_is_public_github]]).
+
+**Why(핵심 함정 2건, 실측)**: ⑴ 실패 문구 마커를 `"500"` 같은 **부분 토큰**으로 두면 tailwind 클래스(`text-gray-500`)·티커(`SP500`)에 걸려 **전 라우트가 거짓 fail**이 된다(첫 실행 7/7 오탐). ⑵ Next.js는 RSC 플라이트 페이로드와 404 컴포넌트 문자열을 **모든 페이지의 인라인 스크립트**에 실어 보내므로, 원문 HTML에 매칭하면 `"This page could not be found"`가 전 라우트에서 걸린다(교정 후에도 7/7 오탐 재현). → 마커 판정은 **script/style 제거 후 가시 텍스트에만** 한다. 매일 오는 자동 메일에서 거짓 경보는 곧 메일 자체의 폐기를 뜻하므로 이 두 규칙은 계약이다.
+
+**How to apply**: 새 화면을 가이드에 등재하면 점검 대상에 **자동 편입**된다(별도 등록 금지). 셸 마커는 `targets.SHELL_MARKERS`에 라우트별로 추가. 실패 문구 마커는 **12자 이상 전체 문구만**(테스트가 강제). 배치·launchd 등록은 상신 전용(scratchpad `AGENT_S1_상신_20260827.md`). 2단계 착수 전 필요 = 인증 계정(⑸)·화면별 기대 상태 정의. cf. [[project_guide_track]]·D-GUIDE-TRACK.
+
 ## [2026-08-27] D-MP-V2-NAV — Market Pulse 네비 목적지 v2 전환(옵션 B) + GUIDE-S1 검수 승인 [frontend][product][process]
 
 **결정 ⑴ (GUIDE-S1 검수 승인)**: 병진 검수 결과 5화면 가이드 문구 **승인** → `reviewStatus: 'draft' → 'confirmed'`. 단 **marketPulse는 v1 기준 초안을 폐기**하고 v2 기준 문구(7영역)로 **교체 후** confirmed. 승인 근거 주석 = `// 병진 검수 승인 2026-08-27 (GUIDE-S1C)`.
@@ -6874,6 +6923,21 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 
 **Why C 추가**: A+B로 반복 refresh 5회 ≈ 15~25/min « 60이 산수상 충분하나, throttle 예산 2배는 재현 변동(캐시 miss·동시 탭)에 대한 저비용 보험(settings 1줄). 근인 완화는 A/B, C는 여유 예산. **랜딩=병진 수동**(main 머지 + sv sync + **api 재기동(#41)** + web 리빌드 + 스모크). 실행 세션은 배포/서비스 op 자기집행 금지([[feedback_deploy_approval_explicit_quote]]·[[feedback_service_op_submit_not_execute]]).
 
+## [2026-08-27] RC-A-1 점수 눈금 위생 실행 — D-RC-DECAY-SEMANTIC · D-RC-SCALE · D-RC-PC-DISPOSE + RC-TRACK-ORDER [chainsight][해자]
+
+> 트랙: RC-A-1(write 세션·데드라인 09-19). worktree `monorepo/sess-rc-a1` base origin/main `d6365630` 이후(`69605758`). 커밋 스택: PART1 `a396e748` · PART2 `23318e25` · PART3 `4efdc4c9`. ⚠ **공유 DB(dev=prod) — migrate·삭제=prod-write는 미실행·병진 스테이징**([[lesson_dev_prod_shared_db]]). 실측 근거 = RC-A-0 리콘(scratchpad `RC_A0_RECON_REPORT.md`).
+
+- **RC-TRACK-ORDER (P1′ 순서, 08-24 승인 등재)**: RC 해자 위생 실행 순서 = ① 감쇠 오발 차단(폭탄 해제, 데드라인) → ② 눈금 통일 → ③ PC 처분 → ④ 하네스. P1′=감쇠 수리를 최우선(09-19 beat 오발 전 배포 필요)으로 앞세운 순서. **B 착수 게이트 ③(점수 눈금 위생 + 감쇠 정합) = RC-A-1 PART 1·2 완료로 충족**(디렉터 08-24 승인 게이트 구조 기준; 원 게이트 정의와 상이 시 회부).
+
+- **D-RC-DECAY-SEMANTIC**: `check_stale_and_decay`가 `last_observed_at`(auto_now="행 마지막 save 시각")을 신선도 대리로 읽어, 재기록자 없는 타입(PEER_OF·PRICE_CORRELATED)이 D2 재설계(06-20)에 동결→90일 뒤 일괄 오발 감쇠 예약(실측 2,054행 09-18). **결정**: 감쇠 대상을 `DECAYABLE_RELATION_TYPES`(재기록자 보유 타입=CO_MENTIONED+SEC 4종) 화이트리스트로 게이트. **Why**: last_observed_at은 "save 시각"이지 "관측 시각"이 아니므로 재확인 파이프라인 없는 타입에 90일 시계는 무의미(마이그레이션 재저장 시점이 시계 리셋). 순차 `.update()` cascade는 무변경(기존 로직 보존). 근본 해소(evidence_last_observed_at 분리)는 후속(TASKQUEUE).
+
+- **D-RC-SCALE**: truth_score·market_score 도메인 [0,100] 이산 계단 {0,35,60,85}을 [0,1] {0,0.35,0.60,0.85}로 통일, score_version "3.0". **Why**: 소비처마다 눈금 가정 상이(ego_views 리터럴 85/60/35 · pair_aggregation·expand /100 · advisory ×0.60)로 잠재 결함 — 특히 실 최대 85를 /100해 relevance/expansion이 0.85 고착, advisory conf가 [0,85]로 base 지배(설계 불변식 0.48은 [0,1] 가정). **단일 소스** `apps/chain_sight/services/score_scale.py`(GRADE_*_MIN·SCORE_VERSION_CURRENT·to_unit_scale 멱등·apply_scale_normalization). 마이그 0033(전행 정규화+default 3.0). writer 3+1곳·소비처 6곳 동반이동. 버전 게이팅=pair_aggregation 경고 로그. **advisory 교정 실측**(w=0,entry=ccy=0.5): placement 51.2→0.71(high)·36.2→0.56(med)·21.2→0.41(low) — conf 지배 해소. **outlier**: relation_type="PEER" 2행(0.5/0.6, 이미 [0,1])은 /100 제외(멱등 규칙 v>1만), 전역 순서보존 깨는 오염 재확인(relation_type 정정은 후속).
+
+- **D-RC-PC-DISPOSE**: PRICE_CORRELATED 3,784행(전량 market·context·PEER_OF 100% 중복=구조적 잉여, D2 은퇴·P1B sync_strength가 강도 담당) 처분. **결정**: 아카이브(복원경로) 후 삭제 = 관리 커맨드 `dispose_price_correlated`(dry-run 기본·--archive read-only·--apply prod-write). **삭제영향 실측**(scale-independent): PC 유일 market edge **3,005쌍**(market_max 소멸)·max 337·무영향 442. strip θ 60→85 상향. RPS FK 없음→고아 0·과거 궤적 불변. **Why 삭제 가역**: 아카이브 jsonl 전 컬럼 + pg 백업. **⚠ Neo4j PC 엣지 1,356개 잔존**(PG 삭제로 자동소거 안 됨 → 병진 시 별도 Cypher `MATCH ()-[r:PRICE_CORRELATED]->() DELETE r`). **실삭제·Neo4j 정리·after-snapshot = 병진 배포(0033 적용 후)**.
+
+- **전제 반증(Q19)**: RC-A-0/A-1 실측이 Q19-DISCOVERY-REACT·Q19-WIDTH-STAGNATION의 "유니버스 포화·신규 0·9562 고정" 전제를 반증 — 08-10 co-mention 신규생성 재점화(1,679), 이후 매일 56~226, RC 13.7k→17.3k. 유입 정지는 경로 차단이 아니라 뉴스 유니버스/추출의 7월 공백(08-10 재개). → discovery는 "고장"이 아니라 "유니버스 확장 선택 문제"로 격하(TASKQUEUE).
+
+- **D-RC-DEPLOY-WINDOW (디렉터 정정 08-27·전부 director-reserved·순서 엄수)**: 스케일 마이그(0033)는 **코드↔DB 스케일 결합** 배포 — 순서를 어기면 혼재 창(mixed-scale window)이 열린다. ⓐ 머지 후 worker 먼저 재기동→migrate면 "새 코드([0,1] 기대)×옛 DB([0,85] 값)" 창에서 새 임계 0.85가 옛 값 85와 비교되고 새 writer가 [0,1]을 미변환 테이블에 오염. ⓑ migrate 먼저→옛 worker면 [0,85]를 변환 테이블에 쓰는 역방향 오염. **정답=창 닫기**: ①sess-rc-a1→main 머지+push(ff 불가 시 merge commit·RC-A-1 명기) → ②**worker·beat 정지** → ③migrate 0033 → ④**worker·beat 재기동**(새 코드×새 DB로만 재개) → ⑤`dispose_price_correlated --archive <ops> --apply` → ⑥Neo4j `MATCH ()-[r:PRICE_CORRELATED]->() DELETE r`(1,356) → ⑦after-snapshot(read-only·CC 가능) → ⑧09-19 감쇠 beat 로그 확인(stale 전이 0·DECAYABLE 외 무변=폭탄 최종 봉인). ②~④ 놓친 beat는 다음 주기 자연 회복(손실 0). **데드라인**: 늦어도 09-12 주간 초 권고(C8 게이트 겹침)·절대 시한 09-19 이전. Why 화이트리스트가 이 창의 방어선이기도: PART1이 배포돼야 감쇠 오발도 막힘.
 ---
 
 ## D-EVT-SCOPE-U (2026-08-24) — 캘린더 수집 유니버스 스코프
@@ -6909,3 +6973,13 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **근거**: EVT-IMPL-3 초회 적재 실측 — `ADTX 2026-09-02 epsEstimated=−2.2×10^11`(FMP 데이터 쓰레기) → DecimalField(12,4) 오버플로 DataError → 성분-레벨 격리가 **1행에서 성분 ~973행 소실** 유발. 성분-레벨 격리만으로 불충분.
 - **부수 규칙**: 유형에 skip 발생(skipped>0) 시 그 유형 stale 스윕 **생략**(미persist 행 last_seen 미갱신 → 오탐 stale 방지). 성분당 nulled+skipped > max(50, 행수 1%) = 스키마 drift 경고(관찰 지표, HALT 아님).
 - 보정1(이분)과 동형 = 실측서 드러난 견고화, 신규 결정 아님.
+## [2026-08-28] D-CS-STORY-SOURCE — "이 종목의 이야기"(R2-S1) 소스 = 엣지 직접 집계 [chainsight]
+
+> R2-S1 STEP 0 실측 후 디렉터 확정(A안). 카드 패널 "이 종목의 이야기"의 데이터 소스 결정.
+
+- **결정**: 패널 소스 = **CoMentionEdge 엣지 직접 집계**(종목의 co-mention 파트너 스레드). EventGroup 아님.
+- **근거(실측)**: EventGroup은 **매일 재빌드되나(동결 아님) 조감용 sparse 클러스터** — jaccard 코어-위성이 고차수 허브를 **의도적으로 배제**(cohesion 게이팅). 커버 170/757(22%)·종목당 1그룹·**NVDA·AAPL·MRNA=0그룹**. → 카드 패널 소스로 쓰면 78% 종목(주요 허브 포함)에서 빈 패널.
+- **EventGroup 처분**: 폐기 아님 — **S2 카드 유형(명명된 조감 클러스터) 후보로 보존**. 허브 배제는 버그가 아니라 의도된 설계(코어 응집도 게이팅).
+- **활동 지표 구현**(마이그0): 90d count·마지막일 = CoMentionEdge(일일 재집계·3ms). **7일 count만** NewsEntity 라이브 집계(표시 후보 top24 bounded). 서비스 층 `services/story_activity.py get_symbol_story_threads` — 뷰 인라인 금지·**S2 전역 뷰 소스로 재사용**.
+- **비용/한계**: 전형 <50ms·최악 허브 NVDA ~250ms(수용·카드 lazy fetch). **S2 전역 뷰(전 종목 집계)는 라이브 불가 → 물질화 캐시 필요**(마이그 번들 = CS-STORY-ACTIVITY-CACHE 후속).
+- **표시 원칙**: 활동 게이지·7일 수치는 실측에서만(규칙 6). 7일 0=조용함(게이지 대신 마지막일)·파트너 0=빈 상태. 신뢰 위계(SEC 근거 연결 vs 동시언급 이야기) 시각 분리 유지.
