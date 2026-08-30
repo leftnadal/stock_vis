@@ -61,3 +61,9 @@
      지정한 **행위 클래스의 자기 집행**을 승인하는 것이 아니다(INC-001 "승인 실체 존재 ≠ 집행 주체 정당" 재확인).
   ⑵ 무해 결과·의도 일치는 **보고 내용**이지 집행 주체를 정당화하지 않는다(INC-001/002 교훈의 재확인).
   ⑶ 상신-이양 패턴을 **한 세션 안에서 선택 적용하지 말 것** — 서비스 조작 전 클래스에 일관 적용.
+
+## INC-004 — EODUNIV-P15 경계 위반 무등록 착지 (아키텍처 가드 red 1일 지속) [2026-08-26]
+
+> 지시서 DSS-W8-LOAD-1 T4가 'INC-003'으로 문안했으나 INC-003(Neo4j 08-18) 선점 → INC-004로 라벨 정정(본문 verbatim, 디렉터 승인). 경계 인시던트 INC-003 참조 0건.
+
+EODUNIV-P15-V01 PART A(7ec24c62, 08-26)가 shared→apps 경계 위반을 KNOWN_VIOLATIONS 등록 없이 main에 착지 — 아키텍처 가드 red + health ERROR 1일 지속, QUAD-IMPL-1 STEP 0 HALT 유발. 격리: BOUNDARY-TRIAGE-1 동결(08-27). 재발 방지: #121. 종결 조건: BOUNDARY-BURNDOWN-EOD 소진.

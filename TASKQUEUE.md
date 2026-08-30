@@ -59,7 +59,7 @@
 
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |----|------|-------|------------|--------|-----------|
-| DASH-STRIP-KEEPCUT | 대시보드 3스트립(Coverage·Macro·News) KEEP/CUT — 전부 fail-quiet이라 "무엇을 결정하게 해주는지"가 안 써짐. 배경 장식인지 판단 재료인지 불명 | @frontend (dashboard) | — | 🔭 **관찰(등재만)** | 질문 부여(KEEP) or 제거(CUT). 가이드 regions에서 제외된 상태. |
+| DASH-STRIP-KEEPCUT | 대시보드 3스트립(Coverage·Macro·News) KEEP/CUT — 전부 fail-quiet이라 "무엇을 결정하게 해주는지"가 안 써짐. 배경 장식인지 판단 재료인지 불명 | @frontend (dashboard) | — | 🔭 **관찰(등재만)** | 질문 부여(KEEP) or 제거(CUT). 가이드 regions에서 제외된 상태. **SectorQuadrant 포함 (QUAD Slice 3 fail-quiet 삽입 — 무기 파이프 단절 시 무표시)** (DSS-W8-LOAD-1 2026-08-31). |
 | PF-TODAY-GAIN | 포트폴리오 "오늘 수익"이 **항상 0** — `app/portfolio/page.tsx`의 `todayGain={0} // TODO`·`todayGainPercent={0} // TODO` 하드코딩 | @frontend (portfolio) | — | 🔭 **관찰(등재만)** | 표시는 되는데 값이 언제나 0 = "거짓을 조용히 보여주는" 상태. 구현하거나 숨기거나 둘 중 하나. |
 | CS-ATTENTION-DEF | Chain Sight 카드 "관심도"(`avg_score`)의 정의가 화면에 없음 — 무엇을 0~100으로 매긴 값인지 답 불가 | chain_sight | — | 🔭 **관찰(등재만)** | 툴팁·범례로 정의 노출 필요. 가이드는 "세 숫자"로 뭉뚱그려 우회. |
 | GUIDE-STAGE4-ROUTE | 플로우 4단계(1차 검증) 독립 라우트 부재 — 검증 UI는 `/stocks/[symbol]` 내부 섹션뿐 | 미배정 | 설계 | 🔭 **관찰(등재만)** | GUIDE-STAGE4-GAP과 동일 사안. 라우트 신설 vs 플로우 정의 수정 = 제품 결정. |
