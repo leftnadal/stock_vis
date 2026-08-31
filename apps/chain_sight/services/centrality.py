@@ -46,10 +46,14 @@ def _ranked(score_map):
     return {sym: i + 1 for i, (sym, _) in enumerate(ordered)}
 
 
-def compute_centrality(edge_rows):
-    """edge_rows → (rows, meta). rows=[{symbol,pagerank,betweenness,pagerank_rank,betweenness_rank}].
+def compute_centrality(edge_rows, want_degree=False, want_betweenness=True):
+    """edge_rows → (rows, meta). rows=[{symbol,pagerank,pagerank_rank, [betweenness,betweenness_rank], [degree]}].
 
     DB 미접촉. edge_rows = iterable[(symbol_a, symbol_b, truth_score, market_score)].
+
+    want_betweenness/want_degree = additive 옵션(기본 = ⑲ 원 동작 보존: betweenness 포함,
+    degree 미포함). RC-C-1 backbone 어댑터는 want_betweenness=False·want_degree=True로
+    호출해 582노드 부분그래프를 즉석 계산한다(betweenness 계산 생략 = 수십 ms).
     """
     g = build_relation_graph(edge_rows)
     n_nodes = g.number_of_nodes()
@@ -58,21 +62,26 @@ def compute_centrality(edge_rows):
         return [], {"graph_nodes": 0, "graph_edges": 0}
 
     pr = nx.pagerank(g, weight="weight")
-    bt = nx.betweenness_centrality(g, weight=None)  # 정확값(샘플링 없음)
-
     pr_rank = _ranked(pr)
-    bt_rank = _ranked(bt)
 
-    rows = [
-        {
+    bt = bt_rank = None
+    if want_betweenness:
+        bt = nx.betweenness_centrality(g, weight=None)  # 정확값(샘플링 없음)
+        bt_rank = _ranked(bt)
+
+    rows = []
+    for sym in g.nodes():
+        row = {
             "symbol": sym,
             "pagerank": pr[sym],
-            "betweenness": bt[sym],
             "pagerank_rank": pr_rank[sym],
-            "betweenness_rank": bt_rank[sym],
         }
-        for sym in g.nodes()
-    ]
+        if want_betweenness:
+            row["betweenness"] = bt[sym]
+            row["betweenness_rank"] = bt_rank[sym]
+        if want_degree:
+            row["degree"] = g.degree(sym)
+        rows.append(row)
     meta = {"graph_nodes": n_nodes, "graph_edges": n_edges}
     return rows, meta
 
@@ -85,3 +94,32 @@ def compute_centrality_from_db():
         "symbol_a", "symbol_b", "truth_score", "market_score"
     ).iterator()
     return compute_centrality(edge_rows)
+
+
+# 활성 해자 기본 필터 (RC-C-1 D-RC-C1-STORAGE = compute-on-read).
+BACKBONE_STATUS_ALLOW = ("confirmed", "probable")
+
+
+def compute_backbone_centrality(status_allow=BACKBONE_STATUS_ALLOW):
+    """활성 해자 부분그래프 중심성(compute-on-read 어댑터, ⑲ compute_centrality 재사용).
+
+    입력 = RelationConfidence 중 relation_status∈{confirmed,probable} AND max(truth,market)>0
+    엣지(self-loop 제외). PEER outlier 2행은 status='hidden'이라 필터에서 자연 제외된다
+    (별도 제외 코드 불요 — 테스트로만 확인). PageRank(damping 0.85 = nx 기본) + degree.
+    지속 모델·마이그레이션 없음(D-RC-C1-STORAGE 옵션 C). 반환 = (rows, meta), rows는
+    pagerank 내림차순 정렬(동점 symbol 오름차순). betweenness 미계산(불요).
+    """
+    from apps.chain_sight.models import RelationConfidence
+
+    qs = RelationConfidence.objects.filter(
+        relation_status__in=status_allow
+    ).values_list("symbol_a", "symbol_b", "truth_score", "market_score").iterator()
+    # max>0 사전 배제: build_relation_graph가 0-weight 엣지를 만들지 않도록 어댑터에서 필터.
+    edge_rows = (
+        (a, b, ts, ms)
+        for a, b, ts, ms in qs
+        if a != b and max(ts or 0.0, ms or 0.0) > 0
+    )
+    rows, meta = compute_centrality(edge_rows, want_degree=True, want_betweenness=False)
+    rows.sort(key=lambda r: (-r["pagerank"], r["symbol"]))
+    return rows, meta

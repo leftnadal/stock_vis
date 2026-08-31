@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.chain_sight.views.watchlist_views import WatchlistViewSet
 
+from .backbone_views import BackboneView
 from .centrality_views import CentralityTopView
 from .ego_views import EgoGraphView
 from .event_views import EventBoardView, EventRankingView
@@ -44,6 +45,8 @@ urlpatterns = [
     path("ego/<str:symbol>/", EgoGraphView.as_view(), name="chainsight-ego"),
     # 중심성 상위 조회 (⑲ S3, S-C — 화면 노출은 ⑳)
     path("centrality/top/", CentralityTopView.as_view(), name="chainsight-centrality-top"),
+    # 백본 뷰 (RC-C-1 — 활성 해자 부분그래프 중심성 + θ 엣지, compute-on-read)
+    path("backbone/", BackboneView.as_view(), name="chainsight-backbone"),
     # CS-P5 마인드맵 카드 (D1·D-CARD-GATE, 고정 프리픽스 — 동적 symbol 경로와 분리)
     path("mindmap/tree/", MindmapTreeView.as_view(), name="chainsight-mindmap-tree"),
     path("mindmap/card/<str:symbol>/", MindmapCardView.as_view(), name="chainsight-mindmap-card"),
