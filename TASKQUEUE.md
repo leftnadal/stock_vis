@@ -5,9 +5,9 @@
 
 ---
 
-## DSS-BEAT — DSS 주간 적재 자동화 (착수, DSS-BEAT-1 2026-08-31) [theme-heat][dss][infra]
+## ✅ DSS-BEAT — DSS 주간 적재 자동화 (가동, DSS-BEAT-1 2026-08-31) [theme-heat][dss][infra]
 - D-DSS-BEAT-1. celery `chainsight-load-dss-weekly`(Fri 19:00 ET·default 큐) + 폴백 command `load_dss_week`. **2단 스위치**: PeriodicTask enabled=False 등재 → §D 워커 재시작+검증 후 enable.
-- 상태: §A 코드+§B beat(enabled=False) 집행 중. **잔여(병진)**: §D 워커(celery-worker@sv-worker-runtime 4 behind→sync)+beat 재시작 → CC 검증(태스크 등록·트리 커밋 조상) → enable. **09-04(금)까지 미enable 시 폴백 = 병진이 착지 트리에서 `manage.py load_dss_week` 1줄**(상신 문서 `scratchpad/DSS-BEAT-1_restart_상신.md`).
+- **가동 완료(2026-08-31)**: §C push 착지(origin/main `64c5b622`) → 병진 `sv sync`(worker 트리 `835da979` re-detach + celery-worker/beat 재기동·inspect ping ✓) → CC 검증 2종 통과(트리 조상 `64c5b622` 포함 · `inspect registered`에 chainsight-load-dss-weekly) → **PeriodicTask id=143 enabled=True**. **다음 발화 = 09-04(금) 19:00 ET**. 관측 = DSS-BEAT-OBS-1. 폴백(미발화 시) = 착지 트리 `manage.py load_dss_week`.
 
 ## DSS-BEAT-OBS-1 — 09-04 발화 후 검증 (등재만·차기, DSS-BEAT-1 2026-08-31) [theme-heat][dss]
 - 09-04(금) 발화 후: SymbolDemandSignal anchor 09-04 신규 행 수·Score 11행(**DB 행 증거·last_run_at 불인정**) / flat_ratio 판정(§2) / arrow 상태 / 클린 쌍 5/6 갱신(ε는 09-11 6/6에 개시).
