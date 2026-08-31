@@ -94,6 +94,35 @@ class TestUpsertTransitions:
         assert obj.status == "occurred"
         assert str(obj.eps_actual) == "1.4000"
 
+    def test_stale_restored_to_scheduled_on_reobservation(self, monkeypatch):
+        """EVT-CORR-3: 스윕으로 stale 된 행이 재관측되면 scheduled 복원(소실 오탐 치유)."""
+        # 1) 신규 scheduled
+        _patch_client(monkeypatch, earnings=[_earn("2026-09-15")])
+        tasks_mod.collect_calendar_events(as_of=AS_OF)
+        obj = CalendarEvent.objects.get(event_type="EARNINGS", symbol="NVDA")
+        assert obj.status == "scheduled"
+
+        # 2) 스윕이 stale 마킹했다고 가정 (직접 세팅)
+        CalendarEvent.objects.filter(pk=obj.pk).update(status="stale")
+
+        # 3) 재관측(FMP 재응답) → scheduled 복원, 행 수 불변
+        _patch_client(monkeypatch, earnings=[_earn("2026-09-15")])
+        tasks_mod.collect_calendar_events(as_of=AS_OF)
+        obj.refresh_from_db()
+        assert obj.status == "scheduled"
+        assert CalendarEvent.objects.count() == 1
+
+    def test_occurred_wins_over_stale_restore(self, monkeypatch):
+        """actual 존재 시 stale→occurred (scheduled 복원보다 occurred 우선)."""
+        _patch_client(monkeypatch, earnings=[_earn("2026-09-15")])
+        tasks_mod.collect_calendar_events(as_of=AS_OF)
+        obj = CalendarEvent.objects.get(event_type="EARNINGS", symbol="NVDA")
+        CalendarEvent.objects.filter(pk=obj.pk).update(status="stale")
+        _patch_client(monkeypatch, earnings=[_earn("2026-09-15", eps_actual="1.4000")])
+        tasks_mod.collect_calendar_events(as_of=AS_OF)
+        obj.refresh_from_db()
+        assert obj.status == "occurred"  # scheduled 아님
+
     def test_dividend_and_split_normalized(self, monkeypatch):
         _patch_client(
             monkeypatch,

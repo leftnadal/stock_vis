@@ -43,7 +43,7 @@ class Command(BaseCommand):
             GRADE_LIKELY_MIN,
             SCORE_VERSION_CURRENT,
         )
-        from apps.chain_sight.utils import normalize_pair
+        from apps.chain_sight.utils import normalize_pair, skip_self_loop
         from packages.shared.stocks.models import Stock
         from services.sec_pipeline.models import (
             SEC8KCounterpartyEvidence,
@@ -170,7 +170,8 @@ class Command(BaseCommand):
                     direction = "both"
                 else:
                     sym_a, sym_b, direction = company, ticker, "a→b"
-                if sym_a == sym_b:
+                # A-1(MIG-BUNDLE-1): a≠b 가드 — 자기루프 skip+구조화 로그(카운터 보존).
+                if skip_self_loop(sym_a, sym_b, rel_type, source="sec_8k_extract"):
                     self_skip += 1
                     continue
                 # evidence_sources 병합(기존쌍 8-K 소스 추가)

@@ -7113,6 +7113,9 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **단일 출처**: 이 규칙은 repo 하네스에만 둔다(규약 10장 — 코어 복제 금지).
 - **이행 @`9a17e324`(2026-08-31, RC-EXEC-TREE-LAND)**: 래퍼 3건(`celery-worker-neo4j.sh`·`celery-watchdog.sh`·`pg-backup.sh`)에 self-locate 적용 완료. 실행 라인 변경 1/1×3(행위보존 — Desktop 트리에서 실행하면 종전과 동일 경로 도출). plist 3건은 `scripts/ops/launchd/*.plist.proposed`로 대기, 교체·bootstrap은 병진 수동(상신 `scratchpad/RC-NEO4J-WORKER-TREE_상신_20260831.md`).
 - **실측 정정(결함 C)**: 런타임 트리 `.env`는 Desktop 본체 `.env`를 가리키는 **심링크**(worker·api 공통) → 트리 간 `.env` drift는 현 구성에서 발생 불가. `pg-backup` 교정 목적은 위험 제거가 아니라 **규칙 일관성**. 다만 심링크가 본체에 의존하는 사실은 별건 등재(`OPS-ENV-SYMLINK-DEPENDENCY`).
+- **집행 완료(2026-08-31 16:41~16:44 KST, 병진 권한 위임·CC 집행)**: `celery-worker-neo4j`·`celery-watchdog` 2건 plist 교체 + bootstrap 완료. 검증 = 프로세스 **실제 cwd가 런타임 트리**(lsof 확증, plist 선언값이 아닌 실측) · ping pong · 적체 큐 62→0 소진(전건 `synced:0`) · 실효 dirty 0 유지 · watchdog 첫 발화 `RECOVERED`로 경보 종료. `pg-backup`은 권한 제약으로 미집행(초안 대기). **`sv sync`는 미실행** — 게이트 ⑵가 이미 충족돼 불필요했고, 실행하면 범위 밖 커밋(DSS-BEAT-1 등)까지 함께 배포됐을 것(배포 범위 최소화).
+- **검증 도구 교훈(채번 후보)**: 검증 스크립트에서 `set -o pipefail` + `cmd | grep -q`는 **거짓 FAIL**을 만든다 — `grep -q`가 첫 매치에 종료하며 상류를 SIGPIPE로 죽여 파이프라인이 non-zero가 된다. 실제로 `celery inspect ping`이 `pong`을 냈는데 FAIL로 판정됐다. 회피 = 출력을 변수에 담아 `case`/`[[ ]]`로 판정. 아울러 launchd 로그 파일명은 **Label이 아니라 plist의 `StandardOutPath` 실경로**로 참조해야 한다(`com.stockvis.` 접두사 가정 → 파일 부재를 '통과'로 오판).
+- **감시 대상 4종(2026-08-31, RC-WATCHDOG-DAPHNE-COVERAGE)**: `celery-watchdog.sh`의 감시 대상에 **`Web (daphne)` = `com.stockvis.web`(:18765)** 추가 → default worker · neo4j worker · beat · **web** 4종. 근거 = 08-31 API 12분 다운(12:22~12:34)이 감시 대상 밖이라 무경보였다. ⚠️ **한계 명기**: `com.stockvis.web`은 `KeepAlive=true`라 프로세스 사망은 launchd가 이미 되살린다 — 이번 추가의 실질 효과는 **잡 언로드 상황의 경보**이고, 그 경우 `launchctl kickstart`도 실패하므로 **복구는 사람이 `bootstrap`** 해야 한다. `ps` 문자열 매칭이라 **응답 정지(hang)는 감지 불가**. 완전 커버리지는 HTTP 헬스 프로브 + 잡 언로드 감지가 필요(후속 `RC-WATCHDOG-HTTP-PROBE`).
 
 ## [2026-08-31] D-SUBPAGES-LAYOUT — 거시 서브페이지 = 허브(가) [frontend][market_pulse]
 
@@ -7139,3 +7142,95 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **구현**: ⑲ `compute_centrality`에 `want_degree`/`want_betweenness` 파라미터 추가(additive, 기본=⑲ 원 동작 보존) + `compute_backbone_centrality` 어댑터(status∈{confirmed,probable} AND max>0, self-loop 제외). PEER outlier 2행은 status='hidden'으로 필터에서 자연 제외(별도 코드 불요). θ = `score_scale.GRADE_CONFIRMED_MIN` 단일 소스.
 - **후속(B 옵션)**: 궤적(순위 변동) 수요 발생 시 discriminator append(기존 모델에 `graph_scope`+`degree`+`score_version`, unique=(symbol,as_of,scope)) — TASKQUEUE 등재. **forward-only·소급 백필 금지**. 트리거 = backbone 순위 변동 관측 수요.
 - **스펙 조정(2-1↔3-1)**: API edges = θ≥0.85만(2-1 계약 진실). FE는 실선 렌더. "그 외 상위 심볼 간 엣지 점선"(3-1)은 sub-θ 엣지 미반환이라 2-1 계약 확장 필요 → **후속 backlog**(dash 분기 로직은 구현 완료, 데이터만 대기).
+## D-EVT-CORR-3 — 재관측 시 stale→scheduled 복원 (2026-08-31)
+- **결정**: `_persist_event` 재관측(created=False)에서 `obj.status==stale`이면 `scheduled` 복원. 재관측 = FMP가 동일 (type,symbol,date) 재응답 = 소실 아님 → 스윕 오탐 치유. occurred 우선(actual 있으면 occurred).
+- **Why**: 기존 경로는 stale→scheduled 복원 부재(record_observation defaults만·_persist occurred 상향만) → 스윕된 행이 재응답돼도 영구 stale. 계측(0-5⑹ a) = 47행 오표시(EARNINGS 41·DIV 6, 전량 future). 수집기 재실행만으로 자가치유(별도 DB 마이그·수동 write 불요).
+- **배포**: 수집기 변경 → worker_sync 필요(별도 병진). FE stale 기본숨김 off 확정과 짝(숨김이 정직, 복원은 원장 정확도 회복).
+
+## D-CC-RUNTIME-RESTART-EXPLICIT — 운영 재기동은 사용자 명시 지시 시에만 CC 집행
+- **결정**: 서비스·데몬 재기동(daphne kickstart·:3000 재빌드·launchctl)은 **사용자 명시 지시가 있을 때만 CC가 집행**한다. 그 외에는 자율 집행 금지·상신(병진) 유지([[feedback_service_op_submit_not_execute]]).
+- **선례**: EVT-IMPL-4 런타임 라이브 = 디렉터 "daphne 재기동+:3000 재빌드 작업해줘" 명시 지시 후 CC 집행. worker_sync는 scope 밖이라 무접촉.
+## [2026-08-31] D-SELFLOOP-DBCONSTRAINT — 관계 자기루프 a≠b = DB CheckConstraint 승격 [backend][chainsight]
+
+> MIG-BUNDLE-1 A. 앱 가드(SelfLoopError)만으로는 bulk_create·레거시 잔존을 못 막아 DB로 승격.
+
+- **결정**: CoMentionEdge·RelationConfidence(symbol_a≠symbol_b), RelationPairSnapshot(canonical_a≠canonical_b)에 `CheckConstraint`(마이그 chainsight 0034). 앱 `save()` SelfLoopError는 최종 방어선으로 유지.
+- **Why**: STEP0 실측 RC 자기루프 13(전부 confirmed·serving_layer='excluded'→카드 미서빙)+RPS 파생 649. 근본=10-K 공급망 seed가 필러 자기참조 엔티티(자회사/OP/브랜드)를 필러 티커로 해소(a==b). 상류 3지점(주간 배치·10-K seed·8-K)은 이미 a≠b skip 보유 → 결핍은 관측성뿐 → skip_self_loop 헬퍼로 구조화 로그 승격(행위보존). bulk_create 우회 경로 없음 확인.
+- **정제 선행**: `normalize_self_loops` 커맨드(아카이브·트랜잭션·Neo4j 엣지 삭제·사후검증)로 13+649+Neo4j16 제거 후 제약 적용(2026-08-31 병진 실행 완료). 자기루프 정제는 병진 결정(행 삭제=CC 자율 금지).
+- **pair_aggregation 의도적 무가드**: RPS 제약 위반 시 fail-loud(RC 자기루프 재발 신호를 silent skip으로 은폐하지 않음).
+
+## [2026-08-31] D-CS-UNIVERSE-EXCLUDE-FLAG — 유니버스 제외 = 종목 플래그(2단) [backend][chainsight][stocks]
+
+> MIG-BUNDLE-1 B. 임시 1단 industry 상수 필터를 종목 단위 플래그로 승격·상수 제거(하이브리드 DoD).
+
+- **결정**: `Stock.universe_excluded`(bool)+`exclude_reason`(코드). 데이터 마이그(stocks 0018)는 **industry 멤버십으로 승격**(옛 제외 집합과 정확히 동일=행위보존). mindmap_views 소비 2지점을 flag 필터로 전환, `UNIVERSE_EXCLUDED_INDUSTRIES` 상수·주석·import 전부 제거.
+- **Why**: 제외 판정을 종목 단위로 모아 사유가 늘어도 필드만 세팅. 실측: industry "Asset Management - Leveraged" = 정확히 OKLL·IREG·GEVG 3종. 검증(병진 migrate 후): 옛 필터=새 flag 필터=754 종목·동일 집합.
+- **의미 이동**: 제외는 이제 flag 기준(industry 무관) — 신규 레버리지 ETF는 명시 플래그 필요(2단 설계 tradeoff).
+
+## [2026-08-31] D-CS-STORY-ACTIVITY-CACHE — co-mention 활동 일일 물질화 캐시 [backend][chainsight]
+
+> MIG-BUNDLE-1 C. R2-S2 선행. 라이브 NewsEntity 7일 집계를 일일 스냅샷으로 물질화.
+
+- **결정**: `SymbolStoryActivity`(chain_sight — CoMentionEdge 파생·전용, shared 아님). `get_symbol_story_threads`가 캐시 우선(신선≤48h)·부재/미갱신 시 라이브 fallback(빈 화면 금지). 물질화 태스크는 `_compute_story_threads_live` 재사용(중복 구현 금지). beat=chainsight-materialize-story-activity(ET 12:00 매일).
+- **Why 실측(병진 검증)**: 31,978행/5,034종목·물질화 35.75초. 전역 ratio 상위 조회(-activity_ratio 인덱스)=0.65~0.73ms(S2 전역 활동 뷰 입력). 카드 서빙 캐시 3.9ms vs 라이브 55.4ms(~14배)·형상 IDENTICAL.
+
+## [2026-08-31] D-SCAN-R1-OBS — 스캐너 ①FE 육안 검증 후 관찰·이상 3건(→판정 종결) + RECON-SCANDIAG-R1 [frontend][dashboard][scanner]
+
+> ⑦b 시각 검증(08-31 사용자 스크린샷 2매)에서 화면 실재는 확인(아크 ①FE 완결)되었으나, 잔여 관찰·이상 3건은 진단 태스크 RECON-SCANDIAG-R1로 회부. 본 항목은 **관찰 등재**이며 원인 확정은 R1 산출. (MGMT-BATCH-40)
+
+- **관찰/이상**:
+  - ⑴ **거래대금(+시총) 필터 무반응 의심** — 필터 조작에 목록이 변별되지 않음. 용의 = 단위 불일치(FE 임계값 vs 베이커 산출 단위). 확정 전 가설.
+  - ⑵ **필터 반응 지연(A2)** — 칩/바 조작 후 목록 재계산 체감 지연. 성능 축.
+  - ⑶ **coverage audit 층 0·0·0 + 배지 부재** — **창 이동 가설**: 커버리지 창이 7일이라 전진하면 8월 중순 관측 61건이 창밖으로 이탈 → join 대칭 설계상 **정상**일 가능성(결함 아님). 반증/확증 = 사용자 새로고침 테스트 + RECON-SCANDIAG-R1 E파트.
+- **처분**: **RECON-SCANDIAG-R1 발급**(읽기 전용 진단). 원인 확정·수리 범위는 R1 산출 → SCAN-UX-2 설계 입력. E1 무해·B4 골든크로스 0 = 데이터 상태(결함 아님)로 별도 분리.
+- **How to apply**: 관찰 등재일 뿐 수리 착수 아님. ⑴은 단위 계약(FE↔베이커) 재확인이 우선, ⑶은 "정상 가능성"을 기본 가설로 두고 배지 노출 UX만 별건 검토. cf. D-SCAN-UX2-FEEDBACK·RECON-SCANDIAG-R1(TASKQUEUE)·[[project_scanner_ux_recon]].
+- **★판정 종결(2026-08-31, RECON-SCANDIAG-R1 · MGMT-BATCH-41)**:
+  - ⑴ **거래대금 필터 = 배선 정상·임계 설계 문제**(결함 아님·단위 불일치 가설 기각) — 유니버스 min $53.8M > 최고 옵션 $50M → 전 옵션 무변별, 시총 **$50B+만 변별**, market_cap 결측 2종. **임계 재설계 = SCAN-UX-2 설계 사안**(상향 vs 분위수 vs 제거).
+  - ⑵ **필터 지연 = key remount**(86행+sparkline 전량 재생성) + memo 부재 — 수리 방향 특정(key 제거·React.memo·useMemo)·**SCAN-UX-2 편입**.
+  - ⑶ **audit 0·0·0 = 정상**(창 이동의 정직한 표시·FE emit 08-31 34건·불변식 성립·BE/FE 무결·**조치 불요**). 실측 등재: **w7 34/0/34 · w90 114/12/102 = 안건 ⓐ 최신 입력**.
+  - ⑷ ma_state above192/below68/dead1·golden 0(데이터 정직) · signal_direction **bull160/bear102/neu2**(㉯ 방향 토글 가치 실증).
+  - → 관찰 3건 전부 원인 확정: ⑴⑵는 SCAN-UX-2로 이관, ⑶은 정상 종결. **RECON-SCANDIAG-R1 done**.
+
+## [2026-08-31] D-SCAN-UX2-FEEDBACK — 스캐너 ①FE 사용자 소감 구조화(㉮~㉱) → SCAN-UX-2 [frontend][dashboard][scanner]
+
+> 08-31 사용자 소감 원문 요지를 4항(㉮~㉱)으로 구조화. ㉮㉯㉰은 FE에 이미 보유 중인 필드로 저비용, ㉱은 목업 동반 결정 사안. (MGMT-BATCH-40)
+
+- **소감(원문 요지)**:
+  - ㉮ **고정 영역 ~50% → 가시 종목 2.5개** = 레이아웃 컴팩트化 필요(고정 헤더/필터 영역 축소).
+  - ㉯ **연속 상승/하락 방향 분리** — `signal_direction` 필드 **기보유·미사용** → 방향별 표기.
+  - ㉰ **테마 포함 사유 즉답** — 카드 기준 vs 종목 실값 문맥. `signal_value` **기보유** → 종목 실값 노출로 "왜 포함됐나" 즉답.
+  - ㉱ **스토리 프리셋**(원탭 서사 필터) — 구성은 **목업 동반 결정 사안**(원탭에 담을 축 조합).
+- **부수 관찰**: Chain Sight 연계가 **섹터 칩뿐**(관계 실신호 부재) = **SCAN-B3(관계 축) 가치의 사용자 측 재확인**.
+- **How to apply**: ㉮㉯㉰ = SCAN-UX-2 선행분(FE 공짜 필드·베이커 무접촉), ㉱ = 목업 결정 후 편입, SCAN-FIX-1(strip 라벨)도 UX-2 흡수. 밸류축은 SCAN-B2-FUND-BE(후행)에서 프리셋과 결합. cf. D-SCAN-R1-OBS·SCAN-UX-2(TASKQUEUE)·[[project_scanner_ux_recon]].
+
+## [2026-08-31] D-SCAN-STORY-3LAYER — 스캐너 종목 서사 3층 구조 + 생성 B계층·착수 A [frontend][dashboard][scanner][rag-llm]
+
+> 08-31 사용자 확정. 스캐너 종목의 "이야기"를 3층으로 구조화. 생성 방식은 A 템플릿(4.25)=B 계층(4.25) 동점 → 타이브레이커 단계화(A는 B의 1단계) → 최종 B·착수 A. (MGMT-BATCH-41)
+
+- **구조 3층**: ① **사실 층**(카드 기준 대비·전 종목·정칙 ⑵ 서술만) → ② **서사 층**(⚠ 리스크 서술 허용) → ③ **story_tag**(프리셋 재료).
+- **생성**: A 템플릿 4.25 = B 계층 4.25 **동점** → 타이브레이커 = 단계화(A = B의 1단계) → **최종 B·착수 A**(A부터 구현, B로 확장).
+- **제약**: ⑴ **실뉴스 매칭 0(08-24) → NEWS-MATCH 선행**(서사 층이 뉴스에 의존). ⑵ **서사 본문 = per-stock JSON**(행 클릭 시 로드)·행에는 **story_tag만**(payload ×4 폭증·D2 회피).
+- **규율**: 서술만(정칙 ⑵·⚠ 리스크 서술 허용). LLM 층 = **shared LLMClient 래퍼 + circuit breaker + 템플릿 폴백**. **LLM 대상 = 상위 합류 한정**(임계는 슬라이스 실측 후 확정).
+- **How to apply**: 착수 A(템플릿) → NEWS-MATCH 승격 완료 후 서사 층 활성 → SCAN-STORY-LLM(상위 합류 LLM). story_tag = SCAN-UX-2 ㉱ 스토리 프리셋 재료. cf. D-NEWSMATCH-PROMOTE·D-SCAN-UX2-FEEDBACK·[[project_scanner_ux_recon]].
+
+## [2026-08-31] D-NEWSMATCH-PROMOTE — 스캐너 실뉴스 매칭 0건 = 관찰 → 정식 NEWS-MATCH 트랙 승격 [backend][dashboard][scanner]
+
+> 스캐너 news_context 실뉴스 매칭 0건(08-24)이 D-SCAN-STORY-3LAYER 서사 층의 선행 제약 → 관찰에서 정식 트랙으로 승격. (MGMT-BATCH-41)
+
+- **결정**: NEWS-MATCH를 정식 트랙화. **1단계 = RECON-NEWSMATCH-R1**(읽기 전용 원인 진단). 소관 후보 = **shared(enricher)**. **안건 ⓒ 인접** 명기(퍼널/커버리지 계열).
+- **★RECON-NEWSMATCH-R1 판정(2026-08-31, MGMT-BATCH-41 in-session 완료·읽기 전용)**:
+  - **근인 = ⒜ source absent + ⒠ 아키텍처 이원화**(키/창/유니버스 불일치 전부 실측 배제). `EODNewsEnricher`(`packages/shared/stocks/services/eod_news_enricher.py`)의 4단계 매칭(symbol_today/7d/30d·industry_7d)이 조회하는 `StockNews`(`stocks_stock_news`)가 **0행 = 데이터 파이프라인 미연결 죽은 테이블**(스키마·문서만 존재·쓰기 코드 전무) → 4단계 즉시 실패 → **100% profile 폴백**.
+  - **실뉴스는 실재**: `NewsArticle` 462,060행(최신 08-30)·`NewsEntity` 587,902행(co-mention 저장소·IREN↔MSFT). 표본 26/26 심볼 전원 today/7d 창 내 실뉴스 보유(MSFT 당일 17건). **매칭 로직·confidence 보정은 무결**(설계 정상).
+  - **다운스트림 오염**: 추천카드 issuance(`card_fill_prompt.py`)가 enricher `news_context`를 LLM 재료로 재소비 → **독립 소스 아님·동일 결함 전파**(카드별 실사 후속 권고).
+  - **대조군**: 대시보드 뉴스 섹션(`stock_insights.py`)은 `NewsEntity` 직접 사용 → 정상 노출(왜 한쪽만 붙는지 확정).
+- **수리 방향 3후보(선택=결정 대기·OPEN)**: ⑴ **[소·@backend]** enricher 4쿼리를 `NewsEntity` 재배선(순환참조 검토)·즉효 기대 · ⑵ **[중·@infra+@backend]** `StockNews`를 채우는 sync beat(비정규화 캐시·최초 backfill) · ⑶ **[대]** 모델 통합·`StockNews` deprecate(DECISIONS급·다운스트림 동시 해소). recon 권고 우선순위 = 1 즉시 검증 → 필요시 2/3.
+- **채번**: "enricher가 빈 StockNews 조회 → 실뉴스 0" = **common-bugs 채번 후보**(수리 착지 세션이 부여 — 미수정 상태 사전 채번 보류).
+- **How to apply**: 수리 방향 ⑴~⑶ 중 선택은 별도 결정(디렉터) → 수리 트랙·소관 확정 → D-SCAN-STORY-3LAYER 서사 층 활성 전제 해소. cf. D-SCAN-STORY-3LAYER·RECON-NEWSMATCH-R1(TASKQUEUE)·[[project_scanner_ux_recon]].
+
+## [2026-08-31] D-INSTR-BATCH-NUM-MEASURED — mgmt 배치 번호·브랜치명 = 세션 STEP 0 실측 max+1 (하드코딩 금지) [harness][process]
+
+> 직전 세션(BATCH-40)의 자기정정을 전향 규칙화. 지시서에 배치 번호·브랜치명을 하드코딩하면 병렬 트랙 선점 시 충돌(BATCH-39/40 실사례). (MGMT-BATCH-41 첫 적용)
+
+- **결정**: 지시서의 mgmt 배치 번호·브랜치명은 **잠정값**으로만 취급. **정본 = 세션 STEP 0 실측 max+1**(PROGRESS 최신 mgmt 번호 + origin 브랜치 선점 확인). 선점 시 max+1로 치환·브랜치명 분리.
+- **Why**: BATCH-39 지시서가 병렬 P2-DLITE-CLOSE 세션에 #39를 선점당함 → 그대로 진행 시 PROGRESS batch 헤더 중복(drift). 실측 자기정정 39→40으로 해소. 번호는 기계적 max+1이라 세션이 착지 직전 실측하면 충돌 구조적 제거(D-NUMBERING-MGMT-ONLY 동일 원리·채번↔배치번호 병렬).
+- **How to apply**: mgmt 지시서 STEP 0에 "배치 번호 확정" 단계 상설(본 BATCH-41이 첫 적용 — 잠정 41 → 실측 41 확정). 지시서 작성자는 "잠정 N — 선점 시 max+1" 표기. cf. [[lesson_stale_deploy_thread_reexec]]·[[lesson_branch_assignment_explicit_isolation]]·D-NUMBERING-MGMT-ONLY.

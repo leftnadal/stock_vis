@@ -22,11 +22,14 @@ class TestBackfillServingLayerSelfLoopGuard:
         ])
         return RelationConfidence.objects.get(symbol_a=a, symbol_b=b, relation_type=rel)
 
-    def test_self_loop_not_promoted_to_evidence(self):
-        loop = self._mk("DLR", "DLR", "DEPENDS_ON", layer="pending")
-        call_command("backfill_serving_layer", "--apply")
-        loop.refresh_from_db()
-        assert loop.serving_layer == "excluded"  # evidence 아님
+    def test_self_loop_creation_blocked_by_db_constraint(self):
+        # MIG-BUNDLE-1 A-4(SELFLOOP-DBCONSTRAINT) 이후: 자기루프는 DB CheckConstraint
+        # (rc_symbol_a_ne_symbol_b)로 bulk_create 우회까지 생성 불가 → "backfill 이
+        # self-loop 을 evidence 로 승격" 시나리오 자체가 구조적으로 소멸(더 강한 보장).
+        from django.db import IntegrityError
+
+        with pytest.raises(IntegrityError):
+            self._mk("DLR", "DLR", "DEPENDS_ON", layer="pending")
 
     def test_manual_excluded_preserved(self):
         # 수동 무효화(FTNT→DIS류) — relation_type=SEC4종이어도 excluded 보존

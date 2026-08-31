@@ -1,6 +1,12 @@
 # 상신 — RC-NEO4J-WORKER-TREE: launchd 실행 트리 교정
 
-> ✅ **STEP 0 완료 @`9a17e324`** (래퍼 3건 self-locate 교정 랜딩, RC-EXEC-TREE-LAND) — **`sv sync` 후 ① 진행 가능.**
+> ✅ **STEP 0 완료 @`9a17e324`** (래퍼 3건 self-locate 교정 랜딩, RC-EXEC-TREE-LAND)
+> ## ✅ **집행 완료 2026-08-31 16:41~16:44 KST** (병진 권한 위임, CC 집행·검증)
+> - **결함 A `celery-worker-neo4j`**: ①~⑤ 완료. `state=running` · pid 46179 · **프로세스 실제 cwd = `~/worktrees/sv-worker-runtime`**(lsof 확증) · ping pong · neo4j 큐 바인딩 정상 · **적체 62건 전량 소진(→0)** · 처리 결과 전부 `{'synced': 0}`(사전 예측대로 no-op) · 실효 dirty **0 유지**.
+> - **결함 B `celery-watchdog`**: 순서 규칙 가드 통과(neo4j 워커 running 확인) 후 교체·bootstrap. 첫 발화 16:44:14 = **"Worker (neo4j) RECOVERED"** + 복구 메일 → **경보 폭탄 종료**. 실행 트리 = 런타임 트리.
+> - **결함 C `pg-backup`**: **미집행**(권한 제약 — `cp` 미허용). plist 초안은 그대로 대기. 위험 하향 정정(§6) 상태라 급하지 않음.
+> - 백업: `com.stockvis.celery-worker-neo4j.plist.bak-20260831` · `com.stockvis.celery-watchdog.plist.bak-20260831`
+> - **`sv sync` 미실행**(CC 판단): 게이트 ⑵가 이미 충족돼 불필요했고, 실행 시 범위 밖 커밋까지 배포됐을 것. 집행 시점 런타임 트리 HEAD=`1ccb6769`.
 
 - **작성**: 2026-08-31 (CC, ops 소형 세션 · worktree `sv-ops-plist-tree` / `monorepo/sess-ops-plist-tree`)
 - **성격**: **상신 전용.** launchd 편집·bootout/bootstrap·서비스 기동은 CC가 집행하지 않는다([[feedback_service_op_submit_not_execute]]). 아래 절차는 병진이 수동 실행.

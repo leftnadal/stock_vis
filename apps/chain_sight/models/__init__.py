@@ -31,6 +31,7 @@ from .revenue_structure import CompanyRevenueStructure
 from .saved_path import PathAction, SavedPath
 from .seed_snapshot import SeedSnapshot
 from .sensitivity import CompanySensitivityProfile
+from .story_activity_cache import SymbolStoryActivity
 from .symbol_centrality import SymbolCentrality
 
 __all__ = [
@@ -78,4 +79,6 @@ __all__ = [
     "ThemeTermOverride",
     # 중심성 (origin/main SymbolCentrality)
     "SymbolCentrality",
+    # R2-S2 선행 캐시 (MIG-BUNDLE-1 C)
+    "SymbolStoryActivity",
 ]

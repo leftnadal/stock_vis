@@ -2,10 +2,35 @@
 Chain Sight 유틸리티 함수
 """
 
+import logging
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 NYSE_TZ = ZoneInfo("America/New_York")
+
+_self_loop_logger = logging.getLogger(__name__)
+
+
+def skip_self_loop(symbol_a, symbol_b, relation_type="", source="", logger=None):
+    """자기루프(symbol_a == symbol_b) 쌍이면 구조화 경고 로그 후 True 반환.
+
+    호출부는 ``if skip_self_loop(...): continue`` 로 배선한다.
+
+    CoMentionEdge/RelationConfidence 의 ``SelfLoopError`` 와 동일한 a≠b 불변식을
+    강제하되, 상류 배치 루프에서는 예외가 배치 전체를 중단시키므로 raise 대신
+    skip+log 를 쓴다. 모델 ``save()`` 가드는 최종 방어선으로 유지되며, 이 헬퍼는
+    배치가 SelfLoopError 로 크래시하지 않고 자기루프 쌍만 건너뛰도록 한다
+    (MIG-BUNDLE-1 A-1: 8-K/관계 배치 상류 가드).
+    """
+    if symbol_a != symbol_b:
+        return False
+    (logger or _self_loop_logger).warning(
+        "self_loop_skipped source=%s symbol=%s relation_type=%s",
+        source or "?",
+        symbol_a,
+        relation_type or "?",
+    )
+    return True
 
 
 def get_market_date() -> date:

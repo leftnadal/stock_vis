@@ -1802,3 +1802,11 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 ## 지시서의 INCIDENTS INC-NN·common-bugs #NN 일련번호 사전지정 금지 — 집행 시점 실측 최대+1 부여 (채번 후보, DSS-BEAT-1 2026-08-31) [process][harness][git]
 
 지시서 문안이 INCIDENTS `INC-NN`·common-bugs `#NN` 등 일련번호를 **사전 지정하지 않는다** — 집행 시점 실측 최대+1로 부여(발행~집행 사이 타 세션 선점 시 충돌). 충돌 시 본문 verbatim 유지·라벨만 정정 후 상신. 실증: DSS-W8-LOAD-1 T4 'INC-003' 문안 → INC-003(Neo4j 08-18) 선점 → INC-004 라벨 정정(상신·승인). cf. 비-mgmt 세션 #NN 사전지정 금지(#120, DSS-FLAT-OBS-1).
+
+## 소실 감지 스윕은 복원 경로가 짝이어야 한다 — 재관측 시 stale→scheduled 복원 (채번 후보, EVT-CORR-3 2026-08-31) `[backend][data]`
+
+**증상**: CalendarEvent 스윕이 재조회 창에서 미관측 행을 stale로 마킹하는데, 다음 실행에서 FMP가 그 행을 **다시 응답**해도 stale로 남음(last_seen만 갱신). 47행 오표시 누적(전량 future).
+
+**원인**: `record_observation`은 defaults만 갱신(status 무변), `_persist_event`는 eps_actual 등장 시 occurred **상향만**. **stale→scheduled 하향(복원) 경로 부재** → 소실 오탐이 영구 고착.
+
+**규율**: 소실 감지(스윕→stale)를 두면 **재관측 복원 경로를 반드시 짝으로** 둔다. 재관측 = 원천이 재확인 = 소실 아님 → 복원. 상향(occurred)이 복원보다 우선. 수정 후에는 수집기 재실행만으로 과거 오표시 자가치유(별도 DB write 불요). 구현 `packages/shared/stocks/tasks.py::_persist_event`, `d2bd219b`.
