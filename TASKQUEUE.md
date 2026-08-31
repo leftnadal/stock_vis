@@ -1573,3 +1573,4 @@
 - ✅ **CS-STORY-ACTIVITY-CACHE** (C) — SymbolStoryActivity(chainsight 0035)+물질화 태스크·커맨드+캐시우선 서빙+전역조회. 검증: 31,978행/35.75초·전역조회 0.7ms·캐시 3.9ms vs 라이브 55ms.
 - 🔴 **[MIG-BUNDLE-1 관문②]** 병진 잔여 — `register_chainsight_beats`(chainsight-materialize-story-activity ET 12:00 등록) + **worker 재시작**([[lesson_celery_task_registration]]).
 - 🟢 **S2 착수 준비 완료** — 캐시·전역조회·(-activity_ratio) 인덱스 = R2-S2 전역 활동 뷰 소스 완비.
+- 🟡 **[SYNC-SV-WRAPPER-GAP] (비긴급·등재만, @infra)** — `worker_sync.sh` #47 가드 안내문이 권장하는 `sv sync`/`sv health` 래퍼가 **PATH·repo 어디에도 없음**(alias/function/스크립트 전무). 가드가 존재하지 않는 해결책을 안내 중 → 사용자가 stale 사본 재실행 루프에 빠질 수 있음. 대응: `sv` 래퍼 신설(최신 origin/main 사본 self-locate 후 worker_sync 실행) **또는** 안내문을 "origin/main 최신 사본 직접 실행(임시 worktree)"로 수정. 실측 우회법=origin/main detached 임시 worktree에서 `scripts/worker_sync.sh` 실행(MIG-BUNDLE-1 2026-08-31 적용).
