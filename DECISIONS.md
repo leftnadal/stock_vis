@@ -7163,3 +7163,26 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 
 - **결정**: `SymbolStoryActivity`(chain_sight — CoMentionEdge 파생·전용, shared 아님). `get_symbol_story_threads`가 캐시 우선(신선≤48h)·부재/미갱신 시 라이브 fallback(빈 화면 금지). 물질화 태스크는 `_compute_story_threads_live` 재사용(중복 구현 금지). beat=chainsight-materialize-story-activity(ET 12:00 매일).
 - **Why 실측(병진 검증)**: 31,978행/5,034종목·물질화 35.75초. 전역 ratio 상위 조회(-activity_ratio 인덱스)=0.65~0.73ms(S2 전역 활동 뷰 입력). 카드 서빙 캐시 3.9ms vs 라이브 55.4ms(~14배)·형상 IDENTICAL.
+
+## [2026-08-31] D-SCAN-R1-OBS — 스캐너 ①FE 육안 검증 후 관찰·이상 3건(진단 중) + RECON-SCANDIAG-R1 발급 [frontend][dashboard][scanner]
+
+> ⑦b 시각 검증(08-31 사용자 스크린샷 2매)에서 화면 실재는 확인(아크 ①FE 완결)되었으나, 잔여 관찰·이상 3건은 진단 태스크 RECON-SCANDIAG-R1로 회부. 본 항목은 **관찰 등재**이며 원인 확정은 R1 산출. (MGMT-BATCH-40)
+
+- **관찰/이상**:
+  - ⑴ **거래대금(+시총) 필터 무반응 의심** — 필터 조작에 목록이 변별되지 않음. 용의 = 단위 불일치(FE 임계값 vs 베이커 산출 단위). 확정 전 가설.
+  - ⑵ **필터 반응 지연(A2)** — 칩/바 조작 후 목록 재계산 체감 지연. 성능 축.
+  - ⑶ **coverage audit 층 0·0·0 + 배지 부재** — **창 이동 가설**: 커버리지 창이 7일이라 전진하면 8월 중순 관측 61건이 창밖으로 이탈 → join 대칭 설계상 **정상**일 가능성(결함 아님). 반증/확증 = 사용자 새로고침 테스트 + RECON-SCANDIAG-R1 E파트.
+- **처분**: **RECON-SCANDIAG-R1 발급**(읽기 전용 진단). 원인 확정·수리 범위는 R1 산출 → SCAN-UX-2 설계 입력. E1 무해·B4 골든크로스 0 = 데이터 상태(결함 아님)로 별도 분리.
+- **How to apply**: 관찰 등재일 뿐 수리 착수 아님. ⑴은 단위 계약(FE↔베이커) 재확인이 우선, ⑶은 "정상 가능성"을 기본 가설로 두고 배지 노출 UX만 별건 검토. cf. D-SCAN-UX2-FEEDBACK·RECON-SCANDIAG-R1(TASKQUEUE)·[[project_scanner_ux_recon]].
+
+## [2026-08-31] D-SCAN-UX2-FEEDBACK — 스캐너 ①FE 사용자 소감 구조화(㉮~㉱) → SCAN-UX-2 [frontend][dashboard][scanner]
+
+> 08-31 사용자 소감 원문 요지를 4항(㉮~㉱)으로 구조화. ㉮㉯㉰은 FE에 이미 보유 중인 필드로 저비용, ㉱은 목업 동반 결정 사안. (MGMT-BATCH-40)
+
+- **소감(원문 요지)**:
+  - ㉮ **고정 영역 ~50% → 가시 종목 2.5개** = 레이아웃 컴팩트化 필요(고정 헤더/필터 영역 축소).
+  - ㉯ **연속 상승/하락 방향 분리** — `signal_direction` 필드 **기보유·미사용** → 방향별 표기.
+  - ㉰ **테마 포함 사유 즉답** — 카드 기준 vs 종목 실값 문맥. `signal_value` **기보유** → 종목 실값 노출로 "왜 포함됐나" 즉답.
+  - ㉱ **스토리 프리셋**(원탭 서사 필터) — 구성은 **목업 동반 결정 사안**(원탭에 담을 축 조합).
+- **부수 관찰**: Chain Sight 연계가 **섹터 칩뿐**(관계 실신호 부재) = **SCAN-B3(관계 축) 가치의 사용자 측 재확인**.
+- **How to apply**: ㉮㉯㉰ = SCAN-UX-2 선행분(FE 공짜 필드·베이커 무접촉), ㉱ = 목업 결정 후 편입, SCAN-FIX-1(strip 라벨)도 UX-2 흡수. 밸류축은 SCAN-B2-FUND-BE(후행)에서 프리셋과 결합. cf. D-SCAN-R1-OBS·SCAN-UX-2(TASKQUEUE)·[[project_scanner_ux_recon]].
