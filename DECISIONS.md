@@ -7269,3 +7269,13 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **근거(실측)**: ⑴ 베이커 `eod_json_baker.OUTPUT_DIR = settings.BASE_DIR/frontend/public/static/signals` → 워커가 런타임 트리에서 도므로 **원본 실디렉터리 = `sv-worker-runtime/.../signals`** ⑵ `Desktop/stock_vis/.../signals`와 `sv-web-runtime/.../signals`는 **둘 다 그 원본을 가리키는 심링크** ⑶ `dashboard.json` **inode 동일(160225849)** = 동일 실체 확증 ⑷ `worker_sync.sh`의 `guard_symlink`는 **"심링크가 아니면 ERROR + exit 1"** — 즉 그 경로가 심링크여야 정상이라는 것이 설계 의도.
 - **성격**: 공유 본체에서 프론트 dev를 돌릴 때 baked signals가 보이도록 하는 심링크의 **건강 검사**. 원본이 런타임 트리에 있으므로 D-LAUNCHD-RUNTIME-TREE와 충돌하지 않는다.
 - **조치**: 없음(변경 금지). 티켓 종결.
+
+## [2026-08-31] D-NEWSMATCH-FIX-PATH — 스캐너 실뉴스 매칭 수리 = 1′ enricher 재배선(경계 분기 내장) [backend][dashboard][scanner]
+
+> RECON-NEWSMATCH-R1 판정(D-NEWSMATCH-PROMOTE) 후 수리 방향 확정. 3후보 OPEN → **1′ 재배선** 선택. (MGMT-BATCH-42)
+
+- **결정**: 수리 = **1′ 재배선** — `EODNewsEnricher` 4쿼리(`eod_news_enricher.py`)를 `StockNews`(0행 죽은 테이블) → `NewsEntity`로 전환. **경계 분기 내장**: 뉴스 모델이 `apps.*`(services.news) 소속이면 `packages/shared`에서 **직접 import 금지**(구획 위반) → **방향2 의존 역전(주입)** 으로 전환. 주입 배선조차 구획을 넘으면 **HALT + 폴백 메뉴(2안 sync beat)**.
+- **가중합(사용자 확정)**: 1′ 재배선 **4.35** / 2안 sync **3.60** / 3안 통합 **3.50**(마진 0.75). **3안(모델 통합·StockNews 폐기)은 관찰 이월**: "**StockNews = 죽은 테이블(0행·쓰기 코드 전무) 처분 결정 대기**"(별건).
+- **근거 실측(RECON-NEWSMATCH-R1)**: `NewsArticle` 462,060(최신 08-30) · `NewsEntity` 587,902 · 표본 **26/26 실뉴스 보유** · 매칭 로직·confidence 보정 무결 · 추천 카드 = enricher **다운스트림**(수리 시 자동 치유) · **뉴스 존재 칩 0렌더 → 점등 예정**.
+- **채번 흐름 정정**: enricher 결함 `#NN` 부여는 "수리 세션"이 아니라 **수리 착지 확인 후 차기 mgmt**가 부여한다(build/수리 세션은 비mgmt = 채번 금지 · D-NUMBERING-MGMT-ONLY 정합). BATCH-41 D-NEWSMATCH-PROMOTE의 "수리 착지 세션이 부여" 표현을 본 항목이 정정.
+- **How to apply**: NEWS-MATCH-FIX = build 대기(NEWSFIX-BE 지시서 발급). 착지 후 효과 3종(스캐너 news_context·추천 카드·뉴스 존재 칩) 검증 → 차기 mgmt가 common-bugs `#NN` 부여 + D-SCAN-STORY-3LAYER 서사 층 전제 해소. cf. D-NEWSMATCH-PROMOTE·NEWS-MATCH-FIX(TASKQUEUE)·[[project_scanner_ux_recon]].
