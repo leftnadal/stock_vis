@@ -5,7 +5,10 @@
 
 set -e
 
-PROJECT_DIR="/Users/byeongjinjeong/Desktop/stock_vis"
+# D-LAUNCHD-RUNTIME-TREE: PROJECT_DIR은 이 래퍼가 속한 트리(scripts/의 부모)를 self-locate로 도출.
+# 하드코딩(~/Desktop/stock_vis)하면 plist가 런타임 트리를 가리켜도 래퍼가 공유 본체로 cd해
+# 구 코드가 실행된다(RC-NEO4J-WORKER-TREE). 선례: scripts/verify-pair.sh (OPS-VERIFY-EXEC-TREE 개정문1).
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="/Users/byeongjinjeong/Library/Caches/pypoetry/virtualenvs/stock_javis_system-_jE0wOmK-py3.12"
 
 cd "$PROJECT_DIR"

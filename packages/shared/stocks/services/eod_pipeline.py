@@ -276,6 +276,57 @@ class EODPipeline:
 
         return log
 
+    def _run_freshness_gate(self, target_date: date) -> dict:
+        """EODSIG-FRESH-GATE (C안) — 신호 계산 직전 유니버스 심볼의 target_date DailyPrice 선보충.
+
+        갭(OBS-BRIEFING-0827 O1): 비SP500 감시등록 종목의 당일 가격은 monitor refresh(18:45 ET)로
+        도착 → EOD 신호 생성(18:30 ET)보다 늦어 매일 daily-forward 누락. 여기서 신호 생성 직전에
+        부재 심볼만 온디맨드 보충한다.
+
+        구현 = `StockSyncService.sync_prices` **정적 직결**(shared→shared, 경계 합법). monitor의
+        `ensure_price_freshness`와 심볼 격리 루프가 ~15줄 중복되나 **의도적 잠정**이다 — 앱 경계를 넘어
+        그 함수를 재사용하려면 shared→apps 위반이고, 동적 import로 가드를 우회하는 것은
+        금지(D-BOUNDARY-NO-DYNAMIC-EVASION). 중복은 BOUNDARY-BURNDOWN-EOD 결정(주입 vs 승격) 시 단일화.
+
+        멱등: latest DailyPrice ≥ target_date인 심볼(SP500=18:00 수집분)은 스킵 → 추가 API 0.
+        격리: 심볼별 try/except + 게이트 전면 try/except로 신호 파이프라인(특히 SP500)을 절대
+        중단시키지 않는다(#65 원칙).
+        """
+        from packages.shared.stocks.models import DailyPrice
+        from packages.shared.stocks.services.stock_sync_service import StockSyncService
+
+        summary = {"synced": [], "failed": [], "skipped_fresh": []}
+        try:
+            symbols = eod_universe_symbols()
+        except Exception:  # noqa: BLE001 — 게이트 전면 격리, 신호 파이프라인 보호
+            logger.exception("freshness_gate: 유니버스 산출 실패(비치명) — 보충 없이 계속")
+            return summary
+
+        svc = StockSyncService()
+        for sym in sorted({s for s in symbols if s}):
+            try:
+                latest = (
+                    DailyPrice.objects.filter(stock__symbol=sym)
+                    .order_by("-date")
+                    .values_list("date", flat=True)
+                    .first()
+                )
+                if latest is not None and latest >= target_date:
+                    summary["skipped_fresh"].append(sym)
+                    continue
+                res = svc.sync_prices(sym, days=90, force=True)
+                if getattr(res, "success", False):
+                    summary["synced"].append(sym)
+                    logger.info("freshness_gate: fetched %s for %s", sym, target_date)
+                else:
+                    summary["failed"].append(sym)
+                    logger.warning("freshness_gate: skip %s (sync_failed)", sym)
+            except Exception:  # noqa: BLE001 — 심볼별 격리, 신호 파이프라인 보호(#65)
+                summary["failed"].append(sym)
+                logger.warning("freshness_gate: skip %s (sync_error)", sym)
+                logger.exception("freshness_gate: %s sync 예외(비치명)", sym)
+        return summary
+
     def _stage_ingest(self, target_date: date) -> tuple[pd.DataFrame, dict]:
         """
         Stage 1: DailyPrice에서 유니버스(SP500 ∪ 감시등록) 데이터 로드 + 품질 체크.
@@ -283,6 +334,8 @@ class EODPipeline:
         Returns:
             (raw_df, ingest_quality_dict)
         """
+        # EODSIG-FRESH-GATE (C안): 신호 계산 전 당일 가격 부재 심볼 선보충(부재분만·격리).
+        self._run_freshness_gate(target_date)
         calculator = EODSignalCalculator()
         raw_df = calculator._load_price_data(target_date)
 

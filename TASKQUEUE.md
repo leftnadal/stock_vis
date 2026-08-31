@@ -5,6 +5,16 @@
 
 ---
 
+## DSS-BEAT — DSS 주간 적재 자동화 (착수, DSS-BEAT-1 2026-08-31) [theme-heat][dss][infra]
+- D-DSS-BEAT-1. celery `chainsight-load-dss-weekly`(Fri 19:00 ET·default 큐) + 폴백 command `load_dss_week`. **2단 스위치**: PeriodicTask enabled=False 등재 → §D 워커 재시작+검증 후 enable.
+- 상태: §A 코드+§B beat(enabled=False) 집행 중. **잔여(병진)**: §D 워커(celery-worker@sv-worker-runtime 4 behind→sync)+beat 재시작 → CC 검증(태스크 등록·트리 커밋 조상) → enable. **09-04(금)까지 미enable 시 폴백 = 병진이 착지 트리에서 `manage.py load_dss_week` 1줄**(상신 문서 `scratchpad/DSS-BEAT-1_restart_상신.md`).
+
+## DSS-BEAT-OBS-1 — 09-04 발화 후 검증 (등재만·차기, DSS-BEAT-1 2026-08-31) [theme-heat][dss]
+- 09-04(금) 발화 후: SymbolDemandSignal anchor 09-04 신규 행 수·Score 11행(**DB 행 증거·last_run_at 불인정**) / flat_ratio 판정(§2) / arrow 상태 / 클린 쌍 5/6 갱신(ε는 09-11 6/6에 개시).
+
+## AGENT-DOGFOOD-DSS-FRESHNESS — dogfood에 DSS/사분면 신선도 커버 추가 (이관 등재, DSS-BEAT-1 0-4 2026-08-31) [agent][dss] — @agent 소관
+- 0-4 실측: `auto_agent_system/dogfood/`가 ThemeDemandScore/사분면 API(`/api/v1/chainsight/theme-heat/quadrant/`) 신선도 **미점검**. 주간 적재 자동화(DSS-BEAT) 후 무발화 감지 공백 → dogfood 신선도 타깃에 편입 검토. **구현은 AGENT 트랙 소관**(본 트랙 구현 금지·등재만).
+
 ## DSS-QUADRANT — 섹터 사분면 화면 (착수, QUAD-IMPL-1 2026-08-27) [dashboard][dss][chainsight]
 - 확정 결정 5건(DECISIONS DSS-QUADRANT). Heat×수요 breadth 2축, ②·④ 하이라이트, 전주 화살표(flat≥90% 숨김), 미산출 하단 목록.
 - Slice 1(BE read-only API `/api/v1/chainsight/theme-heat/quadrant/`) → Slice 2(공용 컴포넌트 `components/charts/SectorQuadrant`) → Slice 3(app/page.tsx 최상단 삽입).
@@ -70,7 +80,7 @@
 
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |----|------|-------|------------|--------|-----------|
-| SMOKE-BROWSER-PATH | 브라우저 경로 재현 스모크 보강 — **재현 기준 = 분당 ~5회 "현실적 새로고침"**(사용자 실사용 상한)에서 429/전면에러 부재 관측. **하드리프레시 연타는 재현 대상 아님**(INC-P16-2 확정: 연타=외부 반복 문서 로드로 throttle 초과가 물리적 정상 — 이때 검증 대상은 "429 무증폭·2초 내 회복"뿐). 단건 curl은 이 유형을 **구조적으로 못 잡음**(200 정상)이 교훈 | @qa (browse) | ✅ INC-P16-1 랜딩(`9e2e98f3`, 08-26) | ✅ **done (P2-DLITE, 2026-08-29)** | `e2e/market-pulse-429.smoke.spec.ts` — ①현실 새로고침 5회 무증폭(로드당 5 일정)·②429 무재시도(overview 1회, retry:2였다면 3)·2초 내 회복(~680ms). route interception(단건 curl 한계 구조적 해소). cf. D-INC-P16-1·D-INC-P16-2·D-P2-ENTRY-1·common-bugs(채번 대기 INC-P16-1/2) |
+| SMOKE-BROWSER-PATH | 브라우저 경로 재현 스모크 보강 — **재현 기준 = 분당 ~5회 "현실적 새로고침"**(사용자 실사용 상한)에서 429/전면에러 부재 관측. **하드리프레시 연타는 재현 대상 아님**(INC-P16-2 확정: 연타=외부 반복 문서 로드로 throttle 초과가 물리적 정상 — 이때 검증 대상은 "429 무증폭·2초 내 회복"뿐). 단건 curl은 이 유형을 **구조적으로 못 잡음**(200 정상)이 교훈 | @qa (browse) | ✅ INC-P16-1 랜딩(`9e2e98f3`, 08-26) | ✅ **done (P2-DLITE, 2026-08-29)** | `e2e/market-pulse-429.smoke.spec.ts` — ①현실 새로고침 5회 무증폭(로드당 5 일정)·②429 무재시도(overview **1회**·단언 `≤1`로 조임[MGMT-BATCH-39: retry 회귀 감지력 복원])·2초 내 회복(~680ms). route interception(단건 curl 한계 구조적 해소). cf. D-INC-P16-1·D-INC-P16-2·D-P2-ENTRY-1·common-bugs #122/#123 |
 
 ## SCANNER-SELECT-UX 트랙 (2026-08-20 개설, D-SCANNER-SELECT-UX)
 
@@ -312,9 +322,9 @@
 | Q19-REDUNDANT-SIGNAL | 잉여 신호층 정리: PRICE_CORRELATED 3,784쌍 **전부** PEER_OF와 겹침(구조 엣지 0 기여) → truth_score 정규화/가중 재설계에 연결 | @backend | 정규화 트랙 | **todo** | ⑱ 검산·⑲ S3 weight=max(truth,market) 확인. 정규화 트랙과 얽힘(단독 착수 금지) |
 | Q19-SD-LINKPRED | S-D 링크예측 재도전 — 시간분할 검증(과거→예측→미래 확인) | @backend | RPS 궤적 견고화 + discovery 재가동 | **예약(트리거 대기)** | ⑱ 기각(궤적 깊이 부족). 트리거: RPS 주간 궤적 ~3-4개월 축적 **또는** discovery 재가동(Q19-DISCOVERY-REACT) |
 | Q19-A3-SECTOR-MOCKUP | A3 섹터 그래프(Sector 모드 Neo4j) 존치/전환 판단 → 전체 조망 목업 트랙(⑳)으로 회부 | @UI-UX-designer | ⑳ 목업 | **회부** | ⑱ A3 카드: Sector 모드 Neo4j 잔존, PG 전환 비용 중. 살릴지 = 병진 가치판단 |
-| RC-WATCHDOG-NEO4J-ALERT | **watchdog가 정지 중인 neo4j 워커를 5분마다 살리려 시도 + 실패 시 경보 메일** — `RC-NEO4J-WORKER-TREE` 해소까지 계속 | @infra | RC-NEO4J-WORKER-TREE | 🔴 **todo(메일 폭탄 진행 중)** | `scripts/celery-watchdog.sh`가 default worker·**neo4j worker**·beat 3종을 감시하고 다운 시 `kickstart`. 우리가 의도적으로 내린 neo4j 워커를 장애로 판정 → **5분 간격(StartInterval 300)으로 재시작 시도 + 메일**(12:01·12:11 실증, `jinie545@gmail.com`). 잡이 bootout 상태라 kickstart는 실패하지만 **경보는 계속 발송**. 선택지: ⑴ plist 교정 후 워커 기동(근본) ⑵ watchdog 감시 목록에서 neo4j 일시 제외 ⑶ watchdog 일시 정지(감시 공백 — 비권장). **⑴이 정답이나 그때까지 ⑵ 검토 권고**. |
+| RC-WATCHDOG-NEO4J-ALERT | watchdog가 정지 중인 neo4j 워커를 5분마다 kickstart 시도 + 실패 경보 메일 | @infra | RC-NEO4J-WORKER-TREE | 🟢 **소강(watchdog 미로드)** | 08-31 12:35 측정: `com.stockvis.celery-watchdog` 자체가 **미로드** → 재기동 시도·경보 발송 **중단됨**(마지막 3회 11:51·12:01·12:11, 누적 "재시작 실패" 28건). 근본 해소는 RC-NEO4J-WORKER-TREE 상신 집행 시 동반(watchdog도 결함 B로 교정 대상). ⚠️ **부작용**: watchdog 부재 = worker/beat **자동복구 없음** — 교정 집행 시 watchdog을 감시 대상보다 **나중에** 올린다(D-LAUNCHD-RUNTIME-TREE 순서 규칙). |
 | RUNTIME-BEAT-DAPHNE-DOWN-0831 | **beat·daphne가 12:12경 원인 미상으로 정지**(크래시 아님·`Killed 0 pending application instances` 정상 종료 로그) → CC가 12:17 복구 | @infra | — | 🔭 **관찰(원인 미상·복구됨)** | watchdog은 `kickstart`만 하고 `bootout`은 안 하므로 범인 아님. 타 worktree mtime도 11:53 이후 없음. **watchdog 감시 목록에 daphne(`com.stockvis.web`)가 없어 자동 복구되지 않는 것**이 구조적 갭 — API 전면 불가(:18765 응답 000)가 ~5분 방치됨. 감시 대상에 daphne 추가 검토. |
-| RC-NEO4J-WORKER-TREE | **`com.stockvis.celery-worker-neo4j.plist`의 WorkingDirectory 교정** — `Desktop/stock_vis`(공유 편집 트리) → `worktrees/sv-worker-runtime` | @infra | — | 🔴 **todo(기동 금지 상태)** | 08-31 RC-A-1 ② 중 발견: 이 워커만 편집 트리에서 **behind 711 코드로 11일간 가동**(pid 43823·08-19 기동). 타 워커는 전부 런타임 트리. `sv sync` 커버리지 밖이라 재기동해도 재발. common-bugs #67 실사례. **교정 전까지 잡 기동 금지**(구 눈금 코드가 정규화된 DB에 write할 위험). 교정 후 밀린 `neo4j_dirty` 동기 확인 필요. |
+| RC-NEO4J-WORKER-TREE | **launchd 실행 트리 교정** — `celery-worker-neo4j` + 동류 2건 | @infra | — | 🟢 **STEP 0 랜딩 완료 · 상신 실행 대기(병진)** | **STEP 0(래퍼 self-locate 교정) 랜딩 @`9a17e324`** — 이제 병진이 `sv sync` → 상신 ①~⑥ 실행 가능. 상신 = `scratchpad/RC-NEO4J-WORKER-TREE_상신_20260831.md`. 결함 = plist 3건 Desktop 지향 + **래퍼 `PROJECT_DIR` 하드코딩(근본, 해소됨)**. 잔여 = plist 교체·bootout/bootstrap (`scripts/ops/launchd/*.plist.proposed` 3건, plutil OK) = **launchd 접촉이라 병진 수동**. 게이트 ⑴ 런타임 트리에 RC-A-1 v3.0(`23318e25`) 포함 재확인 ⑵ `sv sync`로 래퍼 교정(`9a17e324`)이 런타임 트리에 반영됐는지 확인 → 둘 다 통과 후 ③ bootstrap. 밀림 실효 0건(dirty 2,831 전량 `target_symbol_id NULL`) → 정지 유지 비용 0. |
 | RC-THETA-BADGE-WIDTH | strip θ가 최상위 계단(0.85)에 얹혀 배지 후보 4배 축소 — 과협 여부 화면 검수 | @frontend (dashboard) | RC-A-1(done) | 🔭 **관찰(등재만)** | PC 3,784행 처분으로 p85가 0.6→0.85로 상향. 배지 후보 9,057→2,131, 0.6 계단 6,926행 전량 탈락. θ는 분포 추종 설계라 의도된 동작이나, 사용자 체감상 배지가 사라진 것으로 보일 수 있음. |
 | Q19-DISCOVERY-REACT | discovery 해자 폭 재성장 — 신규 RC 유입 재가동 | @backend | 별도 결정 | **격하: 유니버스 확장 선택 문제(2026-08-27, RC-A-1)** | ⑲ S4 판정 "유니버스 포화·신규 0"는 **RC-A-0/A-1 실측 반증** — 08-10 co-mention 신규생성 재점화(1,679), 이후 매일 56~226, RC 13.7k→17.3k(08-27). 유입 정지는 경로 차단 아니라 7월 뉴스 유니버스/추출 공백(08-10 재개). ⇒ "고장" 아님, 유니버스 확장은 **선택**. cf. DECISIONS [2026-08-27] RC-A-1 |
 | Q19-WIDTH-STAGNATION | 해자 폭 정체 실측 — RelationPairSnapshot 매 period 9562행 고정 | @backend | Q19-DISCOVERY-REACT 연계 | **전제 반증(2026-08-27, RC-A-1)** | ~~9562 고정~~ 반증: RPS 555,399행(08-27)·매일 궤적 성장·신규 페어 유입 재개(08-10~). "폭 정체"는 7월 공백 스냅샷의 일시 현상. 저장=PG `chainsight_relation_pair_snapshot`(Neo4j 비의존). cf. Q19-DISCOVERY-REACT 격하 |
@@ -1530,3 +1540,14 @@
 - 📝 **[GUIDE monitor.calendar 슬라이스 2 후보]** — 가이드 스크린(앵커 `monitor.calendar` + 콘텐츠 3~7 region, `reviewStatus:'confirmed'` = 병진 검수) 신설. EVT-IMPL-4에서 3-2 오지시로 부여됐던 페이지 앵커는 제거됨(D-EVT-GUIDE-ANCHOR) → 이 슬라이스에서 앵커+콘텐츠 함께 랜딩.
 - 🩹 **[EVT-CORR-3 보정3 후보] (0-5⑹, 보고 전용·디렉터 처분 대기)** — 재관측 시 status stale→scheduled **복원 없음**(`_persist_event`/`record_observation` 코드 확정, b). 계측(a): 재관측(last_seen≥08-29 21:45 UTC)했는데 stale=**47행 전량 future**(EARNINGS 41·DIV 6). 보정안(c) = 수집기 재관측 시 stale→scheduled 복원 + 47행 일괄 치유. **STEP 3 FE stale 기본숨김(off)의 최종 확정 = (a) 처분 후.**
 - 📸 **[EVT-IMPL-4-SHOT] 라이브 렌더 잔여** — 조건: 병진 수동 런타임 동기(:3000 재빌드) 후 `/monitor/calendar` 2장(범위 기본·둘 다) + 홈 EventStrip 1장. 운영 config·재기동 조작 금지 유지. (이번 세션 blocker: :3000=prod빌드 신규FE 미포함, API=운영 daphne :18765, :3100 dev는 CORS 허용목록+인증세션=서비스 조작 필요.)
+
+## RC-NEO4J-WORKER-TREE 전수 점검 파생 (등재, 2026-08-31 ops 세션)
+
+> 상신 `scratchpad/RC-NEO4J-WORKER-TREE_상신_20260831.md` · 규칙 [[DECISIONS]] D-LAUNCHD-RUNTIME-TREE
+
+- 🟢 **RC-LAUNCHD-WATCHDOG-TREE** (@infra, 우선순위 2) — **STEP 0 랜딩 완료 @`9a17e324`**(`scripts/celery-watchdog.sh` self-locate 적용). 잔여 = plist 교체·bootstrap(병진). `com.stockvis.celery-watchdog` plist 실행 트리 교정. Desktop 트리의 `.env`·Django `send_mail`을 구 코드로 실행 중. 초안 = `com.stockvis.celery-watchdog.plist.proposed` + self-locate diff. **집행 순서: neo4j 워커 교정·검증 합격 후에 올릴 것**(미교정 잡을 kickstart 방지). 의존 = RC-NEO4J-WORKER-TREE.
+- 🟢 **RC-LAUNCHD-PGBACKUP-TREE** (@infra, 우선순위 3) — **STEP 0 랜딩 완료 @`9a17e324`**(`scripts/pg-backup.sh` self-locate 적용). 잔여 = plist 교체·bootstrap(병진). **위험 하향 정정**: 런타임 트리 `.env`가 Desktop 본체 `.env` **심링크**(동일 실체)로 확인 → 당초 우려한 `.env` drift는 현 구성에서 **발생 불가**. 교정 목적 = 규칙 일관성. 현재 로드·정상(runs 39, exit 0). 초안 = `com.stockvis.pg-backup.plist.proposed`.
+- 🔴 **RC-WATCHDOG-DAPHNE-COVERAGE** (@infra) — `scripts/celery-watchdog.sh` 감시 대상이 default worker·neo4j worker·beat 3종뿐 → **`com.stockvis.web`(daphne) 미감시**. API 다운 시 자동복구 불가. 08-31 12:12 실사고(daphne 다운·수동 복구)와 직결. `check_service "Web (daphne)" "daphne -p 18765" "com.stockvis.web"` 추가 검토. 트리 교정과 함께 처리하면 1회 랜딩.
+- 🔭 **OPS-WORKER-SYNC-SHARED-SIGNALS** (관찰·등재만) — `scripts/worker_sync.sh:31` `SHARED_SIGNALS=".../Desktop/stock_vis/frontend/public/static/signals"`. EOD 시그널 baking 산출물의 **공유 원본으로 의도된 것일 가능성** → 결함 단정 보류. D-LAUNCHD-RUNTIME-TREE 규칙 적용 대상인지 판단 필요.
+- 🔭 **OPS-ENV-SYMLINK-DEPENDENCY** (관찰·등재만, 2026-08-31 실측) — 런타임 트리 `.env`(worker·api 공통)가 `~/Desktop/stock_vis/.env`를 가리키는 **심링크**. 공유 본체 파일이 이동·삭제되면 런타임 3트리가 동시에 깨진다. `sv-web-runtime`에는 `.env` 없음(frontend 별도). D-LAUNCHD-RUNTIME-TREE가 실행 트리는 분리했으나 **설정 실체는 여전히 본체 의존** — 독립 사본 vs 심링크 유지 판단 필요.
+- 💤 **OPS-HEALTHCHECK-PLIST-TREE** (후보 등재만 — **구현 금지**) — `health_check`에 "launchd plist 실행 트리 정합" 점검 추가. 검사 내용 = `~/Library/LaunchAgents/com.stockvis.*.plist`의 `WorkingDirectory`/`ProgramArguments` + 참조 래퍼의 `PROJECT_DIR`이 `Desktop/stock_vis`를 가리키지 않는가. 이번 결함이 11일간 무탐지였던 이유가 자동 점검 부재. **착수는 별도 승인 후.**

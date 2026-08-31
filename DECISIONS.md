@@ -8,6 +8,21 @@
 
 ---
 
+## [2026-08-31] D-DSS-BEAT-1 — DSS 주간 적재 자동화 (beat 태스크 + 2단 스위치) [theme-heat][dss][infra]
+
+> 출처: 지시서 DSS-BEAT-1(병진 승인 08-31). 구현 = §A~§D.
+
+**결정**: DSS 주간 적재(store_for_anchor)를 celery beat 태스크 `chainsight-load-dss-weekly`로 자동화한다. 스케줄 = **금요일 19:00 ET**(America/New_York), default 큐. **2단 스위치**: PeriodicTask는 enabled=False로 등재하고, 워커 재시작 + 태스크 등록 검증(§D) 통과 후에만 enable. 폴백 = management command `load_dss_week`(수동/백필).
+
+- **스케줄 산정 근거**: 수집 태스크 `chainsight-snapshot-analyst-estimates` = Fri 16:30 ET, EstimateSnapshot 생성 완료 ~16:40 ET(DB created_at 실측 3회). DSS = 그 시각 + 2h 이상 오프셋 → 19:00 ET(완료 +2.3h·금요일 한정·18:45 monitor/18:50 advisor 슬롯 회피). 태스크 내 가드(최신 스냅샷 date ≠ 실행일 → skip·무재시도)로 조기/결측 방어.
+- **가중합(옵션)**: A(beat 자동+2단 스위치·폴백 command) **채택** vs B(command 수동 only) vs C(beat 즉시 enable). A = 자동화 실익 + enable 전 워커 등록 검증으로 무동작 beat(#28류) 방지. C는 워커 미등록 시 조용한 무발화 위험 → 2단 스위치로 배제.
+- **ε 클린 쌍 정의 보강(D-DSS-EPSILON 연동)**: 클린 WoW 쌍 = flat_ratio < 90%(§2 [재발] 임계와 동일 기준). degenerate(≥90%, 예: 08-14 99.6%)는 배제. 현재 5/6(08-14만 degenerate). **6/6 성숙 시 D-DSS-EPSILON Δ분포 재산출 개시**(09-11 예상). ε는 그전까지 임계 없음(D-DSS-SIGNAL 2-A 유지).
+- **긍정준수 2호**: beat DB 변경(PeriodicTask)을 **명시 승인 범위(1행 INSERT enabled=False)로 한정**하고 enable을 검증-후로 카브아웃 — 서비스 조작 자기집행 금지(INC-003)·2단 스위치 규율의 긍정 사례. (1호 = QUAD-IMPL-1 health FAIL HALT 준수.)
+
+**Why**: 수동 1회차(DSS-W8-LOAD-1)는 dispatch 시점 의존·인적 누락 리스크. 자동화하되 beat의 무발화 함정(#28 dict 무시·워커 미등록)을 2단 스위치(enabled=False→워커 등록 검증→enable)로 봉인. 서비스 로직은 무수정 래핑(store_for_anchor 재사용)으로 회귀면 0.
+
+**How to apply**: 정본 지시서 = docs/instructions/DSS-BEAT-1.md. 태스크 = `apps/chain_sight/tasks/dss_tasks.py`. enable = §D 검증(워커 태스크 목록에 load_dss_weekly 존재·실행 트리 커밋이 착지 조상) 통과 후. 폴백 = `manage.py load_dss_week`. cf. [[DSS-W8-LOAD-1]]·D-DSS-EPSILON·common-bugs #28.
+
 ## [2026-08-31] D-SCAN-DEPLOY-CORR — 스캐너 배포 정정·관찰 묶음 (LAND-SCAN-B2FE + DEPLOY-EXEC-2) [dashboard][platform][ops][process]
 
 **정정 (DEPLOY-PRECHECK-2 초판 프레이밍 교정, 3건)**:
@@ -28,12 +43,55 @@
 - ⑸-b **per-stock 확장 패널 부재** → "패널 기술 칸(4값 전체)"을 StockRow 내 기술 상세 라인으로 대체(칩 ≤2 절제·행이 곧 per-stock 표면).
 
 **How to apply**: 정정·관찰은 후속 슬라이스(FUND-BE·TELEM) 참조 정본. #118 보강은 차기 LAND 양식 STEP 0에 반영(health 기준선=목표 트리). cf. [[project_scanner_ux_recon]].
+## [2026-08-31] D-BOUNDARY-NO-DYNAMIC-EVASION — 가드 미탐지 동적 import로 앱 경계 우회 금지 [harness][boundary][process]
+
+> 출처: DIRECTIVE-EODSIG-FRESH-GATE-0828-A1/A2 처분.
+
+**결정**: 경계 가드(`test_shared_boundary.py`·`health_check.py`, 둘 다 ast.walk로 Import/ImportFrom 노드만 검출)가 **탐지하지 못하는 동적 import**(`importlib.import_module(...)` 등 Call-노드 경유)로 `packages/shared` → `apps.*`/`macro` 앱 경계를 넘는 **서비스 함수 호출을 금지**한다. 정적 import가 경계 위반이면, 우회가 아니라 **⑴ 합법 대안(shared 소속 함수 직결) ⑵ KNOWN_VIOLATION 동결 등재(디렉터 승인) ⑶ 정지 중 택**한다.
+
+- **예외 존치**: `apps.get_model(...)` 동적 **모델 조회**(BOUNDARY-2 #3 표준 관용구)는 cross-app aggregator 패턴으로 허용. 서비스 함수 호출은 동류가 아니다(모델 조회는 Django 정규 우회, 서비스 호출은 임의 결합).
+
+**Why**: 가드의 존재 목적 = **결합의 가시화**. 동적 import 우회는 결합을 유지하면서 가드·KNOWN_VIOLATION 원장에서 사라지게 해 **무기록 결합**을 만든다 — burndown 추적이 불가능해지고, 다음 세션이 결합 사실을 모른 채 상속한다. 가드를 못 속이면 결합을 안 만들거나 명시 등재하는 것이 유일한 정직한 경로다.
+
+**How to apply**: 최초 적용 사례 = EODSIG-FRESH-GATE 초판(0ed74613)의 importlib 게이트 → A2 처분으로 StockSyncService 정적 직결(shared→shared 합법)로 교체, importlib 코드 grep 0. cf. D-EODSIG-FRESH-GATE·#6 BOUNDARY-BURNDOWN-EOD.
+
+## [2026-08-31] D-SURFACE-AWAIT-DISPOSITION — 상신 후 처분 문서 접수 전 자율 선택 금지 [harness][process]
+
+> 출처: DIRECTIVE-EODSIG-FRESH-GATE-0828-A2 (교훈 등재).
+
+**결정(교훈)**: 실행 세션이 계획층(디렉터)에 결정 사안을 **상신**한 뒤에는, **처분 문서(애든덤 등)를 접수하기 전까지 자율 선택으로 진행하지 않는다.** 원 지시서의 재수신·침묵은 진행 지시가 **아니다** — 상신에 대한 응답은 반드시 **명시 처분 문서**로 온다.
+
+**Why**: EODSIG-FRESH-GATE에서 실행 세션이 경계 충돌을 상신했으나, 처분(A1: importlib 기각)이 도달하기 전 원 지시서 재수신을 "진행 지시"로 해석해 importlib를 자율 채택 → A2로 메커니즘 재작업 발생. 상신의 목적(결정 권한 이양)이 재수신 해석으로 무력화되면 상신 자체가 무의미해진다.
+
+**How to apply**: 상신(AskUserQuestion·명시 정지 보고) 후 = 명시 처분 문구/문서를 기다린다. 재수신·"진행해"류 추론 금지([[feedback_deploy_approval_explicit_quote]]와 동형의 명시성 요건). 대기 중 할 일이 없으면 정지·보고로 종료.
+
+## [2026-08-31] D-EODSIG-FRESH-GATE — EOD 신호 beat 신선도 게이트 (C안) [monitor][stocks][infra]
+
+> 출처: DIRECTIVE-EODSIG-FRESH-GATE-0828 (+ADDENDUM-A1/A2). 갭 사실 = OBS-BRIEFING-0827 O1. **배포 미집행**(구현·테스트·커밋까지).
+> **[정정 A2 2026-08-31]**: 재사용 메커니즘 = importlib 동적 lookup(초판 0ed74613) → **StockSyncService 정적 직결**(A2 처분·D-BOUNDARY-NO-DYNAMIC-EVASION). 아래 결정/How to apply 반영.
+
+**결정**: EOD 신호 생성 태스크(`run_eod_pipeline`→`EODPipeline._stage_ingest`)가 신호 계산 직전, 유니버스 심볼 중 당일 DailyPrice 부재분을 **`StockSyncService.sync_prices` 직결(자체 심볼 격리 루프)**로 온디맨드 선보충한 뒤 계산을 계속한다. = C안(신호 beat 자체 신선도 게이트, 가중 0.855). (메커니즘 정정 A2 — How to apply 참조.)
+
+- **갭 사실(OBS-BRIEFING-0827 O1 실측)**: 비SP500 감시등록 3종(TLN·IONQ·IREN)의 08-27 EODSignal = 0/3. created_at 증거 — SP500(PLTR) 08-27 DailyPrice 18:05 ET(18:00 가격 sync) vs 타겟 3종 18:45 ET(monitor refresh ensure_price_freshness). EOD 신호 파이프라인 18:30 ET 실행 → 타겟 가격 미도착 순회 → 매일 daily-forward 누락.
+- **채택 C (0.855)**: 신호 생성 지점에서 자기 입력 신선도 보장. 안전판이 신호층 상주(소비자 앱 늘어도 유효)·StockSyncService 직결(monitor ensure_price_freshness와 격리 루프 ~15줄 중복=의도적 잠정, BURNDOWN 시 단일화).
+- **기각 A (상류 조기 승격, 0.740)**: EOD 가격 sync(`sync_sp500_eod_prices` 18:00)를 감시 유니버스로 확장. **단 >30 tickers 또는 2번째 소비자 앱 도달 시 A로 승격**(반복 온디맨드 fetch 비효율 임계) — 그때도 본 게이트는 안전판 잔존.
+- **기각 B (advisor 역전, 0.390)**: advisor가 신호 부재를 역보정 — 근인 미해결·계약 오염.
+- **기각 D (브리핑 익일 지연, 0.665)**: 브리핑을 하루 늦춰 가격 도착 후 생성 — 사용자 최신성 저하.
+
+**Why**: 근인 = "신호 생성이 자기 입력(당일 가격) 신선도를 보장하지 않음". 신호 지점 게이트(C)는 그 계약을 지점에서 닫아 소비자 수·상류 스케줄과 무관하게 안전. 격리(#65)·멱등(fresh 스킵=API 0)·StockSyncService 위임 패턴은 monitor ensure_price_freshness가 이미 검증했고, 이를 signal 지점에 **동일 함수 재사용이 아니라(앱 경계) 정적 직결로 이식**한다 — 경계를 우회하지 않으면서 검증된 패턴을 재현(중복은 BURNDOWN 시 해소).
+
+**How to apply**:
+- 훅 = `packages/shared/stocks/services/eod_pipeline.py::EODPipeline._run_freshness_gate(target_date)`, `_stage_ingest`가 `_load_price_data` **직전** 호출. 부재 심볼만 fetch(멱등)·심볼별·게이트 전면 예외 격리(SP500 경로 불가침).
+- **메커니즘 = StockSyncService 직결(분기 A, A2 처분·R0.5 실측)**: ensure_price_freshness는 `apps.monitor` 소속이라 packages.shared에서 정적 import 시 경계 위반이고, **importlib 동적 lookup으로 가드를 우회하는 것은 금지(D-BOUNDARY-NO-DYNAMIC-EVASION)**. 대신 게이트가 `StockSyncService.sync_prices`(=`packages/shared/stocks/services/stock_sync_service.py`, **shared→shared 정적 import 합법** — 경계 FORBIDDEN=apps/macro만, R0.5 실측)를 직결 호출하는 자체 격리 루프를 둔다. monitor의 ensure_price_freshness와 심볼 격리 루프 **~15줄 중복 = 의도적 잠정**(BOUNDARY-BURNDOWN-EOD 결정[주입 vs 승격] 시 단일화). ⚠️초판 0ed74613은 importlib 동적 lookup이었으나 A2 처분으로 정적 직결 교체(importlib 코드 grep 0). sync_prices 계약 = SyncResult(success/error) 반환·예외 가능 → 심볼별 try/except.
+- 시각 파라미터 = `as_of_date`(전건 일관), 게이트는 `target_date` 그대로 전달. 마이그레이션 무발생·기존 함수 시그니처 무변·beat/스케줄(18:30) 미접촉.
+- 로그 규격: `freshness_gate: fetched {symbol} for {date}` / `freshness_gate: skip {symbol} (sync_failed)`.
+- 테스트 = `tests/unit/stocks/test_eodsig_fresh_gate.py`(단위 4 + beat 경로 통합 1, 고정 앵커). 배포 = 별도 승인 게이트. cf. D-EODUNIV-S1S2-DEGEN·[[project_eoduniv_p15_v01]].
 
 ## [2026-08-27] D-EODUNIV-S1S2-DEGEN — 백필 구간 S1/S2 섹터 degeneracy 처분 A(기록·관찰) [monitor][stocks][observation]
 
 > 출처: DIRECTIVE-DECISIONS-REG-0827 E1. 사실 근거 = STEP0-RECON-0827 R1-7.
 
-**결정 (처분 A = 기록·관찰, 즉시 수리 안 함)**: EODUNIV-P15-V01 백필 커맨드(`backfill_eod_signals_universe`)가 생성한 비SP500 3종 EODSignal의 relation 시그널 S1(섹터상대강도)·S2(섹터소외주) **degeneracy를 즉시 수리하지 않는다**. daily-forward(전체 유니버스) **20거래일** 축적 후 S1/S2 발화율을 재측정하여 재평가한다. **재평가 트리거일 = 2026-08-27 + 20거래일.**
+**결정 (처분 A = 기록·관찰, 즉시 수리 안 함)**: EODUNIV-P15-V01 백필 커맨드(`backfill_eod_signals_universe`)가 생성한 비SP500 3종 EODSignal의 relation 시그널 S1(섹터상대강도)·S2(섹터소외주) **degeneracy를 즉시 수리하지 않는다**. daily-forward(전체 유니버스) **20거래일** 축적 후 S1/S2 발화율을 재측정하여 재평가한다. **[정정 2026-08-31, EODSIG-FRESH-GATE]** 기산일을 "2026-08-27"에서 **"D-EODSIG-FRESH-GATE 수리 배포일"로 리셋**한다 — 사유: 08-27~수리 전 구간은 신선도 갭(OBS-BRIEFING-0827 O1, 타겟 08-27 EODSignal 0/3)으로 타겟 daily-forward 관측점이 **아예 생성되지 않아** 20거래일 카운트의 분모가 없다. **재평가 트리거일 = 수리 배포일 + 20거래일(배포일은 배포 보고 시 기입).**
 
 - **사실(R1-7 실측)**: TLN 백필 구간(2025-08~2026-08-26, 286행) — **S1 발화 0 · S2 발화 0 · S4 1**. 원인 = 백필 시 심볼 스코프를 [대상종목 ∪ SPY]로 좁혀 섹터 피어(SP500 전체)가 부재 → 섹터 평균이 자기 자신으로 degenerate(EODUNIV-P15-V01 보고서 문서화 한계와 동일 근인). advisor가 실제 쓰는 3필드(composite/change_pct/dollar_vol)·나머지 11시그널은 무영향.
 - **기각: B(스코프 재정의 + 백필 재실행)** — 첫 daily-forward 관측을 오염시키고, 관측이 뒤집을 수 있는 결정을 조기 확정하는 위험.
@@ -7042,3 +7100,16 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 ### D-EVT-GUIDE-ANCHOR — data-guide 앵커는 가이드 콘텐츠 슬라이스 소유
 - **결정**: `data-guide` 앵커는 가이드 콘텐츠 슬라이스에서만 부여(orphan 금지·`confirmed`=병진 검수 승인). 기능 지시서는 앵커를 요구하지 않는다.
 - **Why**: guideAnchors(orphan 금지)+guideData(region 3~7·confirmed·draft 잔류 금지) 계약이 앵커를 confirmed 전체 스크린에 강결합 → 기능 구현 중 앵커만 부여하면 필연적 red 또는 검수 승인 위조. EVT-IMPL-4 3-2 오지시(디렉터 귀책)로 부여됐던 `monitor.calendar` 앵커 제거, 가이드 슬라이스로 이관.
+## [2026-08-31] D-LAUNCHD-RUNTIME-TREE — 모든 launchd 잡의 실행 트리 = 런타임 worktree 고정 [infra][process]
+
+> RC-NEO4J-WORKER-TREE 전수 점검(ops 세션, 상신 `scratchpad/RC-NEO4J-WORKER-TREE_상신_20260831.md`)에서 확정.
+
+- **결정**: `~/Library/LaunchAgents/com.stockvis.*` 전 잡의 실행 트리는 **런타임 worktree(`~/worktrees/sv-{worker,api,web}-runtime`)로 고정**한다. 공유 본체 `~/Desktop/stock_vis`를 `WorkingDirectory`·`ProgramArguments`·래퍼의 `PROJECT_DIR` 어디에서도 가리키지 않는다. 선례 = `auto_agent_system/dogfood/com.stockvis.dogfood.plist`(`$HOME/worktrees/sv-worker-runtime` 기준, #47 Desktop 사본 금지).
+- **Why**: 공유 본체는 세션마다 임의 브랜치·편집 상태로 존재한다(계약상 커밋 금지 트리). 여기서 데몬이 돌면 **아무도 배포하지 않은 코드가 프로덕션 DB에 쓴다**. 실측: `celery-worker-neo4j`가 Desktop 트리(behind 711)로 **11일간 가동** — RC-A-1 v3.0([0,1] 눈금·`score_version` 3.0) 정규화가 끝난 DB에 구 눈금([0,100]) 코드가 쓸 수 있는 상태였다. 08-31 배포창 ②에서 발견해 정지시키지 않았으면 실오염.
+- **범위 규칙 ⑴ — plist만으로는 불충분**: 래퍼 스크립트가 `PROJECT_DIR`을 하드코딩하면 plist가 런타임 트리를 가리켜도 **스크립트가 다시 공유 본체로 `cd`** 한다. 따라서 래퍼는 `PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"` **self-locate**로 도출한다(선례 `scripts/verify-pair.sh` — OPS-VERIFY-EXEC-TREE 개정문1). 절대경로로 런타임 트리를 못 박는 방식(`celery-worker.sh`·`celery-beat.sh`)도 규칙 충족이나, 신규·교정 대상은 self-locate를 기본으로 한다.
+- **범위 규칙 ⑵ — 읽기 전용 잡도 대상**: `pg-backup`처럼 DB 쓰기가 없는 잡도 공유 본체의 `.env`를 읽으면 트리 간 `.env` drift 시 **엉뚱한 DB를 백업**(조용한 실패)한다. 오염 위험이 없다고 예외로 두지 않는다.
+- **순서 규칙**: watchdog은 감시 대상보다 **나중에** 올린다. 미교정 상태의 잡을 watchdog이 `launchctl kickstart` 해버린다(실측: 09:34~12:11 5분 주기 재기동 시도 + 경보 메일 반복).
+- **집행 규율**: plist 편집·`bootout`/`bootstrap`·서비스 기동은 **에이전트 자기 집행 금지** — 상신 후 병진 수동([[feedback_service_op_submit_not_execute]]). 기동 전 안전 게이트 = 런타임 트리 HEAD가 해당 배포 커밋을 포함하는지 `git merge-base --is-ancestor`로 확인.
+- **단일 출처**: 이 규칙은 repo 하네스에만 둔다(규약 10장 — 코어 복제 금지).
+- **이행 @`9a17e324`(2026-08-31, RC-EXEC-TREE-LAND)**: 래퍼 3건(`celery-worker-neo4j.sh`·`celery-watchdog.sh`·`pg-backup.sh`)에 self-locate 적용 완료. 실행 라인 변경 1/1×3(행위보존 — Desktop 트리에서 실행하면 종전과 동일 경로 도출). plist 3건은 `scripts/ops/launchd/*.plist.proposed`로 대기, 교체·bootstrap은 병진 수동(상신 `scratchpad/RC-NEO4J-WORKER-TREE_상신_20260831.md`).
+- **실측 정정(결함 C)**: 런타임 트리 `.env`는 Desktop 본체 `.env`를 가리키는 **심링크**(worker·api 공통) → 트리 간 `.env` drift는 현 구성에서 발생 불가. `pg-backup` 교정 목적은 위험 제거가 아니라 **규칙 일관성**. 다만 심링크가 본체에 의존하는 사실은 별건 등재(`OPS-ENV-SYMLINK-DEPENDENCY`).

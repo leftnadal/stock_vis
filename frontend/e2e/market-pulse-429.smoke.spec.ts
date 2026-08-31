@@ -87,8 +87,9 @@ test.describe('429 브라우저 경로 스모크', () => {
     ).toBeVisible()
     await page.waitForTimeout(1500) // 재시도 스톰이 있었다면 이 창에서 폭증
     const overviewOn429 = overviewCount(seen)
-    // INC-P16-1 A(429 무재시도): overview 호출이 소수(증폭 없음). retry:2였다면 3배.
-    expect(overviewOn429, `429 시 overview 호출=${overviewOn429}`).toBeLessThanOrEqual(3)
+    // INC-P16-1 A(429 무재시도): overview 정확히 1회(관측값). retry:2 회귀 시 3회 →
+    // 문턱을 ≤1로 조여 회귀 감지력 복원(≤3이면 retry:2 회귀도 통과했음, MGMT-BATCH-39).
+    expect(overviewOn429, `429 시 overview 호출=${overviewOn429} (>1이면 재시도 회귀)`).toBeLessThanOrEqual(1)
 
     // 회복: 200 전환 후 새로고침 → 2초 내 정상 렌더
     state.mode = 'ok'
