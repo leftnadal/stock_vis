@@ -15,7 +15,6 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.chain_sight.constants import UNIVERSE_EXCLUDED_INDUSTRIES
 from apps.chain_sight.models import RelationConfidence
 from apps.chain_sight.services.story_activity import get_symbol_story_threads
 
@@ -79,11 +78,10 @@ class MindmapTreeView(APIView):
         Stock = apps.get_model("stocks", "Stock")
         gate_deg, grp_deg, new_deg = _degree_maps()
 
-        # 1단 유니버스 제외 필터(임시): 레버리지 ETF 등 industry 은닉.
+        # 유니버스 제외(2단 플래그·CS-UNIVERSE-EXCLUDE-FLAG): universe_excluded 종목 은닉.
         # 카드·업종 카운트·FE 클라이언트 검색 전부 이 응답을 소비 → 단일 지점.
-        # 2단 승격 = CS-UNIVERSE-EXCLUDE-FLAG(마이그 번들)에서 Stock 플래그로 대체 후 제거.
         rows = list(
-            Stock.objects.exclude(industry__in=UNIVERSE_EXCLUDED_INDUSTRIES).values(
+            Stock.objects.exclude(universe_excluded=True).values(
                 "symbol", "stock_name", "sector", "industry"
             )
         )
@@ -170,14 +168,13 @@ class MindmapCardView(APIView):
         symbol = symbol.upper()
         Stock = apps.get_model("stocks", "Stock")
 
-        # 1단 유니버스 제외(임시): 제외 industry 심볼은 카드 상세도 미노출(전 화면 일관).
-        # 2단 승격 = CS-UNIVERSE-EXCLUDE-FLAG(마이그 번들)에서 Stock 플래그로 대체 후 제거.
-        _ind = (
+        # 유니버스 제외(2단 플래그·CS-UNIVERSE-EXCLUDE-FLAG): 제외 종목은 카드 상세도 미노출.
+        _excluded = (
             Stock.objects.filter(symbol=symbol)
-            .values_list("industry", flat=True)
+            .values_list("universe_excluded", flat=True)
             .first()
         )
-        if _ind in UNIVERSE_EXCLUDED_INDUSTRIES:
+        if _excluded:
             return Response(
                 {"detail": "symbol excluded from CS universe"}, status=404
             )
