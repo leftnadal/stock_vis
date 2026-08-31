@@ -8,6 +8,27 @@
 
 ---
 
+## [2026-08-31] D-SCAN-DEPLOY-CORR — 스캐너 배포 정정·관찰 묶음 (LAND-SCAN-B2FE + DEPLOY-EXEC-2) [dashboard][platform][ops][process]
+
+**정정 (DEPLOY-PRECHECK-2 초판 프레이밍 교정, 3건)**:
+- ⑴ 스캐너 **B1-FE·B2-TECH는 08-26 INC-P16-1 핫픽스 배포에 기편승**(트리에 이미 반영) — PRECHECK-2가 "이 배포로 스캐너 점등"으로 읽혔으나 실제는 기배포.
+- ⑵ **technical 블록 이미 baked**(08-26 437/437) — "차기 bake 후 출현"이 아니라 BE 가동 중이었음.
+- ⑶ **물리 런타임 트리 = 3개**(worker+beat가 `sv-worker-runtime` 공유, RUNTIME_INVENTORY) — "4트리"는 논리 4·물리 3.
+
+**관찰 (기록만·착수 아님)**:
+- ⑵ **baked 모수 437→403**(08-28) — 신 EODUNIV 유니버스 재정의 효과(SP500∪감시등록). 결측 1(402/403)=봉 부족 → 정칙 ⑴ 정상 작동 실증.
+- ⑹ **배포 후 origin +55 즉시 전진**(9460430f→1177e0ce→…82bb4be4) — 스냅샷 배포의 본질·runtime WARN 재발 예상. 케이던스 = RB-1 소관(감지 자동·집행 사람).
+
+**#118 보강 부기**: **LAND health 기준선은 rebase 목표(참 origin/main) 기준으로 측정**한다 — 세션 브랜치(rebase 전) 기준 측정 시 전진분에 실린 FAIL이 좌변에 누락돼 "신규 FAIL"로 오탐된다. **재현 = LAND-SCAN-B2FE**: shared 경계 FAIL은 EODUNIV `7ec24c62`가 origin/main(69605758)에 이미 실은 것인데 내 base(a2e4ff5e)엔 없어 baseline이 못 잡음 → 착지 무관을 포렌식(도입 커밋 -S grep)으로 판정. cf. common-bugs #118·[[lesson_land_health_measure_in_target_tree]].
+
+**shared 경계 위반 처분 (해소 완료)**: `eod_signal_calculator.py:50 ← apps.monitor.models.monitor`(lazy import·런타임 무해·EODUNIV `7ec24c62` 유입) = **BOUNDARY-TRIAGE-1(08-27) 동결로 처분 완료** — `tests/architecture/test_shared_boundary.py:39` + `scripts/health_check.py:504` **양쪽 KNOWN_VIOLATIONS 동시 등재**(규약 2장). health 0❌ 복귀·"우회 0/동결 잔여 1"=OK. (본 세션 착수 아님·이미 @qa 처분됨.)
+
+**B2-FE 편차 2건 (교훈)**:
+- ⑸-a **정칙 ⑵는 신설분 한정** — 기존 ConfidenceBadge "강력 매수"는 무변·범위 밖. "과매수"의 "매수" 오매치 → 테스트 정규식에 `(?<!과)` lookbehind.
+- ⑸-b **per-stock 확장 패널 부재** → "패널 기술 칸(4값 전체)"을 StockRow 내 기술 상세 라인으로 대체(칩 ≤2 절제·행이 곧 per-stock 표면).
+
+**How to apply**: 정정·관찰은 후속 슬라이스(FUND-BE·TELEM) 참조 정본. #118 보강은 차기 LAND 양식 STEP 0에 반영(health 기준선=목표 트리). cf. [[project_scanner_ux_recon]].
+
 ## [2026-08-27] D-EODUNIV-S1S2-DEGEN — 백필 구간 S1/S2 섹터 degeneracy 처분 A(기록·관찰) [monitor][stocks][observation]
 
 > 출처: DIRECTIVE-DECISIONS-REG-0827 E1. 사실 근거 = STEP0-RECON-0827 R1-7.
