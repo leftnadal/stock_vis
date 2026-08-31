@@ -5,6 +5,16 @@
 
 ---
 
+## DSS-BEAT — DSS 주간 적재 자동화 (착수, DSS-BEAT-1 2026-08-31) [theme-heat][dss][infra]
+- D-DSS-BEAT-1. celery `chainsight-load-dss-weekly`(Fri 19:00 ET·default 큐) + 폴백 command `load_dss_week`. **2단 스위치**: PeriodicTask enabled=False 등재 → §D 워커 재시작+검증 후 enable.
+- 상태: §A 코드+§B beat(enabled=False) 집행 중. **잔여(병진)**: §D 워커(celery-worker@sv-worker-runtime 4 behind→sync)+beat 재시작 → CC 검증(태스크 등록·트리 커밋 조상) → enable. **09-04(금)까지 미enable 시 폴백 = 병진이 착지 트리에서 `manage.py load_dss_week` 1줄**(상신 문서 `scratchpad/DSS-BEAT-1_restart_상신.md`).
+
+## DSS-BEAT-OBS-1 — 09-04 발화 후 검증 (등재만·차기, DSS-BEAT-1 2026-08-31) [theme-heat][dss]
+- 09-04(금) 발화 후: SymbolDemandSignal anchor 09-04 신규 행 수·Score 11행(**DB 행 증거·last_run_at 불인정**) / flat_ratio 판정(§2) / arrow 상태 / 클린 쌍 5/6 갱신(ε는 09-11 6/6에 개시).
+
+## AGENT-DOGFOOD-DSS-FRESHNESS — dogfood에 DSS/사분면 신선도 커버 추가 (이관 등재, DSS-BEAT-1 0-4 2026-08-31) [agent][dss] — @agent 소관
+- 0-4 실측: `auto_agent_system/dogfood/`가 ThemeDemandScore/사분면 API(`/api/v1/chainsight/theme-heat/quadrant/`) 신선도 **미점검**. 주간 적재 자동화(DSS-BEAT) 후 무발화 감지 공백 → dogfood 신선도 타깃에 편입 검토. **구현은 AGENT 트랙 소관**(본 트랙 구현 금지·등재만).
+
 ## DSS-QUADRANT — 섹터 사분면 화면 (착수, QUAD-IMPL-1 2026-08-27) [dashboard][dss][chainsight]
 - 확정 결정 5건(DECISIONS DSS-QUADRANT). Heat×수요 breadth 2축, ②·④ 하이라이트, 전주 화살표(flat≥90% 숨김), 미산출 하단 목록.
 - Slice 1(BE read-only API `/api/v1/chainsight/theme-heat/quadrant/`) → Slice 2(공용 컴포넌트 `components/charts/SectorQuadrant`) → Slice 3(app/page.tsx 최상단 삽입).

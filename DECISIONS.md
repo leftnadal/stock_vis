@@ -8,6 +8,21 @@
 
 ---
 
+## [2026-08-31] D-DSS-BEAT-1 — DSS 주간 적재 자동화 (beat 태스크 + 2단 스위치) [theme-heat][dss][infra]
+
+> 출처: 지시서 DSS-BEAT-1(병진 승인 08-31). 구현 = §A~§D.
+
+**결정**: DSS 주간 적재(store_for_anchor)를 celery beat 태스크 `chainsight-load-dss-weekly`로 자동화한다. 스케줄 = **금요일 19:00 ET**(America/New_York), default 큐. **2단 스위치**: PeriodicTask는 enabled=False로 등재하고, 워커 재시작 + 태스크 등록 검증(§D) 통과 후에만 enable. 폴백 = management command `load_dss_week`(수동/백필).
+
+- **스케줄 산정 근거**: 수집 태스크 `chainsight-snapshot-analyst-estimates` = Fri 16:30 ET, EstimateSnapshot 생성 완료 ~16:40 ET(DB created_at 실측 3회). DSS = 그 시각 + 2h 이상 오프셋 → 19:00 ET(완료 +2.3h·금요일 한정·18:45 monitor/18:50 advisor 슬롯 회피). 태스크 내 가드(최신 스냅샷 date ≠ 실행일 → skip·무재시도)로 조기/결측 방어.
+- **가중합(옵션)**: A(beat 자동+2단 스위치·폴백 command) **채택** vs B(command 수동 only) vs C(beat 즉시 enable). A = 자동화 실익 + enable 전 워커 등록 검증으로 무동작 beat(#28류) 방지. C는 워커 미등록 시 조용한 무발화 위험 → 2단 스위치로 배제.
+- **ε 클린 쌍 정의 보강(D-DSS-EPSILON 연동)**: 클린 WoW 쌍 = flat_ratio < 90%(§2 [재발] 임계와 동일 기준). degenerate(≥90%, 예: 08-14 99.6%)는 배제. 현재 5/6(08-14만 degenerate). **6/6 성숙 시 D-DSS-EPSILON Δ분포 재산출 개시**(09-11 예상). ε는 그전까지 임계 없음(D-DSS-SIGNAL 2-A 유지).
+- **긍정준수 2호**: beat DB 변경(PeriodicTask)을 **명시 승인 범위(1행 INSERT enabled=False)로 한정**하고 enable을 검증-후로 카브아웃 — 서비스 조작 자기집행 금지(INC-003)·2단 스위치 규율의 긍정 사례. (1호 = QUAD-IMPL-1 health FAIL HALT 준수.)
+
+**Why**: 수동 1회차(DSS-W8-LOAD-1)는 dispatch 시점 의존·인적 누락 리스크. 자동화하되 beat의 무발화 함정(#28 dict 무시·워커 미등록)을 2단 스위치(enabled=False→워커 등록 검증→enable)로 봉인. 서비스 로직은 무수정 래핑(store_for_anchor 재사용)으로 회귀면 0.
+
+**How to apply**: 정본 지시서 = docs/instructions/DSS-BEAT-1.md. 태스크 = `apps/chain_sight/tasks/dss_tasks.py`. enable = §D 검증(워커 태스크 목록에 load_dss_weekly 존재·실행 트리 커밋이 착지 조상) 통과 후. 폴백 = `manage.py load_dss_week`. cf. [[DSS-W8-LOAD-1]]·D-DSS-EPSILON·common-bugs #28.
+
 ## [2026-08-31] D-SCAN-DEPLOY-CORR — 스캐너 배포 정정·관찰 묶음 (LAND-SCAN-B2FE + DEPLOY-EXEC-2) [dashboard][platform][ops][process]
 
 **정정 (DEPLOY-PRECHECK-2 초판 프레이밍 교정, 3건)**:

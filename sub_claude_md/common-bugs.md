@@ -1779,3 +1779,11 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 3. 스크립트에 **before/after 카운트와 자체 검증**을 넣으면 왕복이 준다.
 
 **실증**: `~/rc_pc_delete.py` 전환 후 1회 성공(1,356 엣지 삭제·잔존 0 자체 확인).
+
+## 주간 운영 지시서 dispatch 시점 = 대상 회차 발화 이후 — 발화 전 dispatch면 STEP 0 미발화 HALT (채번 후보, DSS-BEAT-1 2026-08-31) [process][harness][ops]
+
+주간 적재/집계 지시서의 dispatch 시점은 **대상 스냅샷 회차(EstimateSnapshot 등) 발화 이후**로 규율한다. 발화 전 dispatch면 STEP 0 회차 실측이 미발화 → HALT. 이때 **근인 구분 명시**: (a) 집행 시점 미도래(발화 예정일 전) vs (b) 파이프라인 이상(발화 예정일 후에도 미발화). 케이던스(요일·주기) 정상 여부로 판별. 실증: DSS-W8-LOAD-1 08-27(목) 조기 dispatch → 8회차(08-28 금) 미발화 HALT → 08-28 발화 후 재개.
+
+## 지시서의 INCIDENTS INC-NN·common-bugs #NN 일련번호 사전지정 금지 — 집행 시점 실측 최대+1 부여 (채번 후보, DSS-BEAT-1 2026-08-31) [process][harness][git]
+
+지시서 문안이 INCIDENTS `INC-NN`·common-bugs `#NN` 등 일련번호를 **사전 지정하지 않는다** — 집행 시점 실측 최대+1로 부여(발행~집행 사이 타 세션 선점 시 충돌). 충돌 시 본문 verbatim 유지·라벨만 정정 후 상신. 실증: DSS-W8-LOAD-1 T4 'INC-003' 문안 → INC-003(Neo4j 08-18) 선점 → INC-004 라벨 정정(상신·승인). cf. 비-mgmt 세션 #NN 사전지정 금지(#120, DSS-FLAT-OBS-1).
