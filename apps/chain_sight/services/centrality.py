@@ -106,6 +106,8 @@ def compute_backbone_centrality(status_allow=BACKBONE_STATUS_ALLOW):
     입력 = RelationConfidence 중 relation_status∈{confirmed,probable} AND max(truth,market)>0
     엣지(self-loop 제외). PEER outlier 2행은 status='hidden'이라 필터에서 자연 제외된다
     (별도 제외 코드 불요 — 테스트로만 확인). PageRank(damping 0.85 = nx 기본) + degree.
+    ※ a!=b 필터는 MIG-BUNDLE-1 0034(rc_symbol_a_ne_symbol_b DB 제약·legacy RC13 정제)
+      이후 prod dead path(자기루프 DB 삽입 불가) — 방어용으로 유지.
     지속 모델·마이그레이션 없음(D-RC-C1-STORAGE 옵션 C). 반환 = (rows, meta), rows는
     pagerank 내림차순 정렬(동점 symbol 오름차순). betweenness 미계산(불요).
     """

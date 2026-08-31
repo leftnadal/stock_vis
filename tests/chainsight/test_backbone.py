@@ -86,21 +86,28 @@ class TestBackboneService:
         syms = {r["symbol"] for r in rows}
         assert syms == {"A", "B"}                     # PEER outlier 심볼 미포함
 
-    def test_excludes_zero_weight_and_self_loop(self, db):
+    def test_excludes_zero_weight(self, db):
+        """max=0 엣지 제외 (a!=b라 0034 제약 하에서도 삽입 가능)."""
         _rc("A", "B", status="confirmed", truth=0.9)
         _rc("C", "D", status="confirmed", truth=0.0, market=0.0)  # max=0 제외
-        # self-loop: 모델 save()가 SelfLoopError로 신규 차단(§0-4의 13행 = 가드 前 legacy).
-        # 가드 우회 bulk_create로 legacy self-loop 모사 → 어댑터 a!=b 필터가 제외하는지 검증.
-        RelationConfidence.objects.bulk_create([
-            RelationConfidence(
-                symbol_a="A", symbol_b="A", relation_type="SUPPLIES_TO",
-                relation_category="truth", relation_status="confirmed",
-                truth_score=0.9,
-            )
-        ])
         rows, meta = compute_backbone_centrality()
         assert {r["symbol"] for r in rows} == {"A", "B"}
         assert meta["graph_edges"] == 1
+
+    def test_selfloop_db_constraint_present(self, db):
+        """MIG-BUNDLE-1 0034: RelationConfidence a≠b DB CheckConstraint 존재.
+        prod 자기루프는 이제 DB 레벨 불가(정제 RC13 삭제 완료) → 어댑터 a!=b 필터는
+        방어용(0034 이후 prod dead path). self-loop 삽입 모사는 0034 제약이 거부하므로
+        제약 존재 검증 + 어댑터 필터 단위검증(DB 무삽입)으로 대체."""
+        names = {c.name for c in RelationConfidence._meta.constraints}
+        assert "rc_symbol_a_ne_symbol_b" in names
+
+    def test_adapter_skips_selfloop_unit(self):
+        """어댑터가 의존하는 collapse 단이 self-loop 튜플을 제외(DB 무삽입, in-memory)."""
+        from apps.chain_sight.services.centrality import build_relation_graph
+        g = build_relation_graph([("A", "A", 0.9, None), ("A", "B", 0.9, None)])
+        assert g.number_of_nodes() == 2
+        assert g.number_of_edges() == 1
 
     def test_has_degree_no_betweenness(self, db):
         _rc("A", "B", status="confirmed", truth=0.9)
