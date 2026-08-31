@@ -34,6 +34,18 @@ class Stock(models.Model):
     fiscal_year_end = models.CharField(max_length=20, blank=True, null=True)
     latest_quarter = models.DateField(blank=True, null=True)
 
+    # === 유니버스 제외 플래그 (CS-UNIVERSE-EXCLUDE-FLAG, MIG-BUNDLE-1 B) ===
+    # 카드 유니버스(마인드맵 트리·카드·업종 집계)에서 숨길 종목의 2단 플래그.
+    # 임시 1단 industry 상수 필터(chain_sight.UNIVERSE_EXCLUDED_INDUSTRIES)를 승격·대체.
+    # 제외 판정을 종목 단위 플래그로 모아, 향후 제외 사유가 늘어도 이 필드만 세팅한다.
+    EXCLUDE_REASON_CHOICES = (
+        ("LEVERAGED_ETF", "레버리지 ETF (2배 롱 파생 — 투자 유니버스 밖, RC 0)"),
+    )
+    universe_excluded = models.BooleanField(default=False, db_index=True)
+    exclude_reason = models.CharField(
+        max_length=32, blank=True, null=True, choices=EXCLUDE_REASON_CHOICES
+    )
+
     # === 실시간 가격 정보 (GLOBAL_QUOTE에서 가져옴) ===
     open_price = models.DecimalField(max_digits=15, decimal_places=4, default=0.0)
     high_price = models.DecimalField(max_digits=15, decimal_places=4, default=0.0)

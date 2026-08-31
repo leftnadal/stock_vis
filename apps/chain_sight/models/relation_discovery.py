@@ -36,6 +36,13 @@ class CoMentionEdge(models.Model):
             models.Index(fields=["symbol_b"]),
             models.Index(fields=["-co_mention_count"]),
         ]
+        constraints = [
+            # MIG-BUNDLE-1 A-4(SELFLOOP-DBCONSTRAINT): a≠b DB 강제(앱 가드 승격).
+            models.CheckConstraint(
+                condition=~models.Q(symbol_a=models.F("symbol_b")),
+                name="cme_symbol_a_ne_symbol_b",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.symbol_a} ↔ {self.symbol_b}: {self.co_mention_count}회"
@@ -249,6 +256,13 @@ class RelationConfidence(models.Model):
             models.Index(fields=["relation_status"]),
             models.Index(fields=["relation_type"]),
             models.Index(fields=["neo4j_dirty"]),
+        ]
+        constraints = [
+            # MIG-BUNDLE-1 A-4(SELFLOOP-DBCONSTRAINT): a≠b DB 강제(save() 가드 승격).
+            models.CheckConstraint(
+                condition=~models.Q(symbol_a=models.F("symbol_b")),
+                name="rc_symbol_a_ne_symbol_b",
+            ),
         ]
 
     def save(self, *args, **kwargs):

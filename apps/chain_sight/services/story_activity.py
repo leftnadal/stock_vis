@@ -24,6 +24,8 @@ WINDOW_RECENT_DAYS = 7
 WINDOW_BASE_DAYS = 90
 CANDIDATE_N = 24  # 7일 집계 대상 후보 상한(최근순 — 7d 활성 파트너는 최상단에 포함됨)
 DEFAULT_TOP_N = 10
+# 캐시 신선도: 물질화 이후 이 시간을 넘기면 stale → 라이브 fallback(일일 배치+여유).
+CACHE_STALE_HOURS = 48
 
 
 def _weekly_avg(count_90d: int) -> float:
@@ -61,13 +63,16 @@ def _recent_counts(symbol: str, partner_syms: list[str], now) -> dict[str, int]:
     return dict(rows)
 
 
-def get_symbol_story_threads(
+def _compute_story_threads_live(
     symbol: str,
     top_n: int = DEFAULT_TOP_N,
     candidate_n: int = CANDIDATE_N,
     now=None,
 ) -> dict:
-    """종목의 co-mention 파트너 활동 스레드.
+    """종목의 co-mention 파트너 활동 스레드 — **라이브 계산**(NewsEntity 7일 집계 포함).
+
+    get_symbol_story_threads 의 캐시-부재 fallback 경로이자, 일일 물질화 태스크의
+    소스. 캐시 우회가 목적이면 이 함수를 직접 호출한다(C-2 물질화·C-3 fallback).
 
     Returns:
         {threads: [...top_n], thread_total, threads_capped, shown}
@@ -140,3 +145,97 @@ def get_symbol_story_threads(
         "threads_capped": total > len(shown),
         "shown": len(shown),
     }
+
+
+def _threads_from_cache(rows, top_n: int, now) -> dict:
+    """캐시 행(SymbolStoryActivity)에서 스레드 dict 재구성 — 라이브와 동일 형상.
+
+    days_since 는 읽기 시점(now) 기준 재계산(스냅샷 시각 아님 — 표시 신선도 유지).
+    정렬·top_n 상한은 라이브 5)단계와 동일(7d 내림차순 → 최근일).
+    """
+    ref_date = now.date()
+    threads = []
+    for r in rows:
+        last = r.last_co_mention_date
+        threads.append(
+            {
+                "partner": r.partner,
+                "count_7d": r.count_7d,
+                "count_90d": r.count_90d,
+                "weekly_avg_90d": r.weekly_avg_90d,
+                "activity_ratio": r.activity_ratio,
+                "last_co_mention_date": last.isoformat() if last else None,
+                "days_since": (ref_date - last).days if last else None,
+                "quiet": r.count_7d == 0,
+            }
+        )
+    threads.sort(
+        key=lambda t: (t["count_7d"], t["last_co_mention_date"] or ""), reverse=True
+    )
+    thread_total = rows[0].thread_total if rows else 0
+    shown = threads[:top_n]
+    return {
+        "threads": shown,
+        "thread_total": thread_total,
+        "threads_capped": thread_total > len(shown),
+        "shown": len(shown),
+    }
+
+
+def get_symbol_story_threads(
+    symbol: str,
+    top_n: int = DEFAULT_TOP_N,
+    candidate_n: int = CANDIDATE_N,
+    now=None,
+    use_cache: bool = True,
+) -> dict:
+    """종목의 co-mention 파트너 활동 스레드 (캐시 우선 · 라이브 fallback).
+
+    소스 전환(C-3): SymbolStoryActivity 캐시가 존재하고 신선(materialized_at 이
+    CACHE_STALE_HOURS 이내)하면 캐시에서 서빙, 부재/미갱신이면 라이브 계산으로
+    fallback(빈 화면 금지). 반환 형상은 두 경로 동일(IDENTICAL 원칙 — C-5).
+
+    use_cache=False 는 물질화 태스크·회귀 테스트가 라이브 경로를 강제할 때 쓴다.
+    """
+    symbol = symbol.upper()
+    now = now or timezone.now()
+
+    if use_cache:
+        from datetime import timedelta
+
+        from apps.chain_sight.models import SymbolStoryActivity
+
+        fresh_after = now - timedelta(hours=CACHE_STALE_HOURS)
+        rows = list(
+            SymbolStoryActivity.objects.filter(
+                symbol=symbol, materialized_at__gte=fresh_after
+            )
+        )
+        if rows:
+            return _threads_from_cache(rows, top_n, now)
+
+    return _compute_story_threads_live(symbol, top_n, candidate_n, now)
+
+
+def get_global_activity_top(limit: int = 50, min_count_7d: int = 1) -> list[dict]:
+    """전 종목 co-mention 활동 상위 N (activity_ratio 내림차순) — S2 전역 활동 뷰 예비.
+
+    캐시(SymbolStoryActivity) 전용 조회. 인덱스 (-activity_ratio) 를 사용해
+    전역 정렬을 O(index) 로 수행한다(S2 설계 입력 — C-4). 캐시 부재 시 빈 리스트.
+    """
+    from apps.chain_sight.models import SymbolStoryActivity
+
+    return list(
+        SymbolStoryActivity.objects.filter(
+            activity_ratio__isnull=False, count_7d__gte=min_count_7d
+        )
+        .order_by("-activity_ratio")
+        .values(
+            "symbol",
+            "partner",
+            "count_7d",
+            "count_90d",
+            "activity_ratio",
+            "last_co_mention_date",
+        )[:limit]
+    )

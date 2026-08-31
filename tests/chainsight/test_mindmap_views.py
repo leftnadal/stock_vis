@@ -8,7 +8,6 @@ import pytest
 from django.apps import apps
 from django.test import Client
 
-from apps.chain_sight.constants import UNIVERSE_EXCLUDED_INDUSTRIES
 from apps.chain_sight.models import RelationConfidence
 
 
@@ -80,31 +79,35 @@ class TestMindmapGate:
 
 @pytest.mark.django_db
 class TestUniverseExcludeFilter:
-    """1단 유니버스 제외 필터(레버리지 ETF industry) — 카드·트리·업종 카운트 미노출."""
+    """2단 유니버스 제외 플래그(universe_excluded) — 카드·트리·업종 카운트 미노출.
+
+    B(CS-UNIVERSE-EXCLUDE-FLAG): 1단 industry 상수 필터에서 종목 플래그로 승격.
+    제외 판정 = universe_excluded (industry 무관). 전환 전후 제외 집합 동일(B-4).
+    """
 
     def _seed_stocks(self):
         Stock = apps.get_model("stocks", "Stock")
-        excluded_ind = UNIVERSE_EXCLUDED_INDUSTRIES[0]  # "Asset Management - Leveraged"
         # 정상 종목
         Stock.objects.create(
             symbol="NORM", stock_name="Normal Co", sector="Technology",
             industry="Software - Application",
         )
-        # 제외 industry 종목 (레버리지 ETF)
+        # 제외 플래그 종목 (레버리지 ETF) — 데이터 마이그 0018 이 세팅하는 상태 재현
         Stock.objects.create(
             symbol="LEVX", stock_name="Daily 2X Long X ETF", sector="Financial Services",
-            industry=excluded_ind, asset_type="ETF",
+            industry="Asset Management - Leveraged", asset_type="ETF",
+            universe_excluded=True, exclude_reason="LEVERAGED_ETF",
         )
 
-    def test_excluded_industry_absent_from_tree(self):
+    def test_excluded_flag_absent_from_tree(self):
         self._seed_stocks()
         d = Client().get("/api/v1/chainsight/mindmap/tree/").json()
         tickers = {c["ticker"] for s in d["sectors"] for i in s["industries"] for c in i["cards"]}
         assert "NORM" in tickers
-        assert "LEVX" not in tickers  # 제외 industry → 카드 미노출
-        # 업종 버킷 소멸 확인
+        assert "LEVX" not in tickers  # universe_excluded → 카드 미노출
+        # 제외 종목 유일 업종 버킷 소멸 확인
         industries = {i["industry"] for s in d["sectors"] for i in s["industries"]}
-        assert UNIVERSE_EXCLUDED_INDUSTRIES[0] not in industries
+        assert "Asset Management - Leveraged" not in industries
         # 집계 정합: stock_total = 정상 1종만 (제외분 불산입)
         assert d["stock_total"] == 1
 
@@ -114,3 +117,15 @@ class TestUniverseExcludeFilter:
         assert resp.status_code == 404
         # 정상 종목 카드는 200
         assert Client().get("/api/v1/chainsight/mindmap/card/NORM/").status_code == 200
+
+    def test_flag_drives_exclusion_not_industry(self):
+        # B-3 승격 의미 명시: 제외는 플래그 기준. 레버리지 industry여도 flag=False면 노출.
+        Stock = apps.get_model("stocks", "Stock")
+        Stock.objects.create(
+            symbol="LEVOK", stock_name="Lev ETF (unflagged)",
+            sector="Financial Services", industry="Asset Management - Leveraged",
+            universe_excluded=False,
+        )
+        d = Client().get("/api/v1/chainsight/mindmap/tree/").json()
+        tickers = {c["ticker"] for s in d["sectors"] for i in s["industries"] for c in i["cards"]}
+        assert "LEVOK" in tickers  # flag=False → 노출(industry 무관)

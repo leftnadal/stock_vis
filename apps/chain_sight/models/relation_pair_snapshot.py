@@ -43,6 +43,14 @@ class RelationPairSnapshot(models.Model):
             models.Index(fields=["-relevance_opp", "-period"]),   # 발견 정렬
             models.Index(fields=["-relevance_risk", "-period"]),  # 경고 정렬
         ]
+        constraints = [
+            # MIG-BUNDLE-1 A-4(SELFLOOP-DBCONSTRAINT): canonical a≠b DB 강제
+            # (RC 자기루프 파생 차단 — 정제 후 영구 무자기루프 보장).
+            models.CheckConstraint(
+                condition=~models.Q(canonical_a=models.F("canonical_b")),
+                name="rps_canonical_a_ne_canonical_b",
+            ),
+        ]
 
     def __str__(self):
         return (
