@@ -7113,6 +7113,8 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **단일 출처**: 이 규칙은 repo 하네스에만 둔다(규약 10장 — 코어 복제 금지).
 - **이행 @`9a17e324`(2026-08-31, RC-EXEC-TREE-LAND)**: 래퍼 3건(`celery-worker-neo4j.sh`·`celery-watchdog.sh`·`pg-backup.sh`)에 self-locate 적용 완료. 실행 라인 변경 1/1×3(행위보존 — Desktop 트리에서 실행하면 종전과 동일 경로 도출). plist 3건은 `scripts/ops/launchd/*.plist.proposed`로 대기, 교체·bootstrap은 병진 수동(상신 `scratchpad/RC-NEO4J-WORKER-TREE_상신_20260831.md`).
 - **실측 정정(결함 C)**: 런타임 트리 `.env`는 Desktop 본체 `.env`를 가리키는 **심링크**(worker·api 공통) → 트리 간 `.env` drift는 현 구성에서 발생 불가. `pg-backup` 교정 목적은 위험 제거가 아니라 **규칙 일관성**. 다만 심링크가 본체에 의존하는 사실은 별건 등재(`OPS-ENV-SYMLINK-DEPENDENCY`).
+- **집행 완료(2026-08-31 16:41~16:44 KST, 병진 권한 위임·CC 집행)**: `celery-worker-neo4j`·`celery-watchdog` 2건 plist 교체 + bootstrap 완료. 검증 = 프로세스 **실제 cwd가 런타임 트리**(lsof 확증, plist 선언값이 아닌 실측) · ping pong · 적체 큐 62→0 소진(전건 `synced:0`) · 실효 dirty 0 유지 · watchdog 첫 발화 `RECOVERED`로 경보 종료. `pg-backup`은 권한 제약으로 미집행(초안 대기). **`sv sync`는 미실행** — 게이트 ⑵가 이미 충족돼 불필요했고, 실행하면 범위 밖 커밋(DSS-BEAT-1 등)까지 함께 배포됐을 것(배포 범위 최소화).
+- **검증 도구 교훈(채번 후보)**: 검증 스크립트에서 `set -o pipefail` + `cmd | grep -q`는 **거짓 FAIL**을 만든다 — `grep -q`가 첫 매치에 종료하며 상류를 SIGPIPE로 죽여 파이프라인이 non-zero가 된다. 실제로 `celery inspect ping`이 `pong`을 냈는데 FAIL로 판정됐다. 회피 = 출력을 변수에 담아 `case`/`[[ ]]`로 판정. 아울러 launchd 로그 파일명은 **Label이 아니라 plist의 `StandardOutPath` 실경로**로 참조해야 한다(`com.stockvis.` 접두사 가정 → 파일 부재를 '통과'로 오판).
 
 ## [2026-08-31] D-SUBPAGES-LAYOUT — 거시 서브페이지 = 허브(가) [frontend][market_pulse]
 
