@@ -7014,3 +7014,17 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **D-lite 집행 결과(본 세션 P2-DLITE)**: Playwright 안전망(데스크탑+Pixel5 모바일) + 429 브라우저 스모크(①현실 새로고침 무증폭 ②429 무재시도·회복). **route interception 설계** 채택 — 근거: market-pulse 엔드포인트가 IsAuthenticated + 워크트리 `.env` 부재 + 공유DB/런타임 무접촉 제약 → 격리 authed 백엔드 재현 불가. 브라우저 경로 계약(단건 curl이 구조적으로 못 잡는 그 경로)을 모킹으로 결정론 검증. **한계 명기**: 실백엔드 throttle 통합은 미검증(FE 계약·무증폭·회복만 검증). 프로덕션 코드 diff 0(테스트·설정·devDep만).
 - **관측 실증**: 429 시 overview 호출 **1회**(retry:2였다면 3 — INC-P16-1 A 무재시도 실증)·회복 **~680ms**(<2s)·로드당 요청 5 일정(무증폭).
 - **다음**: MP2-SUBPAGES(#3·A) 트리거 충족(#1·#2 = D-lite land 후). CI 편입은 후속 별건(이 세션 범위 밖).
+
+## [2026-08-31] D-LAUNCHD-RUNTIME-TREE — 모든 launchd 잡의 실행 트리 = 런타임 worktree 고정 [infra][process]
+
+> RC-NEO4J-WORKER-TREE 전수 점검(ops 세션, 상신 `scratchpad/RC-NEO4J-WORKER-TREE_상신_20260831.md`)에서 확정.
+
+- **결정**: `~/Library/LaunchAgents/com.stockvis.*` 전 잡의 실행 트리는 **런타임 worktree(`~/worktrees/sv-{worker,api,web}-runtime`)로 고정**한다. 공유 본체 `~/Desktop/stock_vis`를 `WorkingDirectory`·`ProgramArguments`·래퍼의 `PROJECT_DIR` 어디에서도 가리키지 않는다. 선례 = `auto_agent_system/dogfood/com.stockvis.dogfood.plist`(`$HOME/worktrees/sv-worker-runtime` 기준, #47 Desktop 사본 금지).
+- **Why**: 공유 본체는 세션마다 임의 브랜치·편집 상태로 존재한다(계약상 커밋 금지 트리). 여기서 데몬이 돌면 **아무도 배포하지 않은 코드가 프로덕션 DB에 쓴다**. 실측: `celery-worker-neo4j`가 Desktop 트리(behind 711)로 **11일간 가동** — RC-A-1 v3.0([0,1] 눈금·`score_version` 3.0) 정규화가 끝난 DB에 구 눈금([0,100]) 코드가 쓸 수 있는 상태였다. 08-31 배포창 ②에서 발견해 정지시키지 않았으면 실오염.
+- **범위 규칙 ⑴ — plist만으로는 불충분**: 래퍼 스크립트가 `PROJECT_DIR`을 하드코딩하면 plist가 런타임 트리를 가리켜도 **스크립트가 다시 공유 본체로 `cd`** 한다. 따라서 래퍼는 `PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"` **self-locate**로 도출한다(선례 `scripts/verify-pair.sh` — OPS-VERIFY-EXEC-TREE 개정문1). 절대경로로 런타임 트리를 못 박는 방식(`celery-worker.sh`·`celery-beat.sh`)도 규칙 충족이나, 신규·교정 대상은 self-locate를 기본으로 한다.
+- **범위 규칙 ⑵ — 읽기 전용 잡도 대상**: `pg-backup`처럼 DB 쓰기가 없는 잡도 공유 본체의 `.env`를 읽으면 트리 간 `.env` drift 시 **엉뚱한 DB를 백업**(조용한 실패)한다. 오염 위험이 없다고 예외로 두지 않는다.
+- **순서 규칙**: watchdog은 감시 대상보다 **나중에** 올린다. 미교정 상태의 잡을 watchdog이 `launchctl kickstart` 해버린다(실측: 09:34~12:11 5분 주기 재기동 시도 + 경보 메일 반복).
+- **집행 규율**: plist 편집·`bootout`/`bootstrap`·서비스 기동은 **에이전트 자기 집행 금지** — 상신 후 병진 수동([[feedback_service_op_submit_not_execute]]). 기동 전 안전 게이트 = 런타임 트리 HEAD가 해당 배포 커밋을 포함하는지 `git merge-base --is-ancestor`로 확인.
+- **단일 출처**: 이 규칙은 repo 하네스에만 둔다(규약 10장 — 코어 복제 금지).
+- **이행 @`9a17e324`(2026-08-31, RC-EXEC-TREE-LAND)**: 래퍼 3건(`celery-worker-neo4j.sh`·`celery-watchdog.sh`·`pg-backup.sh`)에 self-locate 적용 완료. 실행 라인 변경 1/1×3(행위보존 — Desktop 트리에서 실행하면 종전과 동일 경로 도출). plist 3건은 `scripts/ops/launchd/*.plist.proposed`로 대기, 교체·bootstrap은 병진 수동(상신 `scratchpad/RC-NEO4J-WORKER-TREE_상신_20260831.md`).
+- **실측 정정(결함 C)**: 런타임 트리 `.env`는 Desktop 본체 `.env`를 가리키는 **심링크**(worker·api 공통) → 트리 간 `.env` drift는 현 구성에서 발생 불가. `pg-backup` 교정 목적은 위험 제거가 아니라 **규칙 일관성**. 다만 심링크가 본체에 의존하는 사실은 별건 등재(`OPS-ENV-SYMLINK-DEPENDENCY`).
