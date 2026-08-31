@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { CalendarDays, Plus } from 'lucide-react'
 
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { MonitorListCard } from '@/components/monitor/MonitorListCard'
@@ -189,13 +189,21 @@ function MonitorListContent() {
           <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Monitor</h1>
           <p className="text-sm text-gray-500">내 모니터링</p>
         </div>
-        <Link
-          href="/monitor/new"
-          data-guide="monitor.new"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <Plus size={16} /> 새 모니터
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/monitor/calendar"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            <CalendarDays size={16} /> 이벤트 캘린더
+          </Link>
+          <Link
+            href="/monitor/new"
+            data-guide="monitor.new"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Plus size={16} /> 새 모니터
+          </Link>
+        </div>
       </div>
 
       {!isLoading && !isError && (monitors?.length ?? 0) > 0 && (
