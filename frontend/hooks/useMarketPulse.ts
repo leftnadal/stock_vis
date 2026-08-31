@@ -47,8 +47,12 @@ function saveCachedData(data: MarketPulseDashboard): void {
  * Market Pulse 데이터 조회 훅
  * - localStorage 캐시로 즉시 표시 (클라이언트에서만)
  * - 백그라운드 리페치로 최신 데이터 갱신
+ *
+ * @param opts.timeoutMs 지정 시 요청 타임아웃(허브 완화용, additive).
+ *   미지정 = 기존 동작 그대로(v1 페이지 행위 보존).
  */
-export function useMarketPulse() {
+export function useMarketPulse(opts?: { timeoutMs?: number }) {
+  const timeoutMs = opts?.timeoutMs;
   // Hydration 이후에만 localStorage 캐시 사용
   const [mounted, setMounted] = useState(false);
   const [cachedData, setCachedData] = useState<MarketPulseDashboard | undefined>(undefined);
@@ -63,7 +67,7 @@ export function useMarketPulse() {
 
   const query = useQuery<MarketPulseDashboard>({
     queryKey: ['market-pulse'],
-    queryFn: () => macroService.getMarketPulse(),
+    queryFn: () => macroService.getMarketPulse(timeoutMs ? { timeoutMs } : undefined),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchInterval: 60 * 1000,

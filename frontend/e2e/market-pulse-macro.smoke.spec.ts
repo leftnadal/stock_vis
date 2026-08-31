@@ -41,8 +41,10 @@ test.describe('거시 근거 허브 안전망', () => {
     // 무버스 탭 = 준비 중(비활성)
     await expect(page.getByText('준비 중')).toBeVisible()
 
-    // 전면 에러 부재
-    await expect(page.getByText('불러오지 못했습니다.')).toHaveCount(0)
+    // 전면 에러(준비 중 안내) 부재 — 실데이터 렌더 시엔 안 나와야 함
+    await expect(
+      page.getByText('거시 데이터를 준비 중입니다 — 잠시 후 자동으로 다시 시도합니다.'),
+    ).toHaveCount(0)
 
     // 가로 스크롤 부재
     const overflow = await page.evaluate(
