@@ -1558,3 +1558,13 @@
 - ✅ **[EVT-CORR-3] 보정3 완료** — 재관측 시 stale→scheduled 복원(`d2bd219b`). 47행 오표시(EARNINGS 41·DIV 6)는 배포 후 수집기 재관측 시 자가치유. **배포=worker_sync(수집기 변경) 별도 병진 필요.**
 - 📸 **[EVT-IMPL-4-SHOT] 사용자 캡처 경로로 이관** — 시각 스크린샷은 환경 BLOCKED(Claude-in-Chrome 확장 미연결·헤드리스 SIGKILL) → 사용자가 로그인 브라우저에서 `/monitor/calendar`(범위 기본·둘 다)+홈 EventStrip 캡처. 배포 라이브 확인 완료(daphne 401·:3000 200·인증 API 실데이터 정상).
 - 🎛️ **[EVT-FE-TUNE-1 후보] 캘린더 거시 밀도** — 실데이터 캘린더 macro 94(9월 첫주 critical 클러스터: JOLTS·ISM·ADP·NFP…)로 조밀. 기본 유형 필터/접기·거시 중요도 기본 상향(critical만?)·"주요 거시만" 토글 등 밀도 완화 UX 검토(백로그).
+
+## MIG-BUNDLE-1 종결 (2026-08-31, worktree sv-mig-bundle-1, main `78c6b641`)
+
+> 스키마 번들 3건. 병진 관문 정제·migrate 완료·CC L-3 검증 GREEN. 상세 결정 = [[DECISIONS]] D-SELFLOOP-DBCONSTRAINT·D-CS-UNIVERSE-EXCLUDE-FLAG·D-CS-STORY-ACTIVITY-CACHE.
+
+- ✅ **SELFLOOP-DBCONSTRAINT** (A) — a≠b CheckConstraint 3모델(chainsight 0034) + skip_self_loop 로그 가드 3지점 + normalize_self_loops 정제(RC13+RPS649+Neo4j16 제거, 병진 실행). 검증: 3테이블 IntegrityError.
+- ✅ **CS-UNIVERSE-EXCLUDE-FLAG** (B) — Stock.universe_excluded(stocks 0017)+데이터 승격(0018·OKLL/IREG/GEVG) + mindmap_views 전환 + 상수 제거. 검증: 행위보존 754==754.
+- ✅ **CS-STORY-ACTIVITY-CACHE** (C) — SymbolStoryActivity(chainsight 0035)+물질화 태스크·커맨드+캐시우선 서빙+전역조회. 검증: 31,978행/35.75초·전역조회 0.7ms·캐시 3.9ms vs 라이브 55ms.
+- 🔴 **[MIG-BUNDLE-1 관문②]** 병진 잔여 — `register_chainsight_beats`(chainsight-materialize-story-activity ET 12:00 등록) + **worker 재시작**([[lesson_celery_task_registration]]).
+- 🟢 **S2 착수 준비 완료** — 캐시·전역조회·(-activity_ratio) 인덱스 = R2-S2 전역 활동 뷰 소스 완비.
