@@ -957,9 +957,15 @@ def _parse_fmp_date(value):
 
 
 def _persist_event(norm, dry_run):
-    """정규화 1행 → 원장 upsert(비-dry_run). 반환: 'created'|'updated'|'occurred'|'would_write'.
+    """정규화 1행 → 원장 upsert(비-dry_run). 반환: 'created'|'updated'|'occurred'|'restored'|'would_write'.
 
     dry_run이면 DB 무접촉 — 'would_write'만 반환.
+
+    상태 전이(EVT-CORR-3):
+      - eps_actual null→값 → occurred (상향, downgrade 없음).
+      - 재관측인데 기존 status=stale → scheduled 복원. 재관측 = FMP가 이 (type,symbol,date)를
+        다시 응답 = 소실 아님 → 스윕 오탐 치유. occurred 우선(actual 있으면 occurred가 이김).
+        수집기 재실행만으로 과거 오표시 stale(0-5⑹ a: 재관측했는데 stale) 자가치유.
     """
     from .models import CalendarEvent
 
@@ -985,6 +991,11 @@ def _persist_event(norm, dry_run):
         obj.status = CalendarEvent.Status.OCCURRED
         obj.save(update_fields=["status"])
         return "occurred"
+    # 재관측 stale→scheduled 복원 (EVT-CORR-3): 소실 오탐 치유. occurred는 위에서 이미 처리됨.
+    if not created and obj.status == CalendarEvent.Status.STALE:
+        obj.status = CalendarEvent.Status.SCHEDULED
+        obj.save(update_fields=["status"])
+        return "restored"
     return "created" if created else "updated"
 
 
