@@ -178,17 +178,54 @@ class TestSessionAndKst:
         assert by["AM"]["session"] == "AMC"
         assert by["AM"]["event_dt_kst"].startswith("2026-09-05T05:30:00+09:00")
 
-    def test_macro_time_kst(self, user, db):
+    def test_macro_time_utc_to_et_kst_edt(self, user, db):
+        # CORR-4: event_time = UTC. 12:30 UTC → EDT(-4) 08:30 ET → KST 21:30 (2026-09-11 = EDT).
         EconomicEvent.objects.create(
             event_id="cpi-2026-09", title="CPI", country="US", event_date=date(2026, 9, 11),
-            event_time=time(8, 30), importance=EconomicEvent.EventImportance.CRITICAL,
+            event_time=time(12, 30), importance=EconomicEvent.EventImportance.CRITICAL,
             forecast_value="2.9", previous_value="2.7",
         )
         feed = build_event_feed(user, start=START, end=END, scope="monitor")
         mac = next(it for it in feed["items"] if it["kind"] == "macro")
         assert mac["event_time_et"] == "08:30"
-        # 08:30 ET(EDT) → 21:30 KST 같은 날
+        assert mac["detail"]["event_time_utc"] == "12:30"
         assert mac["event_dt_kst"].startswith("2026-09-11T21:30:00+09:00")
+        assert mac["event_date_et"] == "2026-09-11"
+
+    def test_macro_time_utc_to_et_est(self, user, db):
+        # EST(-5): 2026-11-20 은 EST. 13:30 UTC → 08:30 ET → KST 22:30.
+        EconomicEvent.objects.create(
+            event_id="claims-2026-11", title="Initial Jobless Claims", country="US",
+            event_date=date(2026, 11, 20), event_time=time(13, 30),
+            importance=EconomicEvent.EventImportance.HIGH, forecast_value="220",
+        )
+        feed = build_event_feed(user, start=START, end=END, scope="monitor")
+        mac = next(it for it in feed["items"] if it["event_date_et"] == "2026-11-20")
+        assert mac["event_time_et"] == "08:30"
+        assert mac["event_dt_kst"].startswith("2026-11-20T22:30:00+09:00")
+
+    def test_macro_date_boundary_shift(self, user, db):
+        # UTC 02:00 on 09-11 → EDT 22:00 on 09-10 (전날 ET). event_date_et·정렬이 ET 날짜.
+        EconomicEvent.objects.create(
+            event_id="latenight", title="Fed Speech", country="US", event_date=date(2026, 9, 11),
+            event_time=time(2, 0), importance=EconomicEvent.EventImportance.HIGH,
+        )
+        feed = build_event_feed(user, start=START, end=END, scope="monitor")
+        mac = next(it for it in feed["items"] if it["title"] == "Fed Speech")
+        assert mac["event_date_et"] == "2026-09-10"  # 전날로 이동
+        assert mac["event_time_et"] == "22:00"
+
+    def test_macro_no_time_keeps_date_only(self, user, db):
+        EconomicEvent.objects.create(
+            event_id="notime", title="GDP", country="US", event_date=date(2026, 9, 15),
+            event_time=None, importance=EconomicEvent.EventImportance.CRITICAL,
+        )
+        feed = build_event_feed(user, start=START, end=END, scope="monitor")
+        mac = next(it for it in feed["items"] if it["title"] == "GDP")
+        assert mac["event_time_et"] is None
+        assert mac["event_dt_kst"] is None
+        assert mac["event_date_et"] == "2026-09-15"
+        assert mac["detail"]["event_time_utc"] is None
         assert mac["badges"] == ["critical"] or "critical" in mac["badges"]
 
 
