@@ -7129,3 +7129,13 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **pulse 계약 FREEZE 준수**: 응답 스키마·serializer·throttle **무변경**(MP-UNIFY 2단 FREEZE). 백엔드 diff 0.
 - **실측 근거**: 위젯 4종 전부 props-pure(self-fetch 0)·`@/types/macro` 타입. pulse=AllowAny(무인증 raw fetch)·`market_pulse_user`(v2·120/min) **미공유** → 허브 진입 = macro/pulse 1호출(refetchInterval 60s, 홈과 별개 스코프). 홈 fetch 표면 0 증가(CTA=Link).
 - **테스트 계약 진화(부기)**: guide `draft 잔류 없음` 테스트 → **검수 대기 allowlist**(marketPulse.macro)로 완화 — directive의 `reviewStatus:'draft'`(병진 검수 대기)와 repo 게이트 조화. stray draft는 여전히 실패(게이트 유지).
+
+## [2026-08-31] D-RC-C1-STORAGE — backbone 뷰 = compute-on-read(신규 모델·migration 0) [backend][chainsight]
+
+> RC-C-1 슬라이스 1. §0-6 중복 판정(⑲ SymbolCentrality 스택 라이브 36,419행) HALT → 병진 처분(옵션 C).
+
+- **결정**: backbone 뷰의 중심성은 **compute-on-read** — 지속 모델·마이그레이션·beat 없이 요청 시 `services.centrality.compute_backbone_centrality`로 582노드/2,199엣지 부분그래프를 즉석 계산(실측 174ms) + 15분 캐시. ⑲ `SymbolCentrality`(RC 전량·일별 append)는 **불가침**.
+- **Why**: (1) 복제 0 — 지시서 원안 신규 모델은 ⑲와 동일 이름·로직 중복(§0-6 "복제 금지" 위반). (2) 배포 발자국 0 — RC-A-1 배포 직후라 migration/beat 추가 없이 착지. (3) 582/2,365 엣지는 즉석 계산 충분(174ms ≪ 15분 캐시). ⑲와 backbone은 **다른 그래프**(전량 1,234노드 vs 활성 해자 582노드)라 한 모델 혼재 저장 시 궤적 오염.
+- **구현**: ⑲ `compute_centrality`에 `want_degree`/`want_betweenness` 파라미터 추가(additive, 기본=⑲ 원 동작 보존) + `compute_backbone_centrality` 어댑터(status∈{confirmed,probable} AND max>0, self-loop 제외). PEER outlier 2행은 status='hidden'으로 필터에서 자연 제외(별도 코드 불요). θ = `score_scale.GRADE_CONFIRMED_MIN` 단일 소스.
+- **후속(B 옵션)**: 궤적(순위 변동) 수요 발생 시 discriminator append(기존 모델에 `graph_scope`+`degree`+`score_version`, unique=(symbol,as_of,scope)) — TASKQUEUE 등재. **forward-only·소급 백필 금지**. 트리거 = backbone 순위 변동 관측 수요.
+- **스펙 조정(2-1↔3-1)**: API edges = θ≥0.85만(2-1 계약 진실). FE는 실선 렌더. "그 외 상위 심볼 간 엣지 점선"(3-1)은 sub-θ 엣지 미반환이라 2-1 계약 확장 필요 → **후속 backlog**(dash 분기 로직은 구현 완료, 데이터만 대기).

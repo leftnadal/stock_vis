@@ -1555,3 +1555,13 @@
 - 💤 **OPS-HEALTHCHECK-PLIST-TREE** (후보 등재만 — **구현 금지**) — `health_check`에 "launchd plist 실행 트리 정합" 점검 추가. 검사 내용 = `~/Library/LaunchAgents/com.stockvis.*.plist`의 `WorkingDirectory`/`ProgramArguments` + 참조 래퍼의 `PROJECT_DIR`이 `Desktop/stock_vis`를 가리키지 않는가. 이번 결함이 11일간 무탐지였던 이유가 자동 점검 부재. **착수는 별도 승인 후.**
 - 🔁 **[EVT-N-REEVAL] 안정 임계 N 재평가 트리거** — 현재 N=7(§0-5⑵ p50, 단 count=7에 시드 백필 스파이크 9,964행). **순수 일간 발화 14회 누적(≈2026-09-13) 후** scheduled `date_observed_count` 실분포로 N 재산정(시드 흔적 배제). 재산정 시 event_feed.STABLE_N 갱신 + trust 라벨 임계 재확정.
 - ✅ **[EVT stale 기본숨김 처분]** 디렉터 2026-08-31: FE stale 기본 숨김 **off 확정**(FMP 최신 응답 기준 = 미반환은 숨김이 정직). stale 복원 결함은 EVT-CORR-3(보정3)로 별도 처리. FE 지시서 기본값(off) = 최종값.
+
+## RC-C-1 backbone 뷰 슬라이스 1 (2026-08-31)
+
+> 처분 D-RC-C1-STORAGE=옵션 C(compute-on-read). worktree `sv-rc-c1`[`monorepo/sess-rc-c1`] base origin/main `1ccb6769`.
+
+- ✅ **RC-C-1 슬라이스 1 완료** — BE(compute-on-read 어댑터 + `/api/v1/chainsight/backbone/`) `ec5e18ed` + FE(`/chainsight/backbone` 뷰) `3e7b15c3`. 테스트 BE 15(chainsight+arch 751 GREEN)·FE vitest 9·tsc0·lint순증0. 4-2 실측 582노드/2199엣지/174ms·뷰통합 HTTP200·미인증401. **push·migrate·beat 없음(옵션 C)** — push만 D-PUSH-DELEG 대기.
+- 🌱 **[RC-C1-B] 궤적 discriminator append (후속 옵션, 트리거 대기)** — backbone **순위 변동 관측 수요** 발생 시 기존 SymbolCentrality에 `graph_scope`(all/active_moat)+`degree`+`score_version` 추가, unique=(symbol,as_of,scope). **forward-only·소급 백필 금지**. 옵션 C(compute-on-read)로는 궤적 부재 → 시계열 순위 변동 필요 시 승격.
+- 📝 **[RC-C1-DOTTED] sub-θ 점선 엣지 (backlog, 2-1 계약 확장 필요)** — STEP 3-1 "그 외 상위 심볼 간 엣지 점선"은 현 `/backbone/`가 θ≥0.85만 반환(2-1 계약 진실)이라 미충족. FE dash 분기 로직은 **구현 완료**(BackboneGraph, score<θ→[4,4]), 데이터만 대기. 승격 시 API에 induced sub-θ 엣지 리스트 additive.
+- 📝 **[RC-C1-GUIDE] chainsight.backbone 가이드 콘텐츠** — FE에 `data-guide="chainsight.backbone"` 루트 앵커만 부여(3-3). 콘텐츠(region 3~7·reviewStatus)는 GUIDE 트랙 슬라이스로 이관.
+- 📸 **[RC-C1-SHOT] 라이브 브라우저 렌더 잔여** — 조건: route 미배포(push+web 리빌드) → 풀 dev 스택(worktree Django+Next)+인증 필요. 이번 세션 blocker와 동일(:3000=prod빌드 신규 미포함·:18765=운영 API 신규 route 없음). **뷰 통합 증거로 대체**(APIRequestFactory HTTP200·582/2199·미인증401·`scratchpad/rc_c1_view_integration.py`). 배포 후 `/chainsight/backbone` 2장(백본·엣지 선택).
