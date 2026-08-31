@@ -1555,3 +1555,13 @@
 - 💤 **OPS-HEALTHCHECK-PLIST-TREE** (후보 등재만 — **구현 금지**) — `health_check`에 "launchd plist 실행 트리 정합" 점검 추가. 검사 내용 = `~/Library/LaunchAgents/com.stockvis.*.plist`의 `WorkingDirectory`/`ProgramArguments` + 참조 래퍼의 `PROJECT_DIR`이 `Desktop/stock_vis`를 가리키지 않는가. 이번 결함이 11일간 무탐지였던 이유가 자동 점검 부재. **착수는 별도 승인 후.**
 - 🔁 **[EVT-N-REEVAL] 안정 임계 N 재평가 트리거** — 현재 N=7(§0-5⑵ p50, 단 count=7에 시드 백필 스파이크 9,964행). **순수 일간 발화 14회 누적(≈2026-09-13) 후** scheduled `date_observed_count` 실분포로 N 재산정(시드 흔적 배제). 재산정 시 event_feed.STABLE_N 갱신 + trust 라벨 임계 재확정.
 - ✅ **[EVT stale 기본숨김 처분]** 디렉터 2026-08-31: FE stale 기본 숨김 **off 확정**(FMP 최신 응답 기준 = 미반환은 숨김이 정직). stale 복원 결함은 EVT-CORR-3(보정3)로 별도 처리. FE 지시서 기본값(off) = 최종값.
+
+## MIG-BUNDLE-1 종결 (2026-08-31, worktree sv-mig-bundle-1, main `78c6b641`)
+
+> 스키마 번들 3건. 병진 관문 정제·migrate 완료·CC L-3 검증 GREEN. 상세 결정 = [[DECISIONS]] D-SELFLOOP-DBCONSTRAINT·D-CS-UNIVERSE-EXCLUDE-FLAG·D-CS-STORY-ACTIVITY-CACHE.
+
+- ✅ **SELFLOOP-DBCONSTRAINT** (A) — a≠b CheckConstraint 3모델(chainsight 0034) + skip_self_loop 로그 가드 3지점 + normalize_self_loops 정제(RC13+RPS649+Neo4j16 제거, 병진 실행). 검증: 3테이블 IntegrityError.
+- ✅ **CS-UNIVERSE-EXCLUDE-FLAG** (B) — Stock.universe_excluded(stocks 0017)+데이터 승격(0018·OKLL/IREG/GEVG) + mindmap_views 전환 + 상수 제거. 검증: 행위보존 754==754.
+- ✅ **CS-STORY-ACTIVITY-CACHE** (C) — SymbolStoryActivity(chainsight 0035)+물질화 태스크·커맨드+캐시우선 서빙+전역조회. 검증: 31,978행/35.75초·전역조회 0.7ms·캐시 3.9ms vs 라이브 55ms.
+- 🔴 **[MIG-BUNDLE-1 관문②]** 병진 잔여 — `register_chainsight_beats`(chainsight-materialize-story-activity ET 12:00 등록) + **worker 재시작**([[lesson_celery_task_registration]]).
+- 🟢 **S2 착수 준비 완료** — 캐시·전역조회·(-activity_ratio) 인덱스 = R2-S2 전역 활동 뷰 소스 완비.

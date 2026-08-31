@@ -7129,3 +7129,27 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **pulse 계약 FREEZE 준수**: 응답 스키마·serializer·throttle **무변경**(MP-UNIFY 2단 FREEZE). 백엔드 diff 0.
 - **실측 근거**: 위젯 4종 전부 props-pure(self-fetch 0)·`@/types/macro` 타입. pulse=AllowAny(무인증 raw fetch)·`market_pulse_user`(v2·120/min) **미공유** → 허브 진입 = macro/pulse 1호출(refetchInterval 60s, 홈과 별개 스코프). 홈 fetch 표면 0 증가(CTA=Link).
 - **테스트 계약 진화(부기)**: guide `draft 잔류 없음` 테스트 → **검수 대기 allowlist**(marketPulse.macro)로 완화 — directive의 `reviewStatus:'draft'`(병진 검수 대기)와 repo 게이트 조화. stray draft는 여전히 실패(게이트 유지).
+
+## [2026-08-31] D-SELFLOOP-DBCONSTRAINT — 관계 자기루프 a≠b = DB CheckConstraint 승격 [backend][chainsight]
+
+> MIG-BUNDLE-1 A. 앱 가드(SelfLoopError)만으로는 bulk_create·레거시 잔존을 못 막아 DB로 승격.
+
+- **결정**: CoMentionEdge·RelationConfidence(symbol_a≠symbol_b), RelationPairSnapshot(canonical_a≠canonical_b)에 `CheckConstraint`(마이그 chainsight 0034). 앱 `save()` SelfLoopError는 최종 방어선으로 유지.
+- **Why**: STEP0 실측 RC 자기루프 13(전부 confirmed·serving_layer='excluded'→카드 미서빙)+RPS 파생 649. 근본=10-K 공급망 seed가 필러 자기참조 엔티티(자회사/OP/브랜드)를 필러 티커로 해소(a==b). 상류 3지점(주간 배치·10-K seed·8-K)은 이미 a≠b skip 보유 → 결핍은 관측성뿐 → skip_self_loop 헬퍼로 구조화 로그 승격(행위보존). bulk_create 우회 경로 없음 확인.
+- **정제 선행**: `normalize_self_loops` 커맨드(아카이브·트랜잭션·Neo4j 엣지 삭제·사후검증)로 13+649+Neo4j16 제거 후 제약 적용(2026-08-31 병진 실행 완료). 자기루프 정제는 병진 결정(행 삭제=CC 자율 금지).
+- **pair_aggregation 의도적 무가드**: RPS 제약 위반 시 fail-loud(RC 자기루프 재발 신호를 silent skip으로 은폐하지 않음).
+
+## [2026-08-31] D-CS-UNIVERSE-EXCLUDE-FLAG — 유니버스 제외 = 종목 플래그(2단) [backend][chainsight][stocks]
+
+> MIG-BUNDLE-1 B. 임시 1단 industry 상수 필터를 종목 단위 플래그로 승격·상수 제거(하이브리드 DoD).
+
+- **결정**: `Stock.universe_excluded`(bool)+`exclude_reason`(코드). 데이터 마이그(stocks 0018)는 **industry 멤버십으로 승격**(옛 제외 집합과 정확히 동일=행위보존). mindmap_views 소비 2지점을 flag 필터로 전환, `UNIVERSE_EXCLUDED_INDUSTRIES` 상수·주석·import 전부 제거.
+- **Why**: 제외 판정을 종목 단위로 모아 사유가 늘어도 필드만 세팅. 실측: industry "Asset Management - Leveraged" = 정확히 OKLL·IREG·GEVG 3종. 검증(병진 migrate 후): 옛 필터=새 flag 필터=754 종목·동일 집합.
+- **의미 이동**: 제외는 이제 flag 기준(industry 무관) — 신규 레버리지 ETF는 명시 플래그 필요(2단 설계 tradeoff).
+
+## [2026-08-31] D-CS-STORY-ACTIVITY-CACHE — co-mention 활동 일일 물질화 캐시 [backend][chainsight]
+
+> MIG-BUNDLE-1 C. R2-S2 선행. 라이브 NewsEntity 7일 집계를 일일 스냅샷으로 물질화.
+
+- **결정**: `SymbolStoryActivity`(chain_sight — CoMentionEdge 파생·전용, shared 아님). `get_symbol_story_threads`가 캐시 우선(신선≤48h)·부재/미갱신 시 라이브 fallback(빈 화면 금지). 물질화 태스크는 `_compute_story_threads_live` 재사용(중복 구현 금지). beat=chainsight-materialize-story-activity(ET 12:00 매일).
+- **Why 실측(병진 검증)**: 31,978행/5,034종목·물질화 35.75초. 전역 ratio 상위 조회(-activity_ratio 인덱스)=0.65~0.73ms(S2 전역 활동 뷰 입력). 카드 서빙 캐시 3.9ms vs 라이브 55.4ms(~14배)·형상 IDENTICAL.
