@@ -6,6 +6,7 @@
 #   1. Worker (default)  — `celery -A config worker -l info --concurrency=4`
 #   2. Worker (neo4j)    — `celery -A config worker -Q neo4j`
 #   3. Beat              — `celery -A config beat`
+#   4. Web (daphne)      — `daphne -p 18765` (API 관문, RC-WATCHDOG-DAPHNE-COVERAGE)
 #
 # 동작:
 #   - 다운 감지 → launchctl kickstart로 1차 재시작 시도
@@ -165,5 +166,10 @@ check_service "Worker (neo4j)" "celery -A config worker -Q neo4j" "com.stockvis.
 
 # Beat
 check_service "Beat" "celery -A config beat" "com.stockvis.celery-beat"
+
+# Web (daphne): API 관문 :18765. plist KeepAlive=true가 프로세스 사망은 되살리므로
+# 여기서의 역할은 "경보 + 보조 복구" — 잡이 bootout된 경우(KeepAlive 무력)를 잡는다.
+# 2026-08-31 12:22~12:34 API 12분 다운이 정확히 그 경우였고 감시 대상이 아니라 무경보였다.
+check_service "Web (daphne)" "daphne -p 18765" "com.stockvis.web"
 
 echo "[$(date)] Watchdog check completed"
