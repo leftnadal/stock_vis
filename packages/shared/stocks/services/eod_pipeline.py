@@ -276,6 +276,42 @@ class EODPipeline:
 
         return log
 
+    def _run_freshness_gate(self, target_date: date) -> dict:
+        """EODSIG-FRESH-GATE (C안) — 신호 계산 전 유니버스 심볼의 target_date DailyPrice 선보충.
+
+        갭(OBS-BRIEFING-0827 O1): 비SP500 감시등록 종목의 당일 가격은 monitor refresh의
+        ensure_price_freshness(18:45 ET)로 도착 → EOD 신호 생성(18:30 ET)보다 늦어 매일 누락.
+        여기서 신호 생성 직전에 같은 ensure_price_freshness를 재사용해 부재 심볼만 온디맨드 보충한다.
+
+        재사용 = **동적 lookup**(importlib) — `apps.monitor.services.pipeline.ensure_price_freshness`를
+        정적 import하면 shared→apps 경계 가드(test_shared_boundary·health_check, 둘 다 ast.walk)가
+        신규 위반으로 FAIL한다. 동적 lookup은 Call 노드라 미검출 = BOUNDARY-2(#3, apps.get_model 동적
+        lookup) 표준 패턴과 동류. 대체 구현(로직 복제)이 아니라 동일 함수 재사용이다.
+
+        멱등: ensure_price_freshness가 fresh 심볼(SP500=18:00 수집분)은 스킵 → 추가 API 호출 0.
+        격리: 심볼별 실패는 함수 내부에서 격리되고, 게이트 전체 예외도 여기서 삼켜 신호
+        파이프라인(특히 SP500 경로)을 절대 중단시키지 않는다(#65 원칙 준용).
+        """
+        import importlib
+
+        try:
+            symbols = eod_universe_symbols()
+            ensure_price_freshness = importlib.import_module(
+                "apps.monitor.services.pipeline"
+            ).ensure_price_freshness
+            summary = ensure_price_freshness(symbols, as_of_date=target_date)
+        except Exception:  # noqa: BLE001 — 게이트 전면 격리, 신호 파이프라인 보호
+            logger.exception(
+                "freshness_gate: 게이트 실패(비치명) — 신선도 보충 없이 신호 생성 계속"
+            )
+            return {"synced": [], "failed": [], "skipped_fresh": []}
+
+        for sym in summary.get("synced", []):
+            logger.info("freshness_gate: fetched %s for %s", sym, target_date)
+        for sym in summary.get("failed", []):
+            logger.warning("freshness_gate: skip %s (sync_failed)", sym)
+        return summary
+
     def _stage_ingest(self, target_date: date) -> tuple[pd.DataFrame, dict]:
         """
         Stage 1: DailyPrice에서 유니버스(SP500 ∪ 감시등록) 데이터 로드 + 품질 체크.
@@ -283,6 +319,8 @@ class EODPipeline:
         Returns:
             (raw_df, ingest_quality_dict)
         """
+        # EODSIG-FRESH-GATE (C안): 신호 계산 전 당일 가격 부재 심볼 선보충(부재분만·격리).
+        self._run_freshness_gate(target_date)
         calculator = EODSignalCalculator()
         raw_df = calculator._load_price_data(target_date)
 

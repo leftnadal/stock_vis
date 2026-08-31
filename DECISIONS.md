@@ -28,12 +28,32 @@
 - ⑸-b **per-stock 확장 패널 부재** → "패널 기술 칸(4값 전체)"을 StockRow 내 기술 상세 라인으로 대체(칩 ≤2 절제·행이 곧 per-stock 표면).
 
 **How to apply**: 정정·관찰은 후속 슬라이스(FUND-BE·TELEM) 참조 정본. #118 보강은 차기 LAND 양식 STEP 0에 반영(health 기준선=목표 트리). cf. [[project_scanner_ux_recon]].
+## [2026-08-31] D-EODSIG-FRESH-GATE — EOD 신호 beat 신선도 게이트 (C안) [monitor][stocks][infra]
+
+> 출처: DIRECTIVE-EODSIG-FRESH-GATE-0828. 갭 사실 = OBS-BRIEFING-0827 O1. **배포 미집행**(구현·테스트·커밋까지).
+
+**결정**: EOD 신호 생성 태스크(`run_eod_pipeline`→`EODPipeline._stage_ingest`)가 신호 계산 직전, 유니버스 심볼 중 당일 DailyPrice 부재분을 **`ensure_price_freshness`(monitor refresh 18:45와 동일 함수) 재사용**으로 온디맨드 선보충한 뒤 계산을 계속한다. = C안(신호 beat 자체 신선도 게이트, 가중 0.855).
+
+- **갭 사실(OBS-BRIEFING-0827 O1 실측)**: 비SP500 감시등록 3종(TLN·IONQ·IREN)의 08-27 EODSignal = 0/3. created_at 증거 — SP500(PLTR) 08-27 DailyPrice 18:05 ET(18:00 가격 sync) vs 타겟 3종 18:45 ET(monitor refresh ensure_price_freshness). EOD 신호 파이프라인 18:30 ET 실행 → 타겟 가격 미도착 순회 → 매일 daily-forward 누락.
+- **채택 C (0.855)**: 신호 생성 지점에서 자기 입력 신선도 보장. 안전판이 신호층 상주(소비자 앱 늘어도 유효)·ensure_price_freshness 재사용(신규 로직 0).
+- **기각 A (상류 조기 승격, 0.740)**: EOD 가격 sync(`sync_sp500_eod_prices` 18:00)를 감시 유니버스로 확장. **단 >30 tickers 또는 2번째 소비자 앱 도달 시 A로 승격**(반복 온디맨드 fetch 비효율 임계) — 그때도 본 게이트는 안전판 잔존.
+- **기각 B (advisor 역전, 0.390)**: advisor가 신호 부재를 역보정 — 근인 미해결·계약 오염.
+- **기각 D (브리핑 익일 지연, 0.665)**: 브리핑을 하루 늦춰 가격 도착 후 생성 — 사용자 최신성 저하.
+
+**Why**: 근인 = "신호 생성이 자기 입력(당일 가격) 신선도를 보장하지 않음". 신호 지점 게이트(C)는 그 계약을 지점에서 닫아 소비자 수·상류 스케줄과 무관하게 안전. ensure_price_freshness는 이미 심볼 격리(#65)·멱등(fresh 스킵=API 0)·StockSyncService 위임을 갖춘 검증 함수라 재사용이 최소 위험.
+
+**How to apply**:
+- 훅 = `packages/shared/stocks/services/eod_pipeline.py::EODPipeline._run_freshness_gate(target_date)`, `_stage_ingest`가 `_load_price_data` **직전** 호출. 부재 심볼만 fetch(멱등)·심볼별·게이트 전면 예외 격리(SP500 경로 불가침).
+- **재사용 메커니즘 = 동적 lookup(importlib)**: ensure_price_freshness가 `apps.monitor`에 있어 packages.shared에서 **정적 import 시 경계 가드(test_shared_boundary·health_check, 둘 다 ast.walk) 신규 위반 FAIL**. `importlib.import_module("apps.monitor.services.pipeline")`(Call 노드·ast 미검출)로 회피 — BOUNDARY-2(#3, apps.get_model 동적 lookup) 표준 패턴과 동류. **대체 구현(로직 복제) 아니라 동일 함수 재사용**. 경계 동결 #6(BOUNDARY-BURNDOWN-EOD)에 신규 부채 0. 향후 A안 승격 또는 ensure_price_freshness의 packages.shared 이설 시 정적 import로 환원 가능.
+- 시각 파라미터 = `as_of_date`(전건 일관), 게이트는 `target_date` 그대로 전달. 마이그레이션 무발생·기존 함수 시그니처 무변·beat/스케줄(18:30) 미접촉.
+- 로그 규격: `freshness_gate: fetched {symbol} for {date}` / `freshness_gate: skip {symbol} (sync_failed)`.
+- 테스트 = `tests/unit/stocks/test_eodsig_fresh_gate.py`(단위 4 + beat 경로 통합 1, 고정 앵커). 배포 = 별도 승인 게이트. cf. D-EODUNIV-S1S2-DEGEN·[[project_eoduniv_p15_v01]].
 
 ## [2026-08-27] D-EODUNIV-S1S2-DEGEN — 백필 구간 S1/S2 섹터 degeneracy 처분 A(기록·관찰) [monitor][stocks][observation]
 
 > 출처: DIRECTIVE-DECISIONS-REG-0827 E1. 사실 근거 = STEP0-RECON-0827 R1-7.
 
-**결정 (처분 A = 기록·관찰, 즉시 수리 안 함)**: EODUNIV-P15-V01 백필 커맨드(`backfill_eod_signals_universe`)가 생성한 비SP500 3종 EODSignal의 relation 시그널 S1(섹터상대강도)·S2(섹터소외주) **degeneracy를 즉시 수리하지 않는다**. daily-forward(전체 유니버스) **20거래일** 축적 후 S1/S2 발화율을 재측정하여 재평가한다. **재평가 트리거일 = 2026-08-27 + 20거래일.**
+**결정 (처분 A = 기록·관찰, 즉시 수리 안 함)**: EODUNIV-P15-V01 백필 커맨드(`backfill_eod_signals_universe`)가 생성한 비SP500 3종 EODSignal의 relation 시그널 S1(섹터상대강도)·S2(섹터소외주) **degeneracy를 즉시 수리하지 않는다**. daily-forward(전체 유니버스) **20거래일** 축적 후 S1/S2 발화율을 재측정하여 재평가한다. **[정정 2026-08-31, EODSIG-FRESH-GATE]** 기산일을 "2026-08-27"에서 **"D-EODSIG-FRESH-GATE 수리 배포일"로 리셋**한다 — 사유: 08-27~수리 전 구간은 신선도 갭(OBS-BRIEFING-0827 O1, 타겟 08-27 EODSignal 0/3)으로 타겟 daily-forward 관측점이 **아예 생성되지 않아** 20거래일 카운트의 분모가 없다. **재평가 트리거일 = 수리 배포일 + 20거래일(배포일은 배포 보고 시 기입).**
 
 - **사실(R1-7 실측)**: TLN 백필 구간(2025-08~2026-08-26, 286행) — **S1 발화 0 · S2 발화 0 · S4 1**. 원인 = 백필 시 심볼 스코프를 [대상종목 ∪ SPY]로 좁혀 섹터 피어(SP500 전체)가 부재 → 섹터 평균이 자기 자신으로 degenerate(EODUNIV-P15-V01 보고서 문서화 한계와 동일 근인). advisor가 실제 쓰는 3필드(composite/change_pct/dollar_vol)·나머지 11시그널은 무영향.
 - **기각: B(스코프 재정의 + 백필 재실행)** — 첫 daily-forward 관측을 오염시키고, 관측이 뒤집을 수 있는 결정을 조기 확정하는 위험.
