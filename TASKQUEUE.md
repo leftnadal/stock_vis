@@ -70,7 +70,7 @@
 
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |----|------|-------|------------|--------|-----------|
-| SMOKE-BROWSER-PATH | 브라우저 경로 재현 스모크 보강 — **재현 기준 = 분당 ~5회 "현실적 새로고침"**(사용자 실사용 상한)에서 429/전면에러 부재 관측. **하드리프레시 연타는 재현 대상 아님**(INC-P16-2 확정: 연타=외부 반복 문서 로드로 throttle 초과가 물리적 정상 — 이때 검증 대상은 "429 무증폭·2초 내 회복"뿐). 단건 curl은 이 유형을 **구조적으로 못 잡음**(200 정상)이 교훈 | @qa (browse) | ✅ INC-P16-1 랜딩(`9e2e98f3`, 08-26) | ✅ **done (P2-DLITE, 2026-08-29)** | `e2e/market-pulse-429.smoke.spec.ts` — ①현실 새로고침 5회 무증폭(로드당 5 일정)·②429 무재시도(overview 1회, retry:2였다면 3)·2초 내 회복(~680ms). route interception(단건 curl 한계 구조적 해소). cf. D-INC-P16-1·D-INC-P16-2·D-P2-ENTRY-1·common-bugs(채번 대기 INC-P16-1/2) |
+| SMOKE-BROWSER-PATH | 브라우저 경로 재현 스모크 보강 — **재현 기준 = 분당 ~5회 "현실적 새로고침"**(사용자 실사용 상한)에서 429/전면에러 부재 관측. **하드리프레시 연타는 재현 대상 아님**(INC-P16-2 확정: 연타=외부 반복 문서 로드로 throttle 초과가 물리적 정상 — 이때 검증 대상은 "429 무증폭·2초 내 회복"뿐). 단건 curl은 이 유형을 **구조적으로 못 잡음**(200 정상)이 교훈 | @qa (browse) | ✅ INC-P16-1 랜딩(`9e2e98f3`, 08-26) | ✅ **done (P2-DLITE, 2026-08-29)** | `e2e/market-pulse-429.smoke.spec.ts` — ①현실 새로고침 5회 무증폭(로드당 5 일정)·②429 무재시도(overview **1회**·단언 `≤1`로 조임[MGMT-BATCH-39: retry 회귀 감지력 복원])·2초 내 회복(~680ms). route interception(단건 curl 한계 구조적 해소). cf. D-INC-P16-1·D-INC-P16-2·D-P2-ENTRY-1·common-bugs #122/#123 |
 
 ## SCANNER-SELECT-UX 트랙 (2026-08-20 개설, D-SCANNER-SELECT-UX)
 

@@ -1613,7 +1613,7 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 ## 비-mgmt 세션 지시서의 common-bugs #NN 사전 지정 금지 — '채번 후보'로 작성, 번호는 mgmt 배치 실측+1 (#120, DSS-FLAT-OBS-1 2026-08-24) [harness][process][git]
 
 비-mgmt 세션 지시서에 common-bugs #NN 번호 사전 지정 금지. 비-mgmt 세션은 '채번 후보'로 작성하고 번호 부여는 mgmt 배치에서 실측+1로 수행(D-NUMBERING-MGMT-ONLY·훅 가드 준수). 실증: DSS-FLAT-OBS-1 커밋 2 훅 차단 (08-24).
-## 한 화면이 마운트에 N개 엔드포인트 동시 fetch + RQ 재시도 증폭 + 하드리프레시 반복 → throttle 초과 → 429 캐스케이드 → 게이팅 쿼리 isError → 전면 에러 (채번 대기, INC-P16-1 2026-08-24) `[frontend][infra][performance]`
+## 한 화면이 마운트에 N개 엔드포인트 동시 fetch + RQ 재시도 증폭 + 하드리프레시 반복 → throttle 초과 → 429 캐스케이드 → 게이팅 쿼리 isError → 전면 에러 (#122, INC-P16-1 2026-08-24) `[frontend][infra][performance]`
 
 **증상**: market-pulse-v2 페이지를 하드리프레시로 반복 로드하면 어느 순간 화면 전체가 "데이터를 불러오지 못했습니다"로 전환. 단건 curl로는 재현 안 됨(200 정상) — 브라우저 경로(동시 다엔드포인트 + refresh 누적)에서만 발생.
 
@@ -1700,7 +1700,7 @@ health WARN 유형 판정 기준 — (i) 환경·동기화 신호성 WARN (예: 
 
 **부기(같은 세션 실측)**: 계약 테스트에 임의 상한을 박으면 나중에 **승인된 콘텐츠를 자기 테스트가 막는다**. GUIDE-S1이 `regions 3~5개`로 둔 상한이 S1C에서 승인된 7영역 문구를 red로 만들었다 — 상한을 7로 완화하고 "S1의 5는 임의값"임을 주석에 남겼다. 계약 테스트의 수치 경계는 **근거가 있을 때만** 박을 것.
 
-## daphne access log(stdout·블록버퍼) vs error log(stderr·라인버퍼) desync → 로그 실시간 판독 시 "전부 200" 착시 (채번 대기, INC-P16-2/CLOSE 2026-08-27) `[infra][observability][ops]`
+## daphne access log(stdout·블록버퍼) vs error log(stderr·라인버퍼) desync → 로그 실시간 판독 시 "전부 200" 착시 (#123, INC-P16-2/CLOSE 2026-08-27) `[infra][observability][ops]`
 
 **증상**: 09:13 인시던트 로그 판독 시 `web.log`(access)는 09:13:20에서 끊겨 market-pulse 요청이 "전부 200·429 0건"으로 보였으나, `web-error.log`(Django logger)에는 같은 시각 09:13:21~23에 429("Too Many Requests") 18건이 존재. 두 소스가 429 경계에서 상반된 그림 → 잘못된 1차 판정 위험.
 
