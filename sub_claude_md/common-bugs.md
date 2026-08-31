@@ -1780,6 +1780,21 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 
 **실증**: `~/rc_pc_delete.py` 전환 후 1회 성공(1,356 엣지 삭제·잔존 0 자체 확인).
 
+## data-guide 앵커는 가이드 콘텐츠 슬라이스에서만 부여 — 기능 지시서는 앵커를 요구하지 않는다 (채번 후보, EVT-IMPL-4 2026-08-31) `[process][frontend][guide]`
+
+**증상**: 기능 페이지에 `data-guide="monitor.calendar"` 루트 앵커를 달았더니 `guideAnchors` 테스트가 orphan으로 red. 등록하려 하니 `guideData` 계약이 **region 3~7개 + `reviewStatus:'confirmed'` + draft 잔류 금지**를 강제 → draft 스텁도 1-region 스텁도 즉시 red.
+
+**원인**: guideAnchors(orphan 금지) + guideData(confirmed 전체 스크린 강제)가 앵커를 **confirmed 가이드 스크린에 강결합**. 기능 구현 중 앵커만 부여하면 필연적 red이거나 `confirmed`(=병진 검수 승인) 위조. `confirmed` 스크린은 야간 도그푸딩 채점 루브릭 단일출처(거버넌스)에 편입된다.
+
+**규율**: `data-guide` 앵커는 **가이드 콘텐츠 슬라이스(앵커+3~7 region 콘텐츠+병진 검수)에서만** 부여한다. 기능 지시서가 "앵커만 달라"고 해도 붙이지 않는다(orphan). 앵커와 콘텐츠는 한 슬라이스에서 함께 랜딩해 동기 유지.
+
+## 홈 스트립류 BFF: 조밀한 상위 소스가 희소 성분을 굶긴다 — 우선 보장 후 채우기 (채번 후보, EVT-IMPL-4 2026-08-31) `[backend][bff][ux]`
+
+**증상**: 이벤트 스트립이 12칸 전부 거시(macro)로 채워지고 휴장·어닝 티저가 사라짐(목업 '혼합' 계약 위반).
+
+**원인**: 45일 창에 거시 high+critical가 조밀(실측 ≥11) → 날짜순 단순 `items[:12]` cap이 희소 성분(휴장 2·티저 2)을 밀어냄.
+
+**규율**: 다성분 BFF 스트립은 **희소·고가치 성분(휴장·관심 티저)을 먼저 보장**하고 남는 슬롯을 조밀 성분(거시, critical→high)으로 채운 뒤 최종 날짜순 표시. 단순 정렬-cap 금지. (구현 `apps/dashboard/services/event_strip_service.py`, `2aa9f588`.)
 ## 주간 운영 지시서 dispatch 시점 = 대상 회차 발화 이후 — 발화 전 dispatch면 STEP 0 미발화 HALT (채번 후보, DSS-BEAT-1 2026-08-31) [process][harness][ops]
 
 주간 적재/집계 지시서의 dispatch 시점은 **대상 스냅샷 회차(EstimateSnapshot 등) 발화 이후**로 규율한다. 발화 전 dispatch면 STEP 0 회차 실측이 미발화 → HALT. 이때 **근인 구분 명시**: (a) 집행 시점 미도래(발화 예정일 전) vs (b) 파이프라인 이상(발화 예정일 후에도 미발화). 케이던스(요일·주기) 정상 여부로 판별. 실증: DSS-W8-LOAD-1 08-27(목) 조기 dispatch → 8회차(08-28 금) 미발화 HALT → 08-28 발화 후 재개.

@@ -2,6 +2,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from apps.monitor.api.calendar_views import CalendarFeedView
 from apps.monitor.api.views import (
     AlertEventViewSet,
     ClaimEvidenceViewSet,
@@ -30,5 +31,6 @@ router.register(r"alerts", AlertEventViewSet, basename="alert")
 urlpatterns = [
     path("catalog/", IndicatorCatalogView.as_view(), name="monitor-catalog"),
     path("scenario-suggest/", ScenarioSuggestView.as_view(), name="monitor-scenario-suggest"),
+    path("calendar/", CalendarFeedView.as_view(), name="monitor-calendar"),
     *router.urls,
 ]

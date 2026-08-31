@@ -7073,6 +7073,33 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **관측 실증**: 429 시 overview 호출 **1회**(retry:2였다면 3 — INC-P16-1 A 무재시도 실증)·회복 **~680ms**(<2s)·로드당 요청 5 일정(무증폭).
 - **다음**: MP2-SUBPAGES(#3·A) 트리거 충족(#1·#2 = D-lite land 후). CI 편입은 후속 별건(이 세션 범위 밖).
 
+## D-EVT-4 — 이벤트 캘린더 연합 읽기 (EVT-IMPL-4, 2026-08-31 디렉터 사이클)
+
+### D-EVT-4A — 캘린더 "관심종목" 정의 = A3 (모니터 ∪ 관심목록, 출처 마크)
+- **결정**: 관심종목 = Monitor(scope=stock, user 스코프, status∈{active,setting_up,paused}) ∪ WatchlistItem(watchlist__user). 행마다 `sources` 마크(monitor/watchlist/both), 범위 칩(모니터 종목·관심목록·둘 다, 기본=모니터 종목).
+- **가중합**: A1 4.30 / A2 2.95 / **A3 4.20**. 마진 A1−A3 = 0.10 → 타이브레이커 사용자 선택(누락 0 우선) → A3.
+- **Why**: 누락 0(관심목록만 있는 종목도 노출) + Phase 2 EVT-CHAIN 시드(모니터 종목)와 연속. **user_id 스코프 필수** — SFI-I1 글로벌 무필터 결함(DECISIONS:6587) 재발 금지. 수집 원장은 전량(D-EVT-SCOPE-U), 필터는 읽기 계층만.
+- **구현**: `apps/monitor/services/event_feed.py::_resolve_symbols` + scope 파라미터.
+
+### D-EVT-4B — 연합 읽기 위치 = B1 (monitor 서비스 단일 구현, dashboard가 import)
+- **결정**: 연합 읽기 단일 구현을 `apps/monitor/services/event_feed.py`에 두고 dashboard 스트립 뷰가 import(app→app, dashboard→chain_sight 선례 동형). shared 병합 금지(B3 기각).
+- **가중합**: **B1 4.65** / B4 3.85 / B2 3.20. 마진 0.80 → B1.
+- **Why**: shared→apps 경계 위반 없이(architecture 테스트 9 GREEN 유지) 단일 출처. dashboard BFF가 monitor 서비스 재사용.
+
+### D-EVT-4 소결정
+- 라우트 `/monitor/calendar`(alerts 선례). 스트립 컴포넌트명 **EventStrip**(MacroStrip은 크레딧 신호 선점).
+- 스트립 "관심 어닝 티저" **on**(최대 2장, D-7 이내).
+- 세션 UNKNOWN은 뱃지 미표기(EVT-SESSION) → `EventItem.session=None`, `event_dt_kst=None`.
+- **안정 임계 N=7**(§0-5⑵ scheduled date_observed_count p50=7; count=7에 9,964행 스파이크=시드 백필 흔적 → 7은 보수적 안정 기준).
+- **스트립 구성 정정(실측 발견, 신규 결정 아님)**: 45일 창 거시 high+critical 조밀 → 날짜순 단순 cap-12가 휴장·티저를 굶김. 휴장·티저 우선 보장 + 남는 슬롯 거시(critical→high)로 채움(목업 S '혼합' 시각 계약 복원). `2aa9f588`.
+
+### D-EVT-OBS-1 기준 정정 (디렉터 처분 2026-08-31)
+- **일간 발화 신규율 기준** = 기대 ~1.1%(1/90 롤링 창 유입) + 어닝 시즌 가산 / **경고 ≥3% / HALT ≥5%**.
+- "즉시 재실행 멱등 기준 <1%"는 유지(foreground 검증 전용). 08-30 성숙 재런 1.16%는 기대치 부합(unique_together churn 구조적 배제·발화별 신규 845→176 수렴). EVT-OBS-1 게이트 PASS.
+
+### D-EVT-GUIDE-ANCHOR — data-guide 앵커는 가이드 콘텐츠 슬라이스 소유
+- **결정**: `data-guide` 앵커는 가이드 콘텐츠 슬라이스에서만 부여(orphan 금지·`confirmed`=병진 검수 승인). 기능 지시서는 앵커를 요구하지 않는다.
+- **Why**: guideAnchors(orphan 금지)+guideData(region 3~7·confirmed·draft 잔류 금지) 계약이 앵커를 confirmed 전체 스크린에 강결합 → 기능 구현 중 앵커만 부여하면 필연적 red 또는 검수 승인 위조. EVT-IMPL-4 3-2 오지시(디렉터 귀책)로 부여됐던 `monitor.calendar` 앵커 제거, 가이드 슬라이스로 이관.
 ## [2026-08-31] D-LAUNCHD-RUNTIME-TREE — 모든 launchd 잡의 실행 트리 = 런타임 worktree 고정 [infra][process]
 
 > RC-NEO4J-WORKER-TREE 전수 점검(ops 세션, 상신 `scratchpad/RC-NEO4J-WORKER-TREE_상신_20260831.md`)에서 확정.

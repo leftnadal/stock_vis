@@ -1,0 +1,273 @@
+<title>EVT Phase 1 시각 계약</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --panel-2:#f1f3f6; --line:#e3e6ea; --line-2:#cfd4da;
+  --ink:#151a21; --ink-2:#4b5563; --ink-3:#8a94a1;
+  --accent:#2563eb; --accent-soft:#e6eefc;
+  --earn:#4f46e5; --earn-soft:#e9e8fb; --div:#059669; --div-soft:#dff5ec; --split:#7c3aed; --split-soft:#eee7fb;
+  --macro:#0f766e; --macro-soft:#d9f0ee; --hol:#6b7280; --hol-soft:#eceef1;
+  --crit:#b91c1c; --crit-soft:#fbe4e4; --high:#c2410c; --high-soft:#fde7d8;
+  --beat:#15803d; --beat-soft:#dcf2e3; --miss:#b91c1c; --miss-soft:#fbe4e4;
+  --stable:#1d4ed8; --stable-soft:#dbe6fb; --fluid:#a16207; --fluid-soft:#fbf0cf; --unk:#6b7280; --unk-soft:#e5e7eb;
+  --note:#fff8e1; --note-ink:#6b4f00; --note-line:#f1d27a;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e1116; --panel:#161b22; --panel-2:#1d232c; --line:#2a323d; --line-2:#3a4453;
+  --ink:#e8ecf1; --ink-2:#aab4c0; --ink-3:#6f7b89;
+  --accent:#4f83f1; --accent-soft:#1a2740;
+  --earn:#8b86f5; --earn-soft:#26264a; --div:#34c48e; --div-soft:#123626; --split:#b18cf7; --split-soft:#2c2245;
+  --macro:#3cbdb0; --macro-soft:#12312e; --hol:#98a2b3; --hol-soft:#242a33;
+  --crit:#f27979; --crit-soft:#3c1c1c; --high:#f39a5b; --high-soft:#3c2617;
+  --beat:#5dd48a; --beat-soft:#143224; --miss:#f27979; --miss-soft:#3c1c1c;
+  --stable:#7ea6f5; --stable-soft:#1a2a4a; --fluid:#e4c05a; --fluid-soft:#3a3010; --unk:#98a2b3; --unk-soft:#2a323d;
+  --note:#2c2610; --note-ink:#f1dc9c; --note-line:#5c4c17;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1116; --panel:#161b22; --panel-2:#1d232c; --line:#2a323d; --line-2:#3a4453;
+  --ink:#e8ecf1; --ink-2:#aab4c0; --ink-3:#6f7b89;
+  --accent:#4f83f1; --accent-soft:#1a2740;
+  --earn:#8b86f5; --earn-soft:#26264a; --div:#34c48e; --div-soft:#123626; --split:#b18cf7; --split-soft:#2c2245;
+  --macro:#3cbdb0; --macro-soft:#12312e; --hol:#98a2b3; --hol-soft:#242a33;
+  --crit:#f27979; --crit-soft:#3c1c1c; --high:#f39a5b; --high-soft:#3c2617;
+  --beat:#5dd48a; --beat-soft:#143224; --miss:#f27979; --miss-soft:#3c1c1c;
+  --stable:#7ea6f5; --stable-soft:#1a2a4a; --fluid:#e4c05a; --fluid-soft:#3a3010; --unk:#98a2b3; --unk-soft:#2a323d;
+  --note:#2c2610; --note-ink:#f1dc9c; --note-line:#5c4c17;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo","Segoe UI",sans-serif;font-size:14px;line-height:1.5}
+.num{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 24px 64px}
+h1{font-size:22px;font-weight:700;margin:0 0 4px;text-wrap:balance}
+.lede{color:var(--ink-2);margin:0 0 28px;max-width:70ch}
+.lede b{color:var(--ink)}
+.board{display:grid;gap:28px}
+.art{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.art-h{display:flex;align-items:baseline;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.art-h .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+.art-h .t{font-weight:700}
+.art-h .r{margin-left:auto;font-size:12px;color:var(--ink-3)}
+.art-b{padding:18px 16px 20px}
+/* ---- app chrome ---- */
+.screen{border:1px solid var(--line-2);border-radius:12px;background:var(--panel);overflow:hidden}
+.topbar{display:flex;gap:18px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ink-2)}
+.topbar .brand{font-weight:700;color:var(--ink);margin-right:6px}
+.topbar .on{color:var(--accent);font-weight:500}
+.page{padding:16px 18px 18px}
+.ph{display:flex;align-items:flex-end;gap:14px;margin-bottom:12px}
+.ph h2{font-size:18px;margin:0;font-weight:700}
+.ph .sub{color:var(--ink-3);font-size:12px}
+.ph .right{margin-left:auto;font-size:12px;color:var(--ink-3)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chip{border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--panel-2);color:var(--ink-2);border:1px solid transparent}
+.chip.on{background:var(--accent);color:#fff}
+.chip .c{opacity:.7;margin-left:4px}
+.chips.scope .chip{border-color:var(--line)}
+.chips.scope .lbl{font-size:11px;color:var(--ink-3);align-self:center;margin-right:2px;letter-spacing:.04em}
+.sec{margin-top:14px}
+.sec-h{display:flex;align-items:baseline;gap:8px;font-size:12px;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase;margin:0 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.sec-h .d{color:var(--ink);font-weight:700;text-transform:none;letter-spacing:0;font-size:13.5px}
+.sec-h .dd{font-weight:500;color:var(--accent)}
+.sec-h.today .dd{color:var(--crit)}
+.row{display:grid;grid-template-columns:150px 1fr 200px 130px;gap:10px;align-items:center;padding:8px 6px;border-bottom:1px dashed var(--line)}
+.row:last-child{border-bottom:0}
+.row .who{display:flex;align-items:center;gap:8px}
+.sym{font-weight:700}
+.badge{display:inline-block;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:500;line-height:18px;white-space:nowrap}
+.b-earn{background:var(--earn-soft);color:var(--earn)} .b-div{background:var(--div-soft);color:var(--div)} .b-split{background:var(--split-soft);color:var(--split)}
+.b-macro{background:var(--macro-soft);color:var(--macro)} .b-hol{background:var(--hol-soft);color:var(--hol)}
+.b-crit{background:var(--crit-soft);color:var(--crit)} .b-high{background:var(--high-soft);color:var(--high)}
+.b-beat{background:var(--beat-soft);color:var(--beat)} .b-miss{background:var(--miss-soft);color:var(--miss)}
+.b-stable{background:var(--stable-soft);color:var(--stable)} .b-fluid{background:var(--fluid-soft);color:var(--fluid)} .b-unk{background:var(--unk-soft);color:var(--unk)}
+.b-ses{background:var(--panel-2);color:var(--ink-2);border:1px solid var(--line)}
+.det{color:var(--ink-2);font-size:12.5px}
+.det .k{color:var(--ink-3)}
+.tm{font-size:12px;color:var(--ink-2)}
+.tm .kst{color:var(--ink-3)}
+.hol-row{background:repeating-linear-gradient(135deg,var(--hol-soft) 0 6px,transparent 6px 12px);border-radius:6px}
+.stale{opacity:.55}
+/* strip */
+.strip{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px}
+.card{flex:0 0 auto;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel)}
+.card .dd{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.04em}
+.card.crit .dd{color:var(--crit)}
+.card .t{font-weight:500;margin:2px 0 3px;font-size:13px}
+.card .m{font-size:11.5px;color:var(--ink-3)}
+.card.hol{border-style:dashed;background:transparent}
+.card.watch{border-color:var(--earn);border-width:1.5px}
+.strip-h{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);margin-bottom:4px}
+.strip-h .dot{width:8px;height:8px;border-radius:50%;background:var(--macro)}
+.faded{opacity:.45;pointer-events:none}
+.faded .lbl{font-size:12px;color:var(--ink-3);padding:6px 0}
+/* callouts */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:14px}
+.note{background:var(--note);border:1px solid var(--note-line);color:var(--note-ink);border-radius:8px;padding:8px 10px;font-size:12.5px}
+.note b{display:block;margin-bottom:2px}
+.tag{display:inline-block;background:var(--note-ink);color:var(--note);border-radius:4px;padding:0 5px;font-size:10.5px;font-weight:700;margin-right:5px;vertical-align:1px}
+/* options */
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.opt{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--panel)}
+.opt h3{margin:0 0 6px;font-size:14px}
+.opt h3 .id{color:var(--accent);margin-right:6px}
+.opt p{margin:0 0 8px;color:var(--ink-2);font-size:12.5px}
+.opt .mini{border:1px solid var(--line-2);border-radius:8px;padding:8px 10px;background:var(--panel-2)}
+.opt .mini .row{grid-template-columns:120px 1fr 90px;padding:5px 2px}
+.src{font-size:10.5px;color:var(--ink-3);border:1px solid var(--line-2);border-radius:4px;padding:0 4px;margin-left:4px}
+@media (max-width:760px){.row{grid-template-columns:1fr 1fr}.opts{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <h1>EVT Phase 1 시각 계약</h1>
+  <p class="lede">설계 앵커 v1.1 §5의 <b>확정 목업(2026-08-24)</b>을 텍스트 계약에서 복원한 판이다. 화면 두 장이 Phase 1의 전부다 — <b>(A) Node Monitoring 이벤트 캘린더 페이지</b>와 <b>(S) 홈 이벤트 스트립</b>. 노드 상세 미니 위젯은 D-EVT-FE1에 따라 Phase 2로 미룬다. 수치는 예시이며, 회색 부분은 기존 화면이다.</p>
+
+  <div class="board">
+
+  <!-- ================= A ================= -->
+  <div class="art">
+    <div class="art-h"><span class="k">Screen A</span><span class="t">/monitor/calendar — 관심종목 이벤트 캘린더</span><span class="r">4원천 연합 읽기 · 향후 90일 + 지난 7일</span></div>
+    <div class="art-b">
+      <div class="screen">
+        <div class="topbar"><span class="brand">stock-vis</span><span>대시보드</span><span>Chain Sight</span><span class="on">모니터</span><span>포트폴리오</span><span>가이드</span><span style="margin-left:auto">My</span></div>
+        <div class="page">
+          <div class="ph"><h2>이벤트 캘린더</h2><span class="sub">관심종목 12 · ET 기준, KST 병기</span><span class="right">기준 2026-08-31 · 17:45 ET 갱신</span></div>
+          <div class="chips"><span class="chip on">전체<span class="c num">27</span></span><span class="chip">어닝<span class="c num">9</span></span><span class="chip">배당락<span class="c num">6</span></span><span class="chip">분할<span class="c num">1</span></span><span class="chip">거시<span class="c num">8</span></span><span class="chip">휴장<span class="c num">3</span></span></div>
+          <div class="chips scope"><span class="lbl">범위</span><span class="chip on">모니터 종목</span><span class="chip">관심목록</span><span class="chip">둘 다</span><span class="lbl" style="margin-left:6px">← D-EVT-4A 결정 대상 (아래 선택지)</span></div>
+
+          <div class="sec">
+            <div class="sec-h"><span class="d">지난 7일 발표됨</span><span>·</span><span>서프라이즈 = (실제 − 예상) / |예상|</span></div>
+            <div class="row"><div class="who"><span class="sym">NVDA</span><span class="badge b-earn">어닝</span></div>
+              <div class="det"><span class="k">EPS</span> <span class="num">1.05</span> <span class="k">vs 예상</span> <span class="num">0.98</span> · <span class="k">매출</span> <span class="num">46.7B</span> <span class="k">vs</span> <span class="num">45.9B</span></div>
+              <div><span class="badge b-beat">EPS +7.1% beat</span></div>
+              <div class="tm">8/27 (수) <span class="kst">· KST 8/28</span></div></div>
+            <div class="row"><div class="who"><span class="sym">CRM</span><span class="badge b-earn">어닝</span></div>
+              <div class="det"><span class="k">EPS</span> <span class="num">2.71</span> <span class="k">vs 예상</span> <span class="num">2.78</span></div>
+              <div><span class="badge b-miss">EPS −2.5% miss</span></div>
+              <div class="tm">8/27 (수) <span class="kst">· KST 8/28</span></div></div>
+            <div class="row"><div class="who"><span class="badge b-macro">거시</span><span>PCE 물가 (7월)</span></div>
+              <div class="det"><span class="k">실제</span> <span class="num">2.6%</span> <span class="k">vs 예상</span> <span class="num">2.6%</span> · <span class="k">이전</span> <span class="num">2.5%</span></div>
+              <div><span class="badge b-crit">CRITICAL</span> <span class="badge b-unk">서프라이즈 0.0%</span></div>
+              <div class="tm">8/29 (금) 08:30 <span class="kst">· KST 21:30</span></div></div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-h"><span class="d">9월 1일 (월)</span><span class="dd">D-1</span></div>
+            <div class="row hol-row"><div class="who"><span class="badge b-hol">NYSE 휴장</span><span>Labor Day</span></div><div class="det">미국 정규장 없음 — 이벤트 없음. 다음 거래일 9/2 (화)</div><div></div><div class="tm">종일</div></div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-h"><span class="d">9월 2일 (화)</span><span class="dd">D-2</span></div>
+            <div class="row"><div class="who"><span class="badge b-macro">거시</span><span>ISM 제조업 PMI (8월)</span></div>
+              <div class="det"><span class="k">예상</span> <span class="num">48.5</span> · <span class="k">이전</span> <span class="num">48.0</span></div>
+              <div><span class="badge b-high">HIGH</span></div>
+              <div class="tm">10:00 ET <span class="kst">· KST 23:00</span></div></div>
+            <div class="row"><div class="who"><span class="sym">ADTX</span><span class="badge b-earn">어닝</span></div>
+              <div class="det"><span class="k">EPS 예상</span> <span class="num">—</span> <span class="k">(원천 값 이상 → 비표시)</span> · <span class="k">매출 예상</span> <span class="num">1.2M</span></div>
+              <div><span class="badge b-fluid">유동 · 관측 2회</span></div>
+              <div class="tm">세션 미정 <span class="kst">· KST 9/3</span></div></div>
+            <div class="row"><div class="who"><span class="sym">AAPL</span><span class="badge b-div">배당락</span></div>
+              <div class="det"><span class="k">배당</span> <span class="num">$0.26</span> · <span class="k">지급</span> 9/15 · <span class="k">분기</span></div>
+              <div><span class="badge b-stable">안정 · 관측 5회</span></div>
+              <div class="tm">장전 기준 <span class="kst">· KST 9/2 밤</span></div></div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-h"><span class="d">9월 4일 (목)</span><span class="dd">D-4</span></div>
+            <div class="row"><div class="who"><span class="sym">AVGO</span><span class="badge b-earn">어닝</span><span class="badge b-ses">AMC</span></div>
+              <div class="det"><span class="k">EPS 예상</span> <span class="num">1.66</span> · <span class="k">매출 예상</span> <span class="num">15.8B</span></div>
+              <div><span class="badge b-stable">안정 · 관측 6회</span></div>
+              <div class="tm">장 마감 후 <span class="kst">· KST 9/5 새벽</span></div></div>
+            <div class="row"><div class="who"><span class="sym">XYZ</span><span class="badge b-split">분할 예정</span></div>
+              <div class="det"><span class="num">10 : 1</span> <span class="k">정분할 · 발효 후 StockSplit 경로로 이관</span></div>
+              <div><span class="badge b-fluid">유동 · 신규</span></div>
+              <div class="tm">발효일 <span class="kst">· KST 9/4</span></div></div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-h"><span class="d">9월 11일 (목)</span><span class="dd">D-11</span></div>
+            <div class="row"><div class="who"><span class="badge b-macro">거시</span><span>CPI (8월)</span></div>
+              <div class="det"><span class="k">예상</span> <span class="num">2.9%</span> · <span class="k">이전</span> <span class="num">2.7%</span></div>
+              <div><span class="badge b-crit">CRITICAL</span></div>
+              <div class="tm">08:30 ET <span class="kst">· KST 21:30</span></div></div>
+            <div class="row stale"><div class="who"><span class="sym">ORCL</span><span class="badge b-earn">어닝</span></div>
+              <div class="det"><span class="k">최근 조회에서 사라짐 — 날짜 이동·철회 추정</span></div>
+              <div><span class="badge b-unk">미확정 · stale</span></div>
+              <div class="tm">(필터 "stale 표시" 켤 때만)</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <div class="note"><b><span class="tag">P1-i</span>서프라이즈 %</b>저장하지 않고 읽기 계층에서 계산. 어닝(EPS)·거시(actual vs forecast) 같은 문법. 발표 전엔 비표시.</div>
+        <div class="note"><b><span class="tag">P1-ii</span>날짜 신뢰 라벨</b>date_observed_count 파생: <i>안정</i>(N회 이상 연속 관측) / <i>유동</i>(신규·관측 적음) / <i>미확정</i>(stale). 임계 N은 4호 STEP 0 분포로 정함.</div>
+        <div class="note"><b><span class="tag">P1-iv</span>휴장일 행</b>credit_signals trading_calendar 원천. 날짜 그룹 안에 빗금 행으로 인터리브. 이벤트 없음을 "없음"으로 보여주는 자리.</div>
+        <div class="note"><b><span class="tag">세션</span>BMO/AMC 뱃지</b>FMP 응답에 세션 원천 없음(EVT-SESSION) → v1은 UNKNOWN이면 뱃지 자체를 그리지 않는다. 값 있을 때만 표기.</div>
+        <div class="note"><b><span class="tag">KST</span>시간대 병기</b>저장은 ET 날짜+세션. 표시 계층이 KST 날짜(BMO→같은 날 밤, AMC→다음 날 새벽)를 병기. 거시는 event_time으로 시각 변환.</div>
+        <div class="note"><b><span class="tag">stale</span>소실 행</b>기본 숨김. 유형 필터에 "stale 표시" 토글. 삭제 아님 — 날짜 이동 v1 처리 = 소실 감지.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= S ================= -->
+  <div class="art">
+    <div class="art-h"><span class="k">Screen S</span><span class="t">홈(/) — 이벤트 스트립</span><span class="r">동일 연합 읽기의 축소판 · 45일 창 · 거시 HIGH 이상 + 휴장 (+ 관심 어닝 티저)</span></div>
+    <div class="art-b">
+      <div class="screen">
+        <div class="page">
+          <div class="faded"><div class="lbl">CoverageStrip · MarketSummaryBar (기존)</div></div>
+          <div class="faded" style="margin-bottom:10px"><div class="lbl">MacroStrip — 크레딧 신호 6칩 (기존, 이름 충돌 주의 → 신규는 <b>EventStrip</b>)</div></div>
+
+          <div class="strip-h"><span class="dot"></span><span><b>다가오는 이벤트</b> · 45일 · 거시 HIGH 이상 · 휴장 포함</span><span style="margin-left:auto;color:var(--accent)">캘린더 전체 →</span></div>
+          <div class="strip">
+            <div class="card hol"><div class="dd">D-1 · 9/1 (월)</div><div class="t">NYSE 휴장</div><div class="m">Labor Day</div></div>
+            <div class="card"><div class="dd">D-2 · 9/2 (화)</div><div class="t">ISM 제조업 PMI</div><div class="m"><span class="badge b-high">HIGH</span> 예상 48.5 · KST 23:00</div></div>
+            <div class="card watch"><div class="dd">D-4 · 9/4 (목)</div><div class="t">AVGO 어닝 <span class="badge b-ses">AMC</span></div><div class="m"><span class="badge b-earn">관심종목</span> EPS 예상 1.66</div></div>
+            <div class="card"><div class="dd">D-5 · 9/5 (금)</div><div class="t">고용보고서 (NFP)</div><div class="m"><span class="badge b-crit">CRITICAL</span> 예상 +75K · KST 21:30</div></div>
+            <div class="card crit"><div class="dd">D-11 · 9/11 (목)</div><div class="t">CPI (8월)</div><div class="m"><span class="badge b-crit">CRITICAL</span> 예상 2.9% · KST 21:30</div></div>
+            <div class="card crit"><div class="dd">D-17 · 9/17 (수)</div><div class="t">FOMC 금리 결정</div><div class="m"><span class="badge b-crit">CRITICAL</span> KST 9/18 03:00</div></div>
+            <div class="card"><div class="dd">D-30 · 9/30 (화)</div><div class="t">JOLTS</div><div class="m"><span class="badge b-high">HIGH</span></div></div>
+          </div>
+
+          <div class="faded" style="margin-top:10px"><div class="lbl">NewsStrip (기존)</div></div>
+        </div>
+      </div>
+      <div class="notes">
+        <div class="note"><b>실패 격리 동형</b>NewsStrip·MacroStrip과 같은 규칙: API 실패·빈 응답 → 스트립 자체를 그리지 않는다(null). 홈 레이아웃은 무변.</div>
+        <div class="note"><b>관심 어닝 티저(선택 요소)</b>원천 1(CalendarEvent∩관심종목)의 어닝 D-7 이내 카드를 최대 2장 섞는다. 설계 §5는 "원천 2+4 중심"이라 이 카드는 <i>있어도 되고 없어도 되는</i> 요소 — 4호 지시서에서 on/off를 정한다.</div>
+        <div class="note"><b>카드 정렬</b>날짜 오름차순. CRITICAL은 D-day 색을 semantic red로. 가로 스크롤, 첫 화면에 4~5장.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= D-EVT-4A ================= -->
+  <div class="art">
+    <div class="art-h"><span class="k">Decision</span><span class="t">D-EVT-4A — "관심종목"의 정의 (캘린더 원천 1·3 필터)</span><span class="r">가중합 마진 0.10 → 타이브레이커 = 사용자 선택</span></div>
+    <div class="art-b">
+      <div class="opts">
+        <div class="opt">
+          <h3><span class="id">A1</span>모니터 종목만</h3>
+          <p>/monitor에 등록된 <b>Monitor(scope=stock)</b>의 target_ref 집합. "관심 추적" 단계의 정의와 1:1. 관심목록(/watchlist)만 있고 모니터 없는 종목은 캘린더에 안 뜬다.</p>
+          <div class="mini">
+            <div class="row"><div class="who"><span class="sym">AVGO</span><span class="badge b-earn">어닝</span></div><div class="det">모니터 "AI 인프라 #2"</div><div class="tm">D-4</div></div>
+            <div class="row"><div class="who"><span class="sym">AAPL</span><span class="badge b-div">배당락</span></div><div class="det">모니터 "현금흐름"</div><div class="tm">D-2</div></div>
+            <div class="row" style="opacity:.4"><div class="who"><span class="sym">TSM</span><span class="badge b-earn">어닝</span></div><div class="det">관심목록에만 있음 → 비표시</div><div class="tm">—</div></div>
+          </div>
+        </div>
+        <div class="opt">
+          <h3><span class="id">A3</span>모니터 ∪ 관심목록 (출처 표기)</h3>
+          <p>Monitor(stock) ∪ WatchlistItem(사용자 스코프). 행마다 출처 마크, 범위 칩으로 좁힐 수 있음. 누락 없음이 장점, 종목 수가 늘어 노이즈·쿼리 폭이 커지는 게 비용.</p>
+          <div class="mini">
+            <div class="row"><div class="who"><span class="sym">AVGO</span><span class="badge b-earn">어닝</span><span class="src">모니터</span></div><div class="det">EPS 예상 1.66</div><div class="tm">D-4</div></div>
+            <div class="row"><div class="who"><span class="sym">AAPL</span><span class="badge b-div">배당락</span><span class="src">모니터·관심</span></div><div class="det">$0.26</div><div class="tm">D-2</div></div>
+            <div class="row"><div class="who"><span class="sym">TSM</span><span class="badge b-earn">어닝</span><span class="src">관심</span></div><div class="det">EPS 예상 2.41</div><div class="tm">D-15</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="notes">
+        <div class="note"><b>A2 (관심목록만)는 탈락</b>가중합 2.95 — Node Monitoring 문맥과 어긋나고 Phase 2 EVT-CHAIN 시드(=모니터 종목)와도 끊긴다. 표에 남기되 추천하지 않음.</div>
+        <div class="note"><b>공통 규칙</b>어느 쪽이든 사용자 스코프(user_id) 필수 — SFI-I1 글로벌 무필터 결함(DECISIONS:6587) 재발 금지. 수집 원장은 전량(D-EVT-SCOPE-U), 필터는 읽기 계층에서만.</div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+</div>
