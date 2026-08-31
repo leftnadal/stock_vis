@@ -1751,3 +1751,31 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 4. 복구 전 **`git branch -r --contains <그들의 tip>`으로 원격 존재 여부를 확인**한다. 비어 있으면 로컬 전용 = 절대 소실시키면 안 되는 상태.
 
 **실증(RC-A-1)**: 내 커밋 `e500bfc3`(PROGRESS·TASKQUEUE 2파일)이 타 세션 `0ed74613`(EODSIG-FRESH-GATE, **원격 미존재**) 위에 얹힘 → 별도 worktree에서 `origin/main`에 cherry-pick(`c8dfc627`, 충돌 0) → push → 원 트리를 `reset --hard 0ed74613`으로 복구. 타 세션 작업 무손실 확인.
+
+
+## `sv sync`는 대상 launchd 잡이 로드돼 있음을 전제 — 미로드면 kickstart에서 멈추고 web·api 트리가 뒤처진 채 남는다 (채번 후보, AGENT-S1 2026-08-31) `[ops][infra][deploy]`
+
+**증상**: `sv sync` 실행 중 `Could not find service "com.stockvis.celery-worker" in domain for user gui: 501`로 종료. worker 트리만 최신이고 **web·api 트리는 뒤처진 채 남았다**. 출력만 보면 실패가 명확하지만, 3트리 정렬을 따로 재지 않으면 "sync 했다"고 넘어가기 쉽다.
+
+**원인**: `worker_sync.sh`는 ⑴ worker 트리 re-detach → ⑵ `launchctl kickstart` worker·beat → ⑶ web 트리 → ⑷ api 트리 + daphne 순서다. `set -euo pipefail`이라 ⑵에서 잡이 언로드 상태면 **거기서 중단**되고 ⑶⑷가 실행되지 않는다. 배포창에서 워커를 `bootout`한 뒤 다시 올리지 않은 상태로 sync를 돌리면 재현된다(RC-A-1 배포창에서 실제 발생).
+
+**해소·규율**:
+1. 실패한 잡을 `launchctl bootstrap`으로 올린 뒤 `sv sync` **재실행**(멱등 — 두 번 돌아도 무해).
+2. `sv sync` 후에는 **반드시 3트리 HEAD가 origin/main과 같은지 실측**한다. 스크립트의 마지막 줄(`daphne 응답`)이 안 보이면 중간에 끊긴 것.
+   ```bash
+   for t in sv-worker-runtime sv-web-runtime sv-api-runtime; do git -C ~/worktrees/$t rev-parse --short HEAD; done
+   ```
+3. 배포창(정지 → 작업 → 재기동) 뒤에 sync를 붙일 때는 **재기동이 끝났는지 먼저 확인**한다.
+
+## 병진에게 넘길 명령은 짧게 — 긴 one-liner는 터미널 줄바꿈이 문자열을 끊는다 (채번 후보, RC-A-1 2026-08-31) `[process][ops]`
+
+**증상**: Neo4j 엣지 삭제 명령을 넘기는 데 **3회 연속 실패**했다. ⑴ `cypher`는 셸 명령이 아님 ⑵ `cypher-shell`이 `Unable to locate a Java Runtime` ⑶ Java를 우회한 `python -c` one-liner가 붙여넣기 중 줄바꿈이 들어가 `unterminated string literal`·`unexpected indent`로 2회 실패.
+
+**원인**: ⑵ 실행 중 Neo4j는 `/opt/homebrew/opt/openjdk@21/bin/java`를 쓰지만 셸에 `JAVA_HOME`이 없다. 올바른 값은 심링크 자체가 아니라 **`/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home`**(brew openjdk 표준 구조). ⑶ 터미널이 긴 줄을 시각적으로 접는데, 붙여넣기 과정에서 **실제 개행이 삽입**되어 따옴표 안 문자열이 끊긴다. 코드펜스 안에서 들여쓰기를 하면 `python -c` 문자열에 선행 공백이 그대로 들어가 `IndentationError`도 난다.
+
+**규율**:
+1. 넘길 명령은 **코드펜스 안에서도 들여쓰기 금지**.
+2. 한 줄이 길어지면 **스크립트 파일을 만들고 실행만 짧은 한 줄로** 넘긴다. `.env`를 스크립트가 직접 읽고 shebang에 venv 파이썬을 박으면 환경변수 로드·경로 지정도 필요 없어진다 → 실행이 `~/script.py` 한 줄이 된다.
+3. 스크립트에 **before/after 카운트와 자체 검증**을 넣으면 왕복이 준다.
+
+**실증**: `~/rc_pc_delete.py` 전환 후 1회 성공(1,356 엣지 삭제·잔존 0 자체 확인).
