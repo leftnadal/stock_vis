@@ -7225,3 +7225,18 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **결정**: 지시서의 mgmt 배치 번호·브랜치명은 **잠정값**으로만 취급. **정본 = 세션 STEP 0 실측 max+1**(PROGRESS 최신 mgmt 번호 + origin 브랜치 선점 확인). 선점 시 max+1로 치환·브랜치명 분리.
 - **Why**: BATCH-39 지시서가 병렬 P2-DLITE-CLOSE 세션에 #39를 선점당함 → 그대로 진행 시 PROGRESS batch 헤더 중복(drift). 실측 자기정정 39→40으로 해소. 번호는 기계적 max+1이라 세션이 착지 직전 실측하면 충돌 구조적 제거(D-NUMBERING-MGMT-ONLY 동일 원리·채번↔배치번호 병렬).
 - **How to apply**: mgmt 지시서 STEP 0에 "배치 번호 확정" 단계 상설(본 BATCH-41이 첫 적용 — 잠정 41 → 실측 41 확정). 지시서 작성자는 "잠정 N — 선점 시 max+1" 표기. cf. [[lesson_stale_deploy_thread_reexec]]·[[lesson_branch_assignment_explicit_isolation]]·D-NUMBERING-MGMT-ONLY.
+## [2026-08-31] D-SUBPAGES-SWR — pulse 스테일-캐시 즉시 응답(C) [backend][frontend][market_pulse]
+
+> MP2-SUBPAGES HOTFIX-1(디렉터 사이클 2026-08-31, 병진 승인). 증상 = `/market-pulse-v2/macro` 장시간 "불러오는 중…"(장외 KST 오후, 병진 실화면).
+
+- **결정 = C. 스테일-캐시 즉시 응답(SWR)** — 가중합 C 4.15 > B 3.95 > A 3.10, 마진 0.20. 타이브레이커 = 도그푸딩 시간대(KST 사용 = ET 장외 = 캐시 상시 콜드이므로 워밍창 확대(A)보다 콜드 자체를 무해화하는 C).
+  - A(각하) = 워밍 beat 창을 24h로 확대 — 콜드를 줄이나 장외 첫 진입 콜드는 잔존 + FMP/FRED 호출량 상시 증가.
+  - B(각하) = FE localStorage 캐시를 허브에도 도입 — v1 우회책의 복제(drift), BE 근본 미해결.
+- **원인(STEP 0 확증)**: `get_market_pulse_dashboard()` full 캐시(`macro:market_pulse_full`, TTL 60s=realtime) 미스 시 5섹션 **라이브 집계**(FRED~8+FMP~6). 워밍 beat `refresh-market-pulse-cache`는 `crontab(minute='*', hour='9-16', day_of_week='1-5')` = **ET 장중만** → KST 사용 = 장외 = 콜드 상시. **콜드 실측 28.8s(HTTP 200) / 웜 15ms**(:18765 read-only GET). v1 페이지는 `useMarketPulse` localStorage 30분 캐시가 가려줬음(허브는 미도입).
+- **설계(스키마 불변)**: pulse 응답 키·serializer·뷰 **diff 0**. 스테일 판단은 FE가 `last_updated` 나이로 수행.
+  - 키 3종: `…:full`(fresh, TTL 60s 유지) / `…:full:stale`(TTL 24h, 성공 계산마다 동일 payload 저장) / `…:full:refreshing`(락, TTL 120s, `cache.add` 원자획득).
+  - 로직: fresh 히트→반환(불변). 미스+stale→**락 획득 시에만** `refresh_market_pulse_cache.delay()` enqueue 후 **stale 즉시 반환**(요청 스레드 라이브 집계 금지·외부 호출 무증가). stale 없음(최초 콜드)→라이브 계산→fresh+stale 저장. 계산 실패+경합 stale→폴백(200), stale 없으면 재발생(뷰 500 유지).
+  - 태스크 `force_refresh=True` 경로: 캐시 무시 재계산→fresh+stale 갱신+락 해제 → **SWR 미스가 워밍 태스크를 부르고 그 태스크가 다시 SWR 미스를 타는 무한 재-enqueue 차단**.
+  - 큐 라우팅 확증: `refresh_market_pulse_cache`는 `task_routes` 미등재 → **default 큐**(default 워커 소비) → enqueue 정상 소비(HALT 조건 미해당).
+- **FE(v1 행위보존)**: `macroService.getMarketPulse({timeoutMs?})`·`useMarketPulse({timeoutMs?})` **additive 옵션**(미지정=기존 무제한, v1 diff 0). 허브만 `timeoutMs:20000` + 실패 시 "준비 중 — 자동 재시도" 안내 + 재시도 버튼(refetch) + `last_updated` 나이 >5분이면 "N분 전 데이터" 배지(StatusBanner STALE 토큰 `amber-50/700/200` 재사용, 하드코딩 0).
+- **후속(A안 잔여)**: pulse 워밍 창 재검토는 SWR 운영 관측 후 별건(TASKQUEUE 등재).

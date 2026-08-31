@@ -227,12 +227,11 @@ def refresh_market_pulse_cache():
     from apps.market_pulse.services.macro_service import MacroEconomicService
 
     try:
-        # 기존 캐시 삭제
-        cache.delete('macro:market_pulse_full')
-
-        # 새 데이터로 캐시 갱신
+        # force_refresh: 캐시 무시하고 재계산 → fresh+stale 동시 갱신 + 갱신 락 해제.
+        #   (SWR 미스 경로가 이 태스크를 enqueue하므로, 여기서 다시 SWR 미스를 타
+        #    무한 재-enqueue하지 않도록 force 경로로 직행한다.)
         service = MacroEconomicService()
-        service.get_market_pulse_dashboard()
+        service.get_market_pulse_dashboard(force_refresh=True)
 
         logger.info("Market pulse cache refreshed")
         return {'status': 'success'}

@@ -8,7 +8,7 @@
  * 원위치 import 재사용(이동 0). 탭 앵커(?tab=)로 딥링크 흡수, 라우트 1개.
  * rotation 서브스크린 동형(useSearchParams + Suspense). 무버스는 S2(준비 중).
  */
-import { Suspense } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
@@ -17,6 +17,20 @@ import FearGreedGauge from '@/components/macro/FearGreedGauge'
 import YieldCurveChart from '@/components/macro/YieldCurveChart'
 import EconomicIndicators from '@/components/macro/EconomicIndicators'
 import GlobalMarketsCard from '@/components/macro/GlobalMarketsCard'
+
+// 거시 집계는 장외(KST)엔 콜드 캐시라 라이브 집계가 느릴 수 있어 허브만 타임아웃을 건다.
+// (BE는 SWR로 stale 즉시 응답 — D-SUBPAGES-SWR. FE는 그 대기가 길어질 때의 안전판.)
+const HUB_TIMEOUT_MS = 20000
+const STALE_BADGE_MIN = 5  // last_updated 나이가 이 값(분)을 넘으면 "N분 전 데이터" 배지 노출
+
+/** last_updated(ISO)와 현재시각(ms)으로 경과 '분'. 파싱 실패·미래 시각이면 null. */
+export function staleMinutes(lastUpdated: string | undefined, nowMs: number): number | null {
+  if (!lastUpdated) return null
+  const t = Date.parse(lastUpdated)
+  if (Number.isNaN(t)) return null
+  const min = Math.floor((nowMs - t) / 60000)
+  return min >= 0 ? min : null
+}
 
 type TabKey = 'all' | 'rates' | 'sentiment' | 'global' | 'movers'
 
@@ -42,14 +56,34 @@ function MacroHubInner() {
   const rawTab = params.get('tab') ?? 'all'
   const activeTab: TabKey = (VALID_TABS.has(rawTab) ? rawTab : 'all') as TabKey
 
-  const { data, isLoading, isError } = useMarketPulse()
+  const { data, isLoading, isError, refetch } = useMarketPulse({ timeoutMs: HUB_TIMEOUT_MS })
+
+  // 나이 배지용 현재시각 — mount 후에만 설정(SSR/CSR Date.now() 불일치 회피, common-bugs #24).
+  const [nowMs, setNowMs] = useState<number | null>(null)
+  useEffect(() => {
+    setNowMs(Date.now())
+    const id = setInterval(() => setNowMs(Date.now()), 60000)
+    return () => clearInterval(id)
+  }, [])
+  const ageMin = nowMs != null ? staleMinutes(data?.last_updated, nowMs) : null
+  const isStale = ageMin != null && ageMin > STALE_BADGE_MIN
 
   const header = (
     <header className="px-2 pt-4">
       <Link href="/market-pulse-v2" className="text-xs text-slate-500 hover:text-slate-800">
         ← Market Pulse
       </Link>
-      <h1 className="text-2xl font-bold text-slate-900 mt-1">거시 근거</h1>
+      <div className="mt-1 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-slate-900">거시 근거</h1>
+        {isStale && (
+          <span
+            className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700"
+            title="자동 갱신 중 — 마지막 성공 데이터를 표시합니다"
+          >
+            {ageMin}분 전 데이터
+          </span>
+        )}
+      </div>
       <p className="text-xs text-slate-500 mt-1">
         오늘 국면의 배경 — 금리·심리·글로벌{data?.last_updated ? ` · ${data.last_updated}` : ''}
       </p>
@@ -93,7 +127,19 @@ function MacroHubInner() {
         {isLoading ? (
           <p className="text-slate-500">불러오는 중…</p>
         ) : isError || !data ? (
-          <p className="text-rose-700">불러오지 못했습니다.</p>
+          <div
+            className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+            role="status"
+          >
+            <p>거시 데이터를 준비 중입니다 — 잠시 후 자동으로 다시 시도합니다.</p>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="mt-2 rounded border border-amber-300 bg-white px-3 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100"
+            >
+              다시 시도
+            </button>
+          </div>
         ) : (
           <div className="space-y-4">
             {/* 심리 + 금리(2열) */}

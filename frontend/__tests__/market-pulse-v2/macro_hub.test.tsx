@@ -2,7 +2,7 @@
  * MP2-SUBPAGES S1 — 거시 허브 페이지 로직 테스트(탭 필터·구조·로딩/에러).
  * 위젯 4종은 stub(recharts 렌더 배제) — 허브의 라우팅/필터 로직에 집중.
  */
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/hooks/useMarketPulse', () => ({ useMarketPulse: vi.fn() }))
@@ -15,17 +15,24 @@ vi.mock('@/components/macro/GlobalMarketsCard', () => ({ default: () => <div dat
 import { useMarketPulse } from '@/hooks/useMarketPulse'
 import { useSearchParams } from 'next/navigation'
 import { macroPulseFixture } from '@/e2e/fixtures/macroPulse'
-import MacroHubPage from '@/app/market-pulse-v2/macro/page'
+import MacroHubPage, { staleMinutes } from '@/app/market-pulse-v2/macro/page'
 
 const mockedPulse = vi.mocked(useMarketPulse)
 const mockedParams = vi.mocked(useSearchParams)
 
-function setup(tab: string | null, state: 'ok' | 'loading' | 'error' = 'ok') {
+const refetchSpy = vi.fn()
+
+function setup(
+  tab: string | null,
+  state: 'ok' | 'loading' | 'error' = 'ok',
+  dataOverride?: unknown,
+) {
   mockedParams.mockReturnValue({ get: (k: string) => (k === 'tab' ? tab : null) } as unknown as ReturnType<typeof useSearchParams>)
   mockedPulse.mockReturnValue({
-    data: state === 'ok' ? macroPulseFixture : undefined,
+    data: state === 'ok' ? (dataOverride ?? macroPulseFixture) : undefined,
     isLoading: state === 'loading',
     isError: state === 'error',
+    refetch: refetchSpy,
   } as unknown as ReturnType<typeof useMarketPulse>)
 }
 
@@ -75,9 +82,51 @@ describe('MacroHubPage (MP2-SUBPAGES S1)', () => {
     expect(screen.getByText('불러오는 중…')).toBeInTheDocument()
   })
 
-  it('에러 상태', () => {
+  it('에러 상태 — 준비 중 안내 + 다시 시도 버튼(refetch 호출)', () => {
     setup(null, 'error')
     render(<MacroHubPage />)
-    expect(screen.getByText('불러오지 못했습니다.')).toBeInTheDocument()
+    expect(
+      screen.getByText('거시 데이터를 준비 중입니다 — 잠시 후 자동으로 다시 시도합니다.'),
+    ).toBeInTheDocument()
+    const retry = screen.getByRole('button', { name: '다시 시도' })
+    fireEvent.click(retry)
+    expect(refetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('허브는 useMarketPulse에 timeoutMs=20000 전달(v1 훅 기본은 불변)', () => {
+    setup('all')
+    render(<MacroHubPage />)
+    expect(mockedPulse).toHaveBeenCalledWith({ timeoutMs: 20000 })
+  })
+
+  it('나이 배지 — last_updated가 오래되면 "N분 전 데이터" 노출', () => {
+    const old = new Date(Date.now() - 30 * 60000).toISOString() // 30분 전
+    setup('all', 'ok', { ...macroPulseFixture, last_updated: old })
+    render(<MacroHubPage />)
+    expect(screen.getByText(/분 전 데이터$/)).toBeInTheDocument()
+  })
+
+  it('나이 배지 — 최신 데이터(1분 전)면 배지 숨김', () => {
+    const fresh = new Date(Date.now() - 60000).toISOString() // 1분 전
+    setup('all', 'ok', { ...macroPulseFixture, last_updated: fresh })
+    render(<MacroHubPage />)
+    expect(screen.queryByText(/분 전 데이터$/)).toBeNull()
+  })
+})
+
+describe('staleMinutes (나이 계산 — 5분 경계)', () => {
+  const now = Date.parse('2026-08-31T12:00:00Z')
+  it('정확히 5분 전 → 5(배지 문턱 > 5이므로 비노출)', () => {
+    expect(staleMinutes('2026-08-31T11:55:00Z', now)).toBe(5)
+  })
+  it('6분 전 → 6(노출)', () => {
+    expect(staleMinutes('2026-08-31T11:54:00Z', now)).toBe(6)
+  })
+  it('미래 시각 → null', () => {
+    expect(staleMinutes('2026-08-31T12:05:00Z', now)).toBeNull()
+  })
+  it('undefined/파싱불가 → null', () => {
+    expect(staleMinutes(undefined, now)).toBeNull()
+    expect(staleMinutes('not-a-date', now)).toBeNull()
   })
 })
