@@ -2,12 +2,13 @@
 
 갭(OBS-BRIEFING-0827 O1): 비SP500 감시등록 종목의 당일 가격이 EOD 신호 생성(18:30 ET)
 보다 늦게(monitor refresh 18:45 ET) 도착 → 매일 EODSignal 누락. 게이트는 신호 계산 직전
-ensure_price_freshness(apps.monitor)를 동적 lookup으로 재사용해 부재 심볼만 선보충한다.
+StockSyncService.sync_prices(shared→shared, 경계 합법)로 부재 심볼만 선보충한다
+(EODSIG-FRESH-GATE-0828-A2 처분: importlib 동적 lookup 기각 → 정적 직결).
 
 커버:
   1. 단위 — 부재 심볼 → fetch 호출·행 생성 / fetch 실패·예외 → 해당 심볼만 격리·타 심볼 무영향 / 기존재 → fetch 미호출(멱등).
-  2. 통합(beat 경로) — REAL ensure_price_freshness 시그니처를 태스크 스테이지 관통으로 검증
-     (시그니처 불일치는 단위 mock으로 안 잡힌다는 교훈). SP500 1종 + 비SP500 1종 혼합.
+  2. 통합(beat 경로) — REAL 게이트 루프 → StockSyncService.sync_prices 실계약을 태스크 스테이지
+     관통으로 검증(시그니처 불일치는 단위 mock으로 안 잡힌다는 교훈). SP500 1종 + 비SP500 1종 혼합.
 픽스처는 고정 기준일 앵커만 사용(now()/today() 금지 — time-bomb 규칙).
 """
 
@@ -141,7 +142,7 @@ def test_no_fetch_when_all_fresh():
 # ── 4. 통합(beat 경로): 진입 스테이지→EODSignal 행. REAL ensure_price_freshness 관통 ──
 def test_beat_path_nonsp500_gets_eodsignal():
     """혼합 유니버스(SP500 AAA + 비SP500 BBB). BBB는 당일 가격 부재로 시작 →
-    게이트(REAL ensure_price_freshness, 시그니처 관통)가 mock fetch로 보충 →
+    게이트(REAL 루프 → StockSyncService.sync_prices, 실계약 관통)가 mock fetch로 보충 →
     _stage_ingest 로드에 BBB 당일 행 포함 → 신호 생성·upsert로 EODSignal 행 생성.
     (뉴스 enrich·JSON bake 스테이지는 게이트 무관 — 범위 밖.)
     """
