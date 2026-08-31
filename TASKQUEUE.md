@@ -1555,6 +1555,9 @@
 - 💤 **OPS-HEALTHCHECK-PLIST-TREE** (후보 등재만 — **구현 금지**) — `health_check`에 "launchd plist 실행 트리 정합" 점검 추가. 검사 내용 = `~/Library/LaunchAgents/com.stockvis.*.plist`의 `WorkingDirectory`/`ProgramArguments` + 참조 래퍼의 `PROJECT_DIR`이 `Desktop/stock_vis`를 가리키지 않는가. 이번 결함이 11일간 무탐지였던 이유가 자동 점검 부재. **착수는 별도 승인 후.**
 - 🔁 **[EVT-N-REEVAL] 안정 임계 N 재평가 트리거** — 현재 N=7(§0-5⑵ p50, 단 count=7에 시드 백필 스파이크 9,964행). **순수 일간 발화 14회 누적(≈2026-09-13) 후** scheduled `date_observed_count` 실분포로 N 재산정(시드 흔적 배제). 재산정 시 event_feed.STABLE_N 갱신 + trust 라벨 임계 재확정.
 - ✅ **[EVT stale 기본숨김 처분]** 디렉터 2026-08-31: FE stale 기본 숨김 **off 확정**(FMP 최신 응답 기준 = 미반환은 숨김이 정직). stale 복원 결함은 EVT-CORR-3(보정3)로 별도 처리. FE 지시서 기본값(off) = 최종값.
+- ✅ **[EVT-CORR-3] 보정3 완료** — 재관측 시 stale→scheduled 복원(`d2bd219b`). 47행 오표시(EARNINGS 41·DIV 6)는 배포 후 수집기 재관측 시 자가치유. **배포=worker_sync(수집기 변경) 별도 병진 필요.**
+- 📸 **[EVT-IMPL-4-SHOT] 사용자 캡처 경로로 이관** — 시각 스크린샷은 환경 BLOCKED(Claude-in-Chrome 확장 미연결·헤드리스 SIGKILL) → 사용자가 로그인 브라우저에서 `/monitor/calendar`(범위 기본·둘 다)+홈 EventStrip 캡처. 배포 라이브 확인 완료(daphne 401·:3000 200·인증 API 실데이터 정상).
+- 🎛️ **[EVT-FE-TUNE-1 후보] 캘린더 거시 밀도** — 실데이터 캘린더 macro 94(9월 첫주 critical 클러스터: JOLTS·ISM·ADP·NFP…)로 조밀. 기본 유형 필터/접기·거시 중요도 기본 상향(critical만?)·"주요 거시만" 토글 등 밀도 완화 UX 검토(백로그).
 
 ## MIG-BUNDLE-1 종결 (2026-08-31, worktree sv-mig-bundle-1, main `78c6b641`)
 

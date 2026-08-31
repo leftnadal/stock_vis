@@ -7132,6 +7132,14 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **실측 근거**: 위젯 4종 전부 props-pure(self-fetch 0)·`@/types/macro` 타입. pulse=AllowAny(무인증 raw fetch)·`market_pulse_user`(v2·120/min) **미공유** → 허브 진입 = macro/pulse 1호출(refetchInterval 60s, 홈과 별개 스코프). 홈 fetch 표면 0 증가(CTA=Link).
 - **테스트 계약 진화(부기)**: guide `draft 잔류 없음` 테스트 → **검수 대기 allowlist**(marketPulse.macro)로 완화 — directive의 `reviewStatus:'draft'`(병진 검수 대기)와 repo 게이트 조화. stray draft는 여전히 실패(게이트 유지).
 
+## D-EVT-CORR-3 — 재관측 시 stale→scheduled 복원 (2026-08-31)
+- **결정**: `_persist_event` 재관측(created=False)에서 `obj.status==stale`이면 `scheduled` 복원. 재관측 = FMP가 동일 (type,symbol,date) 재응답 = 소실 아님 → 스윕 오탐 치유. occurred 우선(actual 있으면 occurred).
+- **Why**: 기존 경로는 stale→scheduled 복원 부재(record_observation defaults만·_persist occurred 상향만) → 스윕된 행이 재응답돼도 영구 stale. 계측(0-5⑹ a) = 47행 오표시(EARNINGS 41·DIV 6, 전량 future). 수집기 재실행만으로 자가치유(별도 DB 마이그·수동 write 불요).
+- **배포**: 수집기 변경 → worker_sync 필요(별도 병진). FE stale 기본숨김 off 확정과 짝(숨김이 정직, 복원은 원장 정확도 회복).
+
+## D-CC-RUNTIME-RESTART-EXPLICIT — 운영 재기동은 사용자 명시 지시 시에만 CC 집행
+- **결정**: 서비스·데몬 재기동(daphne kickstart·:3000 재빌드·launchctl)은 **사용자 명시 지시가 있을 때만 CC가 집행**한다. 그 외에는 자율 집행 금지·상신(병진) 유지([[feedback_service_op_submit_not_execute]]).
+- **선례**: EVT-IMPL-4 런타임 라이브 = 디렉터 "daphne 재기동+:3000 재빌드 작업해줘" 명시 지시 후 CC 집행. worker_sync는 scope 밖이라 무접촉.
 ## [2026-08-31] D-SELFLOOP-DBCONSTRAINT — 관계 자기루프 a≠b = DB CheckConstraint 승격 [backend][chainsight]
 
 > MIG-BUNDLE-1 A. 앱 가드(SelfLoopError)만으로는 bulk_create·레거시 잔존을 못 막아 DB로 승격.
