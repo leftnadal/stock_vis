@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
 import { useOverview, useRegimeStress } from '@/hooks/useMarketPulseV2'
 import { useMarketPulseI18n, translate } from '@/lib/i18n/marketPulse'
@@ -112,6 +113,15 @@ export default function MarketPulseV2Page() {
             sense={selectSense(translations, 'regime')}
             stressBand={stressBand}
           />
+          {/* CTA ② (MP2-SUBPAGES S1) — 국면 근거 딥링크(링크만·fetch 0) */}
+          <div className="mt-1 text-right">
+            <Link
+              href="/market-pulse-v2/macro?tab=rates"
+              className="text-xs text-slate-500 hover:text-slate-800"
+            >
+              금리·지표 →
+            </Link>
+          </div>
         </div>
 
         {/* ③a Stress Card — 시장 스트레스 (MPS-2, hero 직하 = Delta 위) */}
@@ -169,6 +179,18 @@ export default function MarketPulseV2Page() {
 
         {/* ⑧ News */}
         <NewsPanel items={overview.news} labels={labels} />
+
+        {/* ⑧.5 CTA ① (MP2-SUBPAGES S1) — 거시 근거 허브 진입(링크만·홈 fetch 무증가) */}
+        <Link
+          href="/market-pulse-v2/macro"
+          className="mt-4 flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 hover:border-slate-400 transition-colors"
+        >
+          <div>
+            <p className="text-sm font-semibold text-slate-900">거시 근거 보기</p>
+            <p className="text-xs text-slate-500 mt-0.5">금리·심리·글로벌·무버스</p>
+          </div>
+          <span className="text-slate-400" aria-hidden>→</span>
+        </Link>
 
         {/* ⑨ Footer */}
         <footer className="text-[10px] text-slate-400 mt-6 px-1 py-2">

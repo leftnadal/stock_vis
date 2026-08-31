@@ -7113,3 +7113,19 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **단일 출처**: 이 규칙은 repo 하네스에만 둔다(규약 10장 — 코어 복제 금지).
 - **이행 @`9a17e324`(2026-08-31, RC-EXEC-TREE-LAND)**: 래퍼 3건(`celery-worker-neo4j.sh`·`celery-watchdog.sh`·`pg-backup.sh`)에 self-locate 적용 완료. 실행 라인 변경 1/1×3(행위보존 — Desktop 트리에서 실행하면 종전과 동일 경로 도출). plist 3건은 `scripts/ops/launchd/*.plist.proposed`로 대기, 교체·bootstrap은 병진 수동(상신 `scratchpad/RC-NEO4J-WORKER-TREE_상신_20260831.md`).
 - **실측 정정(결함 C)**: 런타임 트리 `.env`는 Desktop 본체 `.env`를 가리키는 **심링크**(worker·api 공통) → 트리 간 `.env` drift는 현 구성에서 발생 불가. `pg-backup` 교정 목적은 위험 제거가 아니라 **규칙 일관성**. 다만 심링크가 본체에 의존하는 사실은 별건 등재(`OPS-ENV-SYMLINK-DEPENDENCY`).
+
+## [2026-08-31] D-SUBPAGES-LAYOUT — 거시 서브페이지 = 허브(가) [frontend][market_pulse]
+
+> MP2-SUBPAGES 사이클 1(프로젝트 캐시 `claude/p2_subpages_decision_c1.md`), 병진 승인 2026-08-31. S1 집행(P2-SUBPAGES-S1).
+
+- **결정 = (가) 허브 서브페이지** — 라우트 1개(`/market-pulse-v2/macro`) + 탭 앵커(`?tab=`)로 딥링크 흡수. 가중합 (가)4.20 > (나)3.20 > (다)2.60, 마진 1.00.
+- **의도**: Phase 2 "촉발 — 왜 움직였나"의 근거 화면. 홈(market-pulse-v2)은 CTA 링크만(fetch 무증가), 한 페이지에서 금리·심리·글로벌(·S2 무버스)을 훑는다. v1(`/market-pulse`) 경험의 v2 후계자 = MP-V1-RETIRE 리다이렉트 목적지 후보.
+- **레이아웃**(목업): 탭(전체/금리/심리/글로벌/무버스[S1 비활성]) → 2열(F&G·수익률곡선) → 전폭(경제지표, 금리 탭 동승) → 전폭(글로벌). 모바일 1열. rotation 서브스크린 동형(Suspense+useSearchParams).
+- **S1 구현**: 허브 라우트 + props형 위젯 4종 원위치 import 재사용(이동 0) + 홈 CTA 2곳(링크만) + 가이드 draft 1 + E2E 3스펙. **MarketMovers = S2**(자체 fetch·LLM 키워드 동반).
+
+## [2026-08-31] D-SUBPAGES-DATA — 거시 허브 데이터 = v1 pulse API 그대로 소비(i) [frontend][market_pulse]
+
+- **결정 = (i) v1 pulse API 재소비** — `useMarketPulse`(→ macroService → `/api/v1/macro/pulse/`) 재사용, 신규 훅 0. 자동 결정 (i)4.35 > (신규 BFF)3.15.
+- **pulse 계약 FREEZE 준수**: 응답 스키마·serializer·throttle **무변경**(MP-UNIFY 2단 FREEZE). 백엔드 diff 0.
+- **실측 근거**: 위젯 4종 전부 props-pure(self-fetch 0)·`@/types/macro` 타입. pulse=AllowAny(무인증 raw fetch)·`market_pulse_user`(v2·120/min) **미공유** → 허브 진입 = macro/pulse 1호출(refetchInterval 60s, 홈과 별개 스코프). 홈 fetch 표면 0 증가(CTA=Link).
+- **테스트 계약 진화(부기)**: guide `draft 잔류 없음` 테스트 → **검수 대기 allowlist**(marketPulse.macro)로 완화 — directive의 `reviewStatus:'draft'`(병진 검수 대기)와 repo 게이트 조화. stray draft는 여전히 실패(게이트 유지).

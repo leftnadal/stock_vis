@@ -60,4 +60,41 @@ export const MARKET_PULSE_GUIDE: GuideScreen[] = [
     // 병진 검수 승인 2026-08-27 (GUIDE-S1C) — v2 기준 문구로 교체 후 승인
     reviewStatus: 'confirmed',
   },
+  {
+    // MP2-SUBPAGES S1 (2026-08-31) — 거시 근거 허브. reviewStatus draft(병진 검수 전).
+    id: 'marketPulse.macro',
+    route: '/market-pulse-v2/macro',
+    title: '거시 근거 — 금리·심리·글로벌',
+    flowStage: 1,
+    coreQuestion: '오늘 국면의 거시 근거(금리·심리·글로벌)는 무엇인가?',
+    learnings: [
+      '시장 심리(공포·탐욕)가 지금 어느 쪽으로 기울어 있는지 — 국면을 읽는 배경 온도',
+      '금리·수익률 곡선과 물가·고용 지표가 국면과 같은 방향을 가리키는지',
+      '글로벌 지수·환율·원자재가 미국 시장과 어떻게 맞물려 움직이는지',
+    ],
+    regions: [
+      {
+        anchor: 'marketPulse.macro.sentiment',
+        title: '공포·탐욕 (심리)',
+        desc: '시장 심리를 한 눈금으로 요약합니다. 국면 판단의 배경 온도 — 같은 신호도 공포 구간과 탐욕 구간에서 다르게 읽어야 합니다.',
+      },
+      {
+        anchor: 'marketPulse.macro.rates',
+        title: '수익률 곡선 (금리)',
+        desc: '단기·장기 금리와 곡선 형태입니다. 역전·정상화 여부가 국면 전환의 선행 신호가 되곤 합니다.',
+      },
+      {
+        anchor: 'marketPulse.macro.economy',
+        title: '물가·고용·성장 (지표)',
+        desc: '인플레이션·고용·성장 지표입니다. 금리 탭과 함께 "왜 이 금리인가"의 배경을 이룹니다.',
+      },
+      {
+        anchor: 'marketPulse.macro.global',
+        title: '글로벌 시장',
+        desc: '해외 지수·환율·원자재입니다. 미국 시장 신호가 글로벌과 합류하는지, 혼자 튀는지 확인하는 자리입니다.',
+      },
+    ],
+    nextAction: { label: '국면 판단 화면으로 돌아가기', route: '/market-pulse-v2' },
+    reviewStatus: 'draft',
+  },
 ];

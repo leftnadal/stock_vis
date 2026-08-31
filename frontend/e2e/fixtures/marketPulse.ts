@@ -7,6 +7,8 @@
  */
 import type { Page, Route } from '@playwright/test'
 
+import { macroPulseFixture } from './macroPulse'
+
 export const overviewFixture = {
   _meta: {
     status: 'OK',
@@ -169,6 +171,8 @@ export async function mockMarketPulse(page: Page, opts: MockOpts = {}): Promise<
     if (p.endsWith('/regime/stress')) return json(route, { _meta: META, data: stressFixture })
     if (p.endsWith('/regime/analog')) return json(route, { _meta: META, data: analogFixture })
     if (p.endsWith('/market-pulse/playbook')) return json(route, { _meta: META, data: playbookFixture })
+    // MP2-SUBPAGES S1 — 거시 허브 pulse(v1 macro API, 실응답 캡처 픽스처)
+    if (p.endsWith('/macro/pulse/') || p.endsWith('/macro/pulse')) return json(route, macroPulseFixture)
     const cd = p.match(/\/cards\/([^/]+)\/detail$/)
     if (cd) return json(route, { _meta: META, data: cardDetailFixtures[cd[1]] ?? { available: false } })
     // 그 외 /api (부수 호출) — benign 빈 응답
