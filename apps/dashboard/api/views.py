@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.dashboard.services.event_strip_service import build_event_strip
 from apps.dashboard.services.strip_service import build_news_strip
 
 
@@ -21,3 +22,16 @@ class NewsStripView(APIView):
     def get(self, request):
         data = build_news_strip(request.user)
         return Response(data)
+
+
+class EventStripView(APIView):
+    """GET /api/dashboard/event-strip — 홈 이벤트 스트립(EVT-IMPL-4 STEP 2-2).
+
+    연합 읽기의 축소판(45일 창 · 거시 HIGH 이상 + 휴장 + 관심 어닝 티저). 인증 필수.
+    서비스가 실패를 흡수({items: []})하므로 항상 200 — FE 실패 격리와 짝.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(build_event_strip(request.user))
