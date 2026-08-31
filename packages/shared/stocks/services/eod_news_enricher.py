@@ -8,9 +8,8 @@ StockNews 모델에서 5단계 계층적 매칭으로 뉴스를 연결합니다.
 import logging
 from datetime import date, timedelta
 
-from django.utils import timezone
-
-from packages.shared.stocks.models import Stock, StockNews
+from packages.shared.stocks.models import Stock
+from packages.shared.stocks.services.news_source import NewsSource, StockNewsSource
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +24,22 @@ class EODNewsEnricher:
     3. symbol_30d: 종목 심볼 매칭 + 30일 이내
     4. industry_7d: industry 매칭 + 7일 이내
     5. profile: Stock 모델에서 기업 기본 정보 팩트 요약
+
+    뉴스 조회는 `news_source`(NewsSource seam)에 위임한다 — 기본값은
+    현행 StockNews 쿼리를 그대로 감싼 StockNewsSource(행위 보존). 실뉴스
+    (NewsEntity) 어댑터는 앱 계층에서 주입한다(NEWSFIX-BE · D-NEWSMATCH-FIX-PATH 1′).
     """
 
     # confidence 순서 (시간적 인과성 보정에 사용)
     CONFIDENCE_ORDER = ["none", "low", "medium", "high", "very_high"]
+
+    def __init__(self, news_source: NewsSource | None = None):
+        """
+        Args:
+            news_source: 뉴스 조회 seam. 미지정 시 StockNewsSource(현행 행위 보존).
+                실뉴스 매칭은 앱 계층이 NewsEntity 어댑터를 주입해 활성화한다.
+        """
+        self.news_source = news_source or StockNewsSource()
 
     def enrich(self, tagged_signals: list[dict], target_date: date) -> list[dict]:
         """
@@ -93,24 +104,7 @@ class EODNewsEnricher:
             }
         """
         # 1단계: symbol 매칭 + 당일 뉴스
-        today_start = timezone.datetime.combine(
-            target_date, timezone.datetime.min.time()
-        )
-        today_end = timezone.datetime.combine(target_date, timezone.datetime.max.time())
-        if timezone.is_naive(today_start):
-            import pytz
-
-            today_start = timezone.make_aware(today_start, pytz.UTC)
-            today_end = timezone.make_aware(today_end, pytz.UTC)
-
-        news = (
-            StockNews.objects.filter(
-                symbol=symbol,
-                published_at__date=target_date,
-            )
-            .order_by("-published_at")
-            .first()
-        )
+        news = self.news_source.latest_on_date(symbol, target_date)
         if news:
             return self._build_news_dict(
                 news, "symbol_today", "high", target_date, signal_direction
@@ -118,15 +112,7 @@ class EODNewsEnricher:
 
         # 2단계: symbol 매칭 + 7일 이내
         cutoff_7d = target_date - timedelta(days=7)
-        news = (
-            StockNews.objects.filter(
-                symbol=symbol,
-                published_at__date__gte=cutoff_7d,
-                published_at__date__lte=target_date,
-            )
-            .order_by("-published_at")
-            .first()
-        )
+        news = self.news_source.latest_between(symbol, cutoff_7d, target_date)
         if news:
             return self._build_news_dict(
                 news, "symbol_7d", "medium", target_date, signal_direction
@@ -134,15 +120,7 @@ class EODNewsEnricher:
 
         # 3단계: symbol 매칭 + 30일 이내
         cutoff_30d = target_date - timedelta(days=30)
-        news = (
-            StockNews.objects.filter(
-                symbol=symbol,
-                published_at__date__gte=cutoff_30d,
-                published_at__date__lte=target_date,
-            )
-            .order_by("-published_at")
-            .first()
-        )
+        news = self.news_source.latest_between(symbol, cutoff_30d, target_date)
         if news:
             return self._build_news_dict(
                 news, "symbol_30d", "low", target_date, signal_direction
@@ -150,14 +128,8 @@ class EODNewsEnricher:
 
         # 4단계: industry 매칭 + 7일 이내
         if industry:
-            news = (
-                StockNews.objects.filter(
-                    industry=industry,
-                    published_at__date__gte=cutoff_7d,
-                    published_at__date__lte=target_date,
-                )
-                .order_by("-published_at")
-                .first()
+            news = self.news_source.latest_by_industry_between(
+                industry, cutoff_7d, target_date
             )
             if news:
                 return self._build_news_dict(
@@ -180,7 +152,7 @@ class EODNewsEnricher:
 
     def _build_news_dict(
         self,
-        news: "StockNews",
+        news: object,
         match_type: str,
         confidence: str,
         target_date: date,
@@ -246,7 +218,7 @@ class EODNewsEnricher:
         self,
         base_confidence: str,
         match_type: str,
-        news: "StockNews",
+        news: object,
         signal_direction: str,
     ) -> str:
         """

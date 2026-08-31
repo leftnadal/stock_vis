@@ -50,6 +50,15 @@ class EODPipeline:
     PipelineLog에 각 단계 결과를 기록합니다.
     """
 
+    def __init__(self, news_source=None):
+        """
+        Args:
+            news_source: Stage 5 뉴스 조회 seam(NewsSource). 미지정 시 enricher가
+                StockNewsSource(현행 행위 보존)를 쓴다. 실뉴스(NewsEntity) 어댑터는
+                앱 계층 진입점이 주입한다(NEWSFIX-BE · D-NEWSMATCH-FIX-PATH 1′ 배선).
+        """
+        self.news_source = news_source
+
     def run(self, target_date: date = None) -> "PipelineLog":
         """
         8단계 파이프라인을 실행합니다.
@@ -176,7 +185,7 @@ class EODPipeline:
 
             # ── Stage 5: News Enrich ──────────────────────────────────
             stage5_start = time.perf_counter()
-            enricher = EODNewsEnricher()
+            enricher = EODNewsEnricher(news_source=self.news_source)
             enriched = enricher.enrich(tagged, target_date)
             stage5_elapsed = time.perf_counter() - stage5_start
             news_matched = sum(
