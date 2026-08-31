@@ -1737,3 +1737,17 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 **규율**: ⑴ 마커는 12자 이상 전체 문구만(테스트로 강제 — `test_error_markers_have_no_short_tokens`). ⑵ 셸 마커(있어야 정상)도 같은 가시 텍스트로 판정. ⑶ **매일 발송되는 자동 점검에서 거짓 경보는 곧 그 점검의 폐기**다 — 임계·마커는 도입 전에 실데이터로 1회 돌려 오탐 0을 확인하고 넣는다.
 
 **부기**: SSR HTML로는 **클라이언트 렌더 데이터가 안 보인다**. 대시보드·모니터·포트폴리오는 마운트 후 fetch하므로 HTML에는 셸/로딩만 있고 `data-guide` 앵커도 없다. 따라서 HTTP 전용 점검의 사거리는 "셸이 뜨는가 · 에러 문구가 없는가"까지이고, 데이터 유무는 **API·baked JSON을 따로 봐야** 한다(AGENT-S1이 그렇게 나눈 이유).
+
+## 공유 "main worktree"가 main에 있다고 가정하지 말 것 — 타 세션이 브랜치를 바꿔놓으면 커밋이 남의 브랜치에 얹힌다 (채번 후보, RC-A-1 2026-08-31) `[git][harness][process]`
+
+**증상**: `~/Desktop/sess-main-integrate`(관례상 main 전용 트리)에서 원장 커밋 후 `git push origin main`이 거부됨. 확인해 보니 트리가 **`monorepo/sess-eodsig-freshgate`**(타 세션의 미푸시 브랜치)에 체크아웃돼 있었고, 내 커밋이 **그 브랜치 위에 얹혀** 있었다. 같은 세션 안에서 앞선 3회 push는 정상이었다 — 그 사이에 다른 세션이 브랜치를 바꿔놓은 것.
+
+**왜 위험한가**: ⑴ 내 원장 변경이 남의 기능 브랜치에 섞여 그 세션이 모르는 채로 들고 다닌다 ⑵ push 거부 메시지만 보면 "behind"로 오인해 `pull`·`rebase`로 대응하기 쉬운데, 그러면 **남의 브랜치를 더 헝클어뜨린다** ⑶ 그 브랜치가 **미푸시**면(`git branch -r --contains` 비어 있음) 잘못 되돌릴 때 **복구 불가능한 작업 소실**이 된다.
+
+**규율**:
+1. 공유 트리에서 커밋하기 **전에** `git rev-parse --abbrev-ref HEAD`로 브랜치를 **매번** 확인한다. 세션 초반에 한 번 확인한 것은 유효기간이 없다(worktree는 세션 간 공유 상태).
+2. push 거부 시 `pull`부터 하지 말고 **브랜치부터 확인**한다.
+3. 이미 남의 브랜치에 얹혔다면 순서는 **⑴ 내 커밋을 안전한 곳으로 먼저 옮기고(별도 worktree에서 `origin/main`에 cherry-pick → push) ⑵ 그 다음 남의 브랜치를 원래 tip으로 복구**한다. 반대 순서로 하면 중간에 실패했을 때 내 작업이 사라진다.
+4. 복구 전 **`git branch -r --contains <그들의 tip>`으로 원격 존재 여부를 확인**한다. 비어 있으면 로컬 전용 = 절대 소실시키면 안 되는 상태.
+
+**실증(RC-A-1)**: 내 커밋 `e500bfc3`(PROGRESS·TASKQUEUE 2파일)이 타 세션 `0ed74613`(EODSIG-FRESH-GATE, **원격 미존재**) 위에 얹힘 → 별도 worktree에서 `origin/main`에 cherry-pick(`c8dfc627`, 충돌 0) → push → 원 트리를 `reset --hard 0ed74613`으로 복구. 타 세션 작업 무손실 확인.
