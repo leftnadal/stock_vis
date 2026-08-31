@@ -346,7 +346,7 @@ def seed_relations_to_chainsight():
         GRADE_OBSERVED_MIN,
         SCORE_VERSION_CURRENT,
     )
-    from apps.chain_sight.utils import normalize_pair
+    from apps.chain_sight.utils import normalize_pair, skip_self_loop
 
     from .models import SupplyChainEvidence as SCE
 
@@ -373,8 +373,8 @@ def seed_relations_to_chainsight():
         else:
             continue
 
-        # ⑳-3 REVIEW-P2 Part Q: a≠b 가드 — 자기루프(source==target) 스킵.
-        if sym_a == sym_b:
+        # A-1(MIG-BUNDLE-1): a≠b 가드 — 자기루프(source==target) skip+구조화 로그.
+        if skip_self_loop(sym_a, sym_b, rel_type, source="sec_10k_seed", logger=logger):
             continue
 
         # D-RC-SCALE: [0,1] 단위 계단(단일 소스 score_scale). default=medium(0.60).

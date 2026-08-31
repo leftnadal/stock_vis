@@ -257,7 +257,7 @@ def update_relation_confidence(self):
         GRADE_OBSERVED_MIN,
         SCORE_VERSION_CURRENT,
     )
-    from apps.chain_sight.utils import normalize_pair
+    from apps.chain_sight.utils import normalize_pair, skip_self_loop
 
     # co-mention 쌍 (임계 count>=2 보존 — P2-1 판정 "임계 아님", 임계 변경 금지.
     # 유니버스 필터·기간 창은 원 로직에 없으므로 무추가 = 보존).
@@ -268,8 +268,8 @@ def update_relation_confidence(self):
 
     created, updated = 0, 0
     for (sym_a, sym_b), count in co_mention_map.items():
-        # ⑳-3 REVIEW-P2 Part Q: a≠b 가드 — 자기루프 쌍 스킵(모델 save() 가드 선제 회피).
-        if sym_a == sym_b:
+        # A-1(MIG-BUNDLE-1): a≠b 가드 — 자기루프 쌍 skip+구조화 로그(모델 save() 가드 선제 회피).
+        if skip_self_loop(sym_a, sym_b, "CO_MENTIONED", source="co_mention_batch"):
             continue
 
         # ── CO_MENTIONED (market / serving_layer=evidence): 뉴스 동시출현 증거 ──
