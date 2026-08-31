@@ -144,6 +144,14 @@ export default function EventBoard() {
             <Share2 size={16} />
             전체 관계 그래프 보기
           </Link>
+          {/* RC-C-1: 관계 백본(활성 해자 중심성) 진입점 (신규 라우트, additive) */}
+          <Link
+            href="/chainsight/backbone"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Share2 size={16} />
+            관계 백본 보기
+          </Link>
         </div>
       </div>
       <div data-guide="chainsight.event-grid" className="grid grid-cols-2 md:grid-cols-4 gap-4">
