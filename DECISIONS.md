@@ -7240,3 +7240,32 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
   - 큐 라우팅 확증: `refresh_market_pulse_cache`는 `task_routes` 미등재 → **default 큐**(default 워커 소비) → enqueue 정상 소비(HALT 조건 미해당).
 - **FE(v1 행위보존)**: `macroService.getMarketPulse({timeoutMs?})`·`useMarketPulse({timeoutMs?})` **additive 옵션**(미지정=기존 무제한, v1 diff 0). 허브만 `timeoutMs:20000` + 실패 시 "준비 중 — 자동 재시도" 안내 + 재시도 버튼(refetch) + `last_updated` 나이 >5분이면 "N분 전 데이터" 배지(StatusBanner STALE 토큰 `amber-50/700/200` 재사용, 하드코딩 0).
 - **후속(A안 잔여)**: pulse 워밍 창 재검토는 SWR 운영 관측 후 별건(TASKQUEUE 등재).
+## [2026-08-31] D-ENV-SYMLINK-KEEP — 런타임 트리 `.env` = 심링크 유지 + 점검으로 감시 [infra][process]
+
+> OPS-GUARD-S1. 병진 결정: 독립 사본은 drift 위험을 재도입하므로 기각.
+
+- **결정**: 런타임 트리(`sv-worker-runtime`·`sv-api-runtime`)의 `.env`는 **공유 본체 `~/Desktop/stock_vis/.env`를 가리키는 심링크로 유지**한다. 독립 사본으로 떼지 않는다.
+- **Why**: 사본은 두 실체가 갈라지는 순간 **조용한 오작동**(엉뚱한 DB·만료 키)을 만든다. D-LAUNCHD-RUNTIME-TREE가 제거하려던 것은 *실행 코드*의 공유 트리 의존이지 *설정*의 단일 출처가 아니다. 설정은 단일 실체가 옳고, 위험(본체 파일 소실)은 **점검으로 감시**한다.
+- **감시**: `health_check.py`의 `.env 심링크 실체`(`check_env_symlink`) — 심링크 + 대상 실재 = OK / 일반 파일 = WARN(drift 가능) / 대상 소실·부재 = **ERROR**. **값은 절대 읽지 않는다**(경로·종류·해석 가능 여부만; 테스트로 계약 박제).
+- **잔여 리스크 수용**: 본체 `.env`가 이동·삭제되면 런타임 3트리가 동시에 깨진다. 즉시 ERROR로 표면화되는 것을 대가로 단일 출처를 택했다.
+
+## [2026-08-31] OPS-HEALTHCHECK-PLIST-TREE 이행 — launchd 실행 트리 자동 점검 [infra]
+
+> D-LAUNCHD-RUNTIME-TREE의 집행 수단. 규칙 자체는 그 결정에 있고, 여기서는 이행만 기록한다.
+
+- **이행**: `health_check.py`에 `launchd 실행 트리 정합`(`check_launchd_tree_alignment`) 추가. `~/Library/LaunchAgents/com.stockvis.*.plist` 전건의 `WorkingDirectory`·`ProgramArguments` 경로를 읽어 **공유 편집 트리(`Desktop/stock_vis`)를 가리키면 ERROR**, 허용 목록 밖이면 WARN.
+- **Why**: 잡 3건이 **11일간 낡은 공유 트리에서 돌았는데 무탐지**였다(RC-NEO4J-WORKER-TREE). 규칙만 있고 자동 점검이 없으면 같은 일이 반복된다.
+- **허용 목록(STEP 0 실측, plist 12건)**: `~/worktrees/sv-{worker,api,web}-runtime` · `~/neo4j`(엔진) · `~/stock-vis-nightly`(야간 자동화) · `~/.nvm`(node 도구) · 시스템 경로(`/bin`·`/usr`·`/opt`·`/Library`·`/System`).
+- **구현 선택 — `plutil` 서브프로세스 대신 stdlib `plistlib`**: 외부 명령 의존을 없애 비-macOS/CI에서도 안전하고, 손상 plist를 건별로 격리할 수 있다(일부 판독 불가여도 나머지로 판정 + 증거 병기). `LaunchAgents` 디렉터리 부재 = OK-skip(비-런타임 환경).
+- **오탐 방지**: 경로 토큰 추출 시 콜론 포함 문자열(PATH 값)은 제외. `sv-worker-runtime-old` 같은 **prefix 유사 이름은 허용하지 않는다**(경계 `/`까지 대조; 테스트 박제).
+- **실효 즉시 증명**: 도입과 동시에 **`pg-backup` 1건을 ERROR로 포착**(현재 유일 잔여 결함).
+- ⚠️ **부작용 명기**: 이 ERROR는 `pg-backup` plist 교정 전까지 상수다 → **`health_check ❌0`을 랜딩 게이트로 쓰는 다른 세션이 막힌다.** 게이트는 "❌0" 대신 "**신규 ❌ 없음**"으로 읽어야 하며, 근본 해소는 `RC-LAUNCHD-PGBACKUP-TREE` 집행이다.
+
+## [2026-08-31] D-SHARED-SIGNALS-INTENT — `worker_sync.sh`의 Desktop signals 경로 = 잔재 아님(가드 대상) [infra]
+
+> OPS-WORKER-SYNC-SHARED-SIGNALS 측정 결론(read-only). 코드 변경 0.
+
+- **판정**: `scripts/worker_sync.sh:31`의 `SHARED_SIGNALS=".../Desktop/stock_vis/frontend/public/static/signals"`는 **의도된 가드 대상**이다. 실행 트리 잔재가 아니다.
+- **근거(실측)**: ⑴ 베이커 `eod_json_baker.OUTPUT_DIR = settings.BASE_DIR/frontend/public/static/signals` → 워커가 런타임 트리에서 도므로 **원본 실디렉터리 = `sv-worker-runtime/.../signals`** ⑵ `Desktop/stock_vis/.../signals`와 `sv-web-runtime/.../signals`는 **둘 다 그 원본을 가리키는 심링크** ⑶ `dashboard.json` **inode 동일(160225849)** = 동일 실체 확증 ⑷ `worker_sync.sh`의 `guard_symlink`는 **"심링크가 아니면 ERROR + exit 1"** — 즉 그 경로가 심링크여야 정상이라는 것이 설계 의도.
+- **성격**: 공유 본체에서 프론트 dev를 돌릴 때 baked signals가 보이도록 하는 심링크의 **건강 검사**. 원본이 런타임 트리에 있으므로 D-LAUNCHD-RUNTIME-TREE와 충돌하지 않는다.
+- **조치**: 없음(변경 금지). 티켓 종결.
