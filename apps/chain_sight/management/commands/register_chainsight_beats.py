@@ -63,6 +63,17 @@ BEATS = [
         "day_of_week": None,  # 매일 (confidence가 매일이므로)
     },
     {
+        # co-mention 활동 캐시 물질화 (MIG-BUNDLE-1 C-2, 관문②). ET 12:00 매일 —
+        # pair-aggregation(11:30)·confidence(11:00) 뒤 = 신선한 CoMentionEdge 로 스냅샷.
+        # 카드 API 캐시 소스(부재/미갱신 시 라이브 fallback). SymbolStoryActivity upsert.
+        "name": "chainsight-materialize-story-activity",
+        "task": "chainsight-materialize-story-activity",
+        "minute": "0",
+        "hour": "12",
+        "timezone": "America/New_York",
+        "day_of_week": None,  # 매일
+    },
+    {
         # C8 원장 스냅샷 (Theme Heat TH-3, 설계서 §7). 주간 금 마감 후 — 콜드 스타트 시계
         # 기동(§5.3, Cycle 1 첫 배포일부터). ET 16:30(16:00 마감 직후), 금요일만.
         # snapshot_date = 그 금요일 = §6.6 "주간(금요일)" 정합. DST 자동 처리 위해 ET 고정.
