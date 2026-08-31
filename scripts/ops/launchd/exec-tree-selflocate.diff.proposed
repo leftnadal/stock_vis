@@ -1,3 +1,4 @@
+# applied @9a17e324 (2026-08-31, RC-EXEC-TREE-LAND) — 이력 보존용. 재적용 불필요.
 diff --git a/scripts/celery-watchdog.sh b/scripts/celery-watchdog.sh
 index 8d03de08..7e9d9bfe 100755
 --- a/scripts/celery-watchdog.sh

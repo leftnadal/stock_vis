@@ -7026,3 +7026,5 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **순서 규칙**: watchdog은 감시 대상보다 **나중에** 올린다. 미교정 상태의 잡을 watchdog이 `launchctl kickstart` 해버린다(실측: 09:34~12:11 5분 주기 재기동 시도 + 경보 메일 반복).
 - **집행 규율**: plist 편집·`bootout`/`bootstrap`·서비스 기동은 **에이전트 자기 집행 금지** — 상신 후 병진 수동([[feedback_service_op_submit_not_execute]]). 기동 전 안전 게이트 = 런타임 트리 HEAD가 해당 배포 커밋을 포함하는지 `git merge-base --is-ancestor`로 확인.
 - **단일 출처**: 이 규칙은 repo 하네스에만 둔다(규약 10장 — 코어 복제 금지).
+- **이행 @`9a17e324`(2026-08-31, RC-EXEC-TREE-LAND)**: 래퍼 3건(`celery-worker-neo4j.sh`·`celery-watchdog.sh`·`pg-backup.sh`)에 self-locate 적용 완료. 실행 라인 변경 1/1×3(행위보존 — Desktop 트리에서 실행하면 종전과 동일 경로 도출). plist 3건은 `scripts/ops/launchd/*.plist.proposed`로 대기, 교체·bootstrap은 병진 수동(상신 `scratchpad/RC-NEO4J-WORKER-TREE_상신_20260831.md`).
+- **실측 정정(결함 C)**: 런타임 트리 `.env`는 Desktop 본체 `.env`를 가리키는 **심링크**(worker·api 공통) → 트리 간 `.env` drift는 현 구성에서 발생 불가. `pg-backup` 교정 목적은 위험 제거가 아니라 **규칙 일관성**. 다만 심링크가 본체에 의존하는 사실은 별건 등재(`OPS-ENV-SYMLINK-DEPENDENCY`).

@@ -1,5 +1,7 @@
 # 상신 — RC-NEO4J-WORKER-TREE: launchd 실행 트리 교정
 
+> ✅ **STEP 0 완료 @`9a17e324`** (래퍼 3건 self-locate 교정 랜딩, RC-EXEC-TREE-LAND) — **`sv sync` 후 ① 진행 가능.**
+
 - **작성**: 2026-08-31 (CC, ops 소형 세션 · worktree `sv-ops-plist-tree` / `monorepo/sess-ops-plist-tree`)
 - **성격**: **상신 전용.** launchd 편집·bootout/bootstrap·서비스 기동은 CC가 집행하지 않는다([[feedback_service_op_submit_not_execute]]). 아래 절차는 병진이 수동 실행.
 - **측정 기준시각**: 12:31~12:35 KST
@@ -184,7 +186,8 @@ cp "$DST/com.stockvis.celery-worker-neo4j.plist.bak-20260831" "$DST/com.stockvis
 ## 6. 별도 절 — 결함 C: `pg-backup` (우선순위 3, 읽기 전용)
 
 - **트리**: Desktop. `pg_dump`만 수행하므로 **DB 쓰기 없음** → 오염 위험 없음.
-- **실질 위험**: Desktop 트리의 `.env`를 읽어 `DB_NAME/DB_USER/DB_HOST/DB_PORT`를 결정 → 두 트리 `.env` drift 시 **엉뚱한 DB를 백업**할 수 있음(백업 공백 = 조용한 실패).
+- **실질 위험 — 실측 하향 정정(2026-08-31 RC-EXEC-TREE-LAND)**: `~/worktrees/sv-worker-runtime/.env`는 **`~/Desktop/stock_vis/.env`를 가리키는 심링크**(대상 실재 확인). 즉 두 트리가 **동일한 `.env` 실체를 공유**하므로 당초 우려한 "트리 간 `.env` drift → 엉뚱한 DB 백업"은 **현재 구성에서 발생 불가**. 결함 C의 교정 목적은 **위험 제거가 아니라 D-LAUNCHD-RUNTIME-TREE 규칙 일관성**(공유 편집 트리 의존 제거)이다.
+- ⚠️ **잔여 의존**: 런타임 트리의 `.env`는 심링크이므로 **Desktop 본체 파일에 여전히 의존**한다. 본체 `.env`가 이동·삭제되면 런타임 3트리가 함께 깨진다(worker·api 모두 같은 심링크). 별건 등재 = `OPS-ENV-SYMLINK-DEPENDENCY`. (`sv-web-runtime`에는 `.env` 없음 — frontend는 별도 파일, pg-backup과 무관.)
 - **현재**: 로드·정상(runs=39, last exit 0, 02:00 스케줄).
 - **집행**: 서두를 필요 없음. STEP 0 스크립트 교정이 랜딩되면 plist만 `.proposed`로 교체 후 `bootout`→`bootstrap`. 다음 02:00 실행에서 로그 확인.
 
