@@ -1810,6 +1810,14 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 **원인**: `record_observation`은 defaults만 갱신(status 무변), `_persist_event`는 eps_actual 등장 시 occurred **상향만**. **stale→scheduled 하향(복원) 경로 부재** → 소실 오탐이 영구 고착.
 
 **규율**: 소실 감지(스윕→stale)를 두면 **재관측 복원 경로를 반드시 짝으로** 둔다. 재관측 = 원천이 재확인 = 소실 아님 → 복원. 상향(occurred)이 복원보다 우선. 수정 후에는 수집기 재실행만으로 과거 오표시 자가치유(별도 DB write 불요). 구현 `packages/shared/stocks/tasks.py::_persist_event`, `d2bd219b`.
+
+## 외부 캘린더 시각은 원문 시간대를 먼저 실측 — 필드 라벨을 믿지 않는다 (채번 후보, EVT-CORR-4 2026-08-31) `[backend][data]`
+
+**증상**: 이벤트 캘린더의 모든 거시 시각이 +4h 오표시(Chicago Fed 08:30 ET가 "12:30 ET / KST 01:30"). `EconomicEvent.event_time` help_text는 'ET (발표 시간)'.
+
+**원인**: 수집기(`apps/market_pulse/tasks/macro.py:183`)가 FMP `date`(UTC 문자열)의 HH:MM을 그대로 저장. 실제 저장값은 **UTC**인데 모델 help_text만 'ET' → 모든 소비자가 라벨을 믿고 ET로 표시 = +4h(EDT)/+5h(EST) 오차.
+
+**규율**: 외부 소스 시각을 소비하기 전, **알려진 발표시각을 가진 표본 2~3건의 저장값을 실측**해 원문 시간대를 확정한다(필드 라벨·help_text 신뢰 금지). 예: Initial Jobless Claims 08:30 ET·ISM 10:00 ET·FOMC 14:00 ET의 저장값이 +4/+5면 UTC. 수정은 원천 최소 변경 원칙 → 읽기 계층에서 변환(EVT-CORR-4), 원천 정정은 별건(MP-MACRO-CAL-1).
 ## pulse full 캐시 60s + 워밍 beat ET 장중 한정 → KST 사용 시 상시 콜드 → 라이브 14호출 28s 대기 (채번 후보, MP2-SUBPAGES HOTFIX-1 2026-08-31) `[backend][market_pulse][cache][celery]`
 
 **증상**: `/market-pulse-v2/macro` 허브가 장외(KST 오후) 진입 시 "불러오는 중…"에서 ~28초 멈춤. v1(`/market-pulse`)은 정상(localStorage 30분 캐시가 가림).

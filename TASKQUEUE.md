@@ -1575,8 +1575,12 @@
 - ✅ **CS-STORY-ACTIVITY-CACHE** (C) — SymbolStoryActivity(chainsight 0035)+물질화 태스크·커맨드+캐시우선 서빙+전역조회. 검증: 31,978행/35.75초·전역조회 0.7ms·캐시 3.9ms vs 라이브 55ms.
 - 🔴 **[MIG-BUNDLE-1 관문②]** 병진 잔여 — `register_chainsight_beats`(chainsight-materialize-story-activity ET 12:00 등록) + **worker 재시작**([[lesson_celery_task_registration]]).
 - 🟢 **S2 착수 준비 완료** — 캐시·전역조회·(-activity_ratio) 인덱스 = R2-S2 전역 활동 뷰 소스 완비.
+- ✅ **[EVT-4B] 완료** — CORR-4(거시 event_time UTC 해석·경계 보정) + FE-TUNE-1(T2 거시 접기·세션 빈칸·서프라이즈 200%). BE `da3a871c`+FE `31bf7791`(로컬 sess-evt-6). 0-3 UTC 게이트 PASS. **push 후 :3000 재빌드 필요(사용자 지시)** — 재빌드 전까지 화면 미반영.
+- ✅ **[EVT-IMPL-4-SHOT] 완료** — 증적 = 2026-08-31 디렉터 채팅 첨부 5장·시각 계약 판정 통과.
+- 📋 **[MP-MACRO-CAL-1] 별건 — market_pulse 소유** (초안 `docs/instructions/MP-MACRO-CAL-1.md`): 거시 수집기(`apps/market_pulse/tasks/macro.py`) 결함 3건 = ①시각 UTC 저장·help_text만 ET(EVT-CORR-4로 읽기 계층 우회) ②실제값 미백필(수집 창 today..+14일, 과거 이벤트 actual 갱신 안 됨 — 과거7일 거시 34건 전부 actual 빈값) ③중요도 인플레(High→critical 매핑, 97일 창 crit34/high60). **EVT 계약**: event_time 저장 **UTC 유지**+help_text 정정, event_id 해시 유지(변경 시 EVT-CORR-4 파손). 결정·집행은 market_pulse 트랙(제안 A~D는 그쪽 사이클). **EVT/ops는 소비자로서 결함 보고+계약만.**
 - 🟡 **[SYNC-SV-WRAPPER-GAP] (비긴급·등재만, @infra)** — `worker_sync.sh` #47 가드 안내문이 권장하는 `sv sync`/`sv health` 래퍼가 **PATH·repo 어디에도 없음**(alias/function/스크립트 전무). 가드가 존재하지 않는 해결책을 안내 중 → 사용자가 stale 사본 재실행 루프에 빠질 수 있음. 대응: `sv` 래퍼 신설(최신 origin/main 사본 self-locate 후 worker_sync 실행) **또는** 안내문을 "origin/main 최신 사본 직접 실행(임시 worktree)"로 수정. 실측 우회법=origin/main detached 임시 worktree에서 `scripts/worker_sync.sh` 실행(MIG-BUNDLE-1 2026-08-31 적용).
 
 ## OPS-GUARD-S1 파생 (등재, 2026-08-31)
 
 - 🔴 **OPS-HEALTHCHECK-NIGHTLY-WIRE** (@infra) — **점검을 추가했지만 야간 자동 실행이 되지 않고 있다.** `scripts/run_health_check_nightly.sh`의 `PROJECT_DIR` 기본값이 **`$HOME/stock-vis`(실재하지 않는 경로)**이고, `~/stock-vis-nightly/*.sh` 어디서도 이 wrapper를 **호출하지 않으며**, 최근 14일 `health_check.json` 산출물도 **0건**. → 재발해도 **익일 자동 탐지가 성립하지 않는다**(OPS-HEALTHCHECK-PLIST-TREE의 실효가 수동 실행에 의존). 조치 후보: ⑴ `PROJECT_DIR` 기본값을 런타임 트리로 교정 ⑵ `nightly` 잡(23:00) 또는 `runtime-check`(1h)에서 호출 배선 ⑶ 산출물 경로 확인. **이 티켓이 닫히기 전까지 새 점검 2건은 "사람이 돌려야 보이는" 상태**임을 명심.
+- 🧹 **[EVT-FE-CLEANUP-CALFMT 후보]** — EVT-4B FE-TUNE-1에서 세션 빈칸·거시 미리보기 시각 포맷을 `EventRow`/`MacroFoldRow` 로컬 헬퍼로 구현(2-9 파일 범위 준수 위해 `lib/monitor/calendarFormat.ts` 무접촉). 로직 중복 = 후속 정리 시 `calendarFormat.ts`로 통합 검토(FE 백로그).

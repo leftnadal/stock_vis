@@ -7194,6 +7194,16 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **부수 관찰**: Chain Sight 연계가 **섹터 칩뿐**(관계 실신호 부재) = **SCAN-B3(관계 축) 가치의 사용자 측 재확인**.
 - **How to apply**: ㉮㉯㉰ = SCAN-UX-2 선행분(FE 공짜 필드·베이커 무접촉), ㉱ = 목업 결정 후 편입, SCAN-FIX-1(strip 라벨)도 UX-2 흡수. 밸류축은 SCAN-B2-FUND-BE(후행)에서 프리셋과 결합. cf. D-SCAN-R1-OBS·SCAN-UX-2(TASKQUEUE)·[[project_scanner_ux_recon]].
 
+## D-EVT-CORR-4 — EconomicEvent.event_time = UTC 해석 (2026-08-31)
+- **결정**: 거시 `event_time`은 **UTC**(FMP date 원문)로 해석. 읽기 계층(event_feed `_macro_et_kst`)에서 UTC→ET·KST 도출. 원천 필드 의미·수집기 무변(MP-MACRO-CAL-1 계약: 저장 UTC 유지·help_text만 정정).
+- **근거**: `apps/market_pulse/tasks/macro.py:183`이 FMP date(UTC)의 시각을 잘라 저장, 모델 help_text만 'ET'. §0-3 하드 게이트 실측: Initial Jobless Claims 08:30ET=저장 **12:30** / ISM 10:00ET=**14:00** / FOMC Minutes 14:00ET=**18:00** = 전부 ET+4(EDT). 혼합 없음 → UTC 확정.
+- **구현**: 날짜 그룹·d_day·정렬 = **변환 ET 날짜**(원천 event_date 아님). 경계 보정 = 원천 [start−1,end+1] 조회 후 ET 날짜 재필터(자정 경계, 실측 3행 이동). `detail.event_time_utc` 감사 필드 1개 추가.
+
+## D-EVT-FE-TUNE-1 — T2 거시 접기 (2026-08-31)
+- **결정**: 관심종목 이벤트(어닝·배당·분할)·휴장은 항상 펼침, 거시는 날짜 그룹당 "거시 N건 ▸" 한 줄 접힘 + CRITICAL 제목 미리보기(최대 3), 기본 접힘. 유형 필터 거시 단독이면 펼침.
+- **가중합**: T2 4.60 / T4 3.70 / T1 3.65 / T3 3.60, 마진 0.90(사용자 확정).
+- **근거**: 실화면 104항목 중 거시 94, "지난 7일"이 거시 34행으로 시작해 IREN miss가 밀림. 화면 높이를 관심종목 수에만 비례시킴(어닝 시즌·FOMC 주간 안정).
+- **소손질**: 거시 행 한 줄화 / "세션 미정" 문구 제거(빈 칸) / |서프라이즈|>200%면 뱃지 beat·miss만·원값 주표기.
 ## [2026-08-31] D-SCAN-STORY-3LAYER — 스캐너 종목 서사 3층 구조 + 생성 B계층·착수 A [frontend][dashboard][scanner][rag-llm]
 
 > 08-31 사용자 확정. 스캐너 종목의 "이야기"를 3층으로 구조화. 생성 방식은 A 템플릿(4.25)=B 계층(4.25) 동점 → 타이브레이커 단계화(A는 B의 1단계) → 최종 B·착수 A. (MGMT-BATCH-41)
