@@ -3340,9 +3340,9 @@ thesis/      — ✅ 제거됨 (D-MONITOR-REBUILD, apps/monitor 편입, 2026-07-
   - 📎 **STEP 0 실측**(sess-cs-step0 @ b457bbf): 백엔드 85파일·모델 20개·**RelationConfidence 13,695행 prod**(CoMentionEdge 1,361·PriceCoMovement 8,859)·**M2 v1.1 Phase 1 go-live(2026-06-27)**, daily beat 가동·neo4j_dirty=0(동기화 완료). 기존 `[골격]`·`추정` 표기는 성숙도 과소표현이라 격상.
   - ⚠ **레거시 Chain Sight v1 경계(불일치-A, 글롭 미변경)**: `services/serverless/{chain_sight_service·neo4j_chain_sight_service·supply_chain_parser·supply_chain_service}.py` + `migrations/0009_chain_sight_stock.py` = Chain Sight **v1**, **serverless 무소속 #3 구획 소속**(CLAUDE.md도 serverless에 명기). **chain_sight 트랙 ≠ 이 레거시본.** 흡수 vs serverless 잔류는 **결정 안건(보류, `TASKQUEUE` `CS-LEGACY`)** — 결정 전이므로 글롭에 넣지 않음.
 
-**[무소속 — 작업 착수 전 트랙 배정 필수]** (7구획):
+**[무소속 — 작업 착수 전 트랙 배정 필수]** (6구획 — news 배정으로 7→6):
 1. **thesis 구획** — 루트 `thesis` BE + thesis 표면 일체
-2. **news 구획** — `services.news` 계열
+2. ~~news 구획 — `services.news` 계열~~ → **@backend/news 계열 배정 완료**(2026-09-01 MGMT-BATCH-43 · D-OWN-NEWS · 사용자 승인)
 3. **screener·admin 구획** — `services.serverless` 계열
 4. **rag·ai-analysis 구획**
 5. **stocks 표면** — 백엔드 `shared.stocks`는 토대
@@ -7298,3 +7298,30 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **근거 실측(RECON-NEWSMATCH-R1)**: `NewsArticle` 462,060(최신 08-30) · `NewsEntity` 587,902 · 표본 **26/26 실뉴스 보유** · 매칭 로직·confidence 보정 무결 · 추천 카드 = enricher **다운스트림**(수리 시 자동 치유) · **뉴스 존재 칩 0렌더 → 점등 예정**.
 - **채번 흐름 정정**: enricher 결함 `#NN` 부여는 "수리 세션"이 아니라 **수리 착지 확인 후 차기 mgmt**가 부여한다(build/수리 세션은 비mgmt = 채번 금지 · D-NUMBERING-MGMT-ONLY 정합). BATCH-41 D-NEWSMATCH-PROMOTE의 "수리 착지 세션이 부여" 표현을 본 항목이 정정.
 - **How to apply**: NEWS-MATCH-FIX = build 대기(NEWSFIX-BE 지시서 발급). 착지 후 효과 3종(스캐너 news_context·추천 카드·뉴스 존재 칩) 검증 → 차기 mgmt가 common-bugs `#NN` 부여 + D-SCAN-STORY-3LAYER 서사 층 전제 해소. cf. D-NEWSMATCH-PROMOTE·NEWS-MATCH-FIX(TASKQUEUE)·[[project_scanner_ux_recon]].
+
+## [2026-09-01] D-NEWSMATCH-FIX-PATH-V2 — 1′ 실측 기각 → ⑵ sync beat 확정 (내장 폴백 발동) [backend][dashboard][scanner]
+
+> NEWSFIX-BE 세션 STEP 0 실측이 D-NEWSMATCH-FIX-PATH 1′의 전제(즉효·인프라 0)를 기각 → 결정 시 내장한 폴백(2안 sync)으로 전환. (MGMT-BATCH-43)
+
+- **1′ 전제 기각(실측)**: enricher·pipeline·**모든 트리거**(`tasks.py:601`·management commands 3종)가 **전부 packages/shared** → 실 NewsEntity(services.news 앱 계층) 주입을 배선할 **앱 진입점 부재** = 1′ 완주는 **트리거 이관(추가 아키텍처 변경) 동반** → "즉효·인프라 0" 전제 붕괴.
+- **재가중(사용자 확정 08-31)**: ⑴ 재배선 **3.55** / ⑵ sync **3.85**(마진 0.30). 타이브레이커 = bake 오케스트레이션 무접촉 + seam 자산 존치 + 3안까지의 다리. → **⑵ sync beat 확정**(앱측 beat가 NewsEntity→StockNews 주기 물질화·enricher 기본 StockNewsSource 그대로 실데이터 매칭).
+- **seam 자산 존치**: NEWSFIX-BE seam **커밋 `614f19db`(세션 브랜치·미머지·LAND 대기)** — 폐기 아님. 테스트 하네스(16건)·미래 주입 자산으로 존치. ⚠ **LAND 미실행**: 별도 LAND 세션이 origin/main 머지 필요(현 origin/main 미포함 실측).
+- **3안(StockNews 폐기·모델 통합) 관찰 이월 유지**: sync가 죽은 테이블을 살리므로 폐기 결정은 더 뒤로.
+- **How to apply**: NEWSFIX-SYNC-BE 지시서 발급(앱측 sync beat). SYNC 착지 후 효과 3종 검증 → SCAN-STORY-LLM 서사 층 전제 해소. seam LAND는 sync와 무관하게 진행 가능(주입 자산 보존). cf. D-NEWSMATCH-PROMOTE·D-NEWSMATCH-FIX-PATH·NEWSFIX-SYNC-BE(TASKQUEUE).
+
+## [2026-09-01] D-NEWSFIX-OBS — NEWSFIX-BE 부수 관찰 2건 (착수 아님·등재) [harness][infra][backend]
+
+> NEWSFIX-BE·OPS-GUARD-S1 실측에서 표면화된 관찰 2건. 조치 아님·소관 명기만. (MGMT-BATCH-43)
+
+- **⑴ AST 경계 가드 갭**: `tests/architecture/test_shared_boundary.py`의 금지 세그먼트 = `("apps","macro")`뿐 → `services.news`·`services.serverless` 등 **앱 계층 전반 미커버**. NEWSFIX-BE는 갭을 **미악용**(직접 import 0·동적 우회 0·주입 seam 준수)로 준수 확인. **강화 후보** = FORBIDDEN 세그먼트 확장(`services` 등) — **테스트 + health `_BOUNDARY_KNOWN_VIOLATIONS` SSOT 양쪽 동시**(규약 2장) · **shared/qa 소관·착수 아님**(기존 위반 스캔 선행 필요).
+- **⑵ pg-backup launchd ❌1**: health `launchd 실행 트리 정합` ERROR = 기지 **RC-LAUNCHD-PGBACKUP-TREE**(pg-backup plist Desktop 트리 지시)를 **OPS-GUARD-S1(`874bcdc9`)이 가시화**한 것. BATCH-42 이래 전 세션 기준선 상존(신규 아님)·수리 = 병진 launchd 조작 소관(`cp` 권한·자기 집행 금지).
+- **How to apply**: 두 건 모두 등재·모니터링만. ⑴ 강화는 shared/qa 트랙 사이클, ⑵ 수리는 병진 RC-LAUNCHD-PGBACKUP-TREE. cf. D-NEWSMATCH-FIX-PATH-V2.
+
+## [2026-09-01] D-OWN-NEWS — news 구획(services.news) 무소속 → @backend/news 계열 배정 [harness][process][backend]
+
+> 소유권 지도 v2 [무소속] 항목 2(news 구획 — services.news 계열)가 NEWSFIX 트랙 활성화로 배정 필요 → 사용자 승인 배정. (MGMT-BATCH-43 · 0.6 실측)
+
+- **0.6 실측**: `services.news` = 소유권 지도 v2 **[무소속 — 작업 착수 전 트랙 배정 필수] 항목 2** = 미배정 확인.
+- **결정**: **news 구획(`services.news` 계열) → @backend/news 계열 배정**(사용자 승인 08-31). 소유권 지도 v2 [무소속] 항목 2를 배정 완료로 이관. NEWSFIX-SYNC-BE(앱측 sync beat)는 이 구획 소속 = @backend 소관.
+- **경계 유의**: enricher/pipeline/StockNews(`packages.shared.stocks`)는 **shared 토대 소속 불변** — NEWSFIX-SYNC-BE의 sync beat는 services.news(앱) 소속이나, shared enricher는 무접촉(D-NEWSMATCH-FIX-PATH-V2 seam 존치). 슬라이스가 shared·news 양 구획 걸치면 규칙 2(통째 위임)·판단 갈리면 사용자.
+- **How to apply**: 소유권 지도 v2 [무소속] 목록에서 news 구획 제거·본 결정으로 대체. cf. 트랙별 소유권 지도 v2(2026-06-11)·D-NEWSMATCH-FIX-PATH-V2.
