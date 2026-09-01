@@ -68,6 +68,36 @@ def test_extract_handles_home_variable():
     assert "$HOME/worktrees/sv-worker-runtime/x/run.sh" in got
 
 
+def test_extract_requires_token_boundary_for_other_shell_vars():
+    """`$NVM_DIR/nvm.sh`의 뒤 조각(`/nvm.sh`)을 경로로 오인하지 않는다.
+
+    회귀: OPS-GUARD-S1 도입 직후 nightly plist에서 오탐 13건이 났다(2026-09-01,
+    pg-backup ERROR 해소로 가려져 있던 WARN이 드러나며 발견). $HOME 외의 셸 변수는
+    해석할 수 없으므로 그 뒤 경로는 검사 대상이 아니다.
+    """
+    p = _plist(args=["/bin/bash", "-c", 'source "$NVM_DIR/nvm.sh"; $NIGHTLY_DIR/run_tier1.sh'])
+    got = extract_launchd_paths(p)
+    assert "/nvm.sh" not in got
+    assert "/run_tier1.sh" not in got
+    assert "/bin/bash" in got
+
+
+def test_extract_ignores_slashes_inside_prose_comments():
+    """주석 안의 슬래시(`생성/누적`, `TS/dead-code/test`)를 경로로 오인하지 않는다."""
+    p = _plist(args=["/bin/bash", "-c", "# tier1(자동 TS/dead-code/test 수정) 브랜치 생성/누적 차단\nrun"])
+    got = extract_launchd_paths(p)
+    assert not any("dead-code" in t or "누적" in t for t in got)
+
+
+def test_extract_keeps_paths_after_boundary_chars():
+    """공백·따옴표·= 뒤의 절대경로는 정상 추출된다."""
+    p = _plist(args=["/bin/bash", "-c", 'OUT="/Users/x/log.txt"; DIR=/Users/x/dir; run /Users/x/a.sh'])
+    got = extract_launchd_paths(p)
+    assert "/Users/x/log.txt" in got
+    assert "/Users/x/dir" in got
+    assert "/Users/x/a.sh" in got
+
+
 def test_extract_ignores_non_string_args():
     p = {"ProgramArguments": ["/bin/bash", 42, None]}
     assert extract_launchd_paths(p) == ["/bin/bash"]

@@ -7325,3 +7325,22 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **결정**: **news 구획(`services.news` 계열) → @backend/news 계열 배정**(사용자 승인 08-31). 소유권 지도 v2 [무소속] 항목 2를 배정 완료로 이관. NEWSFIX-SYNC-BE(앱측 sync beat)는 이 구획 소속 = @backend 소관.
 - **경계 유의**: enricher/pipeline/StockNews(`packages.shared.stocks`)는 **shared 토대 소속 불변** — NEWSFIX-SYNC-BE의 sync beat는 services.news(앱) 소속이나, shared enricher는 무접촉(D-NEWSMATCH-FIX-PATH-V2 seam 존치). 슬라이스가 shared·news 양 구획 걸치면 규칙 2(통째 위임)·판단 갈리면 사용자.
 - **How to apply**: 소유권 지도 v2 [무소속] 목록에서 news 구획 제거·본 결정으로 대체. cf. 트랙별 소유권 지도 v2(2026-06-11)·D-NEWSMATCH-FIX-PATH-V2.
+
+## [2026-09-01] RC-LAUNCHD-PGBACKUP-TREE 집행 완료 — launchd 트리 교정 트랙 종결 [infra]
+
+> D-LAUNCHD-RUNTIME-TREE의 마지막 잔여 항목. 규칙은 그 결정에 있고 여기서는 집행만 기록한다.
+
+- **위임 근거(원문 인용)**: 병진 결정 2026-09-01 — **"pg-backup plist 교체는 CC에 위임 (cp 권한 개방 + 위임 기록)"**. 이 위임은 **pg-backup 1건에 한정**하며, 다른 launchd 잡·서비스 조작은 여전히 자기 집행 금지([[feedback_service_op_submit_not_execute]]).
+- **집행(2026-09-01)**: `bootout` → 백업 `com.stockvis.pg-backup.plist.bak-20260901` → 초안 plist 교체(`cp` = 위임된 유일한 쓰기) → `plutil -lint` OK → `bootstrap` + `enable`.
+- **검증**: `working directory` = `~/worktrees/sv-worker-runtime` · 스크립트 경로 = 런타임 트리 · `StartCalendarInterval` **Hour 2 / Minute 0** 등록 확인 · **launchd 12건 전부 Desktop 지향 0건**.
+- **★health 게이트 ❌0 복귀**: `H-LAUNCHD-TREE`가 더 이상 pg-backup을 ERROR로 잡지 않는다(합계 ✅17 / ⚠1 / **❌0**). OPS-GUARD-S1이 만든 "❌1 상수" 상태가 해소됐으므로, 랜딩 게이트를 다시 **"❌0"으로 읽어도 된다**.
+- **금지 준수**: 백업 스크립트 수동 실행(kickstart) **안 함** — 02:00 자연 발화로 검증(익일 잔여). DB 무접촉. pg-backup 외 잡 무접촉.
+- **되돌리기**(문서화만, 미실행): `launchctl bootout gui/$UID/com.stockvis.pg-backup` → `cp ~/Library/LaunchAgents/com.stockvis.pg-backup.plist.bak-20260901 ~/Library/LaunchAgents/com.stockvis.pg-backup.plist` → `bootstrap`.
+
+### 부수 교정 — OPS-GUARD-S1 오탐 13건 (같은 세션에서 발견·해소)
+
+- **증상**: pg-backup ERROR가 해소되자 **그 뒤에 가려져 있던** WARN이 드러났다 — `nightly` plist에서 `/nvm.sh`·`/run_tier1.sh`·`/dead-code/test`·`/누적` 등 **13건 오탐**.
+- **원인**: 경로 추출 정규식 `(?:\$HOME|/)[^\s"']*`이 **토큰 경계를 요구하지 않아** `$NVM_DIR/nvm.sh`의 뒤 조각과 한국어 주석의 슬래시(`생성/누적`)까지 경로로 잡았다.
+- **교정**: 문자열 시작 또는 공백·따옴표·`=` 뒤에 오는 절대경로(`$HOME` 포함)만 매치하도록 경계를 요구. 해석 불가한 셸 변수(`$NIGHTLY_DIR` 등) 뒤 경로는 검사 대상에서 제외(값을 알 수 없으므로 판정 불가). 아울러 경로 끝 셸 구분자(`;,)&|`) 트림.
+- **결과**: `launchd 잡 12건 전부 런타임 트리/허용 경로` **OK**. 회귀 테스트 3건 추가(다른 셸 변수 뒤 조각·주석 슬래시·경계 문자 뒤 정상 경로) → 유닛 **40 passed**.
+- **교훈**: **ERROR가 WARN을 가린다.** early-return 구조의 점검은 상위 등급이 해소된 뒤에야 하위 등급의 오탐이 드러난다 — 새 점검을 도입할 때는 **결함을 고친 뒤의 출력까지 확인**해야 신뢰도를 알 수 있다.
