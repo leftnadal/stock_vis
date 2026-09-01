@@ -7203,6 +7203,16 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **부수 관찰**: Chain Sight 연계가 **섹터 칩뿐**(관계 실신호 부재) = **SCAN-B3(관계 축) 가치의 사용자 측 재확인**.
 - **How to apply**: ㉮㉯㉰ = SCAN-UX-2 선행분(FE 공짜 필드·베이커 무접촉), ㉱ = 목업 결정 후 편입, SCAN-FIX-1(strip 라벨)도 UX-2 흡수. 밸류축은 SCAN-B2-FUND-BE(후행)에서 프리셋과 결합. cf. D-SCAN-R1-OBS·SCAN-UX-2(TASKQUEUE)·[[project_scanner_ux_recon]].
 
+## D-EVT-CORR-4 — EconomicEvent.event_time = UTC 해석 (2026-08-31)
+- **결정**: 거시 `event_time`은 **UTC**(FMP date 원문)로 해석. 읽기 계층(event_feed `_macro_et_kst`)에서 UTC→ET·KST 도출. 원천 필드 의미·수집기 무변(MP-MACRO-CAL-1 계약: 저장 UTC 유지·help_text만 정정).
+- **근거**: `apps/market_pulse/tasks/macro.py:183`이 FMP date(UTC)의 시각을 잘라 저장, 모델 help_text만 'ET'. §0-3 하드 게이트 실측: Initial Jobless Claims 08:30ET=저장 **12:30** / ISM 10:00ET=**14:00** / FOMC Minutes 14:00ET=**18:00** = 전부 ET+4(EDT). 혼합 없음 → UTC 확정.
+- **구현**: 날짜 그룹·d_day·정렬 = **변환 ET 날짜**(원천 event_date 아님). 경계 보정 = 원천 [start−1,end+1] 조회 후 ET 날짜 재필터(자정 경계, 실측 3행 이동). `detail.event_time_utc` 감사 필드 1개 추가.
+
+## D-EVT-FE-TUNE-1 — T2 거시 접기 (2026-08-31)
+- **결정**: 관심종목 이벤트(어닝·배당·분할)·휴장은 항상 펼침, 거시는 날짜 그룹당 "거시 N건 ▸" 한 줄 접힘 + CRITICAL 제목 미리보기(최대 3), 기본 접힘. 유형 필터 거시 단독이면 펼침.
+- **가중합**: T2 4.60 / T4 3.70 / T1 3.65 / T3 3.60, 마진 0.90(사용자 확정).
+- **근거**: 실화면 104항목 중 거시 94, "지난 7일"이 거시 34행으로 시작해 IREN miss가 밀림. 화면 높이를 관심종목 수에만 비례시킴(어닝 시즌·FOMC 주간 안정).
+- **소손질**: 거시 행 한 줄화 / "세션 미정" 문구 제거(빈 칸) / |서프라이즈|>200%면 뱃지 beat·miss만·원값 주표기.
 ## [2026-08-31] D-SCAN-STORY-3LAYER — 스캐너 종목 서사 3층 구조 + 생성 B계층·착수 A [frontend][dashboard][scanner][rag-llm]
 
 > 08-31 사용자 확정. 스캐너 종목의 "이야기"를 3층으로 구조화. 생성 방식은 A 템플릿(4.25)=B 계층(4.25) 동점 → 타이브레이커 단계화(A는 B의 1단계) → 최종 B·착수 A. (MGMT-BATCH-41)
@@ -7234,3 +7244,57 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **결정**: 지시서의 mgmt 배치 번호·브랜치명은 **잠정값**으로만 취급. **정본 = 세션 STEP 0 실측 max+1**(PROGRESS 최신 mgmt 번호 + origin 브랜치 선점 확인). 선점 시 max+1로 치환·브랜치명 분리.
 - **Why**: BATCH-39 지시서가 병렬 P2-DLITE-CLOSE 세션에 #39를 선점당함 → 그대로 진행 시 PROGRESS batch 헤더 중복(drift). 실측 자기정정 39→40으로 해소. 번호는 기계적 max+1이라 세션이 착지 직전 실측하면 충돌 구조적 제거(D-NUMBERING-MGMT-ONLY 동일 원리·채번↔배치번호 병렬).
 - **How to apply**: mgmt 지시서 STEP 0에 "배치 번호 확정" 단계 상설(본 BATCH-41이 첫 적용 — 잠정 41 → 실측 41 확정). 지시서 작성자는 "잠정 N — 선점 시 max+1" 표기. cf. [[lesson_stale_deploy_thread_reexec]]·[[lesson_branch_assignment_explicit_isolation]]·D-NUMBERING-MGMT-ONLY.
+## [2026-08-31] D-SUBPAGES-SWR — pulse 스테일-캐시 즉시 응답(C) [backend][frontend][market_pulse]
+
+> MP2-SUBPAGES HOTFIX-1(디렉터 사이클 2026-08-31, 병진 승인). 증상 = `/market-pulse-v2/macro` 장시간 "불러오는 중…"(장외 KST 오후, 병진 실화면).
+
+- **결정 = C. 스테일-캐시 즉시 응답(SWR)** — 가중합 C 4.15 > B 3.95 > A 3.10, 마진 0.20. 타이브레이커 = 도그푸딩 시간대(KST 사용 = ET 장외 = 캐시 상시 콜드이므로 워밍창 확대(A)보다 콜드 자체를 무해화하는 C).
+  - A(각하) = 워밍 beat 창을 24h로 확대 — 콜드를 줄이나 장외 첫 진입 콜드는 잔존 + FMP/FRED 호출량 상시 증가.
+  - B(각하) = FE localStorage 캐시를 허브에도 도입 — v1 우회책의 복제(drift), BE 근본 미해결.
+- **원인(STEP 0 확증)**: `get_market_pulse_dashboard()` full 캐시(`macro:market_pulse_full`, TTL 60s=realtime) 미스 시 5섹션 **라이브 집계**(FRED~8+FMP~6). 워밍 beat `refresh-market-pulse-cache`는 `crontab(minute='*', hour='9-16', day_of_week='1-5')` = **ET 장중만** → KST 사용 = 장외 = 콜드 상시. **콜드 실측 28.8s(HTTP 200) / 웜 15ms**(:18765 read-only GET). v1 페이지는 `useMarketPulse` localStorage 30분 캐시가 가려줬음(허브는 미도입).
+- **설계(스키마 불변)**: pulse 응답 키·serializer·뷰 **diff 0**. 스테일 판단은 FE가 `last_updated` 나이로 수행.
+  - 키 3종: `…:full`(fresh, TTL 60s 유지) / `…:full:stale`(TTL 24h, 성공 계산마다 동일 payload 저장) / `…:full:refreshing`(락, TTL 120s, `cache.add` 원자획득).
+  - 로직: fresh 히트→반환(불변). 미스+stale→**락 획득 시에만** `refresh_market_pulse_cache.delay()` enqueue 후 **stale 즉시 반환**(요청 스레드 라이브 집계 금지·외부 호출 무증가). stale 없음(최초 콜드)→라이브 계산→fresh+stale 저장. 계산 실패+경합 stale→폴백(200), stale 없으면 재발생(뷰 500 유지).
+  - 태스크 `force_refresh=True` 경로: 캐시 무시 재계산→fresh+stale 갱신+락 해제 → **SWR 미스가 워밍 태스크를 부르고 그 태스크가 다시 SWR 미스를 타는 무한 재-enqueue 차단**.
+  - 큐 라우팅 확증: `refresh_market_pulse_cache`는 `task_routes` 미등재 → **default 큐**(default 워커 소비) → enqueue 정상 소비(HALT 조건 미해당).
+- **FE(v1 행위보존)**: `macroService.getMarketPulse({timeoutMs?})`·`useMarketPulse({timeoutMs?})` **additive 옵션**(미지정=기존 무제한, v1 diff 0). 허브만 `timeoutMs:20000` + 실패 시 "준비 중 — 자동 재시도" 안내 + 재시도 버튼(refetch) + `last_updated` 나이 >5분이면 "N분 전 데이터" 배지(StatusBanner STALE 토큰 `amber-50/700/200` 재사용, 하드코딩 0).
+- **후속(A안 잔여)**: pulse 워밍 창 재검토는 SWR 운영 관측 후 별건(TASKQUEUE 등재).
+## [2026-08-31] D-ENV-SYMLINK-KEEP — 런타임 트리 `.env` = 심링크 유지 + 점검으로 감시 [infra][process]
+
+> OPS-GUARD-S1. 병진 결정: 독립 사본은 drift 위험을 재도입하므로 기각.
+
+- **결정**: 런타임 트리(`sv-worker-runtime`·`sv-api-runtime`)의 `.env`는 **공유 본체 `~/Desktop/stock_vis/.env`를 가리키는 심링크로 유지**한다. 독립 사본으로 떼지 않는다.
+- **Why**: 사본은 두 실체가 갈라지는 순간 **조용한 오작동**(엉뚱한 DB·만료 키)을 만든다. D-LAUNCHD-RUNTIME-TREE가 제거하려던 것은 *실행 코드*의 공유 트리 의존이지 *설정*의 단일 출처가 아니다. 설정은 단일 실체가 옳고, 위험(본체 파일 소실)은 **점검으로 감시**한다.
+- **감시**: `health_check.py`의 `.env 심링크 실체`(`check_env_symlink`) — 심링크 + 대상 실재 = OK / 일반 파일 = WARN(drift 가능) / 대상 소실·부재 = **ERROR**. **값은 절대 읽지 않는다**(경로·종류·해석 가능 여부만; 테스트로 계약 박제).
+- **잔여 리스크 수용**: 본체 `.env`가 이동·삭제되면 런타임 3트리가 동시에 깨진다. 즉시 ERROR로 표면화되는 것을 대가로 단일 출처를 택했다.
+
+## [2026-08-31] OPS-HEALTHCHECK-PLIST-TREE 이행 — launchd 실행 트리 자동 점검 [infra]
+
+> D-LAUNCHD-RUNTIME-TREE의 집행 수단. 규칙 자체는 그 결정에 있고, 여기서는 이행만 기록한다.
+
+- **이행**: `health_check.py`에 `launchd 실행 트리 정합`(`check_launchd_tree_alignment`) 추가. `~/Library/LaunchAgents/com.stockvis.*.plist` 전건의 `WorkingDirectory`·`ProgramArguments` 경로를 읽어 **공유 편집 트리(`Desktop/stock_vis`)를 가리키면 ERROR**, 허용 목록 밖이면 WARN.
+- **Why**: 잡 3건이 **11일간 낡은 공유 트리에서 돌았는데 무탐지**였다(RC-NEO4J-WORKER-TREE). 규칙만 있고 자동 점검이 없으면 같은 일이 반복된다.
+- **허용 목록(STEP 0 실측, plist 12건)**: `~/worktrees/sv-{worker,api,web}-runtime` · `~/neo4j`(엔진) · `~/stock-vis-nightly`(야간 자동화) · `~/.nvm`(node 도구) · 시스템 경로(`/bin`·`/usr`·`/opt`·`/Library`·`/System`).
+- **구현 선택 — `plutil` 서브프로세스 대신 stdlib `plistlib`**: 외부 명령 의존을 없애 비-macOS/CI에서도 안전하고, 손상 plist를 건별로 격리할 수 있다(일부 판독 불가여도 나머지로 판정 + 증거 병기). `LaunchAgents` 디렉터리 부재 = OK-skip(비-런타임 환경).
+- **오탐 방지**: 경로 토큰 추출 시 콜론 포함 문자열(PATH 값)은 제외. `sv-worker-runtime-old` 같은 **prefix 유사 이름은 허용하지 않는다**(경계 `/`까지 대조; 테스트 박제).
+- **실효 즉시 증명**: 도입과 동시에 **`pg-backup` 1건을 ERROR로 포착**(현재 유일 잔여 결함).
+- ⚠️ **부작용 명기**: 이 ERROR는 `pg-backup` plist 교정 전까지 상수다 → **`health_check ❌0`을 랜딩 게이트로 쓰는 다른 세션이 막힌다.** 게이트는 "❌0" 대신 "**신규 ❌ 없음**"으로 읽어야 하며, 근본 해소는 `RC-LAUNCHD-PGBACKUP-TREE` 집행이다.
+
+## [2026-08-31] D-SHARED-SIGNALS-INTENT — `worker_sync.sh`의 Desktop signals 경로 = 잔재 아님(가드 대상) [infra]
+
+> OPS-WORKER-SYNC-SHARED-SIGNALS 측정 결론(read-only). 코드 변경 0.
+
+- **판정**: `scripts/worker_sync.sh:31`의 `SHARED_SIGNALS=".../Desktop/stock_vis/frontend/public/static/signals"`는 **의도된 가드 대상**이다. 실행 트리 잔재가 아니다.
+- **근거(실측)**: ⑴ 베이커 `eod_json_baker.OUTPUT_DIR = settings.BASE_DIR/frontend/public/static/signals` → 워커가 런타임 트리에서 도므로 **원본 실디렉터리 = `sv-worker-runtime/.../signals`** ⑵ `Desktop/stock_vis/.../signals`와 `sv-web-runtime/.../signals`는 **둘 다 그 원본을 가리키는 심링크** ⑶ `dashboard.json` **inode 동일(160225849)** = 동일 실체 확증 ⑷ `worker_sync.sh`의 `guard_symlink`는 **"심링크가 아니면 ERROR + exit 1"** — 즉 그 경로가 심링크여야 정상이라는 것이 설계 의도.
+- **성격**: 공유 본체에서 프론트 dev를 돌릴 때 baked signals가 보이도록 하는 심링크의 **건강 검사**. 원본이 런타임 트리에 있으므로 D-LAUNCHD-RUNTIME-TREE와 충돌하지 않는다.
+- **조치**: 없음(변경 금지). 티켓 종결.
+
+## [2026-08-31] D-NEWSMATCH-FIX-PATH — 스캐너 실뉴스 매칭 수리 = 1′ enricher 재배선(경계 분기 내장) [backend][dashboard][scanner]
+
+> RECON-NEWSMATCH-R1 판정(D-NEWSMATCH-PROMOTE) 후 수리 방향 확정. 3후보 OPEN → **1′ 재배선** 선택. (MGMT-BATCH-42)
+
+- **결정**: 수리 = **1′ 재배선** — `EODNewsEnricher` 4쿼리(`eod_news_enricher.py`)를 `StockNews`(0행 죽은 테이블) → `NewsEntity`로 전환. **경계 분기 내장**: 뉴스 모델이 `apps.*`(services.news) 소속이면 `packages/shared`에서 **직접 import 금지**(구획 위반) → **방향2 의존 역전(주입)** 으로 전환. 주입 배선조차 구획을 넘으면 **HALT + 폴백 메뉴(2안 sync beat)**.
+- **가중합(사용자 확정)**: 1′ 재배선 **4.35** / 2안 sync **3.60** / 3안 통합 **3.50**(마진 0.75). **3안(모델 통합·StockNews 폐기)은 관찰 이월**: "**StockNews = 죽은 테이블(0행·쓰기 코드 전무) 처분 결정 대기**"(별건).
+- **근거 실측(RECON-NEWSMATCH-R1)**: `NewsArticle` 462,060(최신 08-30) · `NewsEntity` 587,902 · 표본 **26/26 실뉴스 보유** · 매칭 로직·confidence 보정 무결 · 추천 카드 = enricher **다운스트림**(수리 시 자동 치유) · **뉴스 존재 칩 0렌더 → 점등 예정**.
+- **채번 흐름 정정**: enricher 결함 `#NN` 부여는 "수리 세션"이 아니라 **수리 착지 확인 후 차기 mgmt**가 부여한다(build/수리 세션은 비mgmt = 채번 금지 · D-NUMBERING-MGMT-ONLY 정합). BATCH-41 D-NEWSMATCH-PROMOTE의 "수리 착지 세션이 부여" 표현을 본 항목이 정정.
+- **How to apply**: NEWS-MATCH-FIX = build 대기(NEWSFIX-BE 지시서 발급). 착지 후 효과 3종(스캐너 news_context·추천 카드·뉴스 존재 칩) 검증 → 차기 mgmt가 common-bugs `#NN` 부여 + D-SCAN-STORY-3LAYER 서사 층 전제 해소. cf. D-NEWSMATCH-PROMOTE·NEWS-MATCH-FIX(TASKQUEUE)·[[project_scanner_ux_recon]].

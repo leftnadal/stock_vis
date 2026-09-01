@@ -258,32 +258,51 @@ def _build_calendar_items(syms, start, end, et_today, mon, wl, include_stale) ->
     return items
 
 
+def _macro_et_kst(event_date: _dt.date, event_time: _dt.time | None):
+    """거시 event_time = **UTC**(D-EVT-CORR-4) → (et_date, et_time_str|None, kst_iso|None, sort_time).
+
+    근거: apps/market_pulse/tasks/macro.py 가 FMP date(UTC)의 시각을 그대로 저장(모델 help_text만 ET).
+    읽기 계층에서 UTC→ET·KST 도출. 시각 없으면 날짜만(event_date 그대로).
+    """
+    if event_time is None:
+        return event_date, None, None, _dt.time(0, 0)
+    utc_dt = _dt.datetime.combine(event_date, event_time, tzinfo=_dt.timezone.utc)
+    et_dt = utc_dt.astimezone(_ET)
+    kst_dt = utc_dt.astimezone(_KST)
+    return et_dt.date(), et_dt.strftime("%H:%M"), kst_dt.isoformat(), et_dt.time()
+
+
 def _build_macro_items(start, end, et_today, min_importance) -> list[EventItem]:
-    """원천 ②: EconomicEvent(country=US, importance≥min). 심볼 없음."""
+    """원천 ②: EconomicEvent(country=US, importance≥min). 심볼 없음. event_time=UTC(CORR-4)."""
     from macro.models.indicators import EconomicEvent
 
     min_rank = _IMPORTANCE_RANK.get(min_importance, 3)
     allowed = [k for k, r in _IMPORTANCE_RANK.items() if r >= min_rank]
     items: list[EventItem] = []
+    # 경계 보정(1-2): 원천 event_date [start−1, end+1] 조회 후 변환 ET 날짜로 재필터(자정 경계).
     qs = EconomicEvent.objects.filter(
-        country="US", event_date__gte=start, event_date__lte=end, importance__in=allowed,
+        country="US",
+        event_date__gte=start - _dt.timedelta(days=1),
+        event_date__lte=end + _dt.timedelta(days=1),
+        importance__in=allowed,
     )
     for ev in qs:
-        time_et = ev.event_time.strftime("%H:%M") if ev.event_time else None
-        rep_time = ev.event_time if ev.event_time else None
+        et_date, time_et, kst_iso, sort_time = _macro_et_kst(ev.event_date, ev.event_time)
+        if not (start <= et_date <= end):  # 변환 ET 날짜 기준 재필터
+            continue
         surprise = _surprise(_parse_numeric(ev.actual_value), _parse_numeric(ev.forecast_value))
         badges = [ev.importance]
-        if ev.event_date == et_today:
+        if et_date == et_today:
             badges.append("today")
         items.append(EventItem(
             kind="macro",
             symbol=None,
             title=ev.title_ko or ev.title,
-            event_date_et=ev.event_date,
+            event_date_et=et_date,
             event_time_et=time_et,
             session=None,
-            event_dt_kst=_kst_iso(ev.event_date, rep_time),
-            d_day=(ev.event_date - et_today).days,
+            event_dt_kst=kst_iso,
+            d_day=(et_date - et_today).days,
             badges=badges,
             detail={
                 "importance": ev.importance,
@@ -291,13 +310,14 @@ def _build_macro_items(start, end, et_today, min_importance) -> list[EventItem]:
                 "previous_value": ev.previous_value or None,
                 "actual_value": ev.actual_value or None,
                 "country": ev.country,
+                "event_time_utc": ev.event_time.strftime("%H:%M") if ev.event_time else None,
             },
             surprise=surprise,
             date_trust=None,
             date_observed_count=None,
             sources=[],
-            status=("occurred" if ev.event_date < et_today else "scheduled"),
-            _sort_time=rep_time or _dt.time(0, 0),
+            status=("occurred" if et_date < et_today else "scheduled"),
+            _sort_time=sort_time,
         ))
     return items
 

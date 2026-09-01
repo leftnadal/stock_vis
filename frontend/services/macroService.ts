@@ -15,13 +15,28 @@ class MacroService {
 
   /**
    * 전체 Market Pulse 대시보드 데이터
+   *
+   * @param opts.timeoutMs 지정 시 AbortController로 요청 타임아웃(허브 완화용, additive).
+   *   미지정 = 기존 무제한 동작(v1 행위 보존).
    */
-  async getMarketPulse(): Promise<MarketPulseDashboard> {
-    const response = await fetch(`${this.baseUrl}/pulse/`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch market pulse data');
+  async getMarketPulse(opts?: { timeoutMs?: number }): Promise<MarketPulseDashboard> {
+    const timeoutMs = opts?.timeoutMs;
+    const controller = timeoutMs ? new AbortController() : undefined;
+    const timer =
+      controller && timeoutMs
+        ? setTimeout(() => controller.abort(), timeoutMs)
+        : undefined;
+    try {
+      const response = await fetch(`${this.baseUrl}/pulse/`, {
+        signal: controller?.signal,
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch market pulse data');
+      }
+      return await response.json();
+    } finally {
+      if (timer) clearTimeout(timer);
     }
-    return response.json();
   }
 
   /**

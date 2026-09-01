@@ -36,6 +36,17 @@ class MacroEconomicService:
         'quarterly': 86400 * 7,  # GDP
     }
 
+    # SWR(stale-while-revalidate) 캐시 키 — 전체 대시보드 전용.
+    #   FULL  : fresh 캐시(TTL=realtime=60s). 워밍 beat는 ET 장중만 → KST 사용 시 상시 미스.
+    #   STALE : 마지막 성공 payload 보존(24h). fresh 미스 시 즉시 응답용(28s 라이브 집계 회피).
+    #   LOCK  : 백그라운드 갱신 enqueue dedup(cache.add 원자획득, 120s 자동만료).
+    # (D-SUBPAGES-SWR, common-bugs 채번대기 — 장외 콜드 캐시 + ET-장중-한정 워밍.)
+    FULL_CACHE_KEY = 'macro:market_pulse_full'
+    STALE_CACHE_KEY = 'macro:market_pulse_full:stale'
+    REFRESH_LOCK_KEY = 'macro:market_pulse_full:refreshing'
+    STALE_TTL = 86400        # 24h
+    REFRESH_LOCK_TTL = 120   # 워밍 태스크 왕복 여유(락 방치 방지 자동만료)
+
     def __init__(self):
         self.fred = FREDClient()
         self.fmp = FMPClient()
@@ -333,21 +344,9 @@ class MacroEconomicService:
     # 6. Combined Dashboard (전체 데이터)
     # =========================================================================
 
-    def get_market_pulse_dashboard(self) -> Dict[str, Any]:
-        """
-        Market Pulse 전체 대시보드 데이터
-
-        모든 섹션의 데이터를 한 번에 반환
-
-        Returns:
-            전체 대시보드 데이터
-        """
-        cache_key = 'macro:market_pulse_full'
-        cached = cache.get(cache_key)
-        if cached:
-            return cached
-
-        result = {
+    def _compute_market_pulse_dashboard(self) -> Dict[str, Any]:
+        """5섹션 라이브 집계(FRED+FMP 외부 호출 ~14회). 콜드 경로에서만 실행."""
+        return {
             # Section 1: 시장 심리
             'fear_greed': self.get_fear_greed_index(),
 
@@ -367,10 +366,70 @@ class MacroEconomicService:
             'last_updated': timezone.now().isoformat(),
         }
 
-        # 전체 대시보드 캐시는 가장 짧은 TTL 사용
-        cache.set(cache_key, result, self.CACHE_TTL['realtime'])
+    def _store_dashboard(self, result: Dict[str, Any]) -> None:
+        """fresh(60s) + stale(24h) 동시 저장 — 성공한 계산 결과를 SWR 양 키에 반영."""
+        cache.set(self.FULL_CACHE_KEY, result, self.CACHE_TTL['realtime'])
+        cache.set(self.STALE_CACHE_KEY, result, self.STALE_TTL)
 
+    def get_market_pulse_dashboard(self, force_refresh: bool = False) -> Dict[str, Any]:
+        """
+        Market Pulse 전체 대시보드 데이터 (SWR 정책).
+
+        모든 섹션의 데이터를 한 번에 반환. 응답 스키마는 불변(FREEZE) —
+        스테일 여부 판단은 FE가 `last_updated` 나이로 수행한다.
+
+        정책:
+          - fresh 히트 → 즉시 반환(불변).
+          - fresh 미스 + stale 존재 → 백그라운드 갱신 1회 enqueue(락 dedup) 후 stale 즉시 반환.
+            요청 스레드에서 28s 라이브 집계를 타지 않는다(외부 호출 무증가).
+          - stale도 없음(최초 콜드) → 라이브 계산 → fresh+stale 저장. 계산 실패 시 경합으로
+            채워진 stale이 있으면 폴백(200), 없으면 재발생(뷰 500 경로 유지).
+
+        Args:
+            force_refresh: True면(워밍 태스크 전용) 캐시 무시하고 무조건 재계산 후
+              fresh+stale 갱신 + 갱신 락 해제. SWR 미스 경로가 스스로를 다시
+              enqueue하는 무한 루프를 차단한다.
+        """
+        if force_refresh:
+            result = self._compute_market_pulse_dashboard()
+            self._store_dashboard(result)
+            cache.delete(self.REFRESH_LOCK_KEY)
+            return result
+
+        # 1) fresh 히트 → 즉시 반환(불변)
+        cached = cache.get(self.FULL_CACHE_KEY)
+        if cached:
+            return cached
+
+        # 2) fresh 미스 + stale 존재 → SWR: 백그라운드 갱신 후 stale 즉시 반환
+        stale = cache.get(self.STALE_CACHE_KEY)
+        if stale is not None:
+            self._enqueue_refresh()
+            return stale
+
+        # 3) stale도 없음(최초 콜드) → 라이브 계산
+        try:
+            result = self._compute_market_pulse_dashboard()
+        except Exception:
+            # 계산 실패 — 그새 다른 워커가 stale을 채웠으면 폴백(200), 아니면 500 경로 유지
+            stale = cache.get(self.STALE_CACHE_KEY)
+            if stale is not None:
+                return stale
+            raise
+        self._store_dashboard(result)
         return result
+
+    def _enqueue_refresh(self) -> None:
+        """락 획득 시에만 백그라운드 갱신 태스크 1회 enqueue(중복 폭주 방지)."""
+        if not cache.add(self.REFRESH_LOCK_KEY, '1', self.REFRESH_LOCK_TTL):
+            return  # 이미 다른 요청이 갱신을 걸어둠 — dedup
+        try:
+            from apps.market_pulse.tasks.macro import refresh_market_pulse_cache
+            refresh_market_pulse_cache.delay()
+        except Exception as e:
+            # enqueue 실패 시 락 해제 → 다음 요청이 재시도 가능(락 방치 방지)
+            logger.warning(f"Failed to enqueue market pulse refresh: {e}")
+            cache.delete(self.REFRESH_LOCK_KEY)
 
     # =========================================================================
     # 데이터 동기화 (Celery 태스크용)
