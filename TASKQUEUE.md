@@ -1583,3 +1583,4 @@
 ## OPS-GUARD-S1 파생 (등재, 2026-08-31)
 
 - 🔴 **OPS-HEALTHCHECK-NIGHTLY-WIRE** (@infra) — **점검을 추가했지만 야간 자동 실행이 되지 않고 있다.** `scripts/run_health_check_nightly.sh`의 `PROJECT_DIR` 기본값이 **`$HOME/stock-vis`(실재하지 않는 경로)**이고, `~/stock-vis-nightly/*.sh` 어디서도 이 wrapper를 **호출하지 않으며**, 최근 14일 `health_check.json` 산출물도 **0건**. → 재발해도 **익일 자동 탐지가 성립하지 않는다**(OPS-HEALTHCHECK-PLIST-TREE의 실효가 수동 실행에 의존). 조치 후보: ⑴ `PROJECT_DIR` 기본값을 런타임 트리로 교정 ⑵ `nightly` 잡(23:00) 또는 `runtime-check`(1h)에서 호출 배선 ⑶ 산출물 경로 확인. **이 티켓이 닫히기 전까지 새 점검 2건은 "사람이 돌려야 보이는" 상태**임을 명심.
+- 🧹 **[EVT-FE-CLEANUP-CALFMT 후보]** — EVT-4B FE-TUNE-1에서 세션 빈칸·거시 미리보기 시각 포맷을 `EventRow`/`MacroFoldRow` 로컬 헬퍼로 구현(2-9 파일 범위 준수 위해 `lib/monitor/calendarFormat.ts` 무접촉). 로직 중복 = 후속 정리 시 `calendarFormat.ts`로 통합 검토(FE 백로그).
