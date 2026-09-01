@@ -1110,11 +1110,15 @@ def extract_launchd_paths(plist: dict) -> list[str]:
     for arg in plist.get("ProgramArguments", []) or []:
         if not isinstance(arg, str):
             continue
-        for tok in re.findall(r"(?:\$HOME|/)[^\s\"\']*", arg):
+        # 토큰 경계 필수: 문자열 시작 또는 공백/따옴표/= 뒤에 오는 절대경로($HOME 포함)만.
+        # 경계가 없으면 `$NVM_DIR/nvm.sh`의 뒤 조각(`/nvm.sh`)이나 한국어 주석의
+        # 슬래시(`생성/누적`)까지 경로로 오인한다(OPS-GUARD-S1 오탐 13건 실측).
+        # 해석 불가한 변수($NIGHTLY_DIR 등)로 시작하는 경로는 검사 대상이 아니다.
+        for tok in re.findall(r"""(?:^|(?<=[\s"'=]))((?:\$HOME)?/[^\s"']*)""", arg):
+            tok = tok.rstrip(";,)&|")  # 셸 구분자가 경로에 붙어 나오는 것 제거
             if ":" in tok or len(tok) < 2:
                 continue  # PATH 등 비-경로
-            if tok.startswith("/") or tok.startswith("$HOME/"):
-                out.append(tok)
+            out.append(tok)
     return out
 
 
