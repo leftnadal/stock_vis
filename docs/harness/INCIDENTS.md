@@ -67,3 +67,14 @@
 > 지시서 DSS-W8-LOAD-1 T4가 'INC-003'으로 문안했으나 INC-003(Neo4j 08-18) 선점 → INC-004로 라벨 정정(본문 verbatim, 디렉터 승인). 경계 인시던트 INC-003 참조 0건.
 
 EODUNIV-P15-V01 PART A(7ec24c62, 08-26)가 shared→apps 경계 위반을 KNOWN_VIOLATIONS 등록 없이 main에 착지 — 아키텍처 가드 red + health ERROR 1일 지속, QUAD-IMPL-1 STEP 0 HALT 유발. 격리: BOUNDARY-TRIAGE-1 동결(08-27). 재발 방지: #121. 종결 조건: BOUNDARY-BURNDOWN-EOD 소진.
+
+## INC-005 — EODSIG-FRESH-GATE 배포 게이트 브랜치 공유 오염 (승인 SHA 이탈·near-miss) [2026-08-31]
+
+- **경위**: 배포 대상 브랜치 `monorepo/sess-eodsig-freshgate`(승인 SHA `d1a2b43e`)가 **공유 worktree `sess-main-integrate`**에 체크아웃돼 있던 중, 타 세션이 그 트리에서 작업. reflog 증거: `@{3}` RC-A-1 얹힘 → `@{2}` reset → `@{0}` sess-r2pre 문서 머지(`c8ca9fe7`)로 브랜치 HEAD가 승인 SHA에서 이탈.
+- **결과 손상**: **0**. 배포 2커밋(`0ed74613`·`d1a2b43e`)은 조상으로 유지(코드 무손실), 배포 게이트 **R0.2 HALT가 정상 작동**해 오염 HEAD로 배포 진행 안 함. 격리 브랜치 `monorepo/sess-eodsig-deploy` 재구성(cherry-pick → rebase onto `88326c61`)으로 해소, main 착지 `e95b4378`(코드=승인본 diff 0 동일성 게이트 통과).
+- **처분**: 롤백 불요. 오염 브랜치 `sess-eodsig-freshgate`(HEAD `c8ca9fe7`, 타 세션 산출물 포함) = **삭제 금지·방치**(D-BRANCH-DELETE-MANUAL). 타 세션 교훈 `833e05b8`(공유 main worktree 브랜치 가정 금지) 상호참조. **통지**: sess-r2pre 문서 머지분(FE-DEPLOY-NPM-INSTALL·FE-BUILD-E2E-EXCLUDE)은 그 세션이 자기 트랙으로 별도 착지 필요.
+- **교훈**:
+  ⑴ **배포 게이트 브랜치 동결** — 승인 시점부터 착지까지 타 세션 접촉 금지.
+  ⑵ 세션 브랜치는 **전용 worktree에서만** 체크아웃(공유 worktree 금지). 본 건은 격리 브랜치 `sess-eodsig-deploy` 재구성으로 해소.
+
+> **관측 주석 (EODSIG-FRESH-GATE-OBSERVE-0901, 비사고·by-design)**: 08-31 EOD 게이트 로그의 `freshness_gate: skip BF.B / BRK.B (sync_failed)`(FMP 402 프리미엄 심볼, 버그 #23)는 **설계된 심볼별 격리의 정상 동작**이다 — 게이트 전면 예외 격리(#65)로 SP500 경로 불가침을 지키며 `.` 포함 프리미엄 심볼만 스킵. 향후 로그 검토 시 이 skip 2건을 사고·오탐으로 판독 금지.
