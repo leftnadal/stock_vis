@@ -1,6 +1,22 @@
 #!/bin/bash
 # ============================================================
-#  야간 자동화용 health_check.py 실행 wrapper
+#  ⚠️ DEPRECATED (2026-09-01, OPS-HEALTHCHECK-NIGHTLY-WIRE) — 사용하지 마세요.
+#
+#  후속: auto_agent_system/healthcheck/run_healthcheck.sh
+#        (독립 launchd 잡 com.stockvis.healthcheck, 05:40 KST)
+#
+#  은퇴 사유(실측):
+#    - PROJECT_DIR 기본값 $HOME/stock-vis 가 실재하지 않는 경로였다
+#    - 호출처 0건 (nightly 어디서도 부르지 않음)
+#    - 최근 14일 산출물 0건 → "익일 자동 탐지"가 성립하지 않았다
+#    - REPORT_BASE가 트리 내부(docs/nightly_auto_system)라 런타임 트리를 dirty로
+#      만들어 sv sync와 충돌한다 → 후속은 산출물을 트리 밖(~/stock-vis-nightly)에 둔다
+#
+#  파일은 이력 보존을 위해 남긴다. 새 배선은 위 후속 스크립트를 쓴다.
+# ============================================================
+#
+# ============================================================
+#  (구) 야간 자동화용 health_check.py 실행 wrapper
 #
 #  매일 nightly_v3.sh 종료 직전 호출되어 docs/nightly_auto_system/
 #  YYYYMM/DD/health_check.json에 정합성 점검 결과 저장.

@@ -183,21 +183,14 @@ def build_mail(out_dir: Path | None = None) -> tuple[str, str, dict[str, Any]]:
 
 
 def send(subject: str, body: str, to: str = MAIL_TO) -> int:
-    """Django SMTP 설정 재사용. 값은 절대 출력하지 않는다."""
-    import django
+    """Django SMTP 설정 재사용. 값은 절대 출력하지 않는다.
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-    django.setup()
-    from django.conf import settings
-    from django.core.mail import send_mail
+    구현은 `auto_agent_system.common.mail.send` — healthcheck 에이전트와 공유한다
+    (OPS-HEALTHCHECK-NIGHTLY-WIRE). 이 래퍼는 기존 호출부·테스트 호환용.
+    """
+    from ..common.mail import send as _send
 
-    return send_mail(
-        subject=subject,
-        message=body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[to],
-        fail_silently=False,
-    )
+    return _send(subject, body, to)
 
 
 def main() -> int:

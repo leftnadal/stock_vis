@@ -7346,3 +7346,23 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **교정**: 문자열 시작 또는 공백·따옴표·`=` 뒤에 오는 절대경로(`$HOME` 포함)만 매치하도록 경계를 요구. 해석 불가한 셸 변수(`$NIGHTLY_DIR` 등) 뒤 경로는 검사 대상에서 제외(값을 알 수 없으므로 판정 불가). 아울러 경로 끝 셸 구분자(`;,)&|`) 트림.
 - **결과**: `launchd 잡 12건 전부 런타임 트리/허용 경로` **OK**. 회귀 테스트 3건 추가(다른 셸 변수 뒤 조각·주석 슬래시·경계 문자 뒤 정상 경로) → 유닛 **40 passed**.
 - **교훈**: **ERROR가 WARN을 가린다.** early-return 구조의 점검은 상위 등급이 해소된 뒤에야 하위 등급의 오탐이 드러난다 — 새 점검을 도입할 때는 **결함을 고친 뒤의 출력까지 확인**해야 신뢰도를 알 수 있다.
+
+## [2026-09-01] D-HC-NIGHTLY-WIRE — 하네스 건강 점검 야간 배선 = 독립 launchd 잡(옵션 A) [infra][process]
+
+> 병진 결정 2026-09-01: **옵션 A(dogfood와 분리된 독립 잡 + 별도 메일)**. 디렉터 추천은 B(dogfood 편입)였으나 병진이 **격리 최우선**으로 A를 선택. 기록해 둔다.
+
+- **결정**: `scripts/health_check.py`를 매일 **05:40 KST**에 독립 launchd 잡(`com.stockvis.healthcheck`)으로 실행하고, 전일 대비 변화를 별도 메일로 보고한다. dogfood(05:20)와 분리 — 한쪽이 죽어도 다른 쪽 보고가 멈추지 않는다.
+- **Why 배선이 필요했나**: OPS-GUARD-S1이 점검 2건(launchd 트리·`.env` 심링크)을 추가했지만 **자동 실행 경로가 없었다** — 구 `scripts/run_health_check_nightly.sh`는 `PROJECT_DIR` 기본값이 실재하지 않는 `$HOME/stock-vis`, 호출처 0건, 최근 14일 산출물 0건. 규칙과 점검이 있어도 **돌지 않으면 "11일 무탐지"가 반복**된다.
+- **산출물은 트리 밖**: `~/stock-vis-nightly/health/health_YYYYMMDD.json`. 구 wrapper는 트리 내부 `docs/nightly_auto_system/`에 썼는데, 런타임 트리를 dirty로 만들어 `sv sync`와 충돌한다. `--ledger`도 같은 이유로 쓰지 않는다(트리 내부 `boundary_ledger.jsonl` append).
+- **조용한 날 미발송 규칙**(옵션 A의 노이즈 단점 보완): baseline · ERROR≥1 · 신규 · 해소 · **월요일**에만 발송. 변화 0 + ERROR 0인 평일은 보내지 않는다. 월요일 발송은 **잡이 죽은 것과 조용한 것을 구별**하기 위한 생존 신호다. 같은 WARN의 단순 지속은 발송 사유가 아니다(`[재발 N일째]`로 누적 표기만).
+- **코드 공유 범위**: dogfood와 `send()`(Django SMTP 발송)만 `auto_agent_system/common/mail.py`로 공유한다. diff 3분류는 **스키마가 근본적으로 달라 공유하지 않는다** — dogfood는 `{"checks": {key: {"status": "ok"|"warn"|"fail"}}}`, health_check는 `[{"name", "status": 0|1|2}]`. 억지 일반화보다 개념(신규/재발 N일째/해소)만 맞추는 편이 읽기 쉽다.
+- **구 wrapper 은퇴**: `scripts/run_health_check_nightly.sh`는 삭제하지 않고 **deprecated 헤더 + 후속 경로 안내**만 붙였다(호출처 0건 확인, 이력 보존).
+- **휴장일 무관**: dogfood와 달리 매일 실행한다 — 하네스 정합성은 장이 열리는지와 무관하게 어긋난다.
+
+### 정정 — 앱 레이블 오조회로 인한 잘못된 "배포창 편승" 판단 (2026-08-31 → 09-01 정정)
+
+- **틀린 것**: `RC-WATCHDOG-DAPHNE_상신_20260831.md` §1의 **"`chain_sight` 0034·0035 prod 미적용 → MIG-BUNDLE-1 배포창 편승 권고"**.
+- **원인**: Django 앱 레이블은 **`chainsight`**(언더스코어 없음)인데 디렉터리명 `apps/chain_sight/`로 `django_migrations`를 조회했다. 없는 레이블이라 0행이 나왔고 그것을 "미적용"으로 읽었다.
+- **실제**: 두 마이그레이션 모두 **2026-08-31 적용 완료**. `showmigrations --plan` 기준 **미적용 0건**.
+- **영향**: RC-WATCHDOG-DAPHNE-COVERAGE의 배포 보류는 **불필요**했다. 이후 `sv sync`로 런타임 트리가 `9caf9e37`로 전진하며 **daphne 감시는 이미 라이브**가 됐다(`check_service` 4건 확인).
+- **규칙**: `django_migrations` 조회는 **디렉터리명이 아니라 앱 레이블**(`apps.py`의 `label`)로 한다. 더 안전한 것은 `manage.py showmigrations --plan`. **부정 결과(0행)를 곧바로 '미적용'으로 읽지 말 것** — 조회 자체가 빗나갔을 수 있다(이번이 그 사례).
