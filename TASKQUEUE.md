@@ -1570,3 +1570,6 @@
 - ✅ **CS-STORY-ACTIVITY-CACHE** (C) — SymbolStoryActivity(chainsight 0035)+물질화 태스크·커맨드+캐시우선 서빙+전역조회. 검증: 31,978행/35.75초·전역조회 0.7ms·캐시 3.9ms vs 라이브 55ms.
 - 🔴 **[MIG-BUNDLE-1 관문②]** 병진 잔여 — `register_chainsight_beats`(chainsight-materialize-story-activity ET 12:00 등록) + **worker 재시작**([[lesson_celery_task_registration]]).
 - 🟢 **S2 착수 준비 완료** — 캐시·전역조회·(-activity_ratio) 인덱스 = R2-S2 전역 활동 뷰 소스 완비.
+- ✅ **[EVT-4B] 완료** — CORR-4(거시 event_time UTC 해석·경계 보정) + FE-TUNE-1(T2 거시 접기·세션 빈칸·서프라이즈 200%). BE `da3a871c`+FE `31bf7791`(로컬 sess-evt-6). 0-3 UTC 게이트 PASS. **push 후 :3000 재빌드 필요(사용자 지시)** — 재빌드 전까지 화면 미반영.
+- ✅ **[EVT-IMPL-4-SHOT] 완료** — 증적 = 2026-08-31 디렉터 채팅 첨부 5장·시각 계약 판정 통과.
+- 📋 **[MP-MACRO-CAL-1] 별건 — market_pulse 소유** (초안 `docs/instructions/MP-MACRO-CAL-1.md`): 거시 수집기(`apps/market_pulse/tasks/macro.py`) 결함 3건 = ①시각 UTC 저장·help_text만 ET(EVT-CORR-4로 읽기 계층 우회) ②실제값 미백필(수집 창 today..+14일, 과거 이벤트 actual 갱신 안 됨 — 과거7일 거시 34건 전부 actual 빈값) ③중요도 인플레(High→critical 매핑, 97일 창 crit34/high60). **EVT 계약**: event_time 저장 **UTC 유지**+help_text 정정, event_id 해시 유지(변경 시 EVT-CORR-4 파손). 결정·집행은 market_pulse 트랙(제안 A~D는 그쪽 사이클). **EVT/ops는 소비자로서 결함 보고+계약만.**
