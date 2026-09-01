@@ -81,6 +81,7 @@ export interface MacroDetail {
   previous_value: string | null;
   actual_value: string | null;
   country: string | null;
+  event_time_utc: string | null; // 원문 UTC HH:MM (감사용, EVT-4B STEP2 — BE가 ET로 변환해 event_time_et에 채움)
 }
 
 export interface HolidayDetail {

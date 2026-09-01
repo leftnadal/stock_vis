@@ -1,6 +1,8 @@
 // 이벤트 행 — 심볼·유형뱃지·(session 값 있을 때만) 세션뱃지·상세·신뢰뱃지·시간·출처마크.
 // 목업 .row 그리드(150px 1fr 200px 130px) 그대로. 휴장 행은 빗금 배경(hol-row),
 // stale 행은 반투명(opacity .55, 기본은 상위 페이지가 숨김 처리 — 여기선 스타일만).
+// EVT-4B STEP2(FE-TUNE-1 T2): 거시(macro)는 뱃지+제목을 한 줄로 그리는 전용 변형을 쓴다
+// (펼쳐진 상태일 때만 DateGroup/page가 이 컴포넌트를 렌더한다 — 접힘은 MacroFoldRow 담당).
 import {
   badgeClass,
   HOLIDAY_STRIPE_BG,
@@ -10,8 +12,11 @@ import {
 import { KindBadge } from './KindBadge';
 import { SurpriseBadge } from './SurpriseBadge';
 import { TrustBadge } from './TrustBadge';
-import { formatDetail, formatTime, sourceLabel } from '@/lib/monitor/calendarFormat';
+import { formatDetail, formatTime, sourceLabel, type TimeCellText } from '@/lib/monitor/calendarFormat';
 import type { EventItem } from '@/types/eventCalendar';
+
+const ROW_GRID =
+  'grid grid-cols-[150px_1fr_200px_130px] items-center gap-2.5 border-b border-dashed border-gray-100 py-2 last:border-0 dark:border-gray-800';
 
 function ImportanceBadges({ badges }: { badges: string[] }) {
   const visible = badges.filter((token) => token !== 'today');
@@ -31,9 +36,49 @@ function ImportanceBadges({ badges }: { badges: string[] }) {
   );
 }
 
-export function EventRow({ item }: { item: EventItem }) {
-  const isHoliday = item.kind === 'holiday';
+// earnings 전용: session도 없고 KST 시각도 없으면 "세션 미정" 같은 추정 문구 대신 빈 칸
+// (정직 표기 — 값이 있을 때만 BMO/AMC·시각을 보여준다).
+function timeCell(item: EventItem): TimeCellText {
   const time = formatTime(item);
+  if (item.kind === 'earnings' && !item.session && !item.event_dt_kst) {
+    return { main: '', sub: null };
+  }
+  return time;
+}
+
+function MacroEventRow({ item }: { item: EventItem }) {
+  const time = timeCell(item);
+  return (
+    <div data-testid={`event-row-${item.kind}-${item.symbol ?? 'na'}`} className={ROW_GRID}>
+      <div className="flex items-center gap-1.5">
+        <KindBadge kind={item.kind} />
+      </div>
+      <div
+        className="truncate text-sm text-gray-700 dark:text-gray-200"
+        title={`${item.title} · ${formatDetail(item)}`}
+      >
+        <span className="font-medium">{item.title}</span>
+        <span className="text-gray-400"> · </span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">{formatDetail(item)}</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-1">
+        <ImportanceBadges badges={item.badges} />
+      </div>
+      <div className="text-xs text-gray-500 dark:text-gray-400">
+        <div>{time.main}</div>
+        {time.sub && <div className="text-gray-400 dark:text-gray-500">{time.sub}</div>}
+      </div>
+    </div>
+  );
+}
+
+export function EventRow({ item }: { item: EventItem }) {
+  if (item.kind === 'macro') {
+    return <MacroEventRow item={item} />;
+  }
+
+  const isHoliday = item.kind === 'holiday';
+  const time = timeCell(item);
   const source = sourceLabel(item.sources);
 
   return (
