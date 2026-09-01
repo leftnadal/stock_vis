@@ -1077,6 +1077,202 @@ def check_runtime_check_log() -> CheckResult:
     return CheckResult(name=name, status=OK, detail=f"runtime_check 최근 24h 정상({recent}회 실행, 이상 0)")
 
 
+# ── OPS-GUARD-S1: launchd 실행 트리 정합 + .env 심링크 실체 ──────────────────
+
+# 허용 prefix(홈 기준 상대). STEP 0 실측(2026-08-31, plist 12건)으로 확정.
+#   - 런타임 worktree 3종 = 정상 실행 트리(D-LAUNCHD-RUNTIME-TREE)
+#   - neo4j / stock-vis-nightly = repo 트리가 아닌 별도 설치·자동화 디렉터리
+#   - .nvm = node 도구 경로(web-frontend npm, nightly PATH)
+LAUNCHD_ALLOWED_HOME_PREFIXES = (
+    "worktrees/sv-worker-runtime",
+    "worktrees/sv-api-runtime",
+    "worktrees/sv-web-runtime",
+    "neo4j",
+    "stock-vis-nightly",
+    ".nvm",
+)
+# 시스템 도구 경로(/bin/bash 등) — repo 트리와 무관
+LAUNCHD_ALLOWED_ABS_PREFIXES = ("/bin", "/sbin", "/usr", "/opt", "/Library", "/System")
+# 공유 편집 트리 — 데몬이 여기서 돌면 아무도 배포하지 않은 코드가 prod에 쓴다
+LAUNCHD_SHARED_TREE = "Desktop/stock_vis"
+
+
+def extract_launchd_paths(plist: dict) -> list[str]:
+    """plist에서 '실행 트리를 가리키는 경로 토큰'만 추출.
+
+    WorkingDirectory + ProgramArguments 중 절대경로/$HOME 시작 토큰. PATH 문자열처럼
+    콜론이 섞인 값은 경로가 아니므로 제외(오탐 방지).
+    """
+    out: list[str] = []
+    wd = plist.get("WorkingDirectory")
+    if isinstance(wd, str) and wd:
+        out.append(wd)
+    for arg in plist.get("ProgramArguments", []) or []:
+        if not isinstance(arg, str):
+            continue
+        for tok in re.findall(r"(?:\$HOME|/)[^\s\"\']*", arg):
+            if ":" in tok or len(tok) < 2:
+                continue  # PATH 등 비-경로
+            if tok.startswith("/") or tok.startswith("$HOME/"):
+                out.append(tok)
+    return out
+
+
+def classify_launchd_path(path: str, home: str) -> str:
+    """경로 1건을 'ok' | 'shared_tree' | 'unknown'으로 분류."""
+    p = path.replace("$HOME", home)
+    if LAUNCHD_SHARED_TREE in p:
+        return "shared_tree"
+    if p.startswith(home + "/"):
+        rel = p[len(home) + 1 :]
+        for pref in LAUNCHD_ALLOWED_HOME_PREFIXES:
+            if rel == pref or rel.startswith(pref + "/"):
+                return "ok"
+        return "unknown"
+    for pref in LAUNCHD_ALLOWED_ABS_PREFIXES:
+        if p == pref or p.startswith(pref + "/"):
+            return "ok"
+    return "unknown"
+
+
+def evaluate_launchd_tree(plists: dict[str, dict], home: str) -> CheckResult:
+    """{label: plist_dict} → CheckResult. 순수 함수(테스트용)."""
+    name = "launchd 실행 트리 정합"
+    bad: list[str] = []
+    unknown: list[str] = []
+    for label in sorted(plists):
+        for path in extract_launchd_paths(plists[label]):
+            verdict = classify_launchd_path(path, home)
+            if verdict == "shared_tree":
+                bad.append(f"{label}: {path}")
+            elif verdict == "unknown":
+                unknown.append(f"{label}: {path}")
+    if bad:
+        return CheckResult(
+            name=name,
+            status=ERROR,
+            detail=(
+                f"공유 편집 트리(~/{LAUNCHD_SHARED_TREE})를 가리키는 launchd 잡 {len(bad)}건 "
+                "— 배포되지 않은 코드가 prod에 쓸 수 있다(D-LAUNCHD-RUNTIME-TREE 위반)"
+            ),
+            evidence=bad[:10] + (["…"] if len(bad) > 10 else [])
+            + ["교정: 런타임 worktree(sv-*-runtime) 기준 plist + 래퍼 self-locate"],
+        )
+    if unknown:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail=f"허용 목록 밖 경로를 가리키는 잡 {len(unknown)}건 — 의도 확인 필요",
+            evidence=unknown[:10],
+        )
+    return CheckResult(
+        name=name, status=OK, detail=f"launchd 잡 {len(plists)}건 전부 런타임 트리/허용 경로"
+    )
+
+
+def check_launchd_tree_alignment(agents_dir: Path | None = None, home: str | None = None) -> CheckResult:
+    """~/Library/LaunchAgents/com.stockvis.*.plist 실행 트리 정합 (OPS-HEALTHCHECK-PLIST-TREE).
+
+    RC-NEO4J-WORKER-TREE: 잡 3건이 11일간 낡은 공유 트리에서 돌았는데 자동 점검이
+    없어 무탐지였다. 비-macOS/plutil 부재 환경은 skip.
+    """
+    name = "launchd 실행 트리 정합"
+    agents = agents_dir or (Path.home() / "Library" / "LaunchAgents")
+    home_str = home or str(Path.home())
+    if not agents.is_dir():
+        return CheckResult(name=name, status=OK, detail="LaunchAgents 디렉터리 부재 — 비-런타임 환경으로 간주, skip")
+    files = sorted(agents.glob("com.stockvis.*.plist"))
+    if not files:
+        return CheckResult(name=name, status=OK, detail="stockvis launchd 잡 없음 — skip")
+    try:
+        import plistlib
+    except ImportError:  # pragma: no cover - stdlib
+        return CheckResult(name=name, status=WARN, detail="plistlib 미가용 — 점검 생략")
+    plists: dict[str, dict] = {}
+    unreadable: list[str] = []
+    for f in files:
+        try:
+            with f.open("rb") as fh:
+                plists[f.stem.replace("com.stockvis.", "")] = plistlib.load(fh)
+        except Exception as e:  # 손상·바이너리 등
+            unreadable.append(f"{f.name}: {e}")
+    if not plists:
+        return CheckResult(
+            name=name, status=WARN, detail=f"plist {len(files)}건 전부 판독 불가 — 점검 생략", evidence=unreadable[:5]
+        )
+    result = evaluate_launchd_tree(plists, home_str)
+    if unreadable:
+        result.evidence = result.evidence + [f"판독 불가 {len(unreadable)}건: {unreadable[0]}"]
+    return result
+
+
+ENV_SYMLINK_TREES = ("sv-worker-runtime", "sv-api-runtime")
+
+
+def evaluate_env_symlink(entries: list[tuple[str, bool, bool, bool]]) -> CheckResult:
+    """[(tree, exists_as_path, is_symlink, target_resolves)] → CheckResult. 순수 함수.
+
+    값은 절대 읽지 않는다 — 존재·종류·해석 가능 여부만.
+    """
+    name = ".env 심링크 실체"
+    broken: list[str] = []
+    plain: list[str] = []
+    missing: list[str] = []
+    ok: list[str] = []
+    for tree, exists, is_link, resolves in entries:
+        if is_link and not resolves:
+            broken.append(f"{tree}/.env → 대상 소실(끊어진 심링크)")
+        elif is_link:
+            ok.append(f"{tree}/.env → 심링크(대상 실재)")
+        elif exists:
+            plain.append(f"{tree}/.env = 일반 파일")
+        else:
+            missing.append(f"{tree}/.env 부재")
+    if broken:
+        return CheckResult(
+            name=name,
+            status=ERROR,
+            detail=f"런타임 트리 .env 심링크 대상 소실 {len(broken)}건 — 워커·API 설정 로드 실패",
+            evidence=broken + ["복구: 공유 본체 .env 확인 후 심링크 재생성"],
+        )
+    if missing:
+        return CheckResult(
+            name=name,
+            status=ERROR,
+            detail=f"런타임 트리 .env 부재 {len(missing)}건",
+            evidence=missing,
+        )
+    if plain:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail=f".env가 심링크 아님 {len(plain)}건 — 트리 간 drift 가능(D-ENV-SYMLINK-KEEP)",
+            evidence=plain + ok,
+        )
+    return CheckResult(name=name, status=OK, detail=f"런타임 트리 .env {len(ok)}건 심링크·대상 실재", evidence=ok)
+
+
+def check_env_symlink(worktrees_dir: Path | None = None) -> CheckResult:
+    """런타임 트리 .env가 심링크로 공유 본체를 가리키는지 (D-ENV-SYMLINK-KEEP).
+
+    심링크 유지가 결정이므로 '심링크임 + 대상 실재'가 정상. 값은 출력하지 않는다.
+    """
+    name = ".env 심링크 실체"
+    base = worktrees_dir or (Path.home() / "worktrees")
+    if not base.is_dir():
+        return CheckResult(name=name, status=OK, detail="worktrees 디렉터리 부재 — 비-런타임 환경, skip")
+    entries: list[tuple[str, bool, bool, bool]] = []
+    for tree in ENV_SYMLINK_TREES:
+        tree_dir = base / tree
+        if not tree_dir.is_dir():
+            continue  # 런타임 트리 자체가 없으면 이 환경의 관심사가 아님
+        env = tree_dir / ".env"
+        is_link = env.is_symlink()
+        entries.append((tree, env.exists() or is_link, is_link, env.exists()))
+    if not entries:
+        return CheckResult(name=name, status=OK, detail="런타임 트리 없음 — skip")
+    return evaluate_env_symlink(entries)
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -1097,6 +1293,8 @@ CHECKS = [
     check_monitor_refresh_freshness,
     check_stale_pending_backannotation,
     check_runtime_check_log,
+    check_launchd_tree_alignment,
+    check_env_symlink,
 ]
 
 

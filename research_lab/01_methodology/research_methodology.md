@@ -1,11 +1,11 @@
 # Stock_vis Research Lab Research Methodology
 
 **Status:** Approved  
-**Version:** 1.1  
-**Last Updated:** 2026-08-27  
+**Version:** 1.2  
+**Last Updated:** 2026-08-31  
 **Owner:** Stock_vis Research Lab  
-**Approval:** Approved by Project Owner on 2026-08-27  
-**Effective Date:** 2026-08-27
+**Approval:** Approved by Project Owner on 2026-08-31  
+**Effective Date:** 2026-08-31
 
 ## 1. Purpose
 
@@ -276,6 +276,29 @@ Investigation may produce many legitimate outputs, including:
 
 Research Knowledge is therefore one possible research outcome, not the mandatory terminal state of every undertaking.
 
+### 13.1 Authority Review for Material Meta-Level Change Candidates
+
+Research may produce material findings or proposals about the Research Lab's own methodology, architecture, governed concepts, authority boundaries, semantic responsibilities, or other cross-case normative structure. Such a finding may arise legitimately during Investigation, but it must not become a formal change candidate merely because it appears useful in one Research Case.
+
+Before a material meta-level finding is advanced as a formal change candidate, the Research Lab must proportionally review it against the relevant currently effective Authority Sources when either:
+
+- the finding would establish meaning, rules, responsibilities, or structure intended to apply beyond the current Research Case; or
+- the finding would move, narrow, expand, replace, or materially reinterpret a responsibility or boundary already assigned by an existing authority, methodology, architecture, or intentional Non-Decision.
+
+The review should determine, to the extent material:
+
+- the applicable semantic or methodological jurisdiction and currently effective Authority Sources;
+- whether existing authority already covers the finding;
+- whether the finding is consistent with upstream constraints and existing authority boundaries;
+- whether the current architecture can accommodate the need without creating a new normative structure; and
+- whether an apparent conflict reflects an incorrect interpretation or proposal, or material Reality or Evidence that justifies possible Reconsideration of current authority.
+
+Existing authority is not immune from challenge. When Reality or better Evidence materially challenges a current methodology, architecture, decision, or assumption, the finding should be routed through the applicable Reconsideration process rather than silently rejected or silently implemented.
+
+This review is proportional and does not require every local working label, reversible implementation experiment, analytical choice, or case-specific research judgment to undergo formal authority review merely because it may later prove reusable.
+
+Exact retrieval procedures, classification labels, agent orchestration, reviewer counts, automation, and escalation mechanics remain implementation-level or operational Non-Decisions unless separately approved.
+
 ## 14. Lifecycle, Admission, and Governance Actions
 
 A structured evaluation result does not automatically determine a lifecycle action.
@@ -308,7 +331,7 @@ The Project Owner / CEO is not the default epistemic truth reviewer and does not
 
 Greater epistemic consequence, expected reuse, uncertainty, or disagreement should increase the rigor of Evaluation, effective challenge, and specialized epistemic review. It does not by itself transfer truth adjudication to the Project Owner / CEO.
 
-Epistemic admission therefore remains governed by the approved Research and Evaluation Methodologies. Exact agent-level mechanics, reviewer counts, voting rules, consensus algorithms, and escalation thresholds remain Non-Decisions of v1.1.
+Epistemic admission therefore remains governed by the approved Research and Evaluation Methodologies. Exact agent-level mechanics, reviewer counts, voting rules, consensus algorithms, and escalation thresholds remain Non-Decisions of v1.2.
 
 ### 14.3 Consequential Governance Authority
 
@@ -378,7 +401,7 @@ The exact storage representation is delegated to later ontology and engineering 
 
 ## 19. Boundaries and Non-Decisions
 
-Research Methodology v1.1 does not adopt:
+Research Methodology v1.2 does not adopt:
 
 - a fixed exhaustive taxonomy of research question types;
 - a fixed exhaustive taxonomy of research methods;
@@ -388,6 +411,7 @@ Research Methodology v1.1 does not adopt:
 - exact Knowledge admission thresholds;
 - exact lifecycle vocabulary;
 - exact agent-level admission mechanics, reviewer counts, voting rules, consensus algorithms, or escalation thresholds;
+- exact authority-retrieval procedures, meta-finding classification labels, or authority-review automation;
 - numerical credibility scales;
 - fixed evaluation-rigor tiers;
 - a database, ontology, graph, or workflow-engine schema;
@@ -405,10 +429,18 @@ This document depends on and must remain consistent with:
 - [Stock_vis Research Lab Knowledge and Understanding Framework](knowledge_and_understanding_framework.md)
 - [Stock_vis Research Lab Evaluation Methodology](../02_evaluation/evaluation_methodology.md)
 - [DR-0006: Separate Epistemic Authority from Consequential Governance](../04_decision_records/DR-0006-separate-epistemic-authority-consequential-governance.md)
+- [DR-0008: Require Authority-Backed Review for Material Research Lab Change Candidates](../04_decision_records/DR-0008-require-authority-backed-review-for-material-research-lab-change-candidates.md)
 
 Evaluation Methodology is a peer operational authority, not a subordinate component of Research Methodology.
 
 ## 21. Change Log
+
+### 1.2 — 2026-08-31
+
+- Added proportional authority-backed review for material meta-level findings that could create cross-case normative effects or displace existing semantic or methodological responsibilities.
+- Required review against currently effective Authority Sources, existing coverage, upstream consistency, and accommodation within the current architecture before formal change progression.
+- Distinguished incorrect proposals from Reality- or Evidence-backed challenges to existing authority and routed the latter toward Reconsideration rather than silent rejection or implementation.
+- Preserved exact retrieval, classification, orchestration, automation, and escalation mechanics as Non-Decisions.
 
 ### 1.1 — 2026-08-27
 
