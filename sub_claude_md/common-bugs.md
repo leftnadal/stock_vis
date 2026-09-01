@@ -1562,7 +1562,7 @@ rebase 전 기록 시, **머지 직전 구 해시 전수 grep→신 해시 교�
 
 **해소**: `git branch --set-upstream-to=origin/main <브랜치>` 후 `git branch -d <브랜치>` 재시도 → `-d`가 **origin/main 기준 머지 판정**(브랜치가 조상=포함) → force 없이 삭제. 또는 origin/main 체크아웃 트리에서 실행. **`-D` 전환 절대 금지**(손실 0 실측은 진행 근거 아님 — D-BRANCH-DELETE-MANUAL 상호 참조). cf. #104(-d 거부=HALT 신호)·#107(첫 수=원인 규명). -D 통산 0회 유지 실증.
 
-## drf-spectacular OpenApiSerializerExtension target_class가 pre-monorepo 경로면 컴포넌트 무음 드롭 (채번 대기, D1-SCOREBOARD 2026-08-20) [openapi][monorepo][frontend]
+## drf-spectacular OpenApiSerializerExtension target_class가 pre-monorepo 경로면 컴포넌트 무음 드롭 (#124, D1-SCOREBOARD 2026-08-20) [openapi][monorepo][frontend]
 
 **증상**: `manage.py spectacular` 재생성 시 `CoachE1~E6` 등 명명 컴포넌트가 스키마에서 **경고 없이 사라짐**. 커밋된 (stale) schema.yml에는 있었으나 재생성본에는 path만 남고 `responses: No response body`. FE `lib/coach/types.ts`가 `Schemas['CoachE1Response']`를 참조 → tsc가 phantom 참조로 대량 실패(coach 6페이지·hooks·api·9 테스트 전파).
 
@@ -1818,7 +1818,7 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 **원인**: 수집기(`apps/market_pulse/tasks/macro.py:183`)가 FMP `date`(UTC 문자열)의 HH:MM을 그대로 저장. 실제 저장값은 **UTC**인데 모델 help_text만 'ET' → 모든 소비자가 라벨을 믿고 ET로 표시 = +4h(EDT)/+5h(EST) 오차.
 
 **규율**: 외부 소스 시각을 소비하기 전, **알려진 발표시각을 가진 표본 2~3건의 저장값을 실측**해 원문 시간대를 확정한다(필드 라벨·help_text 신뢰 금지). 예: Initial Jobless Claims 08:30 ET·ISM 10:00 ET·FOMC 14:00 ET의 저장값이 +4/+5면 UTC. 수정은 원천 최소 변경 원칙 → 읽기 계층에서 변환(EVT-CORR-4), 원천 정정은 별건(MP-MACRO-CAL-1).
-## pulse full 캐시 60s + 워밍 beat ET 장중 한정 → KST 사용 시 상시 콜드 → 라이브 14호출 28s 대기 (채번 후보, MP2-SUBPAGES HOTFIX-1 2026-08-31) `[backend][market_pulse][cache][celery]`
+## pulse full 캐시 60s + 워밍 beat ET 장중 한정 → KST 사용 시 상시 콜드 → 라이브 14호출 28s 대기 (#125, MP2-SUBPAGES HOTFIX-1 2026-08-31) `[backend][market_pulse][cache][celery]`
 
 **증상**: `/market-pulse-v2/macro` 허브가 장외(KST 오후) 진입 시 "불러오는 중…"에서 ~28초 멈춤. v1(`/market-pulse`)은 정상(localStorage 30분 캐시가 가림).
 
@@ -1826,8 +1826,18 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 
 **규율(SWR)**: 60s fresh 캐시 옆에 **24h stale 캐시**(`…:full:stale`)를 두고, fresh 미스 시 **stale 즉시 반환 + 백그라운드 갱신 1회 enqueue**(락 `…:full:refreshing` `cache.add` dedup). 요청 스레드에서 라이브 집계 금지(외부 호출 무증가). 워밍 태스크는 `force_refresh=True`로 직행해 SWR 미스→워밍→미스 무한 재-enqueue를 차단. 스키마 불변(스테일 판단은 FE `last_updated` 나이). (구현 `apps/market_pulse/services/macro_service.py`·`tasks/macro.py`, D-SUBPAGES-SWR.)
 
-## SSR 200·제목 렌더 ≠ 데이터 렌더 — 랜딩 스모크는 실데이터 도달을 단언해야 (채번 후보, MP2-SUBPAGES HOTFIX-1 2026-08-31) `[process][qa][frontend]`
+## SSR 200·제목 렌더 ≠ 데이터 렌더 — 랜딩 스모크는 실데이터 도달을 단언해야 (#126, MP2-SUBPAGES HOTFIX-1 2026-08-31) `[process][qa][frontend]`
 
 **증상**: MP2-SUBPAGES S1 랜딩 스모크가 "SSR 200 + 제목 렌더"만 확인 → DoD "실 pulse 데이터 스크린샷"이 미증빙된 채 통과. 실제로는 데이터 fetch가 28초 콜드로 멈춰 화면이 "불러오는 중…"에 갇혀 있었음(다음 세션에서야 발견).
 
 **규율**: 데이터 의존 화면의 랜딩 스모크·DoD는 **실데이터 렌더 도달**(대표 값 노출·로딩 스피너 소멸·도달 시간)을 단언한다. 라우트 200·헤딩 텍스트만으로 "동작"을 선언하지 않는다. route interception 모킹 E2E는 로직 회귀엔 유효하나 **실 백엔드 콜드 경로의 지연**은 못 잡는다 → 랜딩 시 실 API 1회 실측(도달 시간) 별도 필수. cf. [[feedback_ui_slice_live_screenshot]].
+
+## cleanup 블록 "push 후에만" 항목 조기 실행 → 미랜딩 브랜치 삭제 = 미push 커밋 소실 (#127, P2-DLITE-CLOSE 2026-08-31) `[git][process][harness]`
+
+**증상**: P2-DLITE-CLOSE 세션에서 정리 블록의 "push 후에만 실행" 딱지가 붙은 브랜치 삭제 항목을 push 완료 **전에** 실행 → 아직 origin/main에 안 올라간 브랜치(b39)를 `git branch -D` → 미push 커밋이 브랜치 참조를 잃고 dangling 상태로 방치될 뻔.
+
+**원인**: 정리 스크립트/체크리스트의 순서 딱지("push 후")를 기계적으로 무시하고 삭제부터 실행. `git branch -D`는 upstream/merge 여부와 무관하게 강제 삭제하므로(‑d와 달리 안전판 없음), 미랜딩 브랜치도 조용히 지운다.
+
+**복구**: `git reflog`/`git fsck --lost-found`로 dangling 커밋 tip 특정 → `git branch <name> <sha>`로 **재앵커** → 정상 랜딩 절차로 재진입(push→머지). reflog 만료 전이면 무손실.
+
+**규율**: 브랜치 삭제(`branch -D`·`push --delete`·`worktree remove`) **직전**에 `git merge-base --is-ancestor <branch> origin/main` = **YES(소진) 게이트**를 `&&` 체인으로 강제한다. 게이트 없는 삭제 항목은 스크립트에 넣지 않는다. cf. #98(rebase 후 dangling 앵커)·[[lesson_branch_d_upstream_refusal]](‑d의 upstream 거부는 안전판, ‑D는 그 안전판을 우회). 삭제 계열은 병진 수동 고정(D-BRANCH-DELETE-MANUAL).

@@ -7366,3 +7366,12 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **실제**: 두 마이그레이션 모두 **2026-08-31 적용 완료**. `showmigrations --plan` 기준 **미적용 0건**.
 - **영향**: RC-WATCHDOG-DAPHNE-COVERAGE의 배포 보류는 **불필요**했다. 이후 `sv sync`로 런타임 트리가 `9caf9e37`로 전진하며 **daphne 감시는 이미 라이브**가 됐다(`check_service` 4건 확인).
 - **규칙**: `django_migrations` 조회는 **디렉터리명이 아니라 앱 레이블**(`apps.py`의 `label`)로 한다. 더 안전한 것은 `manage.py showmigrations --plan`. **부정 결과(0행)를 곧바로 '미적용'으로 읽지 말 것** — 조회 자체가 빗나갔을 수 있다(이번이 그 사례).
+## [2026-09-01] D-REMOTE-BRANCH-HYGIENE (가안 — 병진 확정 대기) — 원격 세션 브랜치 정리 규약 [git][process][harness]
+
+> P2-SUBPAGES-CLOSE(mgmt b44) 실측: 원격 `origin/monorepo/sess-*` **62개 중 54 소진(origin/main 반영 완료)·8 미소진**. 누적 정리 규약 부재 → 소진 브랜치가 무한 적재(false-negative 지뢰 #117 재발 토양).
+
+- **가안 결정 = "랜딩 후 원격 삭제"**: 세션 브랜치는 no-ff 머지로 origin/main에 **랜딩된 후 원격 삭제**한다. 게이트 = 로컬 소진 게이트와 동형(`git merge-base --is-ancestor origin/<br> origin/main` = YES). 예외 = TASKQUEUE에 **'보존' 표기**된 브랜치(증거 보존·미소진 진행 중).
+- **선택지 채점(가안)**: ⑴ 전량 보존 = 3.0(추적성↑이나 62→∞ 적재·탐색 소음·#117 지뢰) / ⑵ **랜딩 후 삭제 = 4.3(추천)**(origin/main이 단일 진실·소진분은 이미 그 안에 있음·게이트로 무손실) / ⑶ 월 1회 배치 = 3.6(⑵의 지연형·창 사이 적재). 마진 0.7.
+- **근거**: 소진 브랜치의 커밋은 **전부 origin/main에 존재** → 원격 ref 삭제는 이력 무손실(reflog·머지커밋이 앵커 보존). 미소진 8건은 고유 커밋 보유 → **삭제 금지**(판단 재료 표 = `scratchpad/branch_hygiene_table_2026-08-31.md`).
+- **집행 규율**: 삭제는 **병진 수동 고정**(D-BRANCH-DELETE-MANUAL·[[feedback_service_op_submit_not_execute]]) — 삭제 직전 소진 게이트 `&&` 체인 필수(#127). 스크립트 = `scratchpad/cleanup_remote_2026-08-31.sh`(54건, fetch --prune + 게이트 내장).
+- **상태**: **가안** — 병진 체크리스트 B2에서 채택 확정 시 규약으로 승격(이 블록에 "확정 @커밋" 부기). 확정 전 원격 삭제 집행 금지.
