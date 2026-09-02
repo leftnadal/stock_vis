@@ -69,14 +69,20 @@ describe('MindmapCardDetail (CS-P5-FE-CARD B4)', () => {
     expect(screen.getByText(/계약일 2026-03-01/)).toBeInTheDocument();
   });
 
-  it('이 종목의 이야기: 활동 스레드 + "관계 아님" 캡션 + 게이지 수치', () => {
+  it('이 종목의 이야기: 활동 스레드 + "관계 아님" 캡션 + 절대량 수치', () => {
     render(<MindmapCardDetail symbol="NVDA" onSelectOther={onSelectOther} onClose={onClose} />);
     expect(screen.getByText('이 종목의 이야기')).toBeInTheDocument();
     expect(screen.getByText(/관계 아님 · 동시 언급/)).toBeInTheDocument();
     expect(screen.getByText('AMD')).toBeInTheDocument();
     expect(screen.getByText('7일 5회')).toBeInTheDocument();
-    expect(screen.getByText('주간평균 3.11')).toBeInTheDocument();
     expect(screen.getByText('어제')).toBeInTheDocument(); // days_since=1
+  });
+
+  // R2-S2 ⑷ 정직화 회귀: 게이지·"주간평균" 문구는 추정 산식을 노출하므로 제거됨(절대량+최신성만).
+  it('R2-S2 ⑷: 게이지(progressbar)·"주간평균" 문구를 렌더하지 않는다', () => {
+    render(<MindmapCardDetail symbol="NVDA" onSelectOther={onSelectOther} onClose={onClose} />);
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByText(/주간평균/)).not.toBeInTheDocument();
   });
 
   it('threads_capped: "상위 N / 전체 M" 표기', () => {

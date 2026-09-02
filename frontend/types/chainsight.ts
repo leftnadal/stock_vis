@@ -315,3 +315,49 @@ export interface MindmapCardResponse {
   group_capped: boolean;
   story: MindmapStory;
 }
+
+// ── "오늘 시장의 이야기" 피드 (R2-S2) ──
+
+/** 카드 유형 — new_sec(신규 SEC 8-K) · daily_spike(일간 급등) · weekly_active(이번 주 활발/steady). */
+export type MarketStoryCardType = 'new_sec' | 'daily_spike' | 'weekly_active';
+
+/** 신뢰 위계(규칙 3) — sec_evidence만 "관계"를 시사 가능, co_mention은 동시 언급일 뿐(관계 아님). */
+export type MarketStoryCardKind = 'sec_evidence' | 'co_mention';
+
+/**
+ * 피드 카드 — type별로 일부 필드만 채워짐.
+ * - daily_spike: count(단일일 co-mention 수) + companions(동반 클러스터, 최대 4).
+ * - weekly_active: count(7일 co-mention 수). companions는 항상 빈 배열.
+ * - new_sec: relation_type + item_code(8-K 근거). companions는 항상 빈 배열.
+ */
+export interface MarketStoryCard {
+  type: MarketStoryCardType;
+  kind: MarketStoryCardKind;
+  symbol_a: string;
+  symbol_b: string;
+  occurred_on: string | null;
+  days_since: number | null;
+  companions: string[];
+  /** daily_spike · weekly_active 전용 (co-mention 횟수). */
+  count?: number;
+  /** new_sec 전용 — SEC 4종 게이트 관계 유형. */
+  relation_type?: MindmapRelationType;
+  /** new_sec 전용 — 8-K item code (예: "1.01"). */
+  item_code?: string;
+}
+
+export interface MarketStoryFeedSummary {
+  new_sec: number;
+  daily_spike: number;
+  weekly_active: number;
+}
+
+/** GET /api/v1/chainsight/feed/ 응답 */
+export interface MarketStoryFeedResponse {
+  as_of: string;
+  /** 규칙 2(정문 무공허) — false여도 cards는 weekly_active로 항상 채워짐. */
+  has_event: boolean;
+  summary: MarketStoryFeedSummary;
+  total: number;
+  cards: MarketStoryCard[];
+}
