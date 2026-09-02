@@ -7375,3 +7375,12 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **근거**: 소진 브랜치의 커밋은 **전부 origin/main에 존재** → 원격 ref 삭제는 이력 무손실(reflog·머지커밋이 앵커 보존). 미소진 8건은 고유 커밋 보유 → **삭제 금지**(판단 재료 표 = `scratchpad/branch_hygiene_table_2026-08-31.md`).
 - **집행 규율**: 삭제는 **병진 수동 고정**(D-BRANCH-DELETE-MANUAL·[[feedback_service_op_submit_not_execute]]) — 삭제 직전 소진 게이트 `&&` 체인 필수(#127). 스크립트 = `scratchpad/cleanup_remote_2026-08-31.sh`(54건, fetch --prune + 게이트 내장).
 - **상태**: **가안** — 병진 체크리스트 B2에서 채택 확정 시 규약으로 승격(이 블록에 "확정 @커밋" 부기). 확정 전 원격 삭제 집행 금지.
+
+## [2026-09-02] D-R2S2-FEED-CARDS — Chain Sight 랜딩 = "오늘 시장의 이야기" 피드, 카드 v1 정직 재정의 [backend][frontend][chainsight]
+
+> R2-S2. STEP 0에서 지시서 A-2 전제("동조 급증"=activity_ratio) 붕괴 → 사용자 재정의 처분(2026-09-01).
+
+- **결정**: Chain Sight 진입 랜딩 = 피드(루트 /chainsight). EventBoard(EventGroup 조감)는 /chainsight/events로 강등(원클릭 보존). 마인드맵은 피드 헤더 우상단 링크(규칙 7).
+- **카드 v1(3유형)**: daily_spike(단일일 span0 co-mention 급등·14일창·발생일) + weekly_active(count_7d 절대상위 steady·정문 무공허 fallback) + new_sec(8-K filing_date 30일창). 신뢰 위계: co_mention 카드는 "관계 아님·동시 언급" 캡션·중립/사건색, new_sec만 관계 시사 허용.
+- **Why(폐기 근거)**: co-mention 90일 기저선 부재 실측 — CoMentionEdge 97.8% 단일일(first==last)·활동 페어 100%가 count_90d==count_7d → activity_ratio=count_7d/(count_7d/12.86)=상수 12.86 아티팩트. ratio 임계로 급증 카드 시 규칙 2(사건 부풀림) 위반. 뉴스 히스토리 자체는 3년치 있으나 co-mention 집계가 최근창만 반영. **ratio 급증 카드 = HIST-BASELINE-MATURITY(≥90일 관측 후) 재개**.
+- **⑷ weekly_avg 정직화**: 분모 고정 90/7 → 페어 실관측 스팬(주). 표시에서 '평소 대비/주간평균' 문구·게이지 제거(절대량+최신성). 마이그 0(값 계산만).

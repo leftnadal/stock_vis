@@ -1603,3 +1603,11 @@
 ## OPS-GUARD-S1 부수 교정 (2026-09-01)
 
 - ✅ **OPS-GUARD-S1-FALSEPOS** — `H-LAUNCHD-TREE` 오탐 13건 해소. pg-backup ERROR가 걷히자 가려져 있던 WARN이 드러남(`nightly` plist의 `$NVM_DIR/nvm.sh` 뒤 조각·한국어 주석 슬래시). 정규식에 **토큰 경계 요구** + 경로 끝 셸 구분자 트림. 회귀 테스트 3건 추가(유닛 40 passed). 교훈 = **ERROR가 WARN을 가린다** — 새 점검은 결함을 고친 뒤의 출력까지 확인해야 신뢰도를 안다.
+
+## R2-S2 오늘 시장의 이야기 피드 (2026-09-02, worktree sv-r2s2)
+
+> STEP 0에서 ratio '동조 급증' 전제 붕괴(90일 co-mention 기저선 부재) → 사용자 재정의 처분. 상세=[[DECISIONS]] D-R2S2-FEED-CARDS.
+
+- ✅ **R2-S2-FEED (A/B)** — 피드 API(daily_spike·weekly_active·new_sec) + 화면 + 랜딩 교체(루트=피드·EventBoard→/events 강등) + S1 패널 정직화(⑷). 마이그 0. BE 773·FE 312 green. **★병진 유보=런타임 배포**(worker_sync full: api 트리 sync+daphne 재기동으로 /feed 서빙, web 리빌드로 화면 노출).
+- 🔵 **HIST-BASELINE-MATURITY** (신규 등재, 발동 대기) — ratio '동조 급증' 카드 재개 조건 = **뉴스 co-mention 히스토리 ≥90일 관측**(현재 엣지 97.8% 단일일·count_90d==count_7d로 기저선 부재). 예상 발동 ≈2026-11(90일 누적 후). 발동 시: co-mention 집계 창을 90일로 확장하거나 축적 검증 → weekly_avg 실기저선 확보 → daily_spike에 배수 카드 추가. 그전까지 절대량+발생일만(부풀림 금지).
+- 🔵 **R2-S2-S2-OVERVIEW** (후속 슬라이스) — 시장 조감(EventGroup) 카드를 피드에 통합(현재 EventBoard=/chainsight/events 별도). 전역 활동 뷰(get_global_activity_top·MIG-BUNDLE-1 C-4)도 S2 소스 후보.
