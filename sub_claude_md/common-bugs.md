@@ -1832,6 +1832,13 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 
 **규율**: 데이터 의존 화면의 랜딩 스모크·DoD는 **실데이터 렌더 도달**(대표 값 노출·로딩 스피너 소멸·도달 시간)을 단언한다. 라우트 200·헤딩 텍스트만으로 "동작"을 선언하지 않는다. route interception 모킹 E2E는 로직 회귀엔 유효하나 **실 백엔드 콜드 경로의 지연**은 못 잡는다 → 랜딩 시 실 API 1회 실측(도달 시간) 별도 필수. cf. [[feedback_ui_slice_live_screenshot]].
 
+## 원장 일괄 치유는 정밀 분해 게이트 없이 강행 금지 (채번 후보, EVT-CORR-3B 2026-09-01) `[data][process]`
+
+**증상**: "재관측했는데 stale" 오표시를 일괄 복원(status=scheduled)하려다, broad 임계(last_seen≥특정일)로 세면 ~74행이나 정밀 정의(stale AND last_seen≥**마지막 구코드 run 시작**)로는 **0행**. 강행했다면 FMP가 정당하게 드롭한 230 stale을 scheduled로 오염.
+
+**원인**: 스윕과 재관측은 한 run 내 상호배타 — 재관측된 행은 last_seen 갱신+스윕 제외, 스윕된 행은 last_seen 과거. broad 임계는 "과거에 관측 후 이후 드롭된 정당 stale"까지 결함으로 오분류.
+
+**규율**: 일괄 치유 전 **정밀 결함 정의 + 분해 게이트**(결함 행 수 / 가설 대조 / 전체 대비 %)를 통과시킨다. 분해가 가설과 어긋나면 HALT(치유 금지). 자가치유 배선(재관측 복원)이 있으면 누적 백로그가 애초에 안 쌓임.
 ## cleanup 블록 "push 후에만" 항목 조기 실행 → 미랜딩 브랜치 삭제 = 미push 커밋 소실 (#127, P2-DLITE-CLOSE 2026-08-31) `[git][process][harness]`
 
 **증상**: P2-DLITE-CLOSE 세션에서 정리 블록의 "push 후에만 실행" 딱지가 붙은 브랜치 삭제 항목을 push 완료 **전에** 실행 → 아직 origin/main에 안 올라간 브랜치(b39)를 `git branch -D` → 미push 커밋이 브랜치 참조를 잃고 dangling 상태로 방치될 뻔.

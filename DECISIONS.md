@@ -7366,6 +7366,10 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **실제**: 두 마이그레이션 모두 **2026-08-31 적용 완료**. `showmigrations --plan` 기준 **미적용 0건**.
 - **영향**: RC-WATCHDOG-DAPHNE-COVERAGE의 배포 보류는 **불필요**했다. 이후 `sv sync`로 런타임 트리가 `9caf9e37`로 전진하며 **daphne 감시는 이미 라이브**가 됐다(`check_service` 4건 확인).
 - **규칙**: `django_migrations` 조회는 **디렉터리명이 아니라 앱 레이블**(`apps.py`의 `label`)로 한다. 더 안전한 것은 `manage.py showmigrations --plan`. **부정 결과(0행)를 곧바로 '미적용'으로 읽지 말 것** — 조회 자체가 빗나갔을 수 있다(이번이 그 사례).
+
+## D-EVT-CORR-3B-HALT — 일괄 치유는 정밀 분해 게이트 없이 강행 금지 (2026-09-01)
+- **결정**: 원장 일괄 치유(bulk status flip)는 **정밀 결함 정의 + 분해 게이트(B-2)**를 통과한 행에만 적용한다. broad 임계·추정 수치로 강행 금지.
+- **사례**: EVT-CORR-3B-lite STEP B — 디렉터 가설 ≈74행 vs 정밀 분해 **0행**(결함 = stale AND last_seen ≥ 마지막 구코드 run). 230 stale 전량 정당 드롭(last_seen ≤ 08-30). B-2 게이트가 강행을 차단 → 치유 미집행(정당 stale 오염 방지). A-1 자가치유 배포로 백로그 0. STEP B 종결(치유 불요).
 ## [2026-09-01] D-REMOTE-BRANCH-HYGIENE (✅ 확정 2026-09-01) — 원격 세션 브랜치 정리 규약 [git][process][harness]
 
 > P2-SUBPAGES-CLOSE(mgmt b44) 실측: 원격 `origin/monorepo/sess-*` **62개 중 54 소진(origin/main 반영 완료)·8 미소진**. 누적 정리 규약 부재 → 소진 브랜치가 무한 적재(false-negative 지뢰 #117 재발 토양).
