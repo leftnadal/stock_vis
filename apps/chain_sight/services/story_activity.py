@@ -28,11 +28,25 @@ DEFAULT_TOP_N = 10
 CACHE_STALE_HOURS = 48
 
 
-def _weekly_avg(count_90d: int) -> float:
-    """90일 누적 → 주간 평균."""
-    if not count_90d:
+def _observed_weeks(first_date, last_date) -> float:
+    """페어의 실제 co-mention 관측 스팬(주). 최소 1주(단일일 엣지=1주로 취급)."""
+    if not first_date or not last_date:
+        return 1.0
+    span_days = (last_date - first_date).days
+    return max(1.0, span_days / 7.0)
+
+
+def _weekly_avg(count: int, first_date=None, last_date=None) -> float:
+    """주간 평균 = 누적 / **실제 관측 주 수**(R2-S2 ⑷).
+
+    이전 구현은 고정 분모 90/7(=12.857주)로 나눠, 90일 뉴스 히스토리가 없는(대개
+    단일일 co-mention) 페어에 허구의 '주간평균'을 부여했다. 실측: 활동 페어 100%가
+    count_90d==count_7d(90일 기저선 부재). 분모를 페어 실관측 스팬으로 교체해 값을
+    정직화한다. 표시에서는 '평소 대비/주간평균' 문구를 제거(절대량+최신성 중심).
+    """
+    if not count:
         return 0.0
-    return round(count_90d / (WINDOW_BASE_DAYS / 7.0), 2)
+    return round(count / _observed_weeks(first_date, last_date), 2)
 
 
 def _recent_counts(symbol: str, partner_syms: list[str], now) -> dict[str, int]:
@@ -88,13 +102,15 @@ def _compute_story_threads_live(
     partners: dict[str, dict] = {}
     for e in (
         CoMentionEdge.objects.filter(Q(symbol_a=symbol) | Q(symbol_b=symbol)).values(
-            "symbol_a", "symbol_b", "co_mention_count", "last_co_mention_date"
+            "symbol_a", "symbol_b", "co_mention_count",
+            "last_co_mention_date", "first_co_mention_date",
         )
     ):
         other = e["symbol_b"] if e["symbol_a"] == symbol else e["symbol_a"]
         partners[other] = {
             "count_90d": e["co_mention_count"] or 0,
             "last_co_mention_date": e["last_co_mention_date"],
+            "first_co_mention_date": e["first_co_mention_date"],
         }
     total = len(partners)
     if not total:
@@ -119,7 +135,9 @@ def _compute_story_threads_live(
     for s in cand_syms:
         p = partners[s]
         c7 = counts_7d.get(s, 0)
-        wavg = _weekly_avg(p["count_90d"])
+        wavg = _weekly_avg(
+            p["count_90d"], p.get("first_co_mention_date"), p["last_co_mention_date"]
+        )
         last = p["last_co_mention_date"]
         threads.append(
             {
