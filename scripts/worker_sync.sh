@@ -128,6 +128,21 @@ audit_log() {
 }
 audit_log || true
 
+# ── 배포 이력 로그 (D-DEPLOY-PATH-1 방어② / SYNC-AUDIT-LOG 짝) — 비차단 ──
+# 전진(HEAD 실제 변경) 시에만 1줄 append: "시각 | 트리 | 이전 → 새". 무전진=미기록.
+# 착지≠서빙 무음 갭(D1 08-20~24 4일) 차단 — 어느 트리가 언제 무엇으로 전진했는지 원장화.
+deploy_history_log() {
+    local label="$1" prev="$2" tree="$3"
+    local new; new="$(git -C "$tree" rev-parse HEAD 2>/dev/null || echo '?')"
+    if [ "$prev" = "$new" ]; then return 0; fi
+    local f="$HOME/Library/Logs/stockvis/deploy_history.log"
+    mkdir -p "$(dirname "$f")" 2>/dev/null || true
+    printf '%s | %s | %s → %s\n' "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$label" \
+        "$(git -C "$tree" rev-parse --short "$prev" 2>/dev/null || echo "$prev")" \
+        "$(git -C "$tree" rev-parse --short "$new" 2>/dev/null || echo "$new")" \
+        >> "$f" 2>/dev/null || true
+}
+
 # ── 가드: signals 심링크 ∧ 타겟 실존 (worker 판 + web 판) ─────────────
 # 심링크가 깨졌거나 실디렉토리로 되돌아가면 서빙이 조용히 단절되므로 사전 차단.
 guard_symlink() {
@@ -150,11 +165,17 @@ for _rt in "$WORKER_TREE" "$WEB_TREE" "$API_TREE"; do
     [ -d "$_rt" ] && marker_respect "$_rt" "worker_sync" >/dev/null
 done
 
+# ── D-DEPLOY-PATH-1 방어②: 배포 이력용 before-HEAD 포착 (전진 판별 기준) ──
+_dep_before_worker="$(git -C "$WORKER_TREE" rev-parse HEAD 2>/dev/null || echo '?')"
+_dep_before_web="$(git -C "$WEB_TREE" rev-parse HEAD 2>/dev/null || echo '?')"
+_dep_before_api="$(git -C "$API_TREE" rev-parse HEAD 2>/dev/null || echo '?')"
+
 # ── worker 트리 re-detach + 재기동 ───────────────────────────────────
 cd "$WORKER_TREE"
 git fetch origin
 git checkout --detach origin/main
 echo "[sync] worker 트리 re-detach: $(git rev-parse --short HEAD)"
+deploy_history_log "worker" "$_dep_before_worker" "$WORKER_TREE"
 launchctl kickstart -k "gui/${UID_NUM}/com.stockvis.celery-worker"
 launchctl kickstart -k "gui/${UID_NUM}/com.stockvis.celery-beat"
 echo "[sync] celery-worker·celery-beat 재기동 완료"
@@ -167,6 +188,7 @@ if [ -d "$WEB_TREE" ]; then
     git fetch origin
     git checkout --detach origin/main
     echo "[sync] web 트리 re-detach: $(git rev-parse --short HEAD) (next dev 핫리로드 반영)"
+    deploy_history_log "web" "$_dep_before_web" "$WEB_TREE"
     # package.json/lock 변경 시 = 의존 재설치 + next dev 재시작 필요(수동, 자동 금지)
     if ! git diff --quiet "$PREV" "$(git rev-parse HEAD)" -- frontend/package.json frontend/package-lock.json; then
         echo "[sync] ⚠ WARNING: frontend/package(.json|-lock) 변경 감지 — 'npm install' + next dev 수동 재시작 필요(핫리로드로 미반영)." >&2
@@ -181,7 +203,26 @@ if [ -d "$API_TREE" ]; then
     git fetch origin
     git checkout --detach origin/main
     echo "[sync] api 트리 re-detach: $(git rev-parse --short HEAD)"
+    deploy_history_log "api" "$_dep_before_api" "$API_TREE"
     launchctl kickstart -k "gui/${UID_NUM}/com.stockvis.web"
     echo "[sync] daphne(com.stockvis.web) 재기동 완료 (⚠ WS 재연결 필요)"
     check_daphne_health  # non-fatal: daphne 응답 확인
 fi
+
+# ── 사후 health_check 후크 (D-DEPLOY-PATH-1 방어① · non-fatal · 롤백 안 함) ──
+# sync 성공 직후 health_check 실행(~4.6s 실측·동기 = 경고 가시성 확보). ❌(ERROR) 발견
+# 시 눈에 띄는 경고 + deploy_history.log에 HEALTH FAIL 표기. health 실패는 sync를
+# 롤백하지 않는다(판단=병진). 합계 라인 "❌ N건" 파싱(exit code 비의존).
+post_sync_health() {
+    local out errcount
+    out="$(cd "$SCRIPT_DIR/.." && DJANGO_SETTINGS_MODULE=config.settings "$VENV_BIN/python" scripts/health_check.py 2>&1)" || true
+    errcount="$(printf '%s\n' "$out" | grep -oE '❌ *[0-9]+건' | grep -oE '[0-9]+' | tail -1)" || errcount=""
+    local dh="$HOME/Library/Logs/stockvis/deploy_history.log"
+    if [ -n "$errcount" ] && [ "$errcount" -gt 0 ]; then
+        echo "[sync] ⚠⚠ HEALTH FAIL — health_check ❌ ${errcount}건 (배포 롤백 안 함·병진 판단 요, 상세: sv health)" >&2
+        printf '%s | HEALTH FAIL | ❌%s건\n' "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$errcount" >> "$dh" 2>/dev/null || true
+    else
+        echo "[sync] ✓ 사후 health_check 통과 (❌ 0)"
+    fi
+}
+post_sync_health || true
