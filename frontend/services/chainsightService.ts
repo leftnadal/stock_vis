@@ -20,6 +20,7 @@ import type {
   CentralityTopResponse,
   MindmapTreeResponse,
   MindmapCardResponse,
+  MarketStoryFeedResponse,
 } from '@/types/chainsight';
 
 export async function fetchGraph(symbol: string, depth: number = 1): Promise<GraphResponse> {
@@ -186,5 +187,15 @@ export async function fetchMindmapCard(symbol: string): Promise<MindmapCardRespo
   const { data } = await authAxios.get<MindmapCardResponse>(
     `/chainsight/mindmap/card/${symbol.toUpperCase()}/`,
   );
+  return data;
+}
+
+// ── "오늘 시장의 이야기" 피드 API (R2-S2, AllowAny GET) ──
+
+/** GET /chainsight/feed/ — 오늘 시장의 이야기 피드(신규 SEC + 일간 급등 + 이번 주 활발). */
+export async function fetchMarketStoryFeed(limit = 30): Promise<MarketStoryFeedResponse> {
+  const { data } = await authAxios.get<MarketStoryFeedResponse>('/chainsight/feed/', {
+    params: { limit },
+  });
   return data;
 }

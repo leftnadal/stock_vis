@@ -1607,3 +1607,11 @@
 - 🛑 **[EVT-CORR-3B-lite] STEP B B-2 HALT (2026-09-01)** — 결함 행(stale & last_seen≥마지막 구코드 run 08-31 21:45 UTC) = **0건**(가설 ≈74와 배치). 230개 stale 전부 last_seen≤08-30 = FMP 드롭 정당 stale(치유 대상 아님). "47→74"는 broad 임계 아티팩트. **B-1 치유 미집행**(강행 시 정당 stale 오염). 지시서 docs 정착 `403df724`. **처분 대기**: 백로그 0이므로 STEP B 종결(치유 불요)로 볼지, EVT-OBS-2만 유지할지.
 - ⏳ **[EVT-CORR-3 A-2 텔레메트리] 이연** — 성분별 `revived` 카운터(재관측 복원 수 집계)는 다음 수집기 접촉 슬라이스에 합류(EVT-CORR-3B-lite는 코드 0 범위).
 - 🔭 **[EVT-OBS-2] CORR-3 복원 관측 게이트** — fix(A-1)는 worker 트리(9caf9e37⊇ccd7e8dd) 배포됨·미실행. 검증 예정 **09-02(KST 아침)**: 다음 발화(09-01 17:45 ET) 후 ⑴ stale 재발이 정당 드롭만인지 ⑵ 드롭→재리스트 행의 자연 복원(restored) 발생 여부 = SQL 스냅샷(발화 전 vs 후) 대조. 현재 결함 백로그 0.
+
+## R2-S2 오늘 시장의 이야기 피드 (2026-09-02, worktree sv-r2s2)
+
+> STEP 0에서 ratio '동조 급증' 전제 붕괴(90일 co-mention 기저선 부재) → 사용자 재정의 처분. 상세=[[DECISIONS]] D-R2S2-FEED-CARDS.
+
+- ✅ **R2-S2-FEED (A/B)** — 피드 API(daily_spike·weekly_active·new_sec) + 화면 + 랜딩 교체(루트=피드·EventBoard→/events 강등) + S1 패널 정직화(⑷). 마이그 0. BE 773·FE 312 green. **★병진 유보=런타임 배포**(worker_sync full: api 트리 sync+daphne 재기동으로 /feed 서빙, web 리빌드로 화면 노출).
+- 🔵 **HIST-BASELINE-MATURITY** (신규 등재, 발동 대기) — ratio '동조 급증' 카드 재개 조건 = **뉴스 co-mention 히스토리 ≥90일 관측**(현재 엣지 97.8% 단일일·count_90d==count_7d로 기저선 부재). 예상 발동 ≈2026-11(90일 누적 후). 발동 시: co-mention 집계 창을 90일로 확장하거나 축적 검증 → weekly_avg 실기저선 확보 → daily_spike에 배수 카드 추가. 그전까지 절대량+발생일만(부풀림 금지).
+- 🔵 **R2-S2-S2-OVERVIEW** (후속 슬라이스) — 시장 조감(EventGroup) 카드를 피드에 통합(현재 EventBoard=/chainsight/events 별도). 전역 활동 뷰(get_global_activity_top·MIG-BUNDLE-1 C-4)도 S2 소스 후보.

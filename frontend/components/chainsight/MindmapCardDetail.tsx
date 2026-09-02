@@ -180,12 +180,6 @@ function recencyLabel(daysSince: number | null): string {
   return `${daysSince}일 전`;
 }
 
-/** activity_ratio(7일 vs 90일 주간평균)를 0~100% 게이지 폭으로. ratio 2+ = 만폭. */
-function gaugeWidthPct(ratio: number | null): number {
-  if (ratio == null || ratio <= 0) return 0;
-  return Math.min(ratio, 2) / 2 * 100;
-}
-
 function StoryThreadRow({
   thread,
   onSelectOther,
@@ -210,20 +204,9 @@ function StoryThreadRow({
         </div>
         {active ? (
           <>
-            {/* 활동 게이지 — 7일 활동 / 90일 주간평균 비율(규칙 6: 실측 수치에서만) */}
-            <div
-              className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
-              role="progressbar"
-              aria-label={`활동 ${thread.count_7d}회`}
-            >
-              <div
-                className="h-full rounded-full bg-emerald-500"
-                style={{ width: `${gaugeWidthPct(thread.activity_ratio)}%` }}
-              />
-            </div>
+            {/* R2-S2 ⑷ 정직화: 게이지·"주간평균" 문구 제거 — 절대량+최신성만(추정 산식 노출 금지). */}
             <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-gray-400 mt-1">
               <span className="text-emerald-600 dark:text-emerald-400 font-medium">7일 {thread.count_7d}회</span>
-              <span>주간평균 {thread.weekly_avg_90d}</span>
               {recencyLabel(thread.days_since) && <span>{recencyLabel(thread.days_since)}</span>}
             </div>
           </>

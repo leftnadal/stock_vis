@@ -7,6 +7,7 @@ from .backbone_views import BackboneView
 from .centrality_views import CentralityTopView
 from .ego_views import EgoGraphView
 from .event_views import EventBoardView, EventRankingView
+from .feed_views import MarketStoryFeedView
 from .heat_views import ThemeHeatBarView, ThemeHeatCardView
 from .mindmap_views import MindmapCardView, MindmapTreeView
 from .quadrant_views import SectorQuadrantView
@@ -47,6 +48,8 @@ urlpatterns = [
     path("centrality/top/", CentralityTopView.as_view(), name="chainsight-centrality-top"),
     # 백본 뷰 (RC-C-1 — 활성 해자 부분그래프 중심성 + θ 엣지, compute-on-read)
     path("backbone/", BackboneView.as_view(), name="chainsight-backbone"),
+    # R2-S2 오늘 시장의 이야기 피드 (고정 프리픽스 — 동적 symbol 경로와 분리)
+    path("feed/", MarketStoryFeedView.as_view(), name="chainsight-feed"),
     # CS-P5 마인드맵 카드 (D1·D-CARD-GATE, 고정 프리픽스 — 동적 symbol 경로와 분리)
     path("mindmap/tree/", MindmapTreeView.as_view(), name="chainsight-mindmap-tree"),
     path("mindmap/card/<str:symbol>/", MindmapCardView.as_view(), name="chainsight-mindmap-card"),

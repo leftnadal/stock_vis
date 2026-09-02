@@ -44,11 +44,12 @@ def _article(symbols, days_ago):
 @pytest.mark.django_db
 class TestStoryActivity:
     def test_counts_ratio_and_quiet(self):
-        # BBB: 90d=90(주간평균 7.0), 7일 내 3기사 동반 → 7d=3, ratio=3/7=0.43
+        # R2-S2 ⑷: weekly_avg 분모 = 페어 실관측 스팬(주). _edge 헬퍼 span=88일(≈12.57주).
+        # BBB: 90/12.57=7.16(주간평균), 7일 내 3기사 → 7d=3, ratio=3/7.16=0.42.
         _edge("AAA", "BBB", 90, last_days_ago=1)
         for d in (1, 3, 6):
             _article(["AAA", "BBB"], days_ago=d)
-        # CCC: 90d=13(주간평균 1.01), 마지막 40일 전(7일 내 0) → quiet
+        # CCC: 마지막 40일 전(7일 내 0) → quiet
         _edge("AAA", "CCC", 13, last_days_ago=40)
 
         out = get_symbol_story_threads("AAA", now=NOW)
@@ -56,8 +57,8 @@ class TestStoryActivity:
         assert out["thread_total"] == 2
         assert by["BBB"]["count_7d"] == 3
         assert by["BBB"]["count_90d"] == 90
-        assert by["BBB"]["weekly_avg_90d"] == 7.0
-        assert by["BBB"]["activity_ratio"] == 0.43
+        assert by["BBB"]["weekly_avg_90d"] == 7.16
+        assert by["BBB"]["activity_ratio"] == 0.42
         assert by["BBB"]["quiet"] is False
         assert by["CCC"]["count_7d"] == 0
         assert by["CCC"]["quiet"] is True

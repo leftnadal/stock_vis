@@ -1,7 +1,8 @@
-import EventBoard from '@/components/chainsight/EventBoard';
+import MarketStoryFeed from '@/components/chainsight/story/MarketStoryFeed';
 
-// RD3 첫 화면 정보 구조 역전(2026-06-18): 루트 = 이벤트 보드.
-// 기존 마켓 그래프 화면은 /chainsight/market-graph로 강등 이동.
+// R2-S2 랜딩 역전(2026-09-02): 루트 = "오늘 시장의 이야기" 피드.
+// 기존 이벤트 보드는 /chainsight/events로 강등 이동(원클릭 접근 유지, 규칙 7).
+// (RD3 2026-06-18 역전의 후속 — 이번엔 이벤트 보드 → 피드로 재교체.)
 export default function ChainSightPage() {
-  return <EventBoard />;
+  return <MarketStoryFeed />;
 }
