@@ -1675,3 +1675,34 @@ def collect_av_broad_news(
 
     logger.info(f"collect_av_broad_news: {result}")
     return result
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60 * 5,  # 5분 후 재시도
+    soft_time_limit=600,  # 10분 소프트 타임아웃
+    time_limit=660,  # 11분 하드 타임아웃
+)
+def sync_news_entities_to_stock_news(self, window_days=30):
+    """
+    NewsEntity → StockNews 물질화 sync (NEWSFIX-SYNC-BE · D-NEWSMATCH-FIX-PATH-V2 ⑵).
+
+    EOD News Enricher가 읽는 StockNews를 최근 window_days 일의 실뉴스(NewsEntity)로
+    주기 물질화한다. 멱등(창 단위 replace) · enricher/pipeline 무접촉.
+    beat: newsfix-sync-stocknews @ 17:30 ET Mon-Fri (bake 18:30 ET 1시간 전).
+
+    Args:
+        window_days: 물질화 창(일). 기본 30 = enricher 최장 창 커버.
+    """
+    from services.news.services.stock_news_sync import (
+        sync_news_entities_to_stock_news as _sync,
+    )
+
+    try:
+        result = _sync(window_days=window_days)
+        logger.info(f"sync_news_entities_to_stock_news: {result}")
+        return result
+    except Exception as exc:  # noqa: BLE001
+        logger.error(f"sync_news_entities_to_stock_news 실패: {exc}")
+        raise self.retry(exc=exc)
