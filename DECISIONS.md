@@ -6976,6 +6976,8 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 
 **Why**: 채점(Tier1) REST 표면이 command-only였음 → derived-render 슬라이스는 BE compute-on-read API 신설 선행 필수. 신규 테이블/마이그 0(D-I3-1 파생 계산). GATE 전건 GREEN(1a byte-identical·1b blast 748·makemigrations clean / 2 tsc0·vitest989 / 3 tsc0·lint0·vitest1015).
 
+**→ 종결 (2026-09-02, D1-CLOSE-LEDGER)**: h21 첫 만기(09-01) 도래 후 라이브 recon **GREEN** — 채점 **18** · 방향 적중 **8/18(44.4%)** · IC **0.033**(사유 소멸) · avg_target_progress 4.59 · 3b 공감층(증거 바·판정 문장) 실가동(AAPL 08-03 2신호 both hit +7.16%·GEV/GOOGL 등 "상승 전망이었으나 하락" 반직관 문장 실렌더). 데이터+인프라 CC 선확인 GREEN(api 401·web 200·cache_key 09-01 회전) + 병진 실화면 검증. 착지≠서빙 4일 갭(착지 08-20 19:25 ↔ 최초 서빙 08-24 13:17, 직전 sync가 25분差로 D1 놓침) → [[D-DEPLOY-PATH-1]] 방어로 대응. **D1 공식 종결.** 잔여 백로그 = [[SCB-CONTEXT-LAYER]]·[[SCB-DERIVED-VISIBILITY]].
+
 ---
 
 ## 2026-08-24 EVT 트랙 설계 확정 (설계 앵커: docs/design/event_calendar_design.md v1.1)
@@ -7390,3 +7392,24 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **카드 v1(3유형)**: daily_spike(단일일 span0 co-mention 급등·14일창·발생일) + weekly_active(count_7d 절대상위 steady·정문 무공허 fallback) + new_sec(8-K filing_date 30일창). 신뢰 위계: co_mention 카드는 "관계 아님·동시 언급" 캡션·중립/사건색, new_sec만 관계 시사 허용.
 - **Why(폐기 근거)**: co-mention 90일 기저선 부재 실측 — CoMentionEdge 97.8% 단일일(first==last)·활동 페어 100%가 count_90d==count_7d → activity_ratio=count_7d/(count_7d/12.86)=상수 12.86 아티팩트. ratio 임계로 급증 카드 시 규칙 2(사건 부풀림) 위반. 뉴스 히스토리 자체는 3년치 있으나 co-mention 집계가 최근창만 반영. **ratio 급증 카드 = HIST-BASELINE-MATURITY(≥90일 관측 후) 재개**.
 - **⑷ weekly_avg 정직화**: 분모 고정 90/7 → 페어 실관측 스팬(주). 표시에서 '평소 대비/주간평균' 문구·게이지 제거(절대량+최신성). 마이그 0(값 계산만).
+
+## [2026-09-02] D-DEPLOY-PATH-1 — 세션 구동 sync = 코드 한정 공식 배포 경로 (가안, 방어 4종 동반) [harness/ops]
+
+> 트랙: D1-CLOSE-LEDGER. 병진 확정("그래 가로 하자" + "방어도 같이") · 마진 1.00. [[SESSION_CONTRACT]] §H `D-DEPLOY-DELEGATE`(선존 CC 대행 기본)의 **정련·명문화** — 상충 아님.
+
+- **인정**: 세션 구동 `sv sync`(worker_sync.sh, reflog "checkout→origin/main" 서명)를 **코드 한정** 공식 배포 경로로 인정. 명시-인용 승인 규칙의 적용 범위를 **① 세션 밖 수동 조작 ② 마이그·beat·prod-write 동반 배포**로 재정의(§H "병진 수동 유지" 목록 = prod DB migrate·플리스트·beat DB 엔트리·영구삭제와 정합).
+- **마이그·beat·prod-write 동반 슬라이스**: 종전대로 **병진 수동 절차가 완성 조건**. 착지 보고에 잔여 단계 필수 명기([[SESSION_CONTRACT]] §H 서빙 반영 필수란).
+- **방어 4종**: ① sync 후 health_check 자동 실행(worker_sync.sh 후크·non-fatal·롤백 안 함) ② 배포 이력 자동 로그(`~/Library/Logs/stockvis/deploy_history.log` = 전진 시에만 `시각\|트리\|이전→새`) ③ 착지 보고 '서빙 반영 시점' 필수란(§H) ④ 자동 배포 범위 = 본 문구 한정.
+- **롤백 경로**: revert 커밋 착지 → 동일 자동 경로로 복구(별도 수동 없음).
+
+**Why**: D1 실증 — 착지(08-20 19:25)와 최초 서빙(08-24 13:17) 4일 갭 발생(직전 sync가 착지 25분 前 실행돼 D1 놓침·이후 재sync 부재). 세션 구동 sync는 이미 사실상 배포 경로였으나 미명문화 → 착지≠서빙 장부 구멍. 명문화 + 방어(health 후크·이력 로그·보고 필수란)로 "착지했으나 미서빙" 무음 갭 차단. 자동 롤백은 범위 밖(health 실패 시 판단 = 병진).
+
+## [2026-09-02] D-RECON-CC-SCOPE-1 — recon 절차서 CC 사전개입 범위 [harness/process]
+
+> 트랙: D1-CLOSE-LEDGER. SCB-RECON-LIVE 실증(CC가 공급망·데이터층 GREEN 선확인 → 병진 브라우저 확인 초점 명확화).
+
+- **CC 사전개입 허용**: recon 절차서에서 CC는 **읽기전용 + 공급망·데이터 층 선확인**(예: DailyPrice 유입·build_scorecard 산출·API 401 라이브·cache_key 회전)까지 사전 수행 가능. RED 1차 용의선상(공급 체인)을 병진 브라우저 전에 배제/특정.
+- **병진 대체 불가**: 시각 렌더(배지·증거 바·문장 실그림)·위생(콘솔·회귀)·첫인상 소감은 병진 몫으로 유지.
+- **초점 명기**: CC가 예상값을 전달할 때 병진 확인의 초점은 **'값 일치'가 아니라 '실제 렌더'**임을 절차서에 명기(값은 CC가 이미 데이터층에서 확증).
+
+**Why**: SCB-RECON-LIVE에서 CC 데이터층 선확인이 RED 요인(공급 체인)을 사전 배제 → 병진 브라우저 확인이 순수 렌더/위생/소감에 집중 가능. 값 대조를 병진에 다시 시키면 노동 중복 + 렌더 검증 희석.
