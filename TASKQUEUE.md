@@ -1615,3 +1615,8 @@
 - ✅ **R2-S2-FEED (A/B)** — 피드 API(daily_spike·weekly_active·new_sec) + 화면 + 랜딩 교체(루트=피드·EventBoard→/events 강등) + S1 패널 정직화(⑷). 마이그 0. BE 773·FE 312 green. **★병진 유보=런타임 배포**(worker_sync full: api 트리 sync+daphne 재기동으로 /feed 서빙, web 리빌드로 화면 노출).
 - 🔵 **HIST-BASELINE-MATURITY** (신규 등재, 발동 대기) — ratio '동조 급증' 카드 재개 조건 = **뉴스 co-mention 히스토리 ≥90일 관측**(현재 엣지 97.8% 단일일·count_90d==count_7d로 기저선 부재). 예상 발동 ≈2026-11(90일 누적 후). 발동 시: co-mention 집계 창을 90일로 확장하거나 축적 검증 → weekly_avg 실기저선 확보 → daily_spike에 배수 카드 추가. 그전까지 절대량+발생일만(부풀림 금지).
 - 🔵 **R2-S2-S2-OVERVIEW** (후속 슬라이스) — 시장 조감(EventGroup) 카드를 피드에 통합(현재 EventBoard=/chainsight/events 별도). 전역 활동 뷰(get_global_activity_top·MIG-BUNDLE-1 C-4)도 S2 소스 후보.
+
+## D1-SCOREBOARD 후속 (D1-CLOSE-LEDGER 2026-09-02 — D1 종결)
+
+- 🕒 **SCB-CONTEXT-LAYER** — 채점 카드에 애널리스트 논거·현재 상황 비교 맥락 추가(병진 09-02 소감: "가격만 나오니 그렇구나 싶다"). **선행 필수: 재료 실측 recon**(컨센서스 이력·news·rag_analysis 등 실재 여부 read) — **실측 전 설계 금지**(cf. #128 죽은 테이블 교훈 — 원천 생존 검사가 사양). recon GREEN 후 설계 슬라이스 발행.
+- 💤 **SCB-DERIVED-VISIBILITY** — SMR·XE 표시 방식 결정(현행 제외 유지 vs "채점 불가/데이터 부재" 행 표시). DailyPrice 0이라 파생 spot 불가 → 현재 렌더 9종에서 구조적 제외. 트리거 = SCB-CONTEXT-LAYER 설계 시 동반 재평가(맥락 층에서 "데이터 부재" 표기 방식 함께 결정).

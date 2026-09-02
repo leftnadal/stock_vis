@@ -92,6 +92,7 @@ PR(원격) + CI(GitHub Actions: pytest·경계테스트) + CODEOWNERS 3개만 �
    main worktree clean 확인 → MERGE_HEAD 부재 확인 → 로컬 main ff to origin/main → 세션 브랜치 no-ff 머지 → 충돌 마커 grep 0 → 대표 변경 코드 반영 grep → push(사전 `fetch`/`rev-list`) → 런타임 3트리 HEAD 정렬 확인 → 신규 라우트/코드 실존 확인 → 라이브 응답 확인(401=존재 등).
    (마이그레이션·env·번들 gotcha는 `sub_claude_md/common-bugs.md` "배포 체크리스트"(단일 출처) 준수 — 여기서 절차를 복제하지 않는다.)
    (**런타임 동기·리빌드·고아 스윕 절차는 `docs/runbook/DEPLOY.md` 2장(단일 출처, D-RB-2) 준수** — 랜딩 세션 DoD = 런타임 동기 포함. web 프로덕션 리빌드는 `sv sync` 미커버 → 2.2 수동 절차. 여기서 절차 복제 금지.)
+   **착지 보고 필수란 — '서빙 반영' (D-DEPLOY-PATH-1, 2026-09-02)**: 모든 착지 보고는 서빙 반영 상태를 명기한다 — ⑴ **다음 세션 sync 자동**(코드 한정 배포 = worker_sync.sh 경로로 자연 반영, 잔여 없음) 또는 ⑵ **병진 수동 필요**(마이그·beat·plist·prod-write 동반 시 — 사유 + 잔여 단계 목록 필수). 미명기 = 착지≠서빙 무음 갭 위험(D1 08-20~24 4일 갭 실증). sync 이력은 `~/Library/Logs/stockvis/deploy_history.log`(전진 시 자동 기록)로 사후 대조.
 2. **자기 세션 브랜치만.** 다른 세션의 미머지 브랜치·worktree는 조회 외 무접근. 머지 대상에 타 브랜치가 섞여야 하는 상황 = **HALT**.
 3. 절차 중 어느 단계든 예상 외 결과(충돌, 발산, 미확인 staged 등) = **강행 금지, HALT·보고**.
 

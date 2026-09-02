@@ -1858,3 +1858,19 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 **해결**: **V2 sync 물질화**(`NEWSFIX-SYNC-BE`, origin/main `b731d7b4`) — news 앱이 최근 30일 `NewsEntity`→`StockNews`를 멱등 물질화(app→shared 쓰기·마이그 0)하는 beat(`newsfix-sync-stocknews` 17:30 ET Mon-Fri, bake 1h 전). enricher/pipeline 무접촉(기본 StockNewsSource가 채워진 테이블을 자연히 읽음). ⚠ 착지=코드만·Gate 4(backfill+beat 활성=배포 카드 사용자 수동). 대안: enricher를 NewsEntity로 재배선(1′)은 트리거 전부 shared·앱 진입점 부재로 기각(D-NEWSMATCH-FIX-PATH-V2).
 
 **교훈**: **매칭 로직이 무결이어도 원천 테이블이 죽어 있으면 침묵 실패(전건 폴백)** — 폴백이 "정상 동작"처럼 보여 검출이 늦다. **원천 생존 검사(테이블 행수·최신 수집일·파이프라인 가동)가 사양**이다. 신규 파생 소비 테이블은 "채우는 파이프라인"과 짝으로만 도입(스키마·문서만 있고 writer 없는 테이블 = 부채). cf. D-NEWSMATCH-PROMOTE·D-NEWSMATCH-FIX-PATH/V2·[[project_scanner_ux_recon]].
+
+## 착지 ≠ 서빙 — 착지 25분 전 sync가 신규 코드를 놓쳐 4일 서빙 지연 (채번 후보, D1-CLOSE-LEDGER 2026-09-02) `[ops][harness][deploy]`
+
+**증상**: D1-SCOREBOARD 코드가 origin/main에 착지(2026-08-20 19:25, `82843eea`)했으나 운영 런타임이 실제 서빙한 건 **08-24 13:17**(트리 `872037c5`→`6f9c902f`⊇D1 동기) = **~4일 갭**. 그 사이 API/web은 D1 미포함 코드 서빙. "착지 완료" 보고가 "서빙 완료"로 오독될 뻔.
+
+**원인**: 세션 구동 `sv sync`(worker_sync.sh)는 실행 시점 origin/main tip으로 트리를 정렬한다. 직전 sync가 **08-20 19:00**에 실행돼 `872037c5`(D1 착지 25분 前·D1 미포함)를 가져갔고, **다음 sync가 08-24까지 없었다**(자동 스케줄러 부재 = 세션 cadence 의존, reflog "checkout→origin/main" 서명·불규칙 간격). 착지가 sync 창을 아슬하게 놓치면 다음 세션 sync까지 미서빙.
+
+**해결/방어**: D-DEPLOY-PATH-1(worker_sync.sh) — ① 전진 시 `~/Library/Logs/stockvis/deploy_history.log` 자동 기록(어느 트리가 언제 무엇으로 전진했는지 원장화) ② 사후 health_check 후크. **착지 보고 필수란 '서빙 반영'**([[SESSION_CONTRACT]] §H) — 착지 보고는 "다음 세션 sync 자동 반영 / 병진 수동 필요(사유·잔여)"를 명기해 서빙 반영 시점 확인까지 DoD에 포함. **착지 좌표만으로 서빙을 단언 금지** — 런타임 트리 HEAD·라이브 라우트(401=존재)까지 대조. cf. #116(런타임 스테일 고아)·D-DEPLOY-PATH-1·D-DEPLOY-DELEGATE.
+
+## 신호 date 귀속은 집계 방식(UTC vs 로컬 TZ)에 따라 갈림 — TIME_ZONE=Asia/Seoul 환경 (채번 후보, D1-CLOSE-LEDGER 2026-09-02) `[backend][timezone][analyst]`
+
+**증상**: AnalystSignalSnapshot 최초 capture 코호트 집계가 방식에 따라 **18 vs 11**로 어긋남. `p.captured_at.date()`(Python .date() = UTC) 기준 08-03 코호트 = 22행(11종×2), 렌더 9종×2=18. 반면 ORM `captured_at__date=date(2026,8,3)`(연결 TZ=Asia/Seoul) = 11행. 같은 데이터·다른 count.
+
+**원인**: `USE_TZ=True · TIME_ZONE='Asia/Seoul'`. 애널리스트 ingest beat가 19:30 ET(≈23:30 UTC) 또는 구 18:30 ET(≈22:30 UTC) 발화 → captured_at이 **저녁 UTC**. `.date()`(UTC)와 ORM `__date`(연결 TZ 변환 후 date 추출)가 **저녁-UTC 신호를 서로 다른 날로 귀속**(UTC 08-03 = KST 08-03 오전 or 08-04). 데이터 이상 아님 — 순수 TZ 귀속 관례 차이. (부기: 같은 종목 08-03 "2건"은 seed기 00:29 UTC + 18:30-ET-스케줄 22:30 UTC = 별개 캡처·컨센서스 불변 시 값 반복 = SFI-I2 append-스냅샷 정상 설계, 중복 아님.)
+
+**규율**: 신호 집계·recon에서 **capture date 귀속 기준을 명시**(UTC vs 로컬). scoring 코어(`analyst_scoring.load_scoring_inputs`)는 `.date()`=UTC 기준으로 통일돼 있으므로 검증 쿼리도 UTC로 맞추거나 `captured_at__date`(로컬)와의 차이를 인지. cf. analyst_scoring CONVENTION_EPOCH(spot-day 관례)·D-I3-5.
