@@ -1848,3 +1848,13 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 **복구**: `git reflog`/`git fsck --lost-found`로 dangling 커밋 tip 특정 → `git branch <name> <sha>`로 **재앵커** → 정상 랜딩 절차로 재진입(push→머지). reflog 만료 전이면 무손실.
 
 **규율**: 브랜치 삭제(`branch -D`·`push --delete`·`worktree remove`) **직전**에 `git merge-base --is-ancestor <branch> origin/main` = **YES(소진) 게이트**를 `&&` 체인으로 강제한다. 게이트 없는 삭제 항목은 스크립트에 넣지 않는다. cf. #98(rebase 후 dangling 앵커)·[[lesson_branch_d_upstream_refusal]](‑d의 upstream 거부는 안전판, ‑D는 그 안전판을 우회). 삭제 계열은 병진 수동 고정(D-BRANCH-DELETE-MANUAL).
+
+## enricher 4단계 매칭이 죽은 StockNews 테이블(0행·쓰기 코드 전무·소스 아키텍처 이원화)을 조회 → 100% profile 폴백 (침묵 실패) (#128, NEWSFIX/RECON-NEWSMATCH-R1 2026-09-02) `[backend][dashboard][scanner][architecture]`
+
+**증상**: EOD Dashboard/스캐너의 `news_context`가 전건 `match_type=profile`(실뉴스 매칭 0건, 08-24 실측). 대시보드 뉴스 섹션엔 종목 연결 뉴스(IREN↔MSFT 등)가 정상 노출되는데 스캐너만 0 — 같은 시스템 안에서 한쪽은 붙고 한쪽은 0.
+
+**원인**: `EODNewsEnricher`(`packages/shared/stocks/services/eod_news_enricher.py`)의 4단계 매칭(symbol_today/7d/30d·industry_7d)이 조회하는 `StockNews`(`stocks_stock_news`)가 **0행 = 데이터 파이프라인 미연결 죽은 테이블**(스키마·문서만 존재·쓰기 코드 전무). 실뉴스는 완전히 다른 모델 `NewsEntity`(`services.news`, 587,902행)에 실재 — **소스 아키텍처 이원화**. 매칭 로직·confidence 보정은 무결(표본 26/26 실뉴스 보유). 즉 4단계가 즉시 전부 실패 → profile 폴백으로 침묵 강등. 추천 카드(`card_fill_prompt.py`)는 enricher 다운스트림 → 동일 오염 전파.
+
+**해결**: **V2 sync 물질화**(`NEWSFIX-SYNC-BE`, origin/main `b731d7b4`) — news 앱이 최근 30일 `NewsEntity`→`StockNews`를 멱등 물질화(app→shared 쓰기·마이그 0)하는 beat(`newsfix-sync-stocknews` 17:30 ET Mon-Fri, bake 1h 전). enricher/pipeline 무접촉(기본 StockNewsSource가 채워진 테이블을 자연히 읽음). ⚠ 착지=코드만·Gate 4(backfill+beat 활성=배포 카드 사용자 수동). 대안: enricher를 NewsEntity로 재배선(1′)은 트리거 전부 shared·앱 진입점 부재로 기각(D-NEWSMATCH-FIX-PATH-V2).
+
+**교훈**: **매칭 로직이 무결이어도 원천 테이블이 죽어 있으면 침묵 실패(전건 폴백)** — 폴백이 "정상 동작"처럼 보여 검출이 늦다. **원천 생존 검사(테이블 행수·최신 수집일·파이프라인 가동)가 사양**이다. 신규 파생 소비 테이블은 "채우는 파이프라인"과 짝으로만 도입(스키마·문서만 있고 writer 없는 테이블 = 부채). cf. D-NEWSMATCH-PROMOTE·D-NEWSMATCH-FIX-PATH/V2·[[project_scanner_ux_recon]].
