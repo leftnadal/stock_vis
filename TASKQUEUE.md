@@ -1494,6 +1494,12 @@
 - 내용: 로컬 브랜치 ref **~155개**(대부분 worktree 없는 과거 nightly/세션 ref). `cleanup_worktrees_20260812.sh` 패턴 재사용해 **worktree 없는 소진 브랜치 전용** 정리 스크립트 생성(생성만·집행 병진 수동, D-BRANCH-DELETE-MANUAL). origin/main `merge-base --is-ancestor` 소진 재검증 후 `-d`(거부 시 skip), 활성/미소진 제외.
 - 상태: 💤 등재(저우선). 방치 무해(dangling ref)이나 census 위생용.
 
+## MGMT-BATCH-B — 브랜치·worktree 분류 보고 (2026-09-04) [harness][ops]
+- **상태: ✅ 분류 보고 착지 · 병진 수동 삭제 대기** (보고서 = `docs/mgmt/MGMT-BATCH-B_classification.md`). 삭제·정리 0건 집행(D-BRANCH-DELETE-MANUAL).
+- 분류(스냅샷 `1d528a6e`·전수 225 브랜치): 즉시삭제 159 / 즉시삭제(wt선행) 42 / 보류 8 / 검토필요 15 / 유지 1. worktree 61: 즉시정리 43 / 보류 12 / 유지 6. 원격 삭제 후보 5(전부 MERGED).
+- **검토필요 16건**(§6 Q1~Q16): 오늘 활성(hub-recon·design-inspector·evt-8 외 드리프트분)·squash-merge(cn-repair-land·`-d` 거부→`-D` 필요)·아크 미상 다수·메인 트리 stale 처분(Q16). **삭제 실행 전제 = 모든 CC 세션 종료 + 활성 목록 재측정**(라이브 드리프트 1d528a6e→04ec8bf7 관측).
+- 명령 초안(실행 금지) = scratchpad `cmd_A_worktree.txt`(43)/`cmd_B1_branch_noWT.txt`(159)/`cmd_B2_branch_wt.txt`(42)/`cmd_C_remote.txt`(5).
+
 ## CS-REDESIGN-BACKLOG — Chain Sight 재설계 D1/D2 후속 백로그 (등재, 2026-08-10)
 출처: D2-LEDGER-PROBE 지시서 Part 1-D. 결정 근거 = [[DECISIONS]] D1·D2. 채번 미부여(백로그).
 - **CS-EXP-2 유니버스 확장 2차** — ~~트리거: 8-K 가동 후 미해소 타깃 빈도 N주 실측~~ → **재정의(D-CS-P3 후, 2026-08-13)**: 확장 1차(72티커 편입·SCE.current() 미해소 1759→1435) 후 잔여 미해소 **1,435행** 기준. 트리거 = ⑴ 잔여 미해소를 exact/alias 재대조 시 US상장&유니버스밖 신규 티커가 빈도≥2로 재축적, 또는 ⑵ 8-K beat(P28K-BEAT) 가동 후 미해소 상대 신규 유입. **1차는 exact/alias만이라 잔여 1,435 대부분=해외/비상장/일반명사(구조적 미해소)** → 2차는 신규 유입분 위주. (D2 Phase 4)
