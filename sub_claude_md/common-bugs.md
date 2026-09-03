@@ -1894,3 +1894,16 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **원인**: `compute_breadth`가 `target_date = localdate()`(오늘)로 `DailyPrice`(EOD, 하루 지연)를 조회 → 오늘치 가격이 아직 없어 조회 결과 0 → advance=decline=0. 최신 가용일 폴백 부재. 화면은 graceful(0 렌더)이라 무증상처럼 보였다.
 
 **규율**: EOD(하루 지연) 데이터의 "당일" 지표는 **오늘 날짜가 아니라 데이터가 실재하는 최신 거래일**로 기준일을 잡는다 — 그리고 그 최신일을 **캘린더 산술(주말·공휴일 −N일)로 추정하지 말고 실데이터에서 조회**(`DailyPrice.filter(date__lte=today).aggregate(Max('date'))`, #117류 함정 회피). compute·store 기준일은 **동일 as_of로 일원화**(누적 지표 AD-line 연속성). 소비처는 실데이터(총합>0) 우선 + `as_of_date` 노출로 "빈 결측"을 실데이터로 오인 렌더하지 않는다. (구현 `apps/market_pulse/calculators/breadth.py`·`api/views/overview.py`, D-BREADTH-ASOF.)
+
+
+## launchd 환경에는 셸의 `.env`가 없다 — 수동 성공 ≠ 자동 성공 (채번 후보, AGENT-S2.1 2026-09-04) `[infra][process]`
+
+**증상**: 수동 실행은 인증 성공하는데 launchd 자동 발화만 미인증으로 돌아 결과가 왜곡된다(도그푸딩 루브릭 평균 1.4/5 오발송).
+
+**원인**: subprocess에 `**os.environ`만 넘기면 launchd 환경에는 `.env`가 없어 필요한 키가 빈 값이 된다. 세션 셸에서 테스트하면 변수가 이미 있어 **절대 재현되지 않는다**.
+
+**해결**: 실행 주체가 `.env`를 직접 읽어(`dotenv_values`) **필요한 키만 화이트리스트로** 주입한다. 전역 `source .env`는 무관한 비밀까지 노출 범위를 넓히므로 피한다.
+
+**DoD**: launchd로 도는 코드는 **`env -i HOME=$HOME PATH=/usr/bin:/bin <cmd>`로 재현**해야 검증이 끝난 것이다. 이 재현 없이 "수동으로 됐다"는 통과 근거가 아니다.
+
+**관측성**: 실패 사유를 구분해 로그에 남긴다(자격증명 부재 vs 로그인 거부 status vs 토큰 없음). 재발 시 로그만으로 판별된다.

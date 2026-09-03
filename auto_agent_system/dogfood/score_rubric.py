@@ -68,12 +68,24 @@ def build_prompt(rendered: dict[str, Any]) -> str:
         if t is None:
             continue
         body = screen_body(s) or "(추출된 텍스트 없음)"
-        learn = "\n".join(f"  - {x}" for x in t.learnings)
+        empty = s.get("empty_state") or ""
+        if empty:
+            # 데이터가 없어서 비어 있는 화면은 coreQuestion으로 채점하면 화면 탓이
+            # 아닌 점수가 나온다(D-AGENT-S2.1 ②) → 기준을 바꿔 묻는다.
+            criterion = (
+                "이 화면은 **데이터가 없는 빈 상태**입니다. coreQuestion 대신 "
+                "**빈 상태 안내가 충분한가**로 채점하세요: ⑴ 왜 비어 있는지 알 수 있는가 "
+                "⑵ 다음에 무엇을 하면 되는지(행동 유도)가 명확한가."
+            )
+            head = f"### 화면 id: {t.id}  [빈 상태]\n{criterion}\n참고 — 원래 질문: {t.core_question}"
+        else:
+            learn = "\n".join(f"  - {x}" for x in t.learnings)
+            head = (
+                f"### 화면 id: {t.id}\n질문(coreQuestion): {t.core_question}\n"
+                f"이 화면에서 알 수 있어야 하는 것:\n{learn}"
+            )
         blocks.append(
-            f"""### 화면 id: {t.id}
-질문(coreQuestion): {t.core_question}
-이 화면에서 알 수 있어야 하는 것:
-{learn}
+            f"""{head}
 --- 화면에서 실제로 추출된 텍스트 시작 ---
 {body}
 --- 화면에서 실제로 추출된 텍스트 끝 ---"""
@@ -131,13 +143,25 @@ def parse_response(raw: str) -> dict[str, Any]:
     return data
 
 
-def validate_scores(data: dict[str, Any], texts: dict[str, str]) -> list[dict[str, Any]]:
+def empty_states(rendered: dict[str, Any]) -> dict[str, str]:
+    """화면별 빈 상태 마커(감지된 문구). 빈 문자열이면 정상 채점 대상."""
+    return {s.get("id", ""): (s.get("empty_state") or "") for s in rendered.get("screens", [])}
+
+
+def validate_scores(
+    data: dict[str, Any], texts: dict[str, str], empties: dict[str, str] | None = None
+) -> list[dict[str, Any]]:
     """인용 검증 + 범위 검증. 실패는 '채점 불가'로 남기고 전체를 중단하지 않는다."""
     by_id = {s.get("id"): s for s in data.get("scores", []) if isinstance(s, dict)}
     out: list[dict[str, Any]] = []
     for t in rubric_targets():
         row = by_id.get(t.id)
-        base = {"id": t.id, "route": t.route, "title": t.title}
+        base = {
+            "id": t.id,
+            "route": t.route,
+            "title": t.title,
+            "empty_state": (empties or {}).get(t.id, ""),
+        }
         if row is None:
             out.append({**base, "score": None, "reason": "", "quote": "", "invalid": "미채점"})
             continue
@@ -165,8 +189,13 @@ def validate_scores(data: dict[str, Any], texts: dict[str, str]) -> list[dict[st
     return out
 
 
-def average(scores: list[dict[str, Any]]) -> float | None:
-    vals = [s["score"] for s in scores if s.get("score") is not None]
+def average(scores: list[dict[str, Any]], *, empty: bool = False) -> float | None:
+    """평균. 기본은 **빈 상태 화면을 제외**한다 — 기준이 다른 점수를 섞으면 추세가 흐려진다."""
+    vals = [
+        s["score"]
+        for s in scores
+        if s.get("score") is not None and bool(s.get("empty_state")) is empty
+    ]
     return round(sum(vals) / len(vals), 1) if vals else None
 
 
@@ -195,7 +224,7 @@ def build_report(
     rendered: dict[str, Any], data: dict[str, Any], out_dir: Path, today: date | None = None
 ) -> dict[str, Any]:
     day = today or date.today()
-    scores = validate_scores(data, screen_texts(rendered))
+    scores = validate_scores(data, screen_texts(rendered), empty_states(rendered))
     prev = load_previous(out_dir, day)
     for s in scores:
         before = prev.get(s["id"])
@@ -205,6 +234,8 @@ def build_report(
         "date": day.isoformat(),
         "authenticated": bool(rendered.get("authenticated")),
         "average": average(scores),
+        "empty_average": average(scores, empty=True),
+        "empty_count": sum(1 for s in scores if s.get("empty_state")),
         "scores": scores,
         "wish": str(data.get("wish") or ""),
         "invalid_count": sum(1 for s in scores if s.get("invalid")),
