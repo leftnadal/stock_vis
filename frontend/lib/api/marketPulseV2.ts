@@ -95,6 +95,8 @@ export interface AnomalyItem {
 }
 
 export interface AnomalySection {
+  // A-2(HUB-V02-S1): 'evaluated'(정상 확인) vs 'no_data'(입력 없음). 구버전 응답엔 없을 수 있어 optional.
+  status?: 'evaluated' | 'no_data'
   mode: AnomalyMode
   overview: string
   sector_highlight: string
@@ -143,6 +145,8 @@ export interface BreadthCard {
   new_low_52w: number
   ad_line: number
   ad_line_change: number
+  // A-1(HUB-V02-S1): 이 수치의 기준 거래일(EOD 하루 지연 정상). 구버전 응답엔 없을 수 있어 optional.
+  as_of_date?: string
 }
 
 export interface SectorCardItem {

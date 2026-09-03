@@ -82,6 +82,24 @@ const MODE_TEXT: Record<string, string> = {
 }
 
 export function AnomalyPanel({ data, labels }: { data: AnomalySection; labels?: Record<string, string> }) {
+  // A-2(HUB-V02-S1): 입력 데이터 부재 = "판정 불가"를 "정상 확인"과 구분(중립 slate, 경보 아님).
+  //   "봤는데 정상"(evaluated CALM)과 "못 봐서 침묵"(no_data)을 사용자에게 분리 표기.
+  if (data.status === 'no_data') {
+    return (
+      <section
+        data-guide="marketPulse.anomaly"
+        className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4"
+      >
+        <header className="flex items-center gap-2 mb-2">
+          <span className="text-xs font-semibold uppercase text-slate-500">판정 불가</span>
+        </header>
+        <p className="text-sm text-slate-600">{data.overview || '판정 불가 — 입력 데이터 대기 중.'}</p>
+        <p className="mt-1 text-xs text-slate-400">
+          이상 신호를 평가할 입력 데이터가 아직 없습니다 — &quot;정상&quot;과 다릅니다.
+        </p>
+      </section>
+    )
+  }
   const tone = MODE_TONE[data.mode] ?? MODE_TONE.CALM
   const textTone = MODE_TEXT[data.mode] ?? MODE_TEXT.CALM
   return (

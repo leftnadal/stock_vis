@@ -41,6 +41,24 @@ class BreadthMetrics:
 WINDOW_DAYS = 252
 
 
+def resolve_as_of_date(
+    universe: str = "SPY", *, on_or_before: date_cls | None = None
+) -> date_cls | None:
+    """유니버스 종목의 `DailyPrice`가 실제 존재하는 최신 거래일(≤ on_or_before)을 반환.
+
+    캘린더 산술(주말·공휴일 가정)을 쓰지 않고 실데이터에서 직접 구한다(#117 류 함정 회피).
+    `DailyPrice`는 EOD(하루 지연)라 오늘치가 없는 게 정상 — 이 함수가 "직전 거래일"을 데이터로 해석.
+    가격 데이터가 전무하면 None(진짜 데이터 없음).
+    """
+    on_or_before = on_or_before or django_timezone.localdate()
+    symbols = _resolve_universe_symbols(universe)
+    if not symbols:
+        return None
+    return DailyPrice.objects.filter(
+        stock_id__in=symbols, date__lte=on_or_before
+    ).aggregate(m=Max("date"))["m"]
+
+
 def _resolve_universe_symbols(universe: str) -> list[str]:
     universe = universe.upper()
     if universe == "SPY":
@@ -109,7 +127,9 @@ def compute_breadth(
     target_date: date_cls | None = None,
     previous_ad_line: int | None = None,
 ) -> BreadthMetrics:
-    target_date = target_date or django_timezone.localdate()
+    # 기준일 미지정 = 데이터에서 직전 거래일 해석(A-1, HUB-V02-S1). 명시 target_date는 IDENTICAL.
+    if target_date is None:
+        target_date = resolve_as_of_date(universe) or django_timezone.localdate()
     symbols = _resolve_universe_symbols(universe)
     closes = _latest_two_closes(symbols, target_date)
     extrema = _compute_52w_extrema(symbols, target_date)
@@ -188,5 +208,11 @@ def upsert_snapshot(
 def calculate(
     universe: str = "SPY", target_date: date_cls | None = None
 ) -> BreadthSnapshot:
-    metrics = compute_breadth(universe=universe, target_date=target_date)
-    return upsert_snapshot(metrics, universe=universe, target_date=target_date)
+    # compute·store 기준일 일원화(AD-line 연속성 보장): 미지정 시 직전 거래일로 1회 해석해 양쪽에 전달.
+    resolved = (
+        target_date
+        if target_date is not None
+        else (resolve_as_of_date(universe) or django_timezone.localdate())
+    )
+    metrics = compute_breadth(universe=universe, target_date=resolved)
+    return upsert_snapshot(metrics, universe=universe, target_date=resolved)
