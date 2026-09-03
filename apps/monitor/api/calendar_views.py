@@ -6,6 +6,7 @@ GET /api/v1/monitor/calendar/ — 연합 읽기 피드(EventFeed). IsAuthenticat
 from __future__ import annotations
 
 import datetime as _dt
+import re
 from zoneinfo import ZoneInfo
 
 from rest_framework import status
@@ -13,9 +14,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.monitor.services.chain_feed import build_chain_feed
 from apps.monitor.services.event_feed import build_event_feed
 
 _ET = ZoneInfo("America/New_York")
+_SYMBOL_RE = re.compile(r"^[A-Z][A-Z0-9.\-]{0,9}$")
 _ALLOWED_KINDS = {"holiday", "macro", "earnings", "dividend", "split", "split_effective"}
 _ALLOWED_SCOPE = {"monitor", "watchlist", "both"}
 _ALLOWED_IMPORTANCE = {"critical", "high", "medium", "low"}
@@ -81,4 +84,25 @@ class CalendarFeedView(APIView):
             request.user, start=start, end=end, scope=scope, kinds=kinds,
             include_stale=include_stale, macro_min_importance=importance,
         )
+        return Response(feed)
+
+
+class CalendarChainView(APIView):
+    """GET /api/v1/monitor/calendar/chain/?symbol= — 관계망 이벤트 피드(EVT-CHAIN-1).
+
+    시드 심볼의 1-hop 관계 이웃(RelationConfidence confirmed·truth≥임계·top-k) 어닝 타임라인
+    + 시드 자신의 다가오는 이벤트(위젯). 읽기 전용·부호 중립. 미존재 심볼 = 빈 응답(404 아님).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        symbol = (request.query_params.get("symbol") or "").strip().upper()
+        if not symbol:
+            return Response({"detail": "symbol 파라미터가 필요합니다."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not _SYMBOL_RE.match(symbol):
+            return Response({"detail": "symbol 형식이 올바르지 않습니다(대문자 심볼)."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        feed = build_chain_feed(request.user, symbol)
         return Response(feed)
