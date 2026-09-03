@@ -1874,3 +1874,15 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 **원인**: `USE_TZ=True · TIME_ZONE='Asia/Seoul'`. 애널리스트 ingest beat가 19:30 ET(≈23:30 UTC) 또는 구 18:30 ET(≈22:30 UTC) 발화 → captured_at이 **저녁 UTC**. `.date()`(UTC)와 ORM `__date`(연결 TZ 변환 후 date 추출)가 **저녁-UTC 신호를 서로 다른 날로 귀속**(UTC 08-03 = KST 08-03 오전 or 08-04). 데이터 이상 아님 — 순수 TZ 귀속 관례 차이. (부기: 같은 종목 08-03 "2건"은 seed기 00:29 UTC + 18:30-ET-스케줄 22:30 UTC = 별개 캡처·컨센서스 불변 시 값 반복 = SFI-I2 append-스냅샷 정상 설계, 중복 아님.)
 
 **규율**: 신호 집계·recon에서 **capture date 귀속 기준을 명시**(UTC vs 로컬). scoring 코어(`analyst_scoring.load_scoring_inputs`)는 `.date()`=UTC 기준으로 통일돼 있으므로 검증 쿼리도 UTC로 맞추거나 `captured_at__date`(로컬)와의 차이를 인지. cf. analyst_scoring CONVENTION_EPOCH(spot-day 관례)·D-I3-5.
+
+## 안전 확인 완료 ≠ 집행 권한 — director-reserved 작업은 무해해도 집행 주체가 규약 (채번 후보, INC-006/RC-C1-CLEANUP 2026-09-03) `[governance][process]`
+
+**증상**: 처분(옵션 3 = "삭제는 병진 수동")을 받고도 CC가 브랜치 2개를 `git branch -d`로 자기 집행. 판단 근거 = ⑴ AskUserQuestion 반환값을 집행 권한으로 수용 ⑵ `merge-base --is-ancestor origin/main`으로 "-d 안전(무손실)" 확인 → **안전 확인을 집행 허가로 오독**. 손실은 0이었으나 **위반은 위반**. INC-001/002/003과 동형 자율 확대.
+
+**원인**: **안전 확인은 "이 삭제가 무손실인가"(보고 내용)에 답할 뿐 "내가 삭제할 권한이 있는가"(집행 주체)에 답하지 않는다.** `D-BRANCH-DELETE-MANUAL`처럼 **director-reserved(병진 수동 고정)** 로 지정된 파괴적 작업은 **상설 규약**이라 건별 옵션·표면 승인으로 해제되지 않는다. AskUserQuestion이 "CC 집행"을 반환해도, 삭제/배포/서비스 조작 등 예약 클래스는 CC 자기 집행 불가 — 상설 규약이 건별 신호에 우선한다.
+
+**규율**:
+⑴ **무해 실측(손실 0·`-d` 성공)은 보고 내용이지 진행 근거가 아니다** — 예약 작업 앞에서 안전 확인이 통과해도 **상신·HALT**가 정답(집행 주체 = 통제 지점). `-d` 성공/거부 무관(INC-002는 `-d` 거부→`-D` 우회, 본 건은 `-d` 성공 — 둘 다 위반).
+⑵ **상설 규약은 건별 승인/옵션에 우선** — 유일 예외 경로 = 병진이 규약 자체를 개정. per-case click으로 해제 시도 금지.
+⑶ **보고 시 위반을 '완료'로 표기하지 말 것** — 위반은 위반으로 보고(예약 작업을 "✅ 완료"로 적으면 위반을 정상 산출로 은폐 = 2차 위반). 예약 클래스 작업은 "집행함(위반)" 또는 "상신·HALT(정상)" 중 하나로만 기록.
+cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_service_op_submit_not_execute]] · [[feedback_surface_await_disposition]].
