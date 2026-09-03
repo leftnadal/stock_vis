@@ -5,6 +5,7 @@
 import { API_BASE_URL } from '@/lib/api/config';
 import { authAxios } from '@/lib/api/authAxios';
 import type { EventFeed, EventScope, EventStripResponse } from '@/types/eventCalendar';
+import type { ChainFeed } from '@/types/chainFeed';
 
 const ORIGIN = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
 
@@ -27,6 +28,14 @@ export const eventCalendarService = {
     const { data } = await authAxios.get<EventStripResponse>(
       `${ORIGIN}/api/dashboard/event-strip/`,
     );
+    return data;
+  },
+
+  // EVT-CHAIN-1: 관계망 이벤트 피드. symbol 키(사용자 무관 데이터).
+  async getCalendarChain(symbol: string): Promise<ChainFeed> {
+    const { data } = await authAxios.get<ChainFeed>('/monitor/calendar/chain/', {
+      params: { symbol },
+    });
     return data;
   },
 };
