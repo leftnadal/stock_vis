@@ -1648,6 +1648,10 @@
 ## AGENT-S2 (2026-09-03)
 
 - 🟡 **AGENT-S2 야간 도그푸딩 2단계(루브릭 채점)** (@infra) — **구현·랜딩 완료 · `sv sync` 상신 대기**. 상신 `scratchpad/AGENT-S2_상신_20260903.md`. 신설 `collect_rendered.py`(Playwright 렌더 수집)·`score_rubric.py`(claude -p 1회 일괄 채점)·`render_screens.mjs` + `report_mail.py` 루브릭 섹션 + `run_dogfood.sh` 2단계 삽입. **plist 무변경**(같은 05:20 잡). 유닛 28 + 회귀 179 passed(선존 2건 = `test_targets.py`, 무변경 트리 동일). **수동 실증**: 렌더 5/5(인증) · 채점 평균 2.8/5 무효 0 · **인용 5/5 실제 화면 텍스트 일치** · 메일 실발송 1통. **묶음 권고**: `OPS-HC-WIRE` 상신과 함께 `sv sync` 1회.
-- 🔴 **GUIDE-ANCHOR-DRIFT** (@frontend) — 가이드 데이터의 `anchor` 이름 **7건이 실제 DOM에 없다**(실측 2026-09-03): `/chainsight` 3/3 전부(`event-grid`·`card-metrics`·`entrypoints`) · `/monitor` 3/4(`scope-chips`·`status-segment`·`list`) · `/portfolio` 1/4(`charts`). 채점은 본문 fallback으로 보완되나 **앵커별 정밀 채점 불가**하고, 가이드 오버레이 하이라이트도 어긋날 수 있다. 가이드 데이터를 실제 값에 맞출지 화면에 앵커를 부착할지는 **화면 소유자 판단**.
-- 🔭 **AGENT-S2-EMPTY-ACCOUNT** (디렉터 결정 대기) — 도그푸딩 계정이 비어 있어 Monitor·포트폴리오가 구조적으로 1/5다(화면 결함 아님). ⒜ 표본 데이터 주입(prod 쓰기·승인 필요) / ⒝ 빈 상태 화면 기준 분리 / ⒞ 추세만 읽기. 결정 전까지 ⒞.
+- 🟡 **GUIDE-ANCHOR-DRIFT** (@frontend) — **원인 확정 2026-09-04(AGENT-S2.1 ③), 코드 드리프트 아님**. 앵커 7건 모두 코드에 존재하며 DOM 부재는 두 부류: ⑴ **빈 상태 조건부 4건** — `monitor.scope-chips`·`monitor.list`(`monitors.length > 0`)·`monitor.status-segment`(`closedCount > 0`)·`portfolio.charts`(`portfolios.length > 0`) → **계정이 채워지면 자연 해소**, 조치 불요. ⑵ **route 불일치 3건** — `chainsight.event-grid`·`card-metrics`·`entrypoints`는 `EventBoard.tsx`에 있는데 `/chainsight`는 **`MarketStoryFeed`를 렌더**한다(EventBoard는 `/chainsight/events`로 이동). → **가이드 데이터가 화면 개편을 못 따라간 것**. 앵커를 `/chainsight/events`로 옮길지 `MarketStoryFeed`에 새로 부착할지 **화면 소유자 판단**(도메인 코드 무접촉).
+- ✅ **AGENT-S2-EMPTY-ACCOUNT** — **해소 2026-09-04(결정 ⒝ 채택, AGENT-S2.1 ②)**. 빈 상태 감지 시 `coreQuestion` 대신 **"빈 상태 안내가 충분한가"** 기준으로 채점하고, 메일 `[빈 상태]` 라벨 + **평균 별도 트랙** + 최저 화면 선정에서 제외. 효과: 같은 렌더로 평균 **1.4/5 → 본 4.0/5**(빈 상태 2건 4.5/5 분리). 표본 데이터 주입(⒜) 불필요.
 - 💤 **AGENT-S3 관찰 후보 + 성적 원장** (후보 등재만 — **구현 금지**) — 종목 추천·성적 원장. **착수 전 RC v3.0 분포 재측정 선행 필수**(눈금 [0,100]→[0,1] 전환 후 분포를 모르는 채로 추천 기준을 세울 수 없다).
+
+## AGENT-S2.1 (2026-09-04)
+
+- 🟡 **AGENT-S2.1** (@infra) — **구현·랜딩 완료 · `sv sync` 상신 대기**. ① launchd env 로드 결함 수정(`.env` 화이트리스트 주입, `env -i` 재현으로 원인 확정·수정 검증) ② 빈 상태 채점 분기 ③ 앵커 원인 확정. 유닛 39 + 회귀 190 passed(선존 2건) · ruff 0 · health ❌0. 수동 실증: `env -i` 인증 렌더 5/5 · 본 평균 4.0/5 · 메일 실발송(라벨 확인). **마이그레이션 0건**. ★09-05 05:20 발화 전 `sv sync` 필요 — 안 하면 또 미인증 1.4/5가 발송된다.

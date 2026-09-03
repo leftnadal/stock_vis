@@ -7487,3 +7487,36 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **compute·store 기준일 일원화**: AD-line 연속성(직전 스냅샷 위 누적)을 위해 계산·저장 날짜를 동일 as_of로. 스냅샷이 데이터 날짜로 저장됨(오늘-빈 0행 미생성).
 - **overview 정합**: `_breadth_card`는 실데이터(total>0) 최신 우선(빈 0을 실데이터로 오인 렌더 금지)·`as_of_date` additive 노출. `indicator_stale`은 "오늘 스냅샷 존재"가 아니라 **최신 실데이터일 신선도**(EOD 지연 허용 4일) 기반. 명시 기준일 호출은 IDENTICAL(행위보존).
 - **과거 0행 소급**: `recompute_breadth_history` 멱등 커맨드(dry-run 기본) — prod 쓰기라 병진 승인 후 집행.
+
+## [2026-09-04] D-AGENT-S2.1 — launchd env 로드 결함 + 빈 상태 채점 분기 [infra][process]
+
+### ① launchd 환경에는 셸의 `.env`가 없다 (원인 확정)
+
+- **증상**: 09-04 05:20 첫 완전 야간 가동에서 `렌더 수집 5/5 (미인증)` → 루브릭 평균 **1.4/5**로 왜곡된 메일 발송. 09-03 수동 실행은 인증 성공이었다.
+- **원인(재검증 완료)**: `collect_rendered.py`가 node에 `**os.environ`만 넘기는데 **launchd 환경에는 `.env`가 로드되지 않는다** → `render_screens.mjs`의 `DOGFOOD_USER ?? ''`가 빈 값 → 로그인 스킵. **`env -i HOME=… PATH=…`로 미인증이 그대로 재현**되어 확정했다.
+- **수정**: `collect_rendered.py`가 `PROJECT_DIR/.env`를 `dotenv_values`로 직접 읽어 **화이트리스트 키만**(`DOGFOOD_*` 8개) subprocess env에 주입한다. `.env` 전체를 흘리면 DB·API 키까지 노출 범위가 넓어지고, `run_dogfood.sh`에서 전역 `source .env`를 하는 것도 같은 이유로 피했다. 값은 로깅하지 않는다(자격증명 유무만 `있음/없음`).
+- **검증**: `env -i` 빈 환경에서 **`자격증명 있음` → `렌더 수집 5/5 (인증)`** 재현. 대시보드 3757자·MP v2 1330자 정상 렌더.
+- **부수 확정**: MP v2의 "불러오는 중…" 정지는 **미인증 API 401의 부수효과**였다(인증 시 정상). 별건 아님.
+- **관측성**: mjs가 미인증 사유를 구분해 남긴다 — `자격증명 부재(DOGFOOD_USER=없음, …)` vs `로그인 거부 status=NNN` vs `access 토큰 없음`. 리포트 JSON에도 `auth_fail_reason`으로 남는다. 같은 증상이 재발하면 **로그만으로 판별**된다.
+- **일반 규칙(common-bugs 채번 후보)**: **수동 성공 ≠ 자동 성공.** 세션 셸에는 변수가 있고 launchd에는 없다. launchd로 도는 코드의 DoD는 **`env -i` 재현**이다.
+
+### ② 빈 상태 화면은 채점 기준을 분기한다 (결정 ⒝)
+
+- **결정**: 렌더 수집이 빈 상태 마커를 감지한 화면은 `coreQuestion` 대신 **"빈 상태 안내가 충분한가"**(⑴ 왜 비어 있는지 ⑵ 다음에 무엇을 할지)로 채점한다. 메일에 **`[빈 상태]` 라벨**을 붙이고, **평균을 별도 트랙으로 분리**한다.
+- **Why**: 도그푸딩 계정이 비어 Monitor·포트폴리오가 구조적으로 1/5였다 — **화면 결함이 아니라 계정 상태를 반영한 점수**다. 이 점수가 본 평균에 섞이면 추세가 흐려지고, 화면을 고쳐도 숫자가 안 움직인다.
+- **감지**: 실측 마커 목록 + 휴리스틱(`아직…없/비어`, `비어있습니다`, `등록된…없`) 병용. 문구가 바뀌어도 휴리스틱이 받는다.
+- **최저 화면 선정도 빈 상태를 제외**한다 — 빈 계정 탓 점수를 대표로 세우면 메일이 매일 같은 화면을 지목한다.
+- **효과 실측**: 같은 렌더로 평균 **1.4/5 → 본 4.0/5**(빈 상태 2건은 4.5/5 별도). 빈 상태 채점이 실제 UI 결함도 잡았다 — 포트폴리오 4/5 근거 "동일 블록이 두 번 반복 노출되어 안내가 산만합니다".
+
+### ③ GUIDE-ANCHOR-DRIFT 원인 확정 — 코드 드리프트 아님, 두 부류
+
+앵커 7건 모두 origin/main 코드에 **존재**한다. DOM 부재 원인은 둘로 갈린다.
+
+| 앵커 | 원인 | 근거 |
+|---|---|---|
+| `monitor.scope-chips` · `monitor.list` | **빈 상태 조건부** | `monitor/page.tsx:209·238` `(monitors?.length ?? 0) > 0` |
+| `monitor.status-segment` | **빈 상태 조건부** | 같은 파일 `:229` `closedCount > 0 && <StatusSegment …>` |
+| `portfolio.charts` | **빈 상태 조건부** | `portfolio/page.tsx:138` `portfolios.length > 0` |
+| `chainsight.event-grid` · `card-metrics` · `entrypoints` | **화면 개편으로 route 불일치** | 세 앵커는 `components/chainsight/EventBoard.tsx`에 있는데, `/chainsight`는 **`MarketStoryFeed`를 렌더**한다(`app/chainsight/page.tsx:7`). `EventBoard`는 **`/chainsight/events`**로 이동했다 |
+
+- **판정**: monitor·portfolio 4건은 **계정이 채워지면 자연 해소**(수집 타이밍·하이드레이션 아님). chainsight 3건은 **가이드 데이터가 화면 개편을 따라가지 못한 것** — 앵커를 `/chainsight/events`로 옮기거나 `MarketStoryFeed`에 새 앵커를 부착해야 한다. **어느 쪽이 옳은지는 화면 소유자 판단**(도메인 코드 무접촉).

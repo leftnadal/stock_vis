@@ -46,14 +46,21 @@ async function readStdin() {
 }
 
 /** API 직접 로그인 → 토큰. 폼 로그인보다 안정적이고 클릭이 없다(행동 규율). */
+/** 미인증 사유를 구분해 남긴다 — 다음에 같은 증상이 오면 로그만으로 판별된다. */
+let authFailReason = ''
+
 async function login() {
-  if (!USER || !PASS) return null
+  if (!USER || !PASS) {
+    authFailReason = `자격증명 부재(DOGFOOD_USER=${USER ? '있음' : '없음'}, DOGFOOD_PASSWORD=${PASS ? '있음' : '없음'})`
+    return null
+  }
   const res = await fetch(`${API}/api/v1/users/jwt/login/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: USER, password: PASS }),
   })
   if (!res.ok) {
+    authFailReason = `로그인 거부 status=${res.status}`
     log(`로그인 실패 status=${res.status}`)
     return null
   }
@@ -61,6 +68,7 @@ async function login() {
   const access = data.access ?? data.access_token ?? data.token
   const refresh = data.refresh ?? data.refresh_token ?? ''
   if (!access) {
+    authFailReason = '로그인 응답에 access 토큰 없음'
     log('로그인 응답에 access 토큰 없음')
     return null
   }
@@ -69,6 +77,27 @@ async function login() {
 
 function squash(text) {
   return (text ?? '').replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * 빈 상태 마커(실측 문구). 계정에 데이터가 없어서 비어 있는 화면은 coreQuestion으로
+ * 채점하면 화면 탓이 아닌 점수가 나온다 → 채점 기준을 분기하기 위해 표시만 한다.
+ * 문구가 바뀌면 감지가 풀리므로, 마커 외에 "비어있/없어요/0건" 휴리스틱을 함께 본다.
+ */
+const EMPTY_MARKERS = [
+  '아직 모니터링 중인 대상이 없어요',
+  '아직 포트폴리오가 비어있습니다',
+  '데이터가 없습니다',
+  '표시할 항목이 없습니다',
+]
+const EMPTY_HEURISTIC = /(아직[^.]{0,20}(없|비어)|비어있습니다|등록된[^.]{0,10}없)/
+
+function detectEmptyState(text) {
+  const t = squash(text)
+  const hit = EMPTY_MARKERS.find((m) => t.includes(m))
+  if (hit) return hit
+  const m = t.match(EMPTY_HEURISTIC)
+  return m ? m[0] : ''
 }
 
 async function collectScreen(page, screen) {
@@ -83,6 +112,7 @@ async function collectScreen(page, screen) {
     empty_regions: [],
     loading_stuck: [],
     console_errors: [],
+    empty_state: '',
   }
 
   const consoleErrors = []
@@ -141,6 +171,9 @@ async function collectScreen(page, screen) {
       if (n > 0) out.loading_stuck.push(`${sel} × ${n}`)
     }
 
+    out.empty_state = detectEmptyState(
+      out.regions.map((r) => r.text).join(' ') + ' ' + out.fallback_text,
+    )
     out.ok = Boolean((anchorChars > 0 || out.fallback_text) && !out.error)
   } catch (e) {
     out.error = squash(String(e)).slice(0, 200)
@@ -154,7 +187,7 @@ async function collectScreen(page, screen) {
 async function main() {
   const screens = await readStdin()
   const tokens = await login()
-  log(tokens ? '로그인 성공' : '⚠️ 미인증 진행(DOGFOOD_USER/PASSWORD 미설정 또는 실패)')
+  log(tokens ? '로그인 성공' : `⚠️ 미인증 진행 — ${authFailReason || '사유 불명'}`)
 
   const browser = await chromium.launch()
   const context = await browser.newContext({ viewport: { width: 1440, height: 2200 } })
@@ -187,6 +220,7 @@ async function main() {
       {
         base_url: BASE,
         authenticated: Boolean(tokens),
+        auth_fail_reason: tokens ? '' : authFailReason,
         screens: results,
       },
       null,
