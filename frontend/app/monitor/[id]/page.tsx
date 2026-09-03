@@ -9,6 +9,7 @@ import { ArrowLeft, ShieldPlus } from 'lucide-react'
 
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { CloseModal } from '@/components/monitor/CloseModal'
+import { ChainSection } from '@/components/monitor/chain/ChainSection'
 import { SlimStrip } from '@/components/monitor/SlimStrip'
 import { VerdictBadge } from '@/components/monitor/VerdictBadge'
 import { EvidenceModal } from '@/components/monitor/evidence/EvidenceModal'
@@ -277,6 +278,9 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
           </div>
         )}
       </section>
+
+      {/* EVT-CHAIN-1 — 미니 이벤트 위젯(W) + 관계망 타임라인(B). scope=stock 한정·附加 전용. */}
+      {monitor.scope === 'stock' && <ChainSection symbol={monitor.target_ref} />}
 
       {closingClaim && (
         <CloseModal

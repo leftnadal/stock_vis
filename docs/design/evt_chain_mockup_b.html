@@ -1,0 +1,121 @@
+<title>EVT-CHAIN 시각 계약</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--panel-2:#f1f3f6;--line:#e3e6ea;--line-2:#cfd4da;--ink:#151a21;--ink-2:#4b5563;--ink-3:#8a94a1;
+--accent:#2563eb;--accent-soft:#e6eefc;--earn:#4f46e5;--earn-soft:#e9e8fb;--div:#059669;--div-soft:#dff5ec;
+--rel:#0f766e;--rel-soft:#d9f0ee;--score:#334155;--score-soft:#e6eaf0;--stable:#1d4ed8;--stable-soft:#dbe6fb;--fluid:#a16207;--fluid-soft:#fbf0cf;
+--note:#fff8e1;--note-ink:#6b4f00;--note-line:#f1d27a;--seed:#1e293b;--seed-soft:#e8edf5}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--panel:#161b22;--panel-2:#1d232c;--line:#2a323d;--line-2:#3a4453;--ink:#e8ecf1;--ink-2:#aab4c0;--ink-3:#6f7b89;
+--accent:#4f83f1;--accent-soft:#1a2740;--earn:#8b86f5;--earn-soft:#26264a;--div:#34c48e;--div-soft:#123626;
+--rel:#3cbdb0;--rel-soft:#12312e;--score:#aab4c0;--score-soft:#242c38;--stable:#7ea6f5;--stable-soft:#1a2a4a;--fluid:#e4c05a;--fluid-soft:#3a3010;
+--note:#2c2610;--note-ink:#f1dc9c;--note-line:#5c4c17;--seed:#dbe4f0;--seed-soft:#222b38}}
+:root[data-theme="dark"]{--bg:#0e1116;--panel:#161b22;--panel-2:#1d232c;--line:#2a323d;--line-2:#3a4453;--ink:#e8ecf1;--ink-2:#aab4c0;--ink-3:#6f7b89;
+--accent:#4f83f1;--accent-soft:#1a2740;--earn:#8b86f5;--earn-soft:#26264a;--div:#34c48e;--div-soft:#123626;
+--rel:#3cbdb0;--rel-soft:#12312e;--score:#aab4c0;--score-soft:#242c38;--stable:#7ea6f5;--stable-soft:#1a2a4a;--fluid:#e4c05a;--fluid-soft:#3a3010;
+--note:#2c2610;--note-ink:#f1dc9c;--note-line:#5c4c17;--seed:#dbe4f0;--seed-soft:#222b38}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:14px;line-height:1.5}
+.num{font-family:"IBM Plex Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1120px;margin:0 auto;padding:30px 22px 60px}
+h1{font-size:21px;margin:0 0 6px}.lede{color:var(--ink-2);margin:0 0 22px;max-width:76ch}
+.art{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:22px}
+.art-h{display:flex;gap:12px;align-items:baseline;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.art-h .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}.art-h .t{font-weight:700}.art-h .r{margin-left:auto;font-size:12px;color:var(--ink-3)}
+.art-b{padding:16px}
+.screen{border:1px solid var(--line-2);border-radius:12px;background:var(--panel);padding:16px 18px}
+.crumb{font-size:12px;color:var(--ink-3);margin-bottom:8px}
+.head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.head h2{font-size:18px;margin:0}.head .st{font-size:12px;color:var(--ink-2);background:var(--panel-2);border-radius:5px;padding:1px 8px}
+.faded{opacity:.42;border:1px dashed var(--line);border-radius:7px;padding:8px 10px;font-size:11px;text-align:center;margin:8px 0;color:var(--ink-3)}
+/* mini widget */
+.wgt{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin:10px 0;background:var(--panel)}
+.wgt-h{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--ink-3);margin-bottom:6px}
+.wgt-h b{color:var(--ink);font-size:13px}
+.wgt-h a{margin-left:auto;color:var(--accent);text-decoration:none;font-size:12px}
+.pill{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:4px 10px;margin-right:6px;font-size:12.5px}
+.pill .dd{color:var(--accent);font-weight:700}
+.b{border-radius:5px;padding:1px 7px;font-size:11px;font-weight:500;line-height:18px;white-space:nowrap}
+.b-earn{background:var(--earn-soft);color:var(--earn)}.b-div{background:var(--div-soft);color:var(--div)}
+.b-rel{background:var(--rel-soft);color:var(--rel)}.b-score{background:var(--score-soft);color:var(--score);font-family:"IBM Plex Mono",monospace;font-size:10.5px}
+.b-stable{background:var(--stable-soft);color:var(--stable)}.b-fluid{background:var(--fluid-soft);color:var(--fluid)}
+/* banner + timeline */
+.banner{display:flex;gap:10px;align-items:center;background:var(--seed-soft);border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin:14px 0 10px;font-size:13.5px}
+.banner .seed{font-weight:700;color:var(--seed)}
+.banner .dd{color:var(--accent);font-weight:700}
+.banner .sub{color:var(--ink-3);font-size:12px;margin-left:auto}
+.tl-h{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--ink-3);margin:10px 0 4px}
+.tl-h b{color:var(--ink);font-size:13px}
+.row{display:grid;grid-template-columns:210px 1fr 190px 110px;gap:10px;align-items:center;padding:8px 6px;border-bottom:1px dashed var(--line)}
+.row:last-child{border-bottom:0}
+.row .who{display:flex;align-items:center;gap:7px}
+.sym{font-weight:700}
+.det{color:var(--ink-2);font-size:12.5px}.det .k{color:var(--ink-3)}
+.tm{font-size:12px;color:var(--ink-2)}.tm .dd{color:var(--accent);font-weight:600}
+.gap-note{text-align:center;font-size:11px;color:var(--ink-3);padding:4px 0;border-bottom:1px dashed var(--line)}
+.seedrow{background:var(--seed-soft);border-radius:7px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:14px}
+.note{background:var(--note);border:1px solid var(--note-line);color:var(--note-ink);border-radius:8px;padding:8px 10px;font-size:12.5px}
+.note b{display:block;margin-bottom:2px}
+.params{border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--panel-2);font-size:12.5px;color:var(--ink-2);margin-top:12px}
+.params b{color:var(--ink)}
+@media (max-width:760px){.row{grid-template-columns:1fr 1fr}}
+</style>
+<div class="wrap">
+<h1>EVT-CHAIN 시각 계약 — 목업 B 복원판</h1>
+<p class="lede">설계 앵커 v1.1 §6의 <b>확정 목업 B(2026-08-24)</b>를 텍스트 계약에서 복원했다. 화면은 <b>모니터 상세(/monitor/[id], scope=stock)</b> 한 곳이며 두 요소가 함께 착지한다 — <b>(W) 미니 이벤트 위젯</b>(D-EVT-FE1: Phase 2와 동시 출시)과 <b>(B) 관계망 이벤트 타임라인</b>. 수치·이웃은 예시.</p>
+
+<div class="art">
+  <div class="art-h"><span class="k">Screen B</span><span class="t">/monitor/[id] — 시드 IREN (모니터 "AI 인프라 전력")</span><span class="r">기존 상세 화면에 두 섹션 附加 — 기존 DOM 무변</span></div>
+  <div class="art-b">
+    <div class="screen">
+      <div class="crumb">모니터 › AI 인프라 전력</div>
+      <div class="head"><h2>IREN</h2><span class="st">활성 관제 중</span></div>
+      <div class="faded">기존: 상태 스파크라인 · Claim · 지표 · 알림 (무변)</div>
+
+      <!-- W: 미니 이벤트 위젯 -->
+      <div class="wgt">
+        <div class="wgt-h"><b>다가오는 이벤트</b><span>· 시드 자신 · 원장 연합 읽기</span><a>캘린더에서 보기 →</a></div>
+        <span class="pill"><span class="b b-earn">어닝</span><span class="dd num">D-63</span><span>11/4 (수)</span><span class="det"><span class="k">EPS 예상</span> <span class="num">−0.21</span></span><span class="b b-fluid">유동</span></span>
+        <span class="pill"><span class="b b-div">배당락</span><span class="det k">없음 (무배당)</span></span>
+      </div>
+
+      <!-- B: 관계망 타임라인 -->
+      <div class="banner"><span class="seed">IREN</span><span>다음 이벤트: 어닝</span><span class="dd num">D-63</span><span>11/4 (수)</span><span class="sub">그 사이 관계망(1-hop 이웃) 어닝 ↓</span></div>
+
+      <div class="tl-h"><b>관계망 이벤트</b><span>· RelationConfidence 이웃 · truth ≥ 85 · confirmed · top-10 · 어닝만 · 부호 중립</span></div>
+
+      <div class="row"><div class="who"><span class="sym">MSFT</span><span class="b b-rel">고객</span><span class="b b-score">truth 93</span></div>
+        <div class="det"><span class="b b-earn">어닝</span> <span class="k">EPS 예상</span> <span class="num">3.22</span> · <span class="k">매출</span> <span class="num">75.5B</span></div>
+        <div><span class="b b-stable">안정 · 관측 8회</span></div>
+        <div class="tm"><span class="dd num">D-56</span> 10/28</div></div>
+
+      <div class="row"><div class="who"><span class="sym">NVDA</span><span class="b b-rel">공급사</span><span class="b b-score">truth 96</span></div>
+        <div class="det"><span class="b b-earn">어닝</span> <span class="k">EPS 예상</span> <span class="num">1.42</span> · <span class="k">매출</span> <span class="num">54.8B</span></div>
+        <div><span class="b b-stable">안정 · 관측 7회</span></div>
+        <div class="tm"><span class="dd num">D-79</span> 11/20</div></div>
+
+      <div class="row"><div class="who"><span class="sym">CIFR</span><span class="b b-rel">피어</span><span class="b b-score">truth 89</span></div>
+        <div class="det"><span class="b b-earn">어닝</span> <span class="k">EPS 예상</span> <span class="num">−0.05</span></div>
+        <div><span class="b b-fluid">유동 · 관측 2회</span></div>
+        <div class="tm"><span class="dd num">D-61</span> 11/2</div></div>
+
+      <div class="gap-note">시드 어닝(D-63, 11/4) 이후 이웃 이벤트는 접힘 — "이후 4건 더 ▸"</div>
+
+      <div class="row seedrow"><div class="who"><span class="sym">IREN</span><span class="b b-earn">어닝</span><span class="det k">시드</span></div>
+        <div class="det"><span class="k">EPS 예상</span> <span class="num">−0.21</span></div>
+        <div><span class="b b-fluid">유동</span></div>
+        <div class="tm"><span class="dd num">D-63</span> 11/4</div></div>
+    </div>
+
+    <div class="notes">
+      <div class="note"><b>부호 중립 (앵커 §6)</b>호재/악재 방향 판단 없음 — 관계 뱃지(relation_type: 공급사/고객/경쟁사/피어)와 truth_score만 표시. 색은 유형·신뢰 뱃지에만.</div>
+      <div class="note"><b>정렬·범위</b>오늘 → 시드 다음 이벤트(D-N)까지가 본문, 그 이후는 접힘. 이웃은 truth_score 상위 10만. 이벤트는 EARNINGS만 전파(배당·분할 off).</div>
+      <div class="note"><b>W 위젯 (D-EVT-FE1)</b>시드 자신의 다음 어닝·배당락 필(pill) — 연합 읽기 재사용(event_feed, 신규 쿼리 최소). "캘린더에서 보기 →"로 Phase 1 동선 연결.</div>
+      <div class="note"><b>附加 전용</b>두 섹션 모두 기존 모니터 상세 DOM 아래에 추가만 — 기존 컴포넌트 diff 0(가이드 트랙 행위보존 규율 동형).</div>
+      <div class="note"><b>데이터 없음 상태</b>이웃 0(엣지 미달)이면 타임라인 섹션 자체 비표시. 시드 이벤트 없으면 위젯에 "예정 이벤트 없음" 한 줄.</div>
+      <div class="note"><b>Postgres 단독</b>RelationConfidence(symbol_a/b 인덱스) ⋈ CalendarEvent — Neo4j 무관(복구 트랙 결합도 0).</div>
+    </div>
+
+    <div class="params"><b>잠정 파라미터 (D-EVT-CHAIN-THRESH — 확정은 실데이터 관찰 게이트):</b> truth_score ≥ 85 · relation_status = confirmed · top-k 10 · 전파 = EARNINGS만 · 부호 중립. EVT-CHAIN-1은 이 값으로 구현하고, STEP 0에서 실측한 분포(시드별 이웃 수·표시 행수)를 근거로 관찰 게이트 [EVT-OBS-3]에서 파라미터를 확정한다.</div>
+  </div>
+</div>
+</div>

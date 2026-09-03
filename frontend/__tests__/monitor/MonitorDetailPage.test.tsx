@@ -5,6 +5,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Claim, Monitor } from '@/types/monitor'
+import type { ChainFeed } from '@/types/chainFeed'
 
 vi.mock('@/components/auth/AuthGuard', () => ({
   AuthGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -106,6 +107,13 @@ vi.mock('@/hooks/useMonitor', () => ({
   useEvidenceStatus: (...a: unknown[]) => useEvidenceStatusMock(...a),
 }))
 
+// EVT-CHAIN-1: ChainSection이 쓰는 useChainFeed — 기본은 미상태(附加 섹션 미표시).
+type ChainHookResult = { data: ChainFeed | undefined; isError: boolean }
+const useChainFeedMock = vi.fn((): ChainHookResult => ({ data: undefined, isError: false }))
+vi.mock('@/hooks/useEventCalendar', () => ({
+  useChainFeed: () => useChainFeedMock(),
+}))
+
 import MonitorDetailPage from '@/app/monitor/[id]/page'
 
 beforeEach(() => {
@@ -113,6 +121,8 @@ beforeEach(() => {
   useMonitorClaimsMock.mockReset()
   useEvidenceStatusMock.mockReset()
   useEvidenceStatusMock.mockReturnValue({ data: undefined })
+  useChainFeedMock.mockReset()
+  useChainFeedMock.mockReturnValue({ data: undefined, isError: false })
 })
 
 // use(params)가 Promise를 언랩하며 1회 suspend한다 — act(async)로 마이크로태스크를 흘려보낸다.
@@ -259,5 +269,41 @@ describe('MonitorDetailPage', () => {
     await waitFor(() =>
       expect(screen.getByText('찾을 수 없는 모니터입니다.')).toBeInTheDocument()
     )
+  })
+
+  // EVT-CHAIN-1: scope 게이팅
+  it('scope=stock + 이웃 데이터 → 관계망 섹션 렌더', async () => {
+    useMonitorMock.mockReturnValue({ data: monitor, isLoading: false, isError: false, error: null })
+    useMonitorClaimsMock.mockReturnValue({ data: [makeClaim()] })
+    useChainFeedMock.mockReturnValue({
+      data: {
+        seed: 'AAPL',
+        as_of: '2026-09-03T00:00:00-04:00',
+        seed_events: [],
+        seed_next_event: null,
+        seed_earnings_event: null,
+        window_end: null,
+        neighbors: [{ symbol: 'MSFT', relation_type: 'PEER_OF', truth_score: 0.9, role: null }],
+        items: [],
+        after_count: 0,
+        params: {},
+      },
+      isError: false,
+    })
+    await renderDetail()
+    await waitFor(() => expect(screen.getByTestId('chain-section')).toBeInTheDocument())
+  })
+
+  it('scope!=stock → 관계망 섹션 미표시', async () => {
+    useMonitorMock.mockReturnValue({
+      data: { ...monitor, scope: 'theme', target_ref: 'ai-infra' },
+      isLoading: false,
+      isError: false,
+      error: null,
+    })
+    useMonitorClaimsMock.mockReturnValue({ data: [makeClaim()] })
+    await renderDetail()
+    await waitFor(() => expect(screen.getByText('애플 감시')).toBeInTheDocument())
+    expect(screen.queryByTestId('chain-section')).not.toBeInTheDocument()
   })
 })
