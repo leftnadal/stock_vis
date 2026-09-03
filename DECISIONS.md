@@ -7460,3 +7460,14 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **필드 실명(§0-4⑴ 게이트 PASS)**: relation_type ✅·relation_status ✅(confirmed 존재)·truth_score ✅(가칭 3종 전부 실명 일치). symbol_a=`idx_rc_symbol_a` 인덱스 있음·**symbol_b 단독 인덱스 부재**(모델 db_index=True ↔ DB 드리프트·13,732행 규모라 OR 조회 저비용).
 
 **Why**: Chain Sight 관계망(RelationConfidence)을 소비하는 첫 사용자 표면. 부호 중립을 하드 규칙으로 못박아 "관계 신뢰도"를 "투자 방향 신호"로 오독하는 것을 구조적으로 차단(관계·신뢰만 표시, 판단은 사용자). 파라미터를 상수 1곳에 집중해 실데이터 관찰([EVT-OBS-3]) 후 임계만 바꾸도록 격리 — 추정이 아니라 실측 분포로 확정. Postgres 단독 조인으로 Neo4j 복구 트랙과 결합도 0.
+
+## [2026-09-03] D-EVT-CHAIN-1a — 관계 역할 라벨 + 창 종점=어닝 (디렉터 소보정) [backend][frontend][monitor]
+
+> 트랙: EVT-CHAIN-1 검수 승인 시 디렉터 소보정 2건(push 전). [[D-EVT-CHAIN-1]] 정련.
+
+- **① 관계 라벨 = 시드 기준 역할(부호 중립 재해석)**: 앵커 §6 부호 중립의 금지 대상은 **호재/악재 판단뿐** — 관계 뱃지 자체(공급사/고객/피어)는 허용. 방향성 유형은 `canonical_direction` + symbol_a/b 방위로 시드 기준 역할 도출: **SUPPLIES_TO** — 이웃→시드 공급 = `supplier`(공급사) / 시드→이웃 공급 = `customer`(고객). **DEPENDS_ON** 동형(`dependent`=이웃이 시드에 의존 / `dependency`=시드가 이웃에 의존). 대칭 유형(PEER_OF·COMPETES_WITH 등)은 기존 중립 라벨. BE는 역할 키(`role`)만 노출·`canonical_direction` 원값 미노출(방향 원값≠역할 라벨).
+- **① 게이트 적용 — ACQUIRED 제외**: SEC 규약(`services/sec_pipeline/tasks.py:370`) SUPPLIES_TO/DEPENDS_ON = `a=source→b=target`·`canonical_direction="a→b"` 정규형(= a가 b에 공급/의존)으로 **방향 의미 명확** → 역할 도출. **ACQUIRED = 인수자/피인수자 규약이 코드·docstring에 불명확**("Acquired" 과거형) → 게이트대로 역할 도출 제외·중립 라벨("인수") 유지.
+- **② 창 종점 = 시드 다음 "어닝"**(없으면 오늘+90). 배너는 기존대로 다음 이벤트(유형 무관·D-N) 표기. 배당은 창을 닫지 않음. `seed_earnings_event`(시드 행·창 종점)와 `seed_next_event`(배너) 분리·`window_end` 노출.
+- **재측정 반영**: GOOGL 창내 이웃 어닝 **0→3**(배너=배당 09-04·창종점=어닝 10-28). 역할 도출 검증: IREN MSFT=`customer`(목업 "고객" 정합)·GOOGL EBAY/PSA=`dependent`.
+
+**Why**: ① 목업 B의 "고객/공급사" 방향 라벨은 데이터에 있는 정보(canonical_direction)로 정확히 도출 가능 — 부호 중립은 방향 정보 자체가 아니라 그것의 호재/악재 해석을 금지하는 것. 도출 규약이 불명확한 ACQUIRED만 게이트로 배제해 오라벨 방지(날조 금지). ② 창을 "다음 이벤트"로 잡으면 배당이 임박한 시드(GOOGL)에서 창이 1일로 붕괴해 관계망 어닝이 통째로 접힘(실측 아티팩트) — 창 종점을 어닝으로 고정해 타임라인의 목적(그 사이 관계망 어닝)을 보전.
