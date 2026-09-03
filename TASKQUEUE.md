@@ -1620,3 +1620,9 @@
 
 - 🕒 **SCB-CONTEXT-LAYER** — 채점 카드에 애널리스트 논거·현재 상황 비교 맥락 추가(병진 09-02 소감: "가격만 나오니 그렇구나 싶다"). **선행 필수: 재료 실측 recon**(컨센서스 이력·news·rag_analysis 등 실재 여부 read) — **실측 전 설계 금지**(cf. #128 죽은 테이블 교훈 — 원천 생존 검사가 사양). recon GREEN 후 설계 슬라이스 발행.
 - 💤 **SCB-DERIVED-VISIBILITY** — SMR·XE 표시 방식 결정(현행 제외 유지 vs "채점 불가/데이터 부재" 행 표시). DailyPrice 0이라 파생 spot 불가 → 현재 렌더 9종에서 구조적 제외. 트리거 = SCB-CONTEXT-LAYER 설계 시 동반 재평가(맥락 층에서 "데이터 부재" 표기 방식 함께 결정).
+## AGENT-S2 (2026-09-03)
+
+- 🟡 **AGENT-S2 야간 도그푸딩 2단계(루브릭 채점)** (@infra) — **구현·랜딩 완료 · `sv sync` 상신 대기**. 상신 `scratchpad/AGENT-S2_상신_20260903.md`. 신설 `collect_rendered.py`(Playwright 렌더 수집)·`score_rubric.py`(claude -p 1회 일괄 채점)·`render_screens.mjs` + `report_mail.py` 루브릭 섹션 + `run_dogfood.sh` 2단계 삽입. **plist 무변경**(같은 05:20 잡). 유닛 28 + 회귀 179 passed(선존 2건 = `test_targets.py`, 무변경 트리 동일). **수동 실증**: 렌더 5/5(인증) · 채점 평균 2.8/5 무효 0 · **인용 5/5 실제 화면 텍스트 일치** · 메일 실발송 1통. **묶음 권고**: `OPS-HC-WIRE` 상신과 함께 `sv sync` 1회.
+- 🔴 **GUIDE-ANCHOR-DRIFT** (@frontend) — 가이드 데이터의 `anchor` 이름 **7건이 실제 DOM에 없다**(실측 2026-09-03): `/chainsight` 3/3 전부(`event-grid`·`card-metrics`·`entrypoints`) · `/monitor` 3/4(`scope-chips`·`status-segment`·`list`) · `/portfolio` 1/4(`charts`). 채점은 본문 fallback으로 보완되나 **앵커별 정밀 채점 불가**하고, 가이드 오버레이 하이라이트도 어긋날 수 있다. 가이드 데이터를 실제 값에 맞출지 화면에 앵커를 부착할지는 **화면 소유자 판단**.
+- 🔭 **AGENT-S2-EMPTY-ACCOUNT** (디렉터 결정 대기) — 도그푸딩 계정이 비어 있어 Monitor·포트폴리오가 구조적으로 1/5다(화면 결함 아님). ⒜ 표본 데이터 주입(prod 쓰기·승인 필요) / ⒝ 빈 상태 화면 기준 분리 / ⒞ 추세만 읽기. 결정 전까지 ⒞.
+- 💤 **AGENT-S3 관찰 후보 + 성적 원장** (후보 등재만 — **구현 금지**) — 종목 추천·성적 원장. **착수 전 RC v3.0 분포 재측정 선행 필수**(눈금 [0,100]→[0,1] 전환 후 분포를 모르는 채로 추천 기준을 세울 수 없다).
