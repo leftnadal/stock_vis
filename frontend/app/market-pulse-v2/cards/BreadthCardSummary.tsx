@@ -45,6 +45,10 @@ export function BreadthCardSummary({
               tone="text-slate-700"
             />
           </div>
+          {/* A-1(HUB-V02-S1): 기준 거래일 표기(EOD 하루 지연 정상) — 있을 때만 */}
+          {data.as_of_date ? (
+            <p className="text-[11px] text-slate-400">기준일 {data.as_of_date.slice(5)}</p>
+          ) : null}
           {/* S4: 감각 유추(additive) — 없으면 미렌더 */}
           <SenseNote sense={sense} />
         </div>

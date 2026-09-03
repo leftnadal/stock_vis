@@ -42,6 +42,10 @@ from macro.models.indicators import MarketIndex, MarketIndexPrice
 
 logger = logging.getLogger(__name__)
 
+# A-1(HUB-V02-S1): breadth EOD 지연 허용치. 최신 실데이터일이 오늘-이 값(일)을 넘으면 stale.
+#   평일 1일 지연·주말 최대 3일 지연이 정상 → 4로 관용(그 이상은 수집 정지 신호).
+BREADTH_STALE_LAG_DAYS = 4
+
 
 def _ticker_bar() -> list[dict[str, Any]]:
     """PR-A1 (2026-04-29): GICS 11-sector + BENCHMARK로 그룹 확장.
@@ -71,6 +75,10 @@ def _ticker_bar() -> list[dict[str, Any]]:
                 .values_list("date", "close")[:2]
             )
             last_close = float(rows[0][1]) if rows else None
+            # A-3(HUB-V02-S1): 가격 이력 0행(빈 심볼 — GLD/SLV 등 미수집 ETF)은 스트립에서 제외.
+            #   종전엔 last_close=None을 "—"로 노출 → 사용자에게 무의미한 dangling 항목이었다.
+            if last_close is None:
+                continue
             change_pct = None
             if len(rows) == 2 and rows[1][1] not in (None, 0):
                 change_pct = float((rows[0][1] - rows[1][1]) / rows[1][1] * 100)
@@ -111,7 +119,25 @@ def _anomaly_section(cards) -> dict:
         .first()
     )
     if latest is None:
+        # A-2(HUB-V02-S1): 발동 행 부재를 "정상 확인"과 "입력 데이터 없음"으로 구분(RECON A3).
+        #   CALM 사이클은 행을 안 남기므로, read-time에 anomaly 입력 가용성을 검사(compute-on-read).
+        from apps.market_pulse.anomaly import engine as _anomaly_engine
+
+        ctx = _anomaly_engine.build_context()
+        sources = ctx.sources or {}
+        # 입력이 하나도 OK가 아니면(전부 MISSING or 소스 자체 부재) 판정 불가.
+        evaluated = bool(sources) and any(v == "OK" for v in sources.values())
+        if not evaluated:
+            return {
+                "status": "no_data",
+                "mode": AnomalySignalLog.Mode.CALM,
+                "overview": "판정 불가 — 입력 데이터 대기 중.",
+                "sector_highlight": "",
+                "portfolio_action": "",
+                "fired": [],
+            }
         return {
+            "status": "evaluated",
             "mode": AnomalySignalLog.Mode.CALM,
             "overview": "시장 정상 범위 — 발동 룰 없음.",
             "sector_highlight": "",
@@ -148,6 +174,7 @@ def _anomaly_section(cards) -> dict:
         for r in same_cycle
     ]
     return {
+        "status": "evaluated",
         "mode": latest.mode,
         "overview": latest.body,
         "sector_highlight": "",
@@ -188,12 +215,18 @@ def _regime_card():
 
 
 def _breadth_card():
+    # A-1(HUB-V02-S1): 실데이터(total>0) 최신 스냅샷 우선. 결측일의 빈(0) 스냅샷을
+    #   실데이터로 오인 렌더하지 않는다(RECON A4). 실데이터 전무 → None(진짜 데이터 없음).
     today = django_timezone.localdate()
-    snap = BreadthSnapshot.objects.filter(date=today, universe="SPY").first()
+    snap = (
+        BreadthSnapshot.objects.filter(
+            universe="SPY", date__lte=today, total_count__gt=0
+        )
+        .order_by("-date")
+        .first()
+    )
     if snap is None:
-        snap = BreadthSnapshot.objects.filter(universe="SPY").order_by("-date").first()
-        if snap is None:
-            return None
+        return None
     return {
         "universe": snap.universe,
         "advance": snap.advance_count,
@@ -204,6 +237,8 @@ def _breadth_card():
         "new_low_52w": snap.new_low_52w,
         "ad_line": snap.ad_line,
         "ad_line_change": snap.ad_line_change,
+        # A-1 additive: 이 breadth 수치가 어느 거래일 기준인지(EOD 하루 지연 정상).
+        "as_of_date": snap.date.isoformat(),
     }
 
 
@@ -318,10 +353,19 @@ def _build_payload() -> dict:
     )
     indicator_stale = False
     if cards["breadth"] is not None:
-        snap = BreadthSnapshot.objects.filter(
-            universe="SPY", date=django_timezone.localdate()
-        ).first()
-        if snap is None:
+        # A-1(HUB-V02-S1): breadth는 EOD(하루 지연)라 "오늘 스냅샷 존재"는 신선도 기준이 아니다.
+        #   실데이터 최신일이 허용 지연(주말 포함)을 넘으면 stale. 종전엔 빈 오늘-스냅샷이
+        #   있으면 무조건 fresh로 통과(RECON A4 — 쓰레기 0이 정상 신선으로 통과)했다.
+        latest_real = (
+            BreadthSnapshot.objects.filter(universe="SPY", total_count__gt=0)
+            .order_by("-date")
+            .first()
+        )
+        if (
+            latest_real is None
+            or (django_timezone.localdate() - latest_real.date).days
+            > BREADTH_STALE_LAG_DAYS
+        ):
             indicator_stale = True
 
     status = api_status.derive_status(

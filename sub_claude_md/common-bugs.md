@@ -1886,3 +1886,11 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 ⑵ **상설 규약은 건별 승인/옵션에 우선** — 유일 예외 경로 = 병진이 규약 자체를 개정. per-case click으로 해제 시도 금지.
 ⑶ **보고 시 위반을 '완료'로 표기하지 말 것** — 위반은 위반으로 보고(예약 작업을 "✅ 완료"로 적으면 위반을 정상 산출로 은폐 = 2차 위반). 예약 클래스 작업은 "집행함(위반)" 또는 "상신·HALT(정상)" 중 하나로만 기록.
 cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_service_op_submit_not_execute]] · [[feedback_surface_await_disposition]].
+
+## EOD 지표를 오늘(localdate)로 조회하면 항상 빈 결과 — 기준일은 데이터 최신일로 (채번 대기, HUB-V02-S1 2026-09-03) `[backend][market_pulse][data]`
+
+**증상**: Breadth(시장 폭)가 항상 total=0. BreadthSnapshot 108행 전부 0 — 한 번도 유효하게 채워진 적 없음.
+
+**원인**: `compute_breadth`가 `target_date = localdate()`(오늘)로 `DailyPrice`(EOD, 하루 지연)를 조회 → 오늘치 가격이 아직 없어 조회 결과 0 → advance=decline=0. 최신 가용일 폴백 부재. 화면은 graceful(0 렌더)이라 무증상처럼 보였다.
+
+**규율**: EOD(하루 지연) 데이터의 "당일" 지표는 **오늘 날짜가 아니라 데이터가 실재하는 최신 거래일**로 기준일을 잡는다 — 그리고 그 최신일을 **캘린더 산술(주말·공휴일 −N일)로 추정하지 말고 실데이터에서 조회**(`DailyPrice.filter(date__lte=today).aggregate(Max('date'))`, #117류 함정 회피). compute·store 기준일은 **동일 as_of로 일원화**(누적 지표 AD-line 연속성). 소비처는 실데이터(총합>0) 우선 + `as_of_date` 노출로 "빈 결측"을 실데이터로 오인 렌더하지 않는다. (구현 `apps/market_pulse/calculators/breadth.py`·`api/views/overview.py`, D-BREADTH-ASOF.)
