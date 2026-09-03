@@ -35,10 +35,31 @@ CHAIN_PARAMS = {
     "truth_domain": [0.0, 1.0],        # FE 눈금 표기용(× 100)
 }
 
-_CACHE_KEY = "monitor:chain_feed:v1:{symbol}"
+_CACHE_KEY = "monitor:chain_feed:v2:{symbol}"
 _CACHE_TTL = 15 * 60  # 15분 (event_feed 선례)
 
 _SEED_KINDS = {"earnings", "dividend"}  # 위젯 pill 재료
+
+# CHAIN-1a: 방향성 관계유형의 시드 기준 역할 라벨 도출(부호 중립 = 호재/악재 금지, 역할 라벨은 허용).
+# SEC 파이프라인 규약(services/sec_pipeline/tasks.py:370): SUPPLIES_TO/DEPENDS_ON = a=source→b=target,
+# canonical_direction "a→b" 정규형. 즉 a→b SUPPLIES_TO = a가 b에 공급(a=공급사, b=고객).
+# ACQUIRED = 인수자/피인수자 규약이 코드·docstring에 불명확 → 게이트대로 역할 도출 제외(중립 유지).
+_DIRECTIONAL_TYPES = {"SUPPLIES_TO", "DEPENDS_ON"}
+
+
+def _seed_role(relation_type: str, direction: str, seed: str, sym_a: str, sym_b: str) -> str | None:
+    """이웃의 시드 기준 역할 키(supplier/customer/dependency/dependent) | None(중립)."""
+    if relation_type not in _DIRECTIONAL_TYPES or direction not in ("a→b", "b→a"):
+        return None
+    neighbor = sym_b if sym_a == seed else sym_a
+    # "from" 측(공급 주체·의존 주체) 심볼: a→b면 a, b→a면 b.
+    origin = sym_a if direction == "a→b" else sym_b
+    if relation_type == "SUPPLIES_TO":
+        # origin이 공급 주체. 이웃이 공급 주체 → 공급사, 시드가 공급 주체 → 이웃=고객.
+        return "supplier" if origin == neighbor else "customer"
+    # DEPENDS_ON: origin이 의존 주체(A depends on B의 A). 이웃이 의존 주체 → 이웃=의존 기업,
+    # 시드가 의존 주체 → 이웃=의존 대상.
+    return "dependent" if origin == neighbor else "dependency"
 
 
 def _et_today() -> _dt.date:
@@ -49,7 +70,8 @@ def _neighbors(symbol: str) -> list[dict]:
     """RelationConfidence에서 (symbol_a=시드 OR symbol_b=시드) AND confirmed AND truth≥임계.
 
     truth_score 내림차순 top-k. 상대 심볼 정규화(시드가 a든 b든 상대편).
-    반환 = [{symbol, relation_type, truth_score}] — 부호 중립(direction 필드 없음).
+    반환 = [{symbol, relation_type, truth_score, role}] — role = 시드 기준 역할(방향성 유형만·
+    나머지 None). 부호 중립: 방향/센티먼트 원값은 미노출(role은 관계 역할 라벨, 판단 아님).
     """
     from apps.chain_sight.models.relation_discovery import RelationConfidence
 
@@ -60,7 +82,9 @@ def _neighbors(symbol: str) -> list[dict]:
             truth_score__gte=CHAIN_PARAMS["truth_min"],
         )
         .order_by("-truth_score", "id")
-        .values("symbol_a", "symbol_b", "relation_type", "truth_score")[: CHAIN_PARAMS["top_k"]]
+        .values("symbol_a", "symbol_b", "relation_type", "truth_score", "canonical_direction")[
+            : CHAIN_PARAMS["top_k"]
+        ]
     )
     out: list[dict] = []
     for r in rows:
@@ -70,6 +94,10 @@ def _neighbors(symbol: str) -> list[dict]:
                 "symbol": other,
                 "relation_type": r["relation_type"],
                 "truth_score": r["truth_score"],
+                "role": _seed_role(
+                    r["relation_type"], r["canonical_direction"], symbol,
+                    r["symbol_a"], r["symbol_b"],
+                ),
             }
         )
     return out
@@ -79,7 +107,8 @@ def build_chain_feed(user, symbol: str) -> dict:
     """관계망 이벤트 피드. 사용자 무관(심볼 키 데이터) — user는 시그니처 일관성용.
 
     반환(JSON 직렬화·캐시 안전):
-      {seed, as_of, seed_events[], seed_next_event, neighbors[], items[], after_count, params}
+      {seed, as_of, seed_events[], seed_next_event, seed_earnings_event, window_end,
+       neighbors[], items[], after_count, params}
     """
     symbol = (symbol or "").upper()
     if not symbol:
@@ -101,6 +130,8 @@ def _empty(symbol: str) -> dict:
         "as_of": timezone.now().astimezone(_ET).isoformat(),
         "seed_events": [],
         "seed_next_event": None,
+        "seed_earnings_event": None,
+        "window_end": None,
         "neighbors": [],
         "items": [],
         "after_count": 0,
@@ -126,11 +157,13 @@ def _assemble(symbol: str) -> dict:
         (it for it in seed_all if it.kind in _SEED_KINDS),
         key=lambda it: (it.event_date_et, it._sort_time),
     )
-    seed_next = seed_evts[0] if seed_evts else None
+    seed_next = seed_evts[0] if seed_evts else None  # 배너 = 다음 이벤트(유형 무관)
+    # CHAIN-1a: 창 종점 = 시드 다음 **어닝**(배당은 창을 닫지 않음 — GOOGL 배당창 아티팩트 수리).
+    seed_earn = next((it for it in seed_evts if it.kind == "earnings"), None)
 
-    # ── 타임라인 창: 오늘 → 시드 다음 이벤트일 (없으면 오늘 + after_days) ──
-    if seed_next is not None:
-        window_end = seed_next.event_date_et
+    # ── 타임라인 창: 오늘 → 시드 다음 어닝일 (없으면 오늘 + after_days) ──
+    if seed_earn is not None:
+        window_end = seed_earn.event_date_et
     else:
         window_end = et_today + _dt.timedelta(days=CHAIN_PARAMS["after_days"])
 
@@ -141,14 +174,20 @@ def _assemble(symbol: str) -> dict:
         result = _empty(symbol)
         result["seed_events"] = [it.as_dict() for it in seed_evts]
         result["seed_next_event"] = _seed_next_dict(seed_next)
+        result["seed_earnings_event"] = _seed_next_dict(seed_earn)
+        result["window_end"] = window_end.isoformat()
         return result
 
-    # 이웃 심볼별 대표 관계(최고 truth) — items 뱃지용
+    # 이웃 심볼별 대표 관계(최고 truth) — items 뱃지용(role 포함)
     best_rel: dict[str, dict] = {}
     for n in neighbors:
         cur = best_rel.get(n["symbol"])
         if cur is None or n["truth_score"] > cur["truth_score"]:
-            best_rel[n["symbol"]] = {"type": n["relation_type"], "truth_score": n["truth_score"]}
+            best_rel[n["symbol"]] = {
+                "type": n["relation_type"],
+                "truth_score": n["truth_score"],
+                "role": n["role"],
+            }
     nbr_syms = set(best_rel.keys())
 
     # ── items: 창 내 이웃 어닝 (EventItem 재사용 + relation 확장) ──
@@ -163,7 +202,7 @@ def _assemble(symbol: str) -> dict:
     for it in sorted(earnings, key=lambda x: (x.event_date_et, x.symbol or "")):
         if it.event_date_et <= window_end:
             d = it.as_dict()
-            d["relation"] = best_rel.get(it.symbol)  # {type, truth_score} — 부호 중립
+            d["relation"] = best_rel.get(it.symbol)  # {type, truth_score, role} — 부호 중립
             items.append(d)
         else:
             after_count += 1  # 창 이후 ~ 오늘+after_days 이웃 어닝
@@ -173,6 +212,8 @@ def _assemble(symbol: str) -> dict:
         "as_of": timezone.now().astimezone(_ET).isoformat(),
         "seed_events": [it.as_dict() for it in seed_evts],
         "seed_next_event": _seed_next_dict(seed_next),
+        "seed_earnings_event": _seed_next_dict(seed_earn),
+        "window_end": window_end.isoformat(),
         "neighbors": neighbors,
         "items": items,
         "after_count": after_count,
@@ -180,11 +221,11 @@ def _assemble(symbol: str) -> dict:
     }
 
 
-def _seed_next_dict(seed_next) -> dict | None:
-    if seed_next is None:
+def _seed_next_dict(evt) -> dict | None:
+    if evt is None:
         return None
     return {
-        "kind": seed_next.kind,
-        "event_date_et": seed_next.event_date_et.isoformat(),
-        "d_day": seed_next.d_day,
+        "kind": evt.kind,
+        "event_date_et": evt.event_date_et.isoformat(),
+        "d_day": evt.d_day,
     }

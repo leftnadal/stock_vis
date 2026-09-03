@@ -17,8 +17,8 @@ from packages.shared.stocks.models import CalendarEvent
 User = get_user_model()
 URL = "/api/v1/monitor/calendar/chain/"
 CHAIN_KEYS = {
-    "seed", "as_of", "seed_events", "seed_next_event",
-    "neighbors", "items", "after_count", "params",
+    "seed", "as_of", "seed_events", "seed_next_event", "seed_earnings_event",
+    "window_end", "neighbors", "items", "after_count", "params",
 }
 
 

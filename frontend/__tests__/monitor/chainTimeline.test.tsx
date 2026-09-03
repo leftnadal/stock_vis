@@ -31,7 +31,11 @@ function evt(overrides: Partial<EventItem>): EventItem {
 }
 
 function chainItem(overrides: Partial<ChainEventItem>): ChainEventItem {
-  return { ...evt({}), relation: { type: 'SUPPLIES_TO', truth_score: 0.93 }, ...overrides }
+  return {
+    ...evt({}),
+    relation: { type: 'SUPPLIES_TO', truth_score: 0.93, role: 'supplier' },
+    ...overrides,
+  }
 }
 
 function feed(overrides: Partial<ChainFeed>): ChainFeed {
@@ -40,7 +44,9 @@ function feed(overrides: Partial<ChainFeed>): ChainFeed {
     as_of: '2026-09-03T00:00:00-04:00',
     seed_events: [],
     seed_next_event: { kind: 'earnings', event_date_et: '2026-11-04', d_day: 62 },
-    neighbors: [{ symbol: 'NBR', relation_type: 'SUPPLIES_TO', truth_score: 0.93 }],
+    seed_earnings_event: { kind: 'earnings', event_date_et: '2026-11-04', d_day: 62 },
+    window_end: '2026-11-04',
+    neighbors: [{ symbol: 'NBR', relation_type: 'SUPPLIES_TO', truth_score: 0.93, role: 'supplier' }],
     items: [chainItem({})],
     after_count: 0,
     params: {},
@@ -58,6 +64,20 @@ describe('RelationBadge', () => {
   it('미지 유형 → 원문 코드(날조 금지)', () => {
     render(<RelationBadge relationType="MYSTERY_REL" truthScore={0.5} />)
     expect(screen.getByTestId('relation-badge-MYSTERY_REL')).toHaveTextContent('MYSTERY_REL')
+  })
+
+  it('CHAIN-1a: 역할(방향성 도출) 우선 — supplier=공급사·customer=고객', () => {
+    const { rerender } = render(
+      <RelationBadge relationType="SUPPLIES_TO" truthScore={0.9} role="supplier" />,
+    )
+    expect(screen.getByTestId('relation-badge-SUPPLIES_TO')).toHaveTextContent('공급사')
+    rerender(<RelationBadge relationType="SUPPLIES_TO" truthScore={0.9} role="customer" />)
+    expect(screen.getByTestId('relation-badge-SUPPLIES_TO')).toHaveTextContent('고객')
+  })
+
+  it('CHAIN-1a: role=null → 관계 유형 중립 라벨 폴백', () => {
+    render(<RelationBadge relationType="SUPPLIES_TO" truthScore={0.9} role={null} />)
+    expect(screen.getByTestId('relation-badge-SUPPLIES_TO')).toHaveTextContent('공급망')
   })
 })
 

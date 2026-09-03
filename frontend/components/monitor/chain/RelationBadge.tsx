@@ -1,9 +1,19 @@
-// 관계 뱃지 (EVT-CHAIN-1). relation_type → 중립 한글 라벨 + truth 점수.
-// 부호 중립(§6): 모든 관계 유형이 단일 색(teal) — 방향/센티먼트 색 금지. truth는 중립 회색.
+// 관계 뱃지 (EVT-CHAIN-1 / CHAIN-1a). 시드 기준 역할(방향성 유형) 우선, 아니면 관계 유형 라벨.
+// 부호 중립(앵커 §6): 금지 대상은 호재/악재 판단 — 관계 역할 라벨(공급사/고객/피어)은 허용.
+// 단일 색(teal) — 유형·역할별 색 분기 없음(방향 색 금지). truth는 중립 회색.
 // 라벨 매핑 = §0-4⑴ 실측 RELATION_TYPE_CHOICES 기준. 미지 유형 = 원문 코드(날조 금지).
 import { badgeClass } from '@/components/monitor/calendar/eventColors';
+import type { ChainRole } from '@/types/chainFeed';
 
-// RelationConfidence.RELATION_TYPE_CHOICES 실측(방향 함의 제거한 중립 라벨).
+// 시드 기준 역할 라벨(SEC 방향 규약 도출·CHAIN-1a). ACQUIRED는 규약 불명확 → 역할 없음(중립).
+const ROLE_LABEL: Record<ChainRole, string> = {
+  supplier: '공급사', // 이웃 → 시드 공급
+  customer: '고객', // 시드 → 이웃 공급
+  dependency: '의존 대상', // 시드 → 이웃 의존
+  dependent: '의존 기업', // 이웃 → 시드 의존
+};
+
+// RelationConfidence.RELATION_TYPE_CHOICES 실측(대칭 유형·역할 없을 때 폴백).
 const RELATION_LABEL: Record<string, string> = {
   PEER_OF: '피어',
   SUPPLIES_TO: '공급망',
@@ -25,10 +35,12 @@ const TRUTH_CLASS =
 interface RelationBadgeProps {
   relationType: string;
   truthScore: number; // 도메인 [0,1] → 표시 ×100
+  role?: ChainRole | null; // 방향성 유형 역할(있으면 우선)
 }
 
-export function RelationBadge({ relationType, truthScore }: RelationBadgeProps) {
-  const label = RELATION_LABEL[relationType] ?? relationType; // 미지 = 원문(날조 금지)
+export function RelationBadge({ relationType, truthScore, role }: RelationBadgeProps) {
+  // 역할(방향성 도출) 우선 → 없으면 관계 유형 라벨 → 미지는 원문(날조 금지).
+  const label = (role && ROLE_LABEL[role]) || RELATION_LABEL[relationType] || relationType;
   const shown = Math.round(truthScore * 100);
   return (
     <>

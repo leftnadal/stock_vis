@@ -16,7 +16,11 @@ function ChainRow({ item }: { item: ChainEventItem }) {
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="font-bold">{item.symbol}</span>
         {item.relation && (
-          <RelationBadge relationType={item.relation.type} truthScore={item.relation.truth_score} />
+          <RelationBadge
+            relationType={item.relation.type}
+            truthScore={item.relation.truth_score}
+            role={item.relation.role}
+          />
         )}
       </div>
       <div className="text-xs text-gray-600 dark:text-gray-300">
@@ -66,7 +70,7 @@ export function ChainTimeline({ feed }: Props) {
   // 이웃 0(엣지 미달) → 타임라인 섹션 자체 비표시.
   if (feed.neighbors.length === 0) return null;
 
-  const { seed, seed_next_event: next, items, after_count } = feed;
+  const { seed, seed_next_event: next, seed_earnings_event: seedEarn, items, after_count } = feed;
 
   return (
     <div data-testid="chain-timeline">
@@ -90,7 +94,7 @@ export function ChainTimeline({ feed }: Props) {
 
       <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
         <b className="text-sm text-gray-800 dark:text-gray-200">관계망 이벤트</b>
-        <span>· RelationConfidence 이웃 · truth ≥ 85 · confirmed · top-10 · 어닝만 · 부호 중립</span>
+        <span>· RelationConfidence 이웃 · truth ≥ 0.85 · confirmed · top-10 · 어닝만 · 부호 중립</span>
       </div>
 
       {items.map((it) => (
@@ -106,7 +110,7 @@ export function ChainTimeline({ feed }: Props) {
         </div>
       )}
 
-      {next && <SeedRow seed={seed} next={next} />}
+      {seedEarn && <SeedRow seed={seed} next={seedEarn} />}
     </div>
   );
 }
