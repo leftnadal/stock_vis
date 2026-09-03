@@ -71,11 +71,25 @@ class GuideTarget:
     title: str
     review_status: str
     anchors: list[str] = field(default_factory=list)
+    # ── 2단계(AGENT-S2) 루브릭 입력 ──
+    # coreQuestion = "정병진의 질문"의 단일 출처. 이것을 바꾸면 채점 기준이 바뀐다.
+    core_question: str = ""
+    learnings: list[str] = field(default_factory=list)
+    flow_stage: int = 0
+
+    @property
+    def is_confirmed(self) -> bool:
+        """병진 검수 승인분만 루브릭 대상(draft는 문안이 확정되지 않았다)."""
+        return self.review_status == "confirmed"
 
 
 _ID = re.compile(r"id:\s*'([^']+)'")
 _FIELD = re.compile(r"(\w+):\s*'((?:[^'\\]|\\.)*)'")
 _ANCHOR = re.compile(r"anchor:\s*'([^']+)'")
+# learnings: [ '...', '...' ] — 배열 리터럴이라 _FIELD(단일 문자열)로는 안 잡힌다.
+_LEARNINGS_BLOCK = re.compile(r"learnings:\s*\[(.*?)\]", re.DOTALL)
+_QUOTED = re.compile(r"'((?:[^'\\]|\\.)*)'")
+_FLOW_STAGE = re.compile(r"flowStage:\s*(\d+)")
 
 
 def load_guide_targets(guide_dir: Path | None = None) -> list[GuideTarget]:
@@ -98,6 +112,11 @@ def load_guide_targets(guide_dir: Path | None = None) -> list[GuideTarget]:
             route = fields.get("route")
             if not route:
                 continue
+            learnings: list[str] = []
+            lm = _LEARNINGS_BLOCK.search(block)
+            if lm:
+                learnings = [x.replace("\\'", "'") for x in _QUOTED.findall(lm.group(1))]
+            fm = _FLOW_STAGE.search(block)
             out.append(
                 GuideTarget(
                     id=fields.get("id", ""),
@@ -105,6 +124,9 @@ def load_guide_targets(guide_dir: Path | None = None) -> list[GuideTarget]:
                     title=fields.get("title", ""),
                     review_status=fields.get("reviewStatus", "unknown"),
                     anchors=_ANCHOR.findall(block),
+                    core_question=fields.get("coreQuestion", ""),
+                    learnings=learnings,
+                    flow_stage=int(fm.group(1)) if fm else 0,
                 )
             )
     if not out:
@@ -119,3 +141,12 @@ def all_route_targets(guide_dir: Path | None = None) -> list[tuple[str, str, str
     """(키, 라우트, 표시명) — 가이드 화면 + 부가 라우트."""
     rows = [(g.id, g.route, g.title) for g in load_guide_targets(guide_dir)]
     return rows + list(EXTRA_ROUTES)
+
+
+def rubric_targets(guide_dir: Path | None = None) -> list[GuideTarget]:
+    """2단계 채점 대상 = confirmed + coreQuestion 보유 화면, flowStage 순.
+
+    draft는 문안이 확정되지 않아 채점 기준으로 쓰지 않는다(D-AGENT-S2).
+    """
+    rows = [g for g in load_guide_targets(guide_dir) if g.is_confirmed and g.core_question]
+    return sorted(rows, key=lambda g: (g.flow_stage, g.route))

@@ -2,13 +2,17 @@
 set -euo pipefail
 
 # ============================================================
-# Stock-Vis 야간 도그푸딩 에이전트 — 1단계(정량 체크 + 메일)
+# Stock-Vis 야간 도그푸딩 에이전트 — 1단계(정량) + 2단계(루브릭 채점)
 #
 # 05:20 KST 실행. 미국장 휴장일(주말·NYSE 휴장)은 점검을 건너뛴다 — 장이 안 열린
 # 날은 EOD 데이터가 갱신되지 않아 신선도 판정이 무의미하고, 매일 오는 메일에
 # 의미 없는 통지가 섞이면 읽히지 않기 때문이다. 강제 실행은 --force.
 #
-# read-only: DB 쓰기 없음, 코드 수정 없음. tier1~3 스크립트와 독립.
+# 2단계(AGENT-S2): 렌더 수집(Playwright) → 루브릭 채점(claude -p 1회) → 메일에 병합.
+# 2단계가 실패해도 1단계 점검과 메일은 그대로 나간다(격리).
+#
+# read-only: DB 쓰기 없음, 코드 수정 없음. GET 네비게이션과 로그인 외 상태 변경 금지.
+# tier1~3 스크립트·healthcheck 에이전트와 독립.
 # ============================================================
 
 FORCE="${1:-}"
@@ -68,7 +72,25 @@ RC_CHECK=0
 "$VENV_PY" -m auto_agent_system.dogfood.check_quant --out-dir "$OUT_DIR" >>"$LOG_FILE" 2>&1 || RC_CHECK=$?
 log "정량 체크 종료코드 $RC_CHECK"
 
-# ── ⑵ diff + 메일 (체크가 fail이어도 보고는 해야 하므로 계속) ──
+# ── ⑵ 렌더 수집 (AGENT-S2, 2단계) ─────────────────────────────
+# 2·3단계 실패는 경고로 남기고 메일은 반드시 발송한다(1단계와 격리).
+RC_RENDER=0
+"$VENV_PY" -m auto_agent_system.dogfood.collect_rendered --out-dir "$OUT_DIR" >>"$LOG_FILE" 2>&1 || RC_RENDER=$?
+log "렌더 수집 종료코드 $RC_RENDER"
+[ "$RC_RENDER" -ne 0 ] && log "⚠️  렌더 수집에 문제 있음 — 루브릭은 '측정 불가'로 보고됩니다."
+
+# ── ⑶ 루브릭 채점 (AGENT-S2) ──────────────────────────────────
+RC_SCORE=0
+if [ "$RC_RENDER" -eq 0 ]; then
+  "$VENV_PY" -m auto_agent_system.dogfood.score_rubric --out-dir "$OUT_DIR" >>"$LOG_FILE" 2>&1 || RC_SCORE=$?
+  log "루브릭 채점 종료코드 $RC_SCORE"
+  [ "$RC_SCORE" -ne 0 ] && log "⚠️  채점 실패 — 루브릭은 '측정 불가'로 보고됩니다."
+else
+  log "⏭  렌더 수집 실패로 채점 생략."
+  RC_SCORE=1
+fi
+
+# ── ⑷ diff + 메일 (체크가 fail이어도 보고는 해야 하므로 계속) ──
 RC_MAIL=0
 "$VENV_PY" -m auto_agent_system.dogfood.report_mail --out-dir "$OUT_DIR" >>"$LOG_FILE" 2>&1 || RC_MAIL=$?
 log "메일 종료코드 $RC_MAIL"

@@ -1606,3 +1606,10 @@
 - 🛑 **[EVT-CORR-3B-lite] STEP B B-2 HALT (2026-09-01)** — 결함 행(stale & last_seen≥마지막 구코드 run 08-31 21:45 UTC) = **0건**(가설 ≈74와 배치). 230개 stale 전부 last_seen≤08-30 = FMP 드롭 정당 stale(치유 대상 아님). "47→74"는 broad 임계 아티팩트. **B-1 치유 미집행**(강행 시 정당 stale 오염). 지시서 docs 정착 `403df724`. **처분 대기**: 백로그 0이므로 STEP B 종결(치유 불요)로 볼지, EVT-OBS-2만 유지할지.
 - ⏳ **[EVT-CORR-3 A-2 텔레메트리] 이연** — 성분별 `revived` 카운터(재관측 복원 수 집계)는 다음 수집기 접촉 슬라이스에 합류(EVT-CORR-3B-lite는 코드 0 범위).
 - 🔭 **[EVT-OBS-2] CORR-3 복원 관측 게이트** — fix(A-1)는 worker 트리(9caf9e37⊇ccd7e8dd) 배포됨·미실행. 검증 예정 **09-02(KST 아침)**: 다음 발화(09-01 17:45 ET) 후 ⑴ stale 재발이 정당 드롭만인지 ⑵ 드롭→재리스트 행의 자연 복원(restored) 발생 여부 = SQL 스냅샷(발화 전 vs 후) 대조. 현재 결함 백로그 0.
+
+## AGENT-S2 (2026-09-03)
+
+- 🟡 **AGENT-S2 야간 도그푸딩 2단계(루브릭 채점)** (@infra) — **구현·랜딩 완료 · `sv sync` 상신 대기**. 상신 `scratchpad/AGENT-S2_상신_20260903.md`. 신설 `collect_rendered.py`(Playwright 렌더 수집)·`score_rubric.py`(claude -p 1회 일괄 채점)·`render_screens.mjs` + `report_mail.py` 루브릭 섹션 + `run_dogfood.sh` 2단계 삽입. **plist 무변경**(같은 05:20 잡). 유닛 28 + 회귀 179 passed(선존 2건 = `test_targets.py`, 무변경 트리 동일). **수동 실증**: 렌더 5/5(인증) · 채점 평균 2.8/5 무효 0 · **인용 5/5 실제 화면 텍스트 일치** · 메일 실발송 1통. **묶음 권고**: `OPS-HC-WIRE` 상신과 함께 `sv sync` 1회.
+- 🔴 **GUIDE-ANCHOR-DRIFT** (@frontend) — 가이드 데이터의 `anchor` 이름 **7건이 실제 DOM에 없다**(실측 2026-09-03): `/chainsight` 3/3 전부(`event-grid`·`card-metrics`·`entrypoints`) · `/monitor` 3/4(`scope-chips`·`status-segment`·`list`) · `/portfolio` 1/4(`charts`). 채점은 본문 fallback으로 보완되나 **앵커별 정밀 채점 불가**하고, 가이드 오버레이 하이라이트도 어긋날 수 있다. 가이드 데이터를 실제 값에 맞출지 화면에 앵커를 부착할지는 **화면 소유자 판단**.
+- 🔭 **AGENT-S2-EMPTY-ACCOUNT** (디렉터 결정 대기) — 도그푸딩 계정이 비어 있어 Monitor·포트폴리오가 구조적으로 1/5다(화면 결함 아님). ⒜ 표본 데이터 주입(prod 쓰기·승인 필요) / ⒝ 빈 상태 화면 기준 분리 / ⒞ 추세만 읽기. 결정 전까지 ⒞.
+- 💤 **AGENT-S3 관찰 후보 + 성적 원장** (후보 등재만 — **구현 금지**) — 종목 추천·성적 원장. **착수 전 RC v3.0 분포 재측정 선행 필수**(눈금 [0,100]→[0,1] 전환 후 분포를 모르는 채로 추천 기준을 세울 수 없다).

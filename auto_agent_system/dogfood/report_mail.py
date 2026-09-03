@@ -19,7 +19,7 @@ from typing import Any
 from .check_quant import OK, OUT_DIR
 
 MAIL_TO = os.getenv("DOGFOOD_MAIL_TO", "jinie545@gmail.com")
-FOOTER = "1단계(정량)입니다. 루브릭 채점·관찰 후보는 2·3단계에서 추가됩니다."
+FOOTER = "1단계(정량) + 2단계(루브릭 채점)입니다. 관찰 후보·성적 원장은 3단계에서 추가됩니다."
 
 _FNAME = re.compile(r"^quant_(\d{8})\.json$")
 
@@ -129,7 +129,80 @@ def _summary_lines(report: dict[str, Any], groups: dict[str, Any]) -> list[str]:
     return lines
 
 
-def render_body(report: dict[str, Any], groups: dict[str, Any]) -> str:
+# ── AGENT-S2: 루브릭 채점 섹션 ─────────────────────────────────────────────
+_RUBRIC_FNAME = re.compile(r"^rubric_(\d{8})\.json$")
+
+
+def load_rubric(out_dir: Path, day: date | None = None) -> dict[str, Any] | None:
+    """오늘자 루브릭 리포트. 없으면 None(2단계 실패해도 1단계 메일은 산다)."""
+    target = day or date.today()
+    path = out_dir / f"rubric_{target:%Y%m%d}.json"
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _delta_mark(delta: int | None) -> str:
+    if delta is None:
+        return "  "
+    if delta > 0:
+        return f"▲{delta}"
+    if delta < 0:
+        return f"▼{abs(delta)}"
+    return " ="
+
+
+def render_rubric_section(rubric: dict[str, Any] | None, reason: str = "") -> list[str]:
+    """루브릭 섹션. 산출물이 없으면 사유 한 줄만 남긴다(행위보존)."""
+    if rubric is None:
+        return ["■ 루브릭 채점", f"  · 측정 불가({reason or '산출물 없음'})", ""]
+
+    scores = rubric.get("scores") or []
+    lines = ["■ 루브릭 채점 — 이 화면이 오늘 데이터로 내 질문에 답했는가"]
+    if not rubric.get("authenticated", True):
+        lines.append("  ⚠️ 미인증 렌더 — 로그인 필요한 화면은 빈 상태로 채점됐습니다.")
+
+    for row in scores:
+        if row.get("invalid"):
+            lines.append(f"  · {row.get('title', row.get('id'))} — 채점 불가({row['invalid']})")
+            continue
+        lines.append(
+            f"  · {row.get('title', row.get('id'))} — {row.get('score')}/5 {_delta_mark(row.get('delta'))}"
+        )
+
+    worst = min(
+        (r for r in scores if r.get("score") is not None),
+        key=lambda r: r["score"],
+        default=None,
+    )
+    if worst is not None:
+        lines += ["", f"  최저 화면: {worst.get('title')} ({worst['score']}/5)"]
+        if worst.get("reason"):
+            lines.append(f"    근거: {worst['reason']}")
+        if worst.get("quote"):
+            lines.append(f"    화면 인용: \"{worst['quote'][:160]}\"")
+
+    wish = (rubric.get("wish") or "").strip()
+    if wish:
+        lines += ["", f"  있으면 좋겠다: {wish}"]
+
+    invalid = rubric.get("invalid_count") or 0
+    if invalid:
+        lines.append(f"  (무효 채점 {invalid}건 — 인용 없음/불일치는 점수로 세지 않습니다)")
+    lines.append("")
+    return lines
+
+
+def render_body(
+    report: dict[str, Any],
+    groups: dict[str, Any],
+    rubric: dict[str, Any] | None = None,
+    rubric_skip_reason: str = "",
+) -> str:
     parts: list[str] = list(_summary_lines(report, groups))
     body = ["\n".join(parts), ""]
 
@@ -158,11 +231,13 @@ def render_body(report: dict[str, Any], groups: dict[str, Any]) -> str:
             body.append(f"  {check.get('status', '?'):>4}  {key:<34} {check.get('note', '')}")
         body.append("")
 
+    body += render_rubric_section(rubric, rubric_skip_reason)
+
     body.append(FOOTER)
     return "\n".join(body)
 
 
-def render_subject(report: dict[str, Any]) -> str:
+def render_subject(report: dict[str, Any], rubric: dict[str, Any] | None = None) -> str:
     s = report.get("summary") or {}
     run = report.get("run_date") or ""
     try:
@@ -170,7 +245,11 @@ def render_subject(report: dict[str, Any]) -> str:
         stamp = f"{d.month}/{d.day}"
     except ValueError:
         stamp = run
-    return f"Stock-Vis 야간 점검 — {stamp} (정량 {s.get('passed')}/{s.get('total')} 통과)"
+    base = f"Stock-Vis 야간 점검 — {stamp} (정량 {s.get('passed')}/{s.get('total')}"
+    avg = (rubric or {}).get("average")
+    if avg is not None:
+        return f"{base} · 루브릭 평균 {avg}/5)"
+    return f"{base} 통과)"
 
 
 def build_mail(out_dir: Path | None = None) -> tuple[str, str, dict[str, Any]]:
@@ -179,7 +258,14 @@ def build_mail(out_dir: Path | None = None) -> tuple[str, str, dict[str, Any]]:
         raise SystemExit("리포트가 없습니다 — check_quant.py를 먼저 실행하세요.")
     report = history[-1][1]
     groups = classify(history)
-    return render_subject(report), render_body(report, groups), groups
+    d = out_dir or OUT_DIR
+    rubric = load_rubric(d)
+    reason = "" if rubric else "2단계 산출물 없음(렌더/채점 실패 또는 미실행)"
+    return (
+        render_subject(report, rubric),
+        render_body(report, groups, rubric, reason),
+        groups,
+    )
 
 
 def send(subject: str, body: str, to: str = MAIL_TO) -> int:
