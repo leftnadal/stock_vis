@@ -3,6 +3,10 @@
 import type { TickerItem } from '@/lib/api/marketPulseV2'
 import { DIRECTION_TEXT } from '@/components/common/colorSemantics'
 
+// A-3(HUB-V02-S1): FMP 현물 심볼 → 한글 표기. 금·은은 GCUSD/SIUSD가 실데이터 소스
+//   (ETF GLD/SLV는 0행 — 배선 교정으로 스트립 진입 예정). 원 심볼은 사용자에게 불친절.
+const SYMBOL_LABEL: Record<string, string> = { GCUSD: '금', SIUSD: '은' }
+
 function formatPct(v: number | null) {
   if (v === null || Number.isNaN(v)) return '—'
   const sign = v > 0 ? '+' : ''
@@ -26,7 +30,7 @@ export function TickerBar({ items }: { items: TickerItem[] }) {
       <ul className="flex gap-4 px-2 py-2 whitespace-nowrap text-sm">
         {items.map((it) => (
           <li key={it.symbol} className="flex items-baseline gap-1.5">
-            <span className="font-semibold text-slate-700">{it.symbol}</span>
+            <span className="font-semibold text-slate-700">{SYMBOL_LABEL[it.symbol] ?? it.symbol}</span>
             <span className="text-slate-500">
               {it.last_close !== null ? it.last_close.toFixed(2) : '—'}
             </span>

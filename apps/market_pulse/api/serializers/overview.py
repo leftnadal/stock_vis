@@ -50,6 +50,8 @@ class AnomalyItemSerializer(serializers.Serializer):
 
 
 class AnomalySectionSerializer(serializers.Serializer):
+    # A-2(HUB-V02-S1): 'evaluated'(정상 확인) vs 'no_data'(입력 없음) 구분. additive.
+    status = serializers.CharField(required=False)
     mode = serializers.CharField()
     overview = serializers.CharField(allow_blank=True)
     sector_highlight = serializers.CharField(allow_blank=True)
@@ -76,6 +78,8 @@ class BreadthCardSerializer(serializers.Serializer):
     new_low_52w = serializers.IntegerField()
     ad_line = serializers.IntegerField()
     ad_line_change = serializers.IntegerField()
+    # A-1(HUB-V02-S1): 이 breadth 수치의 기준 거래일(EOD 하루 지연 정상). additive.
+    as_of_date = serializers.CharField(required=False, allow_null=True)
 
 
 class SectorCardItemSerializer(serializers.Serializer):
