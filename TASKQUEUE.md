@@ -1606,7 +1606,28 @@
 - ✅ **OPS-GUARD-S1-FALSEPOS** — `H-LAUNCHD-TREE` 오탐 13건 해소. pg-backup ERROR가 걷히자 가려져 있던 WARN이 드러남(`nightly` plist의 `$NVM_DIR/nvm.sh` 뒤 조각·한국어 주석 슬래시). 정규식에 **토큰 경계 요구** + 경로 끝 셸 구분자 트림. 회귀 테스트 3건 추가(유닛 40 passed). 교훈 = **ERROR가 WARN을 가린다** — 새 점검은 결함을 고친 뒤의 출력까지 확인해야 신뢰도를 안다.
 - 🛑 **[EVT-CORR-3B-lite] STEP B B-2 HALT (2026-09-01)** — 결함 행(stale & last_seen≥마지막 구코드 run 08-31 21:45 UTC) = **0건**(가설 ≈74와 배치). 230개 stale 전부 last_seen≤08-30 = FMP 드롭 정당 stale(치유 대상 아님). "47→74"는 broad 임계 아티팩트. **B-1 치유 미집행**(강행 시 정당 stale 오염). 지시서 docs 정착 `403df724`. **처분 대기**: 백로그 0이므로 STEP B 종결(치유 불요)로 볼지, EVT-OBS-2만 유지할지.
 - ⏳ **[EVT-CORR-3 A-2 텔레메트리] 이연** — 성분별 `revived` 카운터(재관측 복원 수 집계)는 다음 수집기 접촉 슬라이스에 합류(EVT-CORR-3B-lite는 코드 0 범위).
-- 🔭 **[EVT-OBS-2] CORR-3 복원 관측 게이트** — fix(A-1)는 worker 트리(9caf9e37⊇ccd7e8dd) 배포됨·미실행. 검증 예정 **09-02(KST 아침)**: 다음 발화(09-01 17:45 ET) 후 ⑴ stale 재발이 정당 드롭만인지 ⑵ 드롭→재리스트 행의 자연 복원(restored) 발생 여부 = SQL 스냅샷(발화 전 vs 후) 대조. 현재 결함 백로그 0.
+- 🔭 **[EVT-OBS-2] CORR-3 복원 관측 게이트** — fix(A-1)는 worker 트리(9caf9e37⊇ccd7e8dd) 배포됨·미실행. 검증 예정 **09-02(KST 아침)**: 다음 발화(09-01 17:45 ET) 후 ⑴ stale 재발이 정당 드롭만인지 ⑵ 드롭→재리스트 행의 자연 복원(restored) 발생 여부 = SQL 스냅샷(발화 전 vs 후) 대조. 현재 결함 백로그 0. **[신규율 수렴 추적 — 유지]**: 다음 2회 발화 신규율 **<3%**(D-EVT-OBS-1 경고 임계) 확인이 수렴 판정 조건. **⚠️귀인 정정(2026-09-02, G-EVT-2 겸사)**: 월초 신규율 상승 관측 시 원인은 **"노동절 연휴 후"가 아니라 "월초·분기 경계(배당 선언 캘린더 유입 + 관측창 롤링에 따른 어닝 이벤트 편입)"** 로 기록한다 — **Labor Day = 2026-09-07**이므로 09-02/09-03 관측창은 연휴 *이전*, 사후연휴 귀인은 시점상 불가(가짜 인과 차단).
+
+## EVT Phase 2 진입 프로브 [G-EVT-2] (2026-09-02, worktree sv-evt-1 / monorepo/sess-evt-7 base origin/main 8489b2d0)
+
+> read-only 원천 접근성 실측. 구현·모델·수집기 변경 0·원장 쓰기 0. 외부 5콜(≤6 준수·shared FMPClient._make_request 경유). 예산 게이트 PASS(금일 FMP 일일캡 트립 0건·태스크 볼륨 low-thousands≪9,500 임계). 응답 원문은 로그로만.
+
+| EP(/stable/) | HTTP | 게이트 징후 | 핵심 필드 | 행수/깊이 | 판정 |
+|---|---|---|---|---|---|
+| earning-call-transcript-dates (AAPL) | **402** | Premium-only | — | — | **FAIL** |
+| earning-call-transcript (body) | 생략 | — | — | — | 콜절약(1-1 게이트 FAIL) |
+| mergers-acquisitions-latest (page0) | **200** | none | symbol·targetedSymbol·companyName·targetedCompanyName·cik·targetedCik·transactionDate·acceptedDate·link | 100행 | **PASS(latest 한정)** |
+| mergers-acquisitions-search (symbol=NVDA) | **402** | Premium-only | — | — | **FAIL(심볼 search 게이트)** |
+| earnings-surprises (NVDA) | **404** | 경로 부재 | — | — | 경로 오류→STEP4 |
+| earnings (NVDA, STEP4 예비) | **200** | none | date·epsActual·epsEstimated·revenueActual·revenueEstimated·symbol·lastUpdated | 110행(과거 actual+미래 est) | **PASS** |
+
+- 🔴 **P2-iii(어닝 콜 AI 요약) = FAIL** — transcript 계열 402 Premium(Starter 미포함). 대체 원천 결정 사이클 필요 = **8-K RSS 병행안(설계 §9)**. 디렉터 사이클 처분 대상.
+- 🟢 **P2-ii(어닝 반응 히스토리) = PASS** — 지시서 예시 경로 `earnings-surprises` 404(부재)이나 **`/stable/earnings?symbol=`가 동일 데이터(epsActual/Estimated·revenueActual/Estimated·date) 제공**. NVDA 110행 = 과거 실적 서프라이즈 + 미래 컨센서스. 커버리지 깊음·비용 1콜/심볼(Starter 무추가비). **자체 축적 불요 — 이 EP로 대체 가능.**
+- 🟡 **M&A(§9 재소환) = 부분** — `mergers-acquisitions-latest` 접근 가능(200·100행·심볼쌍+발표일), 단 **거래가(deal value) 필드 없음**·심볼 기준 dedicated search는 402 Premium. §9 트리거 ② "원천 접근성"은 **latest 피드 한정 충족**(심볼별 조회는 latest를 클라이언트에서 symbol/targetedSymbol로 조인해야 함). 디렉터 §9 재소환 판단 입력.
+- 프로브 예산: 금일 FMP 일일캡(10,000) 트립 **0건**(worker-error.log 실측)·개별호출 DEBUG 마커 off로 정확카운트 불가하나 태스크 볼륨 상한이 9,500 임계 미달 → 잔여≫500 = **HALT 미발동**. 이 프로브 소모 5콜.
+- ⚠️ 부수 관찰(범위 밖·정보): FMPClient가 HTTP 에러 시 requests 예외 메시지로 **apikey 포함 URL을 로그 노출**(`_make_request` raise_for_status 경유). pre-existing·프로브 무변경 → **SEC-APIKEY-LOG 백로그 등재**(아래).
+- 🔐 **[SEC-APIKEY-LOG] (2026-09-03 등재·ops 소유)** — `FMPClient._make_request`가 HTTP 에러 시 requests 예외 메시지로 **apikey 포함 full URL을 로그에 노출**. **다음 shared(`packages/shared/api_request`) 접촉 슬라이스에서 마스킹 수리**(에러 로그에서 apikey 쿼리파라미터 제거·`len=N,head=XXXX***` 정책). 소유=@ops/@infra. 관련=TRASH-10(마스킹 로그 스캔 표준).
+- ✅ **디렉터 검수 승인(2026-09-03)** → **DECISIONS D-EVT-P2-SOURCES 등재**(P2-iii 보류/P2-ii `/stable/earnings` 채택/M&A §9 이연·latest-only) + **Phase 2 첫 슬라이스 = EVT-CHAIN**(E1 4.70/E2 4.00/E3 2.00). docs 2커밋 착지 승인("푸시"·force·원격삭제 금지).
 
 ## R2-S2 오늘 시장의 이야기 피드 (2026-09-02, worktree sv-r2s2)
 
