@@ -1625,8 +1625,9 @@
 - 🟢 **P2-ii(어닝 반응 히스토리) = PASS** — 지시서 예시 경로 `earnings-surprises` 404(부재)이나 **`/stable/earnings?symbol=`가 동일 데이터(epsActual/Estimated·revenueActual/Estimated·date) 제공**. NVDA 110행 = 과거 실적 서프라이즈 + 미래 컨센서스. 커버리지 깊음·비용 1콜/심볼(Starter 무추가비). **자체 축적 불요 — 이 EP로 대체 가능.**
 - 🟡 **M&A(§9 재소환) = 부분** — `mergers-acquisitions-latest` 접근 가능(200·100행·심볼쌍+발표일), 단 **거래가(deal value) 필드 없음**·심볼 기준 dedicated search는 402 Premium. §9 트리거 ② "원천 접근성"은 **latest 피드 한정 충족**(심볼별 조회는 latest를 클라이언트에서 symbol/targetedSymbol로 조인해야 함). 디렉터 §9 재소환 판단 입력.
 - 프로브 예산: 금일 FMP 일일캡(10,000) 트립 **0건**(worker-error.log 실측)·개별호출 DEBUG 마커 off로 정확카운트 불가하나 태스크 볼륨 상한이 9,500 임계 미달 → 잔여≫500 = **HALT 미발동**. 이 프로브 소모 5콜.
-- ⚠️ 부수 관찰(범위 밖·정보): FMPClient가 HTTP 에러 시 requests 예외 메시지로 **apikey 포함 URL을 로그 노출**(`_make_request` raise_for_status 경유). pre-existing·프로브 무변경. 보안 백로그 후보.
-- push는 "푸시" 지시 대기(D-PUSH-DELEG). DECISIONS 기록 없음(프로브=결정 아님·디렉터 사이클에서 결정).
+- ⚠️ 부수 관찰(범위 밖·정보): FMPClient가 HTTP 에러 시 requests 예외 메시지로 **apikey 포함 URL을 로그 노출**(`_make_request` raise_for_status 경유). pre-existing·프로브 무변경 → **SEC-APIKEY-LOG 백로그 등재**(아래).
+- 🔐 **[SEC-APIKEY-LOG] (2026-09-03 등재·ops 소유)** — `FMPClient._make_request`가 HTTP 에러 시 requests 예외 메시지로 **apikey 포함 full URL을 로그에 노출**. **다음 shared(`packages/shared/api_request`) 접촉 슬라이스에서 마스킹 수리**(에러 로그에서 apikey 쿼리파라미터 제거·`len=N,head=XXXX***` 정책). 소유=@ops/@infra. 관련=TRASH-10(마스킹 로그 스캔 표준).
+- ✅ **디렉터 검수 승인(2026-09-03)** → **DECISIONS D-EVT-P2-SOURCES 등재**(P2-iii 보류/P2-ii `/stable/earnings` 채택/M&A §9 이연·latest-only) + **Phase 2 첫 슬라이스 = EVT-CHAIN**(E1 4.70/E2 4.00/E3 2.00). docs 2커밋 착지 승인("푸시"·force·원격삭제 금지).
 
 ## R2-S2 오늘 시장의 이야기 피드 (2026-09-02, worktree sv-r2s2)
 

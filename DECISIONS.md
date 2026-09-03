@@ -7413,3 +7413,14 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **초점 명기**: CC가 예상값을 전달할 때 병진 확인의 초점은 **'값 일치'가 아니라 '실제 렌더'**임을 절차서에 명기(값은 CC가 이미 데이터층에서 확증).
 
 **Why**: SCB-RECON-LIVE에서 CC 데이터층 선확인이 RED 요인(공급 체인)을 사전 배제 → 병진 브라우저 확인이 순수 렌더/위생/소감에 집중 가능. 값 대조를 병진에 다시 시키면 노동 중복 + 렌더 검증 희석.
+
+## [2026-09-03] D-EVT-P2-SOURCES — EVT Phase 2 원천 채택/보류 결정 (G-EVT-2 프로브 근거) [backend][chainsight][process]
+
+> 트랙: EVT Phase 2 진입. 근거 = G-EVT-2 프로브 실측(2026-09-02, sess-evt-7, 외부 5콜·read-only). 디렉터 검수 승인 후 결정 등재.
+
+- **P2-iii(어닝 콜 AI 요약) = 보류**: FMP transcript 계열(`/stable/earning-call-transcript-dates`)이 **402 Premium**(Starter 미포함). 재소환 트리거 = **사용자 요구 또는 플랜 업그레이드**. 그 전까지 Phase 2 스코프에서 제외. 대체 원천(8-K RSS 병행안, 설계 §9)은 별도 슬라이스로만 검토.
+- **P2-ii(어닝 반응 히스토리) = 채택**: `/stable/earnings?symbol=` 채택(지시서 예시 `earnings-surprises`는 404 부재). 근거 = **NVDA 110행 실측**(epsActual/Estimated·revenueActual/Estimated·date, 과거 서프라이즈 + 미래 컨센서스). **자체 축적 불요**(비용 1콜/심볼·Starter 무추가비).
+- **M&A(§9 이벤트 유형) = 이연 유지**: `mergers-acquisitions-latest`만 접근 가능(200·심볼쌍+발표일·**거래가 필드 없음**)·심볼 search는 402 Premium. **latest-only**. 재소환 트리거 = **EVT-CHAIN 안착 + latest 피드 클라이언트 조인 방식 수용 판단**.
+- **Phase 2 첫 슬라이스 = EVT-CHAIN**(스코어 E1 4.70 / E2 4.00 / E3 2.00).
+
+**Why**: 프로브가 세 원천의 접근성을 실측으로 갈랐다 — transcript는 유료 게이트(투자 없이 진입 불가), earnings-surprise 이력은 기존 Starter로 즉시 확보(축적 인프라 낭비 회피), M&A는 부분 접근이라 조인 비용/커버리지 판단을 EVT-CHAIN 안착 뒤로 미룸. 결정을 프로브 근거에 고정해 "가능할 것" 추정 기반 스코프 확장을 차단.
