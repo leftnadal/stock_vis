@@ -7520,3 +7520,13 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 | `chainsight.event-grid` · `card-metrics` · `entrypoints` | **화면 개편으로 route 불일치** | 세 앵커는 `components/chainsight/EventBoard.tsx`에 있는데, `/chainsight`는 **`MarketStoryFeed`를 렌더**한다(`app/chainsight/page.tsx:7`). `EventBoard`는 **`/chainsight/events`**로 이동했다 |
 
 - **판정**: monitor·portfolio 4건은 **계정이 채워지면 자연 해소**(수집 타이밍·하이드레이션 아님). chainsight 3건은 **가이드 데이터가 화면 개편을 따라가지 못한 것** — 앵커를 `/chainsight/events`로 옮기거나 `MarketStoryFeed`에 새 앵커를 부착해야 한다. **어느 쪽이 옳은지는 화면 소유자 판단**(도메인 코드 무접촉).
+
+## [2026-09-04] D-EVT-CHAIN-1B — 이벤트 위젯 상단 pill 밴드 이동 + 타임라인 앵커 (P1) [frontend][monitor]
+
+> 트랙: EVT-CHAIN-1B. 시각 계약 = `docs/design/monitor_detail_ux.html` §(a) **P1**(가중합 4.50·추천·2026-09-04 사용자 확정: P1 4.50/P2 4.10/P3 4.00). FE만·[[D-EVT-CHAIN-1]] 정련.
+
+- **결정**: 다가오는 이벤트를 **상태 카드 바로 아래 한 줄 pill 밴드**(`UpcomingEventsBand`·신규)로 올린다 — 어닝/배당 pill + **"관계망 N ↓"** pill(클릭 시 하단 타임라인 앵커 smooth scroll). 하단 `ChainSection`은 **타임라인만** 남기고 위젯 중복 제거(앵커 id=`chain-timeline`). 이벤트 전무(어닝·배당·이웃 0)면 밴드 비표시.
+- **소유권 경계(P3 기각 이유)**: 상태 카드(`SlimStrip`)는 **모니터 앱 소유 컴포넌트** → EVT 附加 원칙(기존 diff 0) 위반이라 P3(상태 카드에 "다음 이벤트" 칸 편입) 기각. 밴드는 상태 카드 **아래 별도 컨테이너**로 삽입(카드 무접촉). 관제 요소(사다리·신호·근거·일지) 순서·diff 0 유지(page.tsx diff = import 1 + 밴드 삽입 1블록 + 주석).
+- **공유 데이터**: 밴드·타임라인 모두 `useChainFeed(symbol)` 동일 키 → TanStack 캐시 공유(중복 fetch 0). BE·API·파라미터 무변.
+
+**Why**: 9/3 실화면 피드백 — 이벤트 섹션이 일지·시나리오 아래로 매몰돼 "다음 어닝 D-N"이 첫 화면에서 안 보임. P1은 위젯만 상단으로 올려 첫 화면 가시성을 확보하면서(가중합 최고 4.50) 관제 흐름·컴포넌트 소유권을 건드리지 않는다(P2=두 섹션 통째 이동은 이웃 많은 시드에서 사다리/신호를 스크롤 밖으로 밀어냄, P3=소유권 침범). 附加 원칙 보존이 P1 채택의 핵심.

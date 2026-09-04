@@ -10,6 +10,7 @@ import { ArrowLeft, ShieldPlus } from 'lucide-react'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { CloseModal } from '@/components/monitor/CloseModal'
 import { ChainSection } from '@/components/monitor/chain/ChainSection'
+import { UpcomingEventsBand } from '@/components/monitor/chain/UpcomingEventsBand'
 import { SlimStrip } from '@/components/monitor/SlimStrip'
 import { VerdictBadge } from '@/components/monitor/VerdictBadge'
 import { EvidenceModal } from '@/components/monitor/evidence/EvidenceModal'
@@ -219,6 +220,9 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
         sufficientById={sufficientById}
       />
 
+      {/* EVT-CHAIN-1B(P1) — 다가오는 이벤트 한 줄 pill 밴드. 상태 카드 바로 아래·scope=stock 附加. */}
+      {monitor.scope === 'stock' && <UpcomingEventsBand symbol={monitor.target_ref} />}
+
       {/* C-2 — 근거 상태 배지 + 근거 관리 진입(상단 노출, 클레임 행 내부의 저노출 링크는 유지) */}
       {activeClaim && (
         <div className="mb-4 flex items-center gap-2">
@@ -279,7 +283,7 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
         )}
       </section>
 
-      {/* EVT-CHAIN-1 — 미니 이벤트 위젯(W) + 관계망 타임라인(B). scope=stock 한정·附加 전용. */}
+      {/* EVT-CHAIN-1/1B — 관계망 타임라인(하단·앵커 타깃). 위젯은 상단 밴드로 이동. scope=stock 附加. */}
       {monitor.scope === 'stock' && <ChainSection symbol={monitor.target_ref} />}
 
       {closingClaim && (
