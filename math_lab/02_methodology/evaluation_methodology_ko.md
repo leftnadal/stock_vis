@@ -1,7 +1,7 @@
 # Stock_vis Math Lab Evaluation Methodology
 
 **Status:** Working / Active Working Baseline Candidate  
-**Version:** 0.1  
+**Version:** 0.2  
 **Date:** 2026-09-04  
 **Owner:** Stock_vis Math Lab
 
@@ -10,6 +10,8 @@
 Math Lab Evaluation의 목적은 결과를 한 점수로 인증하는 것이 아니라, **무엇이 지지되고, 무엇이 약하며, 무엇이 미평가됐고, 어디서 실패할 수 있는지**를 명시하는 것이다.
 
 Evaluation은 연구 process와 result를 모두 보지만 둘을 합치지 않는다. 높은 backtest score는 높은 epistemic credibility와 같지 않다.
+
+Math Lab 자체도 평가 대상이다. Lab Meta-Evaluation은 개별 연구결과가 아니라 **연구 시스템이 신뢰성, 발견능력, 재현성, 효율, 데이터 적합성, Cross-Lab 가치 측면에서 제대로 작동하고 있는지**를 평가한다. Meta-Evaluation metric은 최적화 KPI가 아니라 diagnostic signal이다.
 
 ## 1. Common Evaluation Contract
 
@@ -55,6 +57,7 @@ Evaluation Target + Version
 9. Model Run / Output
 10. Quantitative Knowledge candidate
 11. downstream signal / deployment suitability
+12. Math Lab Operating System / Lab Evolution candidate
 
 하나의 평가를 다른 객체에 자동 상속하지 않는다.
 
@@ -245,3 +248,273 @@ Knowledge admission에는 claim-level structured evaluation이 필요하다.
 - source Lab Understanding revision
 
 변화는 결론을 자동 뒤집는 것이 아니라 재평가 의무를 만든다.
+
+## 15. Lab Meta-Evaluation Purpose
+
+Lab Meta-Evaluation은 Math Lab의 개별 Quantitative Claim을 평가하는 것이 아니라 **Math Lab Operating System이 intended purpose를 제대로 수행하는지**를 평가한다.
+
+주요 질문은 다음과 같다.
+
+- false-positive finding을 충분히 차단하는가
+- 동시에 discovery capacity를 지나치게 죽이지 않는가
+- experiment와 Knowledge를 시간이 지나도 재구성할 수 있는가
+- Critic / Replicator / Evaluator가 실제로 net value를 만드는가
+- agent architecture와 tool routing이 과도한 비용·latency·handoff loss를 만들지 않는가
+- CEO attention이 consequential decision에 집중되는가
+- 반복 Data Gap이 research bottleneck으로 남지 않는가
+- Cross-Lab interface가 실제 새 연구·Understanding을 만드는가
+- 기존 rule이 새 model/tool/data capability 아래에서도 여전히 필요한가
+
+Meta-Evaluation은 Lab 전체, 특정 operating change, agent topology, tool/harness, permission system, data workflow, Cross-Lab process 등을 target으로 할 수 있다.
+
+## 16. Lab Meta-Evaluation Contract
+
+material Lab Meta-Evaluation은 가능한 경우 다음을 식별한다.
+
+```text
+Operating Target + Version
++ Review Trigger / Period
++ Intended Operating Purpose
++ Relevant Case Cohort
++ Runtime / Evaluation / Knowledge / Data Evidence
++ Counterfactual or Baseline where feasible
++ Costs / Failure Modes / Unknowns
+→ Structured Operating Assessment
+```
+
+결과에는 최소한 필요에 따라 다음을 포함한다.
+
+- observed pattern
+- likely mechanism / alternative explanation
+- affected scope
+- evidence quality and denominator
+- material benefit
+- material harm / trade-off
+- unknown / confounding factor
+- improvement hypothesis
+- recommended action
+- rollback / re-evaluation condition
+
+단순 metric 변화만으로 operating conclusion을 만들지 않는다.
+
+## 17. Lab Health Profile
+
+Lab Health는 하나의 scalar score가 아니다. 다음 profile을 상황에 맞게 평가한다.
+
+### 17.1 Scientific Reliability
+
+Concern:
+
+- invalid / contaminated result detection
+- confirmation survival pattern
+- replication failure / success pattern
+- Knowledge admission 후 reversal / restriction
+- hidden multiple testing 발견
+- provenance / holdout violation
+
+Interpretation rule:
+
+- 낮은 confirmation survival은 높은 exploration breadth의 정상 결과일 수도 있다.
+- 높은 replication success는 쉬운 문제만 선택한 결과일 수도 있다.
+- reversal은 admission failure일 수도 있고 legitimate regime / scope change일 수도 있다.
+
+### 17.2 Discovery Capacity / False-Negative Risk
+
+Concern:
+
+- candidate generation diversity
+- unexplored research space
+- repeated premature closure
+- excessive `Unknown` / `No Result`
+- high-value hypothesis가 governance cost 때문에 실행되지 않는지
+- simple baseline을 넘어 새로운 representation을 탐색할 capacity가 있는지
+
+Interpretation rule:
+
+False positive 감소와 discovery capacity를 함께 본다. `Knowledge가 적다` 또는 `많다` 자체는 health verdict가 아니다.
+
+### 17.3 Reproducibility / Knowledge Durability
+
+Concern:
+
+- reproduction success
+- Data View reconstruction
+- artifact / environment completeness
+- admitted Knowledge의 시간 경과 후 applicability
+- revision / retirement의 원인
+- re-evaluation latency
+
+Knowledge durability는 영구적으로 맞는다는 뜻이 아니라, scope·condition·change가 추적 가능하다는 의미까지 포함한다.
+
+### 17.4 Challenge Value
+
+Concern:
+
+- Critic이 material defect를 발견하는가
+- scope / conclusion / next action을 실제로 바꾸는가
+- false objection / duplicate review burden
+- Evaluator disagreement의 정보가치
+- challenge가 비용·latency 대비 net positive인가
+
+`Critic 호출 수`, `objection 수`를 quality proxy로 쓰지 않는다.
+
+### 17.5 Agent / Workflow Efficiency
+
+Concern:
+
+- parallelization benefit
+- duplicate work
+- retries / failures
+- handoff / synthesis loss
+- tool mismatch
+- local / Frontier escalation quality
+- cost / latency / throughput
+
+Efficiency는 scientific quality를 해치지 않는 조건에서 평가한다.
+
+### 17.6 CEO Attention Efficiency
+
+Concern:
+
+- routine reversible issue의 over-escalation
+- material issue의 under-escalation
+- Decision Package quality
+- delegated decision reversal
+- CEO decision reconsideration cause
+
+`CEO escalation 최소화`를 단독 목표로 사용하지 않는다.
+
+### 17.7 Data-System Fitness
+
+Concern:
+
+- repeated Data Gap
+- point-in-time failure
+- provenance weakness
+- source reconstruction failure
+- data request reuse across programs
+- data cost vs research value
+
+반복 Data Gap은 StockVis Data Platform improvement candidate가 될 수 있다.
+
+### 17.8 Cross-Lab Research Value
+
+Concern:
+
+- handoff가 새 Case / Quantitative Finding / Understanding으로 발전하는가
+- source authority와 version이 보존되는가
+- operationalization fidelity
+- shared ancestry / circularity detection
+- source revision propagation
+- interface overhead vs epistemic value
+
+handoff 수 자체는 success metric이 아니다.
+
+## 18. Metrics Are Diagnostics, Not Objectives
+
+Meta-Evaluation metric은 다음 방식으로 사용한다.
+
+```text
+Metric / Trend / Outlier
+→ Diagnostic Signal
+→ Investigation
+→ Explanation
+→ Operating Hypothesis
+```
+
+다음과 같은 direct optimization은 기본적으로 금지한다.
+
+- maximize Knowledge admission count
+- maximize replication success
+- minimize CEO escalation
+- minimize Critic disagreement
+- maximize experiment throughput
+- minimize research cost independent of epistemic consequence
+
+Goodhart-type behavior를 막기 위해 metric은 cohort, denominator, consequence, regime, research difficulty와 함께 해석한다.
+
+## 19. Operating Change Evaluation
+
+Operating Improvement Hypothesis는 가능한 경우 baseline과 비교한다.
+
+예:
+
+```text
+Current Workflow
+vs
+Experimental Workflow
+```
+
+평가 concern:
+
+- material defect detection
+- false-positive / false-negative risk
+- reproducibility
+- downstream reversal
+- cost / latency / compute
+- duplicate work
+- handoff burden
+- CEO / human burden
+- new failure surface
+
+Randomized A/B가 항상 필요한 것은 아니다. staged rollout, shadow mode, matched heterogeneous Cases, retrospective simulation, interrupted time comparison, qualitative process evaluation을 사용할 수 있다.
+
+평가 설계 자체의 selection bias와 non-comparability를 명시해야 한다.
+
+## 20. Operating Change Decision States
+
+Meta-Evaluation 결과는 다음 lifecycle action 후보를 가질 수 있다.
+
+- `Adopt`
+- `Modify`
+- `Reject`
+- `Need More Evidence`
+- `Rollback`
+- `Retire / Merge`
+
+이 state는 epistemic truth label이 아니라 operating governance action이다.
+
+Material adoption에는 가능한 경우 다음을 기록한다.
+
+- previous version / baseline
+- effective scope
+- rationale
+- evaluation evidence
+- known trade-off
+- monitoring plan
+- rollback path
+- re-evaluation trigger
+
+## 21. Meta-Evaluation Must Itself Be Challenged
+
+Lab Meta-Evaluation도 오류 가능하다.
+
+다음 위험을 명시적으로 고려한다.
+
+- metric gaming
+- survivorship of easy research cases
+- cohort mismatch
+- regression to the mean
+- learning curve / tool upgrade confounding
+- market-regime confounding
+- evaluator self-justification
+- cost accounting omission
+- hidden opportunity cost
+- delayed harm
+
+운영 개선을 평가한 evaluator 또는 Lead가 자신의 architecture를 방어하는 방향으로 편향될 수 있으므로, material change에는 독립적이거나 충분히 분리된 challenge를 비례적으로 적용한다.
+
+## 22. Meta-Evaluation and Authority Boundary
+
+Lab Meta-Evaluation은 다음을 자동 수행하지 않는다.
+
+- Foundation / Purpose 변경
+- permanent authority boundary 변경
+- permanent core role 확정
+- major infrastructure purchase
+- product deployment
+- Research Lab / Design Lab meaning 변경
+
+이런 consequential change는 applicable CEO / Authority Review로 escalation한다.
+
+반대로 reversible prompt, routing, small harness, pilot-level workflow improvement는 현재 approved boundary 안에서 delegated operating experiment로 수행할 수 있다.
