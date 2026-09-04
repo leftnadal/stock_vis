@@ -1,12 +1,13 @@
-// 관계망 섹션 컴포저 (EVT-CHAIN-1). 모니터 상세(scope=stock)에 附加 전용.
-// 훅을 이 컴포넌트가 품어 page.tsx 삽입을 최소화(import 1 + 조건부 1줄). 로딩·빈 데이터엔
-// 아무것도 그리지 않아 기존 DOM 무변(附加 전용 규율).
+// 관계망 타임라인 섹션 (EVT-CHAIN-1 / 1B). 모니터 상세(scope=stock) 하단 附加 전용.
+// EVT-CHAIN-1B(P1): 위젯은 상단 밴드(UpcomingEventsBand)로 이동 — 여기는 타임라인만 남긴다.
+// 앵커 id(CHAIN_TIMELINE_ANCHOR)로 밴드의 "관계망 ↓" 스크롤 타깃. 이웃 0이면 섹션 비표시.
 'use client';
 
 import { useChainFeed } from '@/hooks/useEventCalendar';
 
 import { ChainTimeline } from './ChainTimeline';
-import { UpcomingEventsWidget } from './UpcomingEventsWidget';
+
+export const CHAIN_TIMELINE_ANCHOR = 'chain-timeline';
 
 interface Props {
   symbol: string;
@@ -15,16 +16,12 @@ interface Props {
 export function ChainSection({ symbol }: Props) {
   const { data, isError } = useChainFeed(symbol, true);
 
-  // 附加 전용: 로딩/실패 시 미표시(기존 화면 무변). 이웃 0이면 ChainTimeline이 null 반환.
+  // 附加 전용: 로딩/실패·이웃 0이면 미표시(기존 화면 무변). 위젯은 상단 밴드가 담당.
   if (isError || !data) return null;
-
-  const hasWidget = data.seed_events.length > 0;
-  const hasTimeline = data.neighbors.length > 0;
-  if (!hasWidget && !hasTimeline) return null;
+  if (data.neighbors.length === 0) return null;
 
   return (
-    <section data-testid="chain-section" className="mt-6">
-      <UpcomingEventsWidget seedEvents={data.seed_events} />
+    <section id={CHAIN_TIMELINE_ANCHOR} data-testid="chain-section" className="mt-6 scroll-mt-4">
       <ChainTimeline feed={data} />
     </section>
   );

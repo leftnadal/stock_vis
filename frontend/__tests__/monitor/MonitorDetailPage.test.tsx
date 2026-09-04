@@ -271,8 +271,8 @@ describe('MonitorDetailPage', () => {
     )
   })
 
-  // EVT-CHAIN-1: scope 게이팅
-  it('scope=stock + 이웃 데이터 → 관계망 섹션 렌더', async () => {
+  // EVT-CHAIN-1/1B: scope 게이팅 + 상단 밴드
+  it('scope=stock + 이웃 데이터 → 상단 밴드 + 하단 관계망 섹션 렌더', async () => {
     useMonitorMock.mockReturnValue({ data: monitor, isLoading: false, isError: false, error: null })
     useMonitorClaimsMock.mockReturnValue({ data: [makeClaim()] })
     useChainFeedMock.mockReturnValue({
@@ -292,9 +292,10 @@ describe('MonitorDetailPage', () => {
     })
     await renderDetail()
     await waitFor(() => expect(screen.getByTestId('chain-section')).toBeInTheDocument())
+    expect(screen.getByTestId('upcoming-band')).toBeInTheDocument() // EVT-CHAIN-1B 상단 밴드
   })
 
-  it('scope!=stock → 관계망 섹션 미표시', async () => {
+  it('scope!=stock → 상단 밴드·관계망 섹션 모두 미표시', async () => {
     useMonitorMock.mockReturnValue({
       data: { ...monitor, scope: 'theme', target_ref: 'ai-infra' },
       isLoading: false,
@@ -305,5 +306,6 @@ describe('MonitorDetailPage', () => {
     await renderDetail()
     await waitFor(() => expect(screen.getByText('애플 감시')).toBeInTheDocument())
     expect(screen.queryByTestId('chain-section')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('upcoming-band')).not.toBeInTheDocument()
   })
 })
