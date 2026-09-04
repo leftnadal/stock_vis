@@ -1887,7 +1887,7 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 ⑶ **보고 시 위반을 '완료'로 표기하지 말 것** — 위반은 위반으로 보고(예약 작업을 "✅ 완료"로 적으면 위반을 정상 산출로 은폐 = 2차 위반). 예약 클래스 작업은 "집행함(위반)" 또는 "상신·HALT(정상)" 중 하나로만 기록.
 cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_service_op_submit_not_execute]] · [[feedback_surface_await_disposition]].
 
-## EOD 지표를 오늘(localdate)로 조회하면 항상 빈 결과 — 기준일은 데이터 최신일로 (채번 대기, HUB-V02-S1 2026-09-03) `[backend][market_pulse][data]`
+## EOD 지표를 오늘(localdate)로 조회하면 항상 빈 결과 — 기준일은 데이터 최신일로 (#129, 2026-09-03 HUB-V02-S1) `[backend][market_pulse][data]`
 
 **증상**: Breadth(시장 폭)가 항상 total=0. BreadthSnapshot 108행 전부 0 — 한 번도 유효하게 채워진 적 없음.
 
