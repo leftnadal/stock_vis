@@ -7,10 +7,12 @@ Scope v0.1:
 - invoke Codex CLI through a configurable command
 - run declared test commands
 - write structured result artifacts
-- create a local candidate commit
+- create a local candidate branch + commit
 - stop in `waiting_for_push_approval`
 
 It intentionally does NOT push, open/merge PRs, deploy, or mutate production DB.
+Runtime ledger/state are stored outside the repository checkout by default so the
+main Claude Code workspace is not dirtied by automation telemetry.
 """
 
 from __future__ import annotations
@@ -30,7 +32,7 @@ from uuid import uuid4
 from lab_automation.contracts import JobEnvelope, JobStatus, Lab
 from lab_automation.ledger import AppendOnlyLedger, RunEvent
 
-RUNNER_VERSION = "0.1.0"
+RUNNER_VERSION = "0.1.1"
 
 
 def _run(
@@ -89,9 +91,16 @@ def _current_sha(repo: Path, ref: str = "HEAD") -> str:
     return _git(repo, "rev-parse", ref).stdout.strip()
 
 
+def _safe_token(value: str) -> str:
+    return "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in value)
+
+
 def _worktree_path(root: Path, job_id: str, run_id: str) -> Path:
-    safe_job = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in job_id)
-    return root / f"{safe_job}-{run_id[:8]}"
+    return root / f"{_safe_token(job_id)}-{run_id[:8]}"
+
+
+def _candidate_branch(job_id: str, run_id: str) -> str:
+    return f"lab-run/{_safe_token(job_id)}/{run_id[:8]}"
 
 
 def _authority_snapshot(worktree: Path, refs: tuple[str, ...], output_dir: Path) -> list[str]:
@@ -145,10 +154,7 @@ def _invoke_codex(
     dry_run: bool,
 ) -> dict[str, Any]:
     command_template = raw.get("codex_command", ["codex", "exec", "-"])
-    if isinstance(command_template, str):
-        command = shlex.split(command_template)
-    else:
-        command = list(command_template)
+    command = shlex.split(command_template) if isinstance(command_template, str) else list(command_template)
     prompt = _build_codex_prompt(job, result_dir)
     if dry_run:
         return {
@@ -213,8 +219,8 @@ def _changed_paths(worktree: Path) -> list[str]:
 def _path_allowed(path: str, allowed: tuple[str, ...]) -> bool:
     normalized = path.rstrip("/")
     for prefix in allowed:
-        prefix = prefix.rstrip("/")
-        if normalized == prefix or normalized.startswith(prefix + "/"):
+        normalized_prefix = prefix.rstrip("/")
+        if normalized == normalized_prefix or normalized.startswith(normalized_prefix + "/"):
             return True
     return False
 
@@ -253,11 +259,18 @@ def _candidate_commit(worktree: Path, job_id: str, dry_run: bool) -> str | None:
     return _current_sha(worktree)
 
 
-def execute_job(repo: Path, job_path: Path, worktree_root: Path, dry_run: bool = True) -> int:
+def execute_job(
+    repo: Path,
+    job_path: Path,
+    worktree_root: Path,
+    state_root: Path,
+    dry_run: bool = True,
+) -> int:
     job, raw = _read_job(job_path)
     _validate_job(job)
     run_id = str(uuid4())
-    ledger_path = repo / ".lab_automation" / "ledger" / f"{job.job_id}.jsonl"
+    candidate_branch = _candidate_branch(job.job_id, run_id)
+    ledger_path = state_root / "ledger" / f"{job.job_id}.jsonl"
     ledger = AppendOnlyLedger(ledger_path)
 
     base_sha = _current_sha(repo, job.branch)
@@ -275,14 +288,18 @@ def execute_job(repo: Path, job_path: Path, worktree_root: Path, dry_run: bool =
             runner_version=RUNNER_VERSION,
             base_sha=base_sha,
             authority_refs=job.authority_refs,
-            metadata={"job_path": str(job_path), "dry_run": dry_run},
+            metadata={
+                "job_path": str(job_path),
+                "dry_run": dry_run,
+                "candidate_branch": candidate_branch,
+            },
         )
     )
 
     try:
         if not dry_run:
             worktree.parent.mkdir(parents=True, exist_ok=True)
-            _git(repo, "worktree", "add", "--detach", str(worktree), job.branch)
+            _git(repo, "worktree", "add", "-b", candidate_branch, str(worktree), job.branch)
         else:
             worktree = repo
 
@@ -368,6 +385,7 @@ def execute_job(repo: Path, job_path: Path, worktree_root: Path, dry_run: bool =
             "run_id": run_id,
             "runner_version": RUNNER_VERSION,
             "base_sha": base_sha,
+            "candidate_branch": candidate_branch if not dry_run else None,
             "candidate_sha": candidate_sha,
             "changed_paths": paths,
             "artifacts": artifacts,
@@ -375,9 +393,17 @@ def execute_job(repo: Path, job_path: Path, worktree_root: Path, dry_run: bool =
             "push_performed": False,
             "merge_performed": False,
             "deploy_performed": False,
+            "ledger_path": str(ledger_path),
         }
         manifest_path = result_dir / "manifest.json"
-        manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+        manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2, default=str),
+            encoding="utf-8",
+        )
+        if not dry_run:
+            _git(worktree, "add", str(manifest_path.relative_to(worktree)))
+            _git(worktree, "commit", "--amend", "--no-edit")
+            candidate_sha = _current_sha(worktree)
 
         ledger.append(
             RunEvent(
@@ -392,6 +418,7 @@ def execute_job(repo: Path, job_path: Path, worktree_root: Path, dry_run: bool =
                 authority_refs=job.authority_refs,
                 artifact_refs=tuple(artifacts + [str(manifest_path)]),
                 metadata={
+                    "candidate_branch": candidate_branch if not dry_run else None,
                     "push_performed": False,
                     "merge_performed": False,
                     "deploy_performed": False,
@@ -430,12 +457,23 @@ def main() -> int:
         type=Path,
         default=Path(tempfile.gettempdir()) / "stockvis-lab-worktrees",
     )
-    parser.add_argument("--execute", action="store_true", help="Run Codex and git mutations. Default is dry-run.")
+    parser.add_argument(
+        "--state-root",
+        type=Path,
+        default=Path.home() / ".stockvis-lab-automation",
+        help="External append-only runtime state; kept outside the repo checkout.",
+    )
+    parser.add_argument(
+        "--execute",
+        action="store_true",
+        help="Run Codex and git mutations. Default is dry-run.",
+    )
     args = parser.parse_args()
     return execute_job(
         repo=args.repo.resolve(),
         job_path=args.job.resolve(),
         worktree_root=args.worktree_root.resolve(),
+        state_root=args.state_root.expanduser().resolve(),
         dry_run=not args.execute,
     )
 
