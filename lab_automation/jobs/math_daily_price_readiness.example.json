@@ -1,0 +1,33 @@
+{
+  "job_id": "SV-MATH-DP-READINESS-001",
+  "lab": "math_lab",
+  "goal": "Perform a read-only DailyPrice readiness probe for the diversified validation basket and produce structured data-gap findings. Do not modify production schema or production data.",
+  "branch": "math-lab/data-eligibility-v0.1",
+  "authority_refs": [
+    "math_lab/00_foundation/foundation_ko.md",
+    "math_lab/01_operating_system/operating_model_ko.md",
+    "math_lab/02_methodology/research_methodology_ko.md",
+    "math_lab/05_validation/daily_price_validation_basket_v0_1_ko.md"
+  ],
+  "expected_outputs": [
+    "read-only readiness probe code",
+    "representative basket DB readiness table",
+    "adversarial candidate discovery results",
+    "Data Eligibility decisions",
+    "Data Gap / Opportunity proposals",
+    "tests"
+  ],
+  "allowed_write_paths": [
+    "math_lab",
+    "lab_automation/jobs/results"
+  ],
+  "db_access": "read_only",
+  "network_policy": "restricted",
+  "destructive_actions_allowed": false,
+  "status": "queued",
+  "parent_job_ids": [],
+  "codex_command": ["codex", "exec", "-"],
+  "test_commands": [
+    ["python", "-m", "pytest", "math_lab/runtime/test_data_eligibility.py", "-q"]
+  ]
+}
