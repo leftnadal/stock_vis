@@ -26,7 +26,7 @@
 
 **CS-S3-1 착지 결정(2026-09-07)**:
 - **D-S3-SORT 정렬 = 사건성 asc → occurred_on desc → max_mentions desc**(D-DIRECTOR-READ 발견 1). **Why**: occurred_on 1차면 최신 weekly_active(잔잔한 배경)가 과거 사건(8-K·급등) 위로 와 사건이 매몰 → 스모크 ⑵/⑷·피드 목적 붕괴. 라이브에서 8-K@08-19·급등@08-21이 weekly@최근 밑 30위 밖 매몰 확인 후 정정.
-- **D-S3-WINDOW-B 창 표기 = 카드가 자기 창을 말함**(발견 2·디렉터 2026-09-07 정련). 단일 창 N 없음(daily_spike 14·new_sec 30·weekly_active 7 상이) → meta에 window 필드 없음, 카드별 **`window_label`**(상수 파생 문자열·하드코딩 금지: new_sec `f"{NEW_SEC_DAYS}일 내 신규 공시"`·daily_spike `f"{DAILY_SPIKE_DAYS}일 중 이 하루"`·weekly_active `f"최근 {WEEKLY_ACTIVE_WINDOW_DAYS}일 활동"`). 헤더는 창 미주장: 제목 "오늘 시장의 이야기"·부제 "오늘 새로 온 것 {n} · 전체 {N}"·사건→배경 전환 구분선 "여기부터 잔잔한 흐름".
+- **D-S3-6 헤더 창 표기 = B안(카드가 자기 창을 말함)**(병진 확정 2026-09-04·가중합 4.72·마진 1.11 = 자동 결정 구간). **Why**: 피드에 단일 창이 없다(daily_spike 14·new_sec 30·weekly_active 7 상이) → **헤더 단일 표기는 과대·과소 표기**가 된다. **How**: 헤더는 창 미주장(제목 "오늘 시장의 이야기"·부제 "오늘 새로 온 것 {n} · 전체 {N}"), 창은 카드별 **`window_label`**(상수 파생·하드코딩 금지: new_sec `f"{NEW_SEC_DAYS}일 내 신규 공시"`·daily_spike `f"{DAILY_SPIKE_DAYS}일 중 이 하루"`·weekly_active `f"최근 {WEEKLY_ACTIVE_WINDOW_DAYS}일 활동"`). 사건→배경 전환 구분선 "여기부터 잔잔한 흐름"(앞에 사건 카드 있을 때만). 상수 변경 시 문구 추종(회귀 테스트 `test_window_label_derives_from_constant`).
 - **D-S3-EVIDENCE-SCHEMA (A-6)**: 카드 `evidence[] = {kind:"article"|"8k", ref, title, url, date}`. **S3-2 §1의 입력 스키마 — 여기서 고정**. 근거 없으면 `title:null`(정직 표기·인용만·LLM 0).
 - **D-S3-STORYID = 결정론 슬러그** `blake2b(f"{type}:{'-'.join(sorted(members))}:{occurred_on}", digest_size=5)`(10-hex)·저장 없음·`story_key` 원문 병기(S3-4 라우트/추적 앵커).
 - **D-S3-FEED-CACHE**: 피드 응답을 (limit, ET 날짜) 키로 캐시(TTL 900s). STEP0-2 NewsEntity 재조회 p95 368ms(콜드) → 표시 카드 제목·evidence 조회 비용 응답 단위 흡수(#15 키 일관).
