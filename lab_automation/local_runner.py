@@ -1,13 +1,15 @@
-"""Minimal MacBook Local Runner for StockVis Lab Automation Platform.
+"""Minimal local runner for StockVis Lab Automation Platform.
 
 Scope v0.1:
 - load one local JSON job file
 - create an isolated git worktree from the declared branch
 - record authority refs and base SHA
+- capture an immutable agent input snapshot
 - invoke Codex CLI through a configurable command
+- store raw invocation material in a content-addressed artifact store
 - run declared test commands
-- write structured result artifacts
-- create a local candidate branch + commit
+- write structured review artifacts
+- create one local candidate commit
 - stop in `waiting_for_push_approval`
 
 It intentionally does NOT push, open/merge PRs, deploy, or mutate production DB.
@@ -18,6 +20,7 @@ main Claude Code workspace is not dirtied by automation telemetry.
 from __future__ import annotations
 
 from dataclasses import asdict
+from datetime import datetime, timezone
 import argparse
 import json
 import os
@@ -29,10 +32,17 @@ import tempfile
 from typing import Any
 from uuid import uuid4
 
+from lab_automation.artifact_store import ArtifactRef, LocalArtifactStore
 from lab_automation.contracts import JobEnvelope, JobStatus, Lab
+from lab_automation.execution_records import InvocationRecord
+from lab_automation.integrity import require_output_contract
 from lab_automation.ledger import AppendOnlyLedger, RunEvent
 
-RUNNER_VERSION = "0.1.1"
+RUNNER_VERSION = "0.1.2"
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _run(
@@ -103,16 +113,16 @@ def _candidate_branch(job_id: str, run_id: str) -> str:
     return f"lab-run/{_safe_token(job_id)}/{run_id[:8]}"
 
 
-def _authority_snapshot(worktree: Path, refs: tuple[str, ...], output_dir: Path) -> list[str]:
+def _authority_snapshot(worktree: Path, refs: tuple[str, ...], output_dir: Path) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    artifacts: list[str] = []
+    artifacts: list[Path] = []
     for ref in refs:
         source = worktree / ref
         if not source.is_file():
             raise FileNotFoundError(f"authority ref not found: {ref}")
         target = output_dir / ref.replace("/", "__")
         target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
-        artifacts.append(str(target))
+        artifacts.append(target)
     return artifacts
 
 
@@ -149,13 +159,12 @@ def _invoke_codex(
     worktree: Path,
     job: JobEnvelope,
     raw: dict[str, Any],
-    result_dir: Path,
+    prompt: str,
     *,
     dry_run: bool,
 ) -> dict[str, Any]:
     command_template = raw.get("codex_command", ["codex", "exec", "-"])
     command = shlex.split(command_template) if isinstance(command_template, str) else list(command_template)
-    prompt = _build_codex_prompt(job, result_dir)
     if dry_run:
         return {
             "command": command,
@@ -163,7 +172,6 @@ def _invoke_codex(
             "stdout": "",
             "stderr": "",
             "returncode": 0,
-            "prompt": prompt,
         }
     env = os.environ.copy()
     env["STOCKVIS_LAB_JOB_ID"] = job.job_id
@@ -231,22 +239,23 @@ def _enforce_write_scope(paths: list[str], allowed: tuple[str, ...]) -> None:
         raise PermissionError(f"write-scope violation: {disallowed}")
 
 
-def _ensure_minimum_artifacts(result_dir: Path, codex_result: dict[str, Any]) -> None:
+def _ensure_minimum_artifacts(result_dir: Path) -> dict[str, str]:
+    """Ensure review files exist while preserving whether the agent made them."""
     result_dir.mkdir(parents=True, exist_ok=True)
-    invocation_path = result_dir / "codex_invocation.json"
-    invocation_path.write_text(
-        json.dumps(codex_result, ensure_ascii=False, indent=2, default=str),
-        encoding="utf-8",
-    )
-    if not (result_dir / "agent_report.md").exists():
-        (result_dir / "agent_report.md").write_text(
-            "# Agent report\n\nNo report was produced by the agent.\n",
-            encoding="utf-8",
-        )
-    if not (result_dir / "result.json").exists():
-        (result_dir / "result.json").write_text("{}\n", encoding="utf-8")
-    if not (result_dir / "data_gaps.json").exists():
-        (result_dir / "data_gaps.json").write_text("[]\n", encoding="utf-8")
+    origins: dict[str, str] = {}
+    defaults = {
+        "agent_report.md": "# Agent report\n\nNo report was produced by the agent.\n",
+        "result.json": "{}\n",
+        "data_gaps.json": "[]\n",
+    }
+    for name, default in defaults.items():
+        path = result_dir / name
+        if path.exists():
+            origins[name] = "agent_generated"
+        else:
+            path.write_text(default, encoding="utf-8")
+            origins[name] = "runner_placeholder"
+    return origins
 
 
 def _candidate_commit(worktree: Path, job_id: str, dry_run: bool) -> str | None:
@@ -257,6 +266,43 @@ def _candidate_commit(worktree: Path, job_id: str, dry_run: bool) -> str | None:
     _git(worktree, "add", "--all")
     _git(worktree, "commit", "-m", f"lab-automation: candidate result for {job_id}")
     return _current_sha(worktree)
+
+
+def _store_file(
+    store: LocalArtifactStore,
+    path: Path,
+    *,
+    kind: str,
+    retention_class: str,
+    metadata: dict[str, Any] | None = None,
+) -> ArtifactRef:
+    return store.put_file(
+        path,
+        kind=kind,
+        retention_class=retention_class,
+        metadata=metadata,
+    )
+
+
+def _artifact_manifest_entry(
+    ref: ArtifactRef,
+    *,
+    repo_path: str | None = None,
+    origin: str | None = None,
+) -> dict[str, Any]:
+    payload = {
+        "artifact_id": ref.artifact_id,
+        "sha256": ref.sha256,
+        "byte_size": ref.byte_size,
+        "kind": ref.kind,
+        "logical_uri": ref.logical_uri,
+        "retention_class": ref.retention_class,
+    }
+    if repo_path is not None:
+        payload["repo_path"] = repo_path
+    if origin is not None:
+        payload["origin"] = origin
+    return payload
 
 
 def execute_job(
@@ -272,11 +318,13 @@ def execute_job(
     candidate_branch = _candidate_branch(job.job_id, run_id)
     ledger_path = state_root / "ledger" / f"{job.job_id}.jsonl"
     ledger = AppendOnlyLedger(ledger_path)
+    store = LocalArtifactStore(state_root / "artifacts")
 
     base_sha = _current_sha(repo, job.branch)
     worktree = _worktree_path(worktree_root, job.job_id, run_id)
     candidate_sha: str | None = None
-    artifacts: list[str] = []
+    artifact_entries: list[dict[str, Any]] = []
+    logical_artifact_refs: list[str] = []
 
     ledger.append(
         RunEvent(
@@ -300,16 +348,35 @@ def execute_job(
         if not dry_run:
             worktree.parent.mkdir(parents=True, exist_ok=True)
             _git(repo, "worktree", "add", "-b", candidate_branch, str(worktree), job.branch)
+            result_dir = worktree / ".lab_automation" / "runs" / job.job_id / run_id
         else:
             worktree = repo
+            result_dir = state_root / "dry_runs" / job.job_id / run_id
 
-        result_dir = worktree / ".lab_automation" / "runs" / job.job_id / run_id
-        authority_artifacts = _authority_snapshot(
+        authority_paths = _authority_snapshot(
             worktree,
             job.authority_refs,
             result_dir / "authority_snapshot",
         )
-        artifacts.extend(authority_artifacts)
+        authority_logical_refs: list[str] = []
+        for ref_name, path in zip(job.authority_refs, authority_paths):
+            artifact_ref = _store_file(
+                store,
+                path,
+                kind="authority_snapshot",
+                retention_class="irreplaceable",
+                metadata={"authority_ref": ref_name, "run_id": run_id},
+            )
+            authority_logical_refs.append(artifact_ref.logical_uri)
+            logical_artifact_refs.append(artifact_ref.logical_uri)
+            repo_path = None if dry_run else str(path.relative_to(worktree))
+            artifact_entries.append(
+                _artifact_manifest_entry(
+                    artifact_ref,
+                    repo_path=repo_path,
+                    origin="runner_snapshot",
+                )
+            )
         ledger.append(
             RunEvent(
                 job_id=job.job_id,
@@ -320,21 +387,117 @@ def execute_job(
                 runner_version=RUNNER_VERSION,
                 base_sha=base_sha,
                 authority_refs=job.authority_refs,
-                artifact_refs=tuple(authority_artifacts),
+                artifact_refs=tuple(authority_logical_refs),
             )
         )
 
-        codex_result = _invoke_codex(worktree, job, raw, result_dir, dry_run=dry_run)
-        _ensure_minimum_artifacts(result_dir, codex_result)
-        artifacts.extend(
-            str(path)
-            for path in [
-                result_dir / "agent_report.md",
-                result_dir / "result.json",
-                result_dir / "data_gaps.json",
-                result_dir / "codex_invocation.json",
-            ]
+        prompt = _build_codex_prompt(job, result_dir)
+        prompt_ref = store.put_text(
+            prompt,
+            kind="agent_prompt",
+            retention_class="irreplaceable",
+            metadata={"job_id": job.job_id, "run_id": run_id},
         )
+        input_snapshot = {
+            "schema_version": "agent-input-snapshot/0.1",
+            "job": asdict(job),
+            "raw_job": raw,
+            "base_sha": base_sha,
+            "authority_artifact_refs": authority_logical_refs,
+            "prompt_ref": prompt_ref.logical_uri,
+            "runner_version": RUNNER_VERSION,
+        }
+        input_snapshot_ref = store.put_json(
+            input_snapshot,
+            kind="agent_input_snapshot",
+            retention_class="irreplaceable",
+            metadata={"job_id": job.job_id, "run_id": run_id},
+        )
+        for ref in (prompt_ref, input_snapshot_ref):
+            logical_artifact_refs.append(ref.logical_uri)
+            artifact_entries.append(_artifact_manifest_entry(ref, origin="runner_generated"))
+
+        invocation_id = str(uuid4())
+        started_at = _utc_now()
+        codex_result = _invoke_codex(
+            worktree,
+            job,
+            raw,
+            prompt,
+            dry_run=dry_run,
+        )
+        ended_at = _utc_now()
+        raw_output_ref = store.put_json(
+            codex_result,
+            kind="raw_invocation_result",
+            retention_class="irreplaceable",
+            metadata={"job_id": job.job_id, "run_id": run_id, "invocation_id": invocation_id},
+        )
+        invocation_record = InvocationRecord(
+            run_id=run_id,
+            actor="codex",
+            backend="codex_cli",
+            execution_intent="primary",
+            invocation_id=invocation_id,
+            input_snapshot_ref=input_snapshot_ref.logical_uri,
+            output_ref=raw_output_ref.logical_uri,
+            requested_identity="codex_cli",
+            identity_assurance="requested_only",
+            started_at=started_at,
+            ended_at=ended_at,
+            status="completed" if codex_result["returncode"] == 0 else "failed",
+            returncode=codex_result["returncode"],
+            metadata={"command": codex_result["command"], "dry_run": dry_run},
+        )
+        invocation_record_ref = store.put_json(
+            invocation_record.to_dict(),
+            kind="invocation_record",
+            retention_class="irreplaceable",
+            metadata={"job_id": job.job_id, "run_id": run_id, "invocation_id": invocation_id},
+        )
+        for ref in (raw_output_ref, invocation_record_ref):
+            logical_artifact_refs.append(ref.logical_uri)
+            artifact_entries.append(_artifact_manifest_entry(ref, origin="runner_generated"))
+
+        origins = _ensure_minimum_artifacts(result_dir)
+        review_invocation = {
+            "schema_version": "invocation-review/0.1",
+            "invocation": invocation_record.to_dict(),
+            "prompt_ref": prompt_ref.logical_uri,
+            "input_snapshot_ref": input_snapshot_ref.logical_uri,
+            "raw_output_ref": raw_output_ref.logical_uri,
+            "invocation_record_ref": invocation_record_ref.logical_uri,
+        }
+        invocation_path = result_dir / "codex_invocation.json"
+        invocation_path.write_text(
+            json.dumps(review_invocation, ensure_ascii=False, indent=2, default=str),
+            encoding="utf-8",
+        )
+        origins["codex_invocation.json"] = "runner_generated"
+
+        result_refs: dict[str, ArtifactRef] = {}
+        for name, kind in (
+            ("agent_report.md", "agent_report"),
+            ("result.json", "agent_result"),
+            ("data_gaps.json", "data_gaps"),
+            ("codex_invocation.json", "invocation_review"),
+        ):
+            path = result_dir / name
+            retention = "irreplaceable" if name != "codex_invocation.json" else "reconstructable"
+            ref = _store_file(
+                store,
+                path,
+                kind=kind,
+                retention_class=retention,
+                metadata={"job_id": job.job_id, "run_id": run_id, "origin": origins[name]},
+            )
+            result_refs[name] = ref
+            logical_artifact_refs.append(ref.logical_uri)
+            repo_path = None if dry_run else str(path.relative_to(worktree))
+            artifact_entries.append(
+                _artifact_manifest_entry(ref, repo_path=repo_path, origin=origins[name])
+            )
+
         ledger.append(
             RunEvent(
                 job_id=job.job_id,
@@ -344,21 +507,77 @@ def execute_job(
                 actor="codex",
                 runner_version=RUNNER_VERSION,
                 base_sha=base_sha,
-                artifact_refs=tuple(artifacts),
+                artifact_refs=tuple(
+                    [
+                        prompt_ref.logical_uri,
+                        input_snapshot_ref.logical_uri,
+                        raw_output_ref.logical_uri,
+                        invocation_record_ref.logical_uri,
+                    ]
+                    + [ref.logical_uri for ref in result_refs.values()]
+                ),
+                invocation_ids=(invocation_id,),
+                input_snapshot_ref=input_snapshot_ref.logical_uri,
+                output_ref=raw_output_ref.logical_uri,
                 error=codex_result.get("stderr") or None,
                 metadata={
                     "returncode": codex_result["returncode"],
                     "command": codex_result["command"],
+                    "execution_status": (
+                        "succeeded" if codex_result["returncode"] == 0 else "failed"
+                    ),
                 },
             )
         )
         if codex_result["returncode"] != 0:
             raise RuntimeError("Codex execution failed")
 
+        output_finding = require_output_contract(
+            origins,
+            required_names=("agent_report.md", "result.json"),
+        )
+        ledger.append(
+            RunEvent(
+                job_id=job.job_id,
+                run_id=run_id,
+                stage="output_contract",
+                status="completed" if output_finding.status == "PASS" or dry_run else "failed",
+                actor="local_runner",
+                runner_version=RUNNER_VERSION,
+                base_sha=base_sha,
+                artifact_refs=tuple(ref.logical_uri for ref in result_refs.values()),
+                metadata={
+                    "integrity_code": output_finding.code,
+                    "integrity_status": output_finding.status,
+                    "message": output_finding.message,
+                    "origins": origins,
+                },
+            )
+        )
+        if not dry_run and output_finding.status != "PASS":
+            raise RuntimeError(output_finding.message)
+
         test_results = _run_tests(worktree, raw, dry_run=dry_run)
         tests_path = result_dir / "tests.json"
-        tests_path.write_text(json.dumps(test_results, ensure_ascii=False, indent=2), encoding="utf-8")
-        artifacts.append(str(tests_path))
+        tests_path.write_text(
+            json.dumps(test_results, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        tests_ref = _store_file(
+            store,
+            tests_path,
+            kind="test_results",
+            retention_class="irreplaceable",
+            metadata={"job_id": job.job_id, "run_id": run_id},
+        )
+        logical_artifact_refs.append(tests_ref.logical_uri)
+        artifact_entries.append(
+            _artifact_manifest_entry(
+                tests_ref,
+                repo_path=None if dry_run else str(tests_path.relative_to(worktree)),
+                origin="runner_generated",
+            )
+        )
         failing = [row for row in test_results if row.get("returncode") != 0]
         ledger.append(
             RunEvent(
@@ -369,56 +588,78 @@ def execute_job(
                 actor="local_runner",
                 runner_version=RUNNER_VERSION,
                 base_sha=base_sha,
-                artifact_refs=(str(tests_path),),
+                artifact_refs=(tests_ref.logical_uri,),
                 test_summary=f"{len(test_results)} commands; {len(failing)} failed",
             )
         )
         if failing:
             raise RuntimeError("One or more test commands failed")
 
-        paths = _changed_paths(worktree)
-        _enforce_write_scope(paths, job.allowed_write_paths + (".lab_automation",))
-        candidate_sha = _candidate_commit(worktree, job.job_id, dry_run=dry_run)
+        paths_before_manifest = [] if dry_run else _changed_paths(worktree)
+        if not dry_run:
+            _enforce_write_scope(
+                paths_before_manifest,
+                job.allowed_write_paths + (".lab_automation",),
+            )
 
         manifest = {
+            "schema_version": "run-manifest/0.2",
             "job": asdict(job),
             "run_id": run_id,
             "runner_version": RUNNER_VERSION,
             "base_sha": base_sha,
             "candidate_branch": candidate_branch if not dry_run else None,
-            "candidate_sha": candidate_sha,
-            "changed_paths": paths,
-            "artifacts": artifacts,
-            "promotion_state": "waiting_for_push_approval",
+            "changed_paths_before_manifest": paths_before_manifest,
+            "artifacts": artifact_entries,
+            "promotion_state": (
+                "dry_run_complete" if dry_run else "waiting_for_push_approval"
+            ),
             "push_performed": False,
             "merge_performed": False,
             "deploy_performed": False,
-            "ledger_path": str(ledger_path),
+            "candidate_sha_canonical_home": "external_append_only_run_ledger",
         }
         manifest_path = result_dir / "manifest.json"
         manifest_path.write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2, default=str),
             encoding="utf-8",
         )
+        manifest_ref = _store_file(
+            store,
+            manifest_path,
+            kind="run_manifest",
+            retention_class="irreplaceable",
+            metadata={"job_id": job.job_id, "run_id": run_id},
+        )
+        logical_artifact_refs.append(manifest_ref.logical_uri)
+
         if not dry_run:
-            _git(worktree, "add", str(manifest_path.relative_to(worktree)))
-            _git(worktree, "commit", "--amend", "--no-edit")
-            candidate_sha = _current_sha(worktree)
+            paths = _changed_paths(worktree)
+            _enforce_write_scope(paths, job.allowed_write_paths + (".lab_automation",))
+            candidate_sha = _candidate_commit(worktree, job.job_id, dry_run=False)
+            terminal_status = "waiting_for_push_approval"
+        else:
+            paths = []
+            terminal_status = "dry_run_complete"
 
         ledger.append(
             RunEvent(
                 job_id=job.job_id,
                 run_id=run_id,
                 stage="candidate_revision",
-                status="waiting_for_push_approval",
+                status=terminal_status,
                 actor="local_runner",
                 runner_version=RUNNER_VERSION,
                 base_sha=base_sha,
                 candidate_sha=candidate_sha,
                 authority_refs=job.authority_refs,
-                artifact_refs=tuple(artifacts + [str(manifest_path)]),
+                artifact_refs=tuple(logical_artifact_refs),
+                invocation_ids=(invocation_id,),
+                input_snapshot_ref=input_snapshot_ref.logical_uri,
+                output_ref=result_refs["result.json"].logical_uri,
                 metadata={
                     "candidate_branch": candidate_branch if not dry_run else None,
+                    "manifest_ref": manifest_ref.logical_uri,
                     "push_performed": False,
                     "merge_performed": False,
                     "deploy_performed": False,
@@ -438,6 +679,7 @@ def execute_job(
                 runner_version=RUNNER_VERSION,
                 base_sha=base_sha,
                 candidate_sha=candidate_sha,
+                artifact_refs=tuple(logical_artifact_refs),
                 error=f"{type(exc).__name__}: {exc}",
             )
         )
@@ -461,7 +703,10 @@ def main() -> int:
         "--state-root",
         type=Path,
         default=Path.home() / ".stockvis-lab-automation",
-        help="External append-only runtime state; kept outside the repo checkout.",
+        help=(
+            "External append-only runtime state and content-addressed artifacts; "
+            "kept outside the repo checkout."
+        ),
     )
     parser.add_argument(
         "--execute",
