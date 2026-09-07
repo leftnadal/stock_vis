@@ -27,10 +27,14 @@ class RunEvent:
     occurred_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+    schema_version: str = "run-event/0.2"
     base_sha: str | None = None
     candidate_sha: str | None = None
     authority_refs: tuple[str, ...] = field(default_factory=tuple)
     artifact_refs: tuple[str, ...] = field(default_factory=tuple)
+    invocation_ids: tuple[str, ...] = field(default_factory=tuple)
+    input_snapshot_ref: str | None = None
+    output_ref: str | None = None
     test_summary: str = ""
     error: str | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
