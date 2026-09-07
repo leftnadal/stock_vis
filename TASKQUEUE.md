@@ -1668,10 +1668,19 @@
 ## AGENT-S2 (2026-09-03)
 
 - 🟡 **AGENT-S2 야간 도그푸딩 2단계(루브릭 채점)** (@infra) — **구현·랜딩 완료 · `sv sync` 상신 대기**. 상신 `scratchpad/AGENT-S2_상신_20260903.md`. 신설 `collect_rendered.py`(Playwright 렌더 수집)·`score_rubric.py`(claude -p 1회 일괄 채점)·`render_screens.mjs` + `report_mail.py` 루브릭 섹션 + `run_dogfood.sh` 2단계 삽입. **plist 무변경**(같은 05:20 잡). 유닛 28 + 회귀 179 passed(선존 2건 = `test_targets.py`, 무변경 트리 동일). **수동 실증**: 렌더 5/5(인증) · 채점 평균 2.8/5 무효 0 · **인용 5/5 실제 화면 텍스트 일치** · 메일 실발송 1통. **묶음 권고**: `OPS-HC-WIRE` 상신과 함께 `sv sync` 1회.
-- 🟡 **GUIDE-ANCHOR-DRIFT** (@frontend) — **원인 확정 2026-09-04(AGENT-S2.1 ③), 코드 드리프트 아님**. 앵커 7건 모두 코드에 존재하며 DOM 부재는 두 부류: ⑴ **빈 상태 조건부 4건** — `monitor.scope-chips`·`monitor.list`(`monitors.length > 0`)·`monitor.status-segment`(`closedCount > 0`)·`portfolio.charts`(`portfolios.length > 0`) → **계정이 채워지면 자연 해소**, 조치 불요. ⑵ **route 불일치 3건** — `chainsight.event-grid`·`card-metrics`·`entrypoints`는 `EventBoard.tsx`에 있는데 `/chainsight`는 **`MarketStoryFeed`를 렌더**한다(EventBoard는 `/chainsight/events`로 이동). → **가이드 데이터가 화면 개편을 못 따라간 것**. 앵커를 `/chainsight/events`로 옮길지 `MarketStoryFeed`에 새로 부착할지 **화면 소유자 판단**(도메인 코드 무접촉).
+- 🟡 **GUIDE-ANCHOR-DRIFT** (@frontend) — **원인 확정 2026-09-04(AGENT-S2.1 ③), 코드 드리프트 아님**. 앵커 7건 모두 코드에 존재하며 DOM 부재는 두 부류: ⑴ **빈 상태 조건부 4건** — `monitor.scope-chips`·`monitor.list`(`monitors.length > 0`)·`monitor.status-segment`(`closedCount > 0`)·`portfolio.charts`(`portfolios.length > 0`) → **계정이 채워지면 자연 해소**, 조치 불요. ⑵ **route 불일치 3건** — `chainsight.event-grid`·`card-metrics`·`entrypoints`는 `EventBoard.tsx`에 있는데 `/chainsight`는 **`MarketStoryFeed`를 렌더**한다(EventBoard는 `/chainsight/events`로 이동). → **가이드 데이터가 화면 개편을 못 따라간 것**. **→ ⑵ RESOLVED 2026-09-07 (GUIDE-CS-GUARD-1)**: `chainsight.main` route를 `/chainsight/events`로 임시 이설 + 앵커↔라우트 동거 정적 가드 신설(재발 차단) + 야간 메일 앵커 누락 노출. 정문 문구는 2단계 소관([[D-GUIDE-CS-REFRESH]]). **⑴ 빈 상태 조건부 4건은 여전히 열림**(계정 충족 시 자연 해소·조치 불요).
 - ✅ **AGENT-S2-EMPTY-ACCOUNT** — **해소 2026-09-04(결정 ⒝ 채택, AGENT-S2.1 ②)**. 빈 상태 감지 시 `coreQuestion` 대신 **"빈 상태 안내가 충분한가"** 기준으로 채점하고, 메일 `[빈 상태]` 라벨 + **평균 별도 트랙** + 최저 화면 선정에서 제외. 효과: 같은 렌더로 평균 **1.4/5 → 본 4.0/5**(빈 상태 2건 4.5/5 분리). 표본 데이터 주입(⒜) 불필요.
 - 💤 **AGENT-S3 관찰 후보 + 성적 원장** (후보 등재만 — **구현 금지**) — 종목 추천·성적 원장. **착수 전 RC v3.0 분포 재측정 선행 필수**(눈금 [0,100]→[0,1] 전환 후 분포를 모르는 채로 추천 기준을 세울 수 없다).
 
 ## AGENT-S2.1 (2026-09-04)
 
 - 🟡 **AGENT-S2.1** (@infra) — **구현·랜딩 완료 · `sv sync` 상신 대기**. ① launchd env 로드 결함 수정(`.env` 화이트리스트 주입, `env -i` 재현으로 원인 확정·수정 검증) ② 빈 상태 채점 분기 ③ 앵커 원인 확정. 유닛 39 + 회귀 190 passed(선존 2건) · ruff 0 · health ❌0. 수동 실증: `env -i` 인증 렌더 5/5 · 본 평균 4.0/5 · 메일 실발송(라벨 확인). **마이그레이션 0건**. ★09-05 05:20 발화 전 `sv sync` 필요 — 안 하면 또 미인증 1.4/5가 발송된다.
+
+## GUIDE-CS-REFRESH (2026-09-07, worktree sv-guide-csg1)
+
+> 결정 = [[DECISIONS]] D-GUIDE-CS-REFRESH (ⓑ 재작성·2단계 분할). 1단계 = GUIDE-CS-GUARD-1.
+
+- ✅ **GUIDE-CS-GUARD-1** (@frontend) — 앵커↔라우트 동거 정적 가드 + 야간 앵커 누락 노출 + 정문 임시 이설. 화면 문구·컴포넌트 무접촉(`components/`·`app/` diff 0줄). vitest 1276 passed(신규 +7) · pytest dogfood/architecture 96 passed. 마이그레이션 0건. **서빙 반영: 다음 세션 sync 자동**(테스트·야간 스크립트 한정, FE 런타임 무영향 — `lib/guide/chainsight.ts` 이설은 `?` 버튼 위치를 바꾸므로 web 리빌드 시 반영).
+- 🔵 **GUIDE-CS-REFRESH 2단계** (@frontend) — 정문(`/chainsight`)용 `chainsight.feed` 가이드 신규 등재(문구·앵커 작성). **트리거: `monorepo/sess-s3s1`(묶음 카드·부제 정직화) main 머지.** 착수 시 화면 재측정 후 문구 작성 → 병진 검수 → confirmed. 등재 후 `chainsight.main`의 임시 이설 주석을 정규 상태로 정리.
+- 🔵 **GUIDE-COUPDATE-DOD** (@qa, 별건 소형) — 화면 개편 지시서 템플릿의 DoD에 **"이 화면에 가이드 데이터가 있으면 같이 갱신했는가"** 한 줄 추가. 근거: 09-02 랜딩 역전이 가이드를 남긴 채 지나갔고, 08-31 RC-C-1도 같은 부류(아래 GUIDE-ORPHAN-BACKBONE).
+- 🔴 **GUIDE-ORPHAN-BACKBONE** (@frontend, **상신 — 처분 대기**) — `chainsight.backbone` 앵커가 `components/chainsight/BackboneView.tsx`(3곳)에 있으나 가이드 데이터에 미등재 → `guideAnchors.test.ts` "고아 앵커 금지"가 **origin/main에서 이미 RED**(도입 `3e7b15c3`, 2026-08-31 RC-C-1 backbone FE). GUIDE-CS-GUARD-1 스코프 밖(가이드 문구 작성 = 2단계 소관, 화면 컴포넌트 = 무접촉)이라 **미해소로 남김**. 처분 선택지: ⑴ `/chainsight/backbone` 가이드 화면 신규 등재(2단계와 묶음) ⑵ 앵커 제거 ⑶ 고아 허용 allowlist 등재. **가드가 제 일을 한 사례 — 08-31부터 지금까지 RED가 방치돼 있었다는 것 자체가 별건 관찰 대상**(vitest 전체 게이트가 랜딩 전에 안 돌고 있었을 가능성).
