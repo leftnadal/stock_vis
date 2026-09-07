@@ -43,6 +43,11 @@ function sourceAnchors(): Map<string, string[]> {
   return map
 }
 
+// 가이드 등재 예정 앵커(고아 허용). 만료 조건을 코드에 박는다 — 비우는 것이 목표다.
+// chainsight.backbone: 3e7b15c3(2026-08-31, RC-C-1)에서 심었으나 문구 미작성.
+//   → GUIDE-CS-REFRESH 2단계(sess-s3s1 머지 후 정문 문구 작성)에서 함께 등재하고 여기서 뺀다.
+const PENDING_ANCHORS = new Set<string>(['chainsight.backbone'])
+
 describe('data-guide 앵커 계약', () => {
   const declared = new Set(GUIDE_SCREENS.flatMap((s) => s.regions.map((r) => r.anchor)))
   const inSource = sourceAnchors()
@@ -53,8 +58,24 @@ describe('data-guide 앵커 계약', () => {
   })
 
   it('소스에 박힌 앵커는 모두 가이드 데이터에 선언돼 있다 (고아 앵커 금지)', () => {
-    const orphans = [...inSource.keys()].filter((a) => !declared.has(a))
+    const orphans = [...inSource.keys()].filter((a) => !declared.has(a) && !PENDING_ANCHORS.has(a))
     expect(orphans, `데이터에 없는 앵커: ${orphans.join(', ')}`).toEqual([])
+  })
+
+  // allowlist는 유예이지 면제가 아니다. 목록이 스스로 만료를 주장하게 만든다 —
+  // 등재를 마치고 빼는 것을 잊으면(= 가드가 그 앵커에 영영 눈감으면) 여기서 걸린다.
+  it('PENDING_ANCHORS는 죽은 항목을 남기지 않는다 (등재 완료·소스 삭제 시 제거)', () => {
+    const stale = [...PENDING_ANCHORS].map((a) => {
+      if (declared.has(a)) {
+        return `${a} — 가이드 데이터에 등재 완료됐으니 PENDING_ANCHORS에서 제거하세요`
+      }
+      if (!inSource.has(a)) {
+        return `${a} — 소스에서 사라졌으니 PENDING_ANCHORS에서 제거하세요`
+      }
+      return null
+    })
+
+    expect(stale.filter(Boolean), `\n${stale.filter(Boolean).join('\n')}`).toEqual([])
   })
 
   it('앵커는 한 파일에서만 선언된다 (중복 선언 시 배지 위치가 비결정적)', () => {
