@@ -1,7 +1,7 @@
-# StockVis Lab Automation — Run Ledger & Evolution Feedback v0.1
+# StockVis Lab Automation — Run Ledger & Evolution Feedback v0.2
 
 **Status:** Working Candidate  
-**Date:** 2026-09-05
+**Date:** 2026-09-07
 
 ## 0. 한눈에 보는 요약
 
@@ -13,24 +13,28 @@ Lab Automation Platform은 작업을 단순 실행하고 끝내는 도구가 아
 
 단, 모든 stdout과 임시 thought를 영구 보존하는 것은 아니다. 미래에 재구성·평가·감사·개선에 필요한 material record만 canonical하게 남긴다.
 
-## 1. Canonical Runtime Object
+## 1. Canonical Runtime Objects
 
-각 Job은 하나 이상의 Run을 가질 수 있다.
+각 Job은 하나 이상의 Run을 가질 수 있다. Run은 logical work unit이고, 실제 model/tool/backend 호출은 Invocation으로 분리한다.
 
 ```text
 Job
   └─ Run #1
        ├─ intake
-       ├─ workspace_prepare
        ├─ authority_load
-       ├─ agent_execute
+       ├─ Invocation #1
+       │    └─ physical agent/backend attempt
+       ├─ Invocation #2 (retry/replication when needed)
        ├─ test_validate
        ├─ result_package
-       ├─ candidate_revision
-       └─ approval_wait
+       └─ candidate_revision
 ```
 
-retry는 원 Run을 덮어쓰지 않고 새로운 attempt/run event로 남긴다.
+```text
+Run ≠ Invocation
+```
+
+retry, replication, accidental duplicate는 원 실행을 덮어쓰지 않고 별도 Invocation identity로 남긴다.
 
 ## 2. Stage Event Contract
 
@@ -40,120 +44,146 @@ retry는 원 Run을 덮어쓰지 않고 새로운 attempt/run event로 남긴다
 
 ```text
 event_id
+schema_version
 job_id
 run_id
 stage
 status
-started_at
-ended_at
 actor
 runner_version
-agent/model/tool versions
-input_refs
-output_refs
-branch/worktree
-base_commit
-candidate_commit
-commands_or_action_summary
+base_sha
+candidate_sha when final and external
+artifact_refs
+invocation_ids when applicable
+input_snapshot_ref when applicable
+output_ref when applicable
 test_summary
 failure_summary
-resource_usage
-approval_ref
-parent_event_id
+supersedes_event_id
 ```
 
-`status` 후보:
+과거 event를 조용히 수정하지 않는다. 오류가 발견되면 correction/superseding event를 append한다.
+
+## 3. Invocation Contract
+
+Invocation은 physical execution attempt를 표현한다.
+
+최소 의미:
 
 ```text
-queued
-started
-completed
-failed
-aborted
-invalidated
-waiting_for_approval
-superseded
-rolled_back
+invocation_id
+run_id
+actor/backend
+execution_intent
+parent_invocation_id
+input_snapshot_ref
+output_ref
+requested_identity
+returned_identity when known
+identity_assurance
+started_at / ended_at
+status / returncode / finish_reason
 ```
 
-## 3. What Must Be Recorded at Each Stage
+`execution_intent`는 최소한 `primary`, `retry`, `replication`, `accidental_duplicate`, `unknown`을 구분할 수 있어야 한다.
 
-### intake
+동일 request/hash가 반복되었다는 사실만으로 duplicate failure라고 판단하지 않는다. 의도된 replication일 수 있기 때문이다.
 
-- source Job version
-- source Lab
-- authority references
-- requested goal
-- permissions
-- expected outputs
+## 4. Artifact Identity and Storage
 
-### workspace_prepare
+Artifact의 canonical identity는 현재 filesystem path가 아니다.
 
-- repository
-- base commit SHA
-- branch
-- worktree path or identifier
-- dirty-state check
-- conflict with concurrent workers
+```text
+artifact logical identity
+  = content hash + logical URI
 
-### authority_load
+physical location
+  = replica metadata
+```
 
-- 실제 읽은 authority document/version
-- missing/stale authority
-- cross-Lab dependency
+v0.2 local implementation은 다음 형태를 사용한다.
 
-### agent_execute
+```text
+artifact://sha256/<digest>
+```
 
-- agent/model/tool versions
-- prompt/instruction version
-- action/command summary
-- retry count
-- material tool failures
-- network/database access class
+현재 기본 physical store:
 
-Raw private model chain-of-thought는 기록 대상이 아니다.
+```text
+~/.stockvis-lab-automation/
+├── ledger/
+└── artifacts/
+    └── sha256/...
+```
 
-### test_validate
+`--state-root`를 외장 NVMe/NAS mount 등으로 바꾸더라도 artifact logical identity는 바뀌지 않는다. 내부 SSD 2TB는 architecture constraint가 아니라 deployment choice다.
 
-- test command/version
-- passed/failed/skipped
-- validation artifacts
-- known untested areas
+Retention class:
 
-### result_package
+```text
+irreplaceable
+reconstructable
+redownloadable
+ephemeral
+```
 
-- report
-- artifact manifest
-- changed files
-- data gaps
-- unresolved risks
-- next recommendation
+저장공간 부족을 이유로 irreplaceable raw input/output/evaluation artifact를 먼저 삭제하지 않는다.
 
-### candidate_revision
+## 5. Input Snapshot
 
-- candidate commit SHA
-- parent/base SHA
-- diff fingerprint
-- whether approvals for earlier SHA are now stale
+agent/model invocation 전에 실제 입력을 immutable artifact로 만든다.
 
-### approval_wait / promotion
+최소한 다음을 재구성할 수 있어야 한다.
 
-- approval action
-- approved SHA
-- approver
-- approval timestamp
-- push/merge/deploy result
-- resulting remote/main/deployed SHA
+- exact prompt reference
+- source Job state
+- base SHA
+- authority snapshot references
+- runner version
 
-## 4. Three Storage Layers
+실제 agent가 받은 입력을 나중에 현재 코드나 현재 Job에서 추정해서는 안 된다.
+
+## 6. Output Provenance
+
+파일 존재와 agent 생성은 동일하지 않다.
+
+```text
+agent_generated
+runner_placeholder
+runner_generated
+derived
+```
+
+같은 origin 구분을 보존한다.
+
+`agent_report.md`와 `result.json`처럼 required output이 runner placeholder라면 execution process가 정상 종료했더라도 output contract는 실패로 기록한다.
+
+```text
+execution success ≠ output contract success ≠ epistemic quality
+```
+
+## 7. Candidate SHA Boundary
+
+최종 candidate commit SHA는 commit 내부 manifest의 canonical field로 저장하지 않는다.
+
+manifest에 SHA를 쓰면 manifest content가 commit hash에 영향을 주어 자기참조가 발생하기 때문이다.
+
+따라서:
+
+- candidate manifest: base SHA, run identity, artifact refs, changed paths, promotion state
+- external append-only Run Ledger: final candidate SHA
+
+로 분리한다.
+
+## 8. Three Storage Layers
 
 ### A. Canonical Run Record
 
-작업의 사실을 재구성하기 위한 작은 structured record.
+작업의 사실을 재구성하기 위한 작은 structured append-only record.
 
 ### B. Artifacts
 
-보고서, test output, generated files, metrics처럼 재검토할 material output.
+prompt/input snapshot/raw output/report/test/evaluation처럼 재검토할 material output.
 
 ### C. Telemetry
 
@@ -165,27 +195,10 @@ Run Record ≠ Artifact ≠ Telemetry
 
 같은 사실을 여러 곳에서 별도 authority로 중복 유지하지 않는다.
 
-## 5. Immutable History and Corrections
-
-과거 event를 조용히 수정하지 않는다.
-
-오류가 발견되면:
+## 9. Platform Evolution Feedback
 
 ```text
-original event
-→ correction/superseding event
-```
-
-를 연결한다.
-
-따라서 시간이 지나도 당시 runner가 무엇을 알고 무엇을 했는지를 복원할 수 있어야 한다.
-
-## 6. Platform Evolution Feedback
-
-Runtime history는 다음 slow loop의 입력이 된다.
-
-```text
-Runs
+Runs / Invocations
 → telemetry aggregation
 → recurring failure / friction detection
 → Platform Improvement Candidate
@@ -195,49 +208,15 @@ Runs
 → adopt / modify / reject / rollback
 ```
 
-예시:
+Metrics는 diagnostic signal이지 직접 optimization target이 아니다.
 
-- worktree conflict 반복
-- Codex retry 과다
-- 특정 authority 문서 누락 반복
-- test 시간이 급증
-- CEO에게 불필요한 push approval 요청 과다
-- structured report 누락
-- failed run이 terminal record로 남지 않음
-- Cross-Lab handoff job이 자주 실패
-
-## 7. Metrics Are Diagnostic, Not Optimization Targets
-
-다음을 직접 최적화 목표로 삼지 않는다.
-
-- jobs/day 최대화
-- retry 최소화
-- CEO approval 비율 최대화
-- merge 비율 최대화
-- agent disagreement 최소화
-
-이런 수치는 diagnostic signal이며, 원인을 조사하는 시작점이다.
-
-## 8. Version Every Material Runtime Component
-
-최소한 다음은 versionable해야 한다.
-
-- runner
-- job schema
-- lab adapter
-- prompt/instruction bundle
-- permission policy
-- result schema
-- approval controller
-- deployment adapter
-
-그래야 운영 개선 전후를 비교할 수 있다.
-
-## 9. Retention Principle
+## 10. Retention and Privacy
 
 영구보존 기본값:
 
 - Job/Run/Event canonical records
+- material Invocation records
+- exact material input snapshots
 - approval/promotion/rollback history
 - candidate and promoted commit SHAs
 - material reports and evaluation artifacts
@@ -245,26 +224,23 @@ Runs
 
 제한적/회전 보존 가능:
 
-- verbose shell logs
-- large intermediate artifacts
-- redundant debug output
+- verbose redundant debug output
+- reconstructable derived views
+- redownloadable model cache
+- ephemeral runtime buffer
 
-Secret, credential, private chain-of-thought는 canonical runtime record에 저장하지 않는다.
+Secret, credential, private model chain-of-thought는 canonical runtime record에 저장하지 않는다.
 
-## 10. First End-to-End Pilot Success Criteria
+## 11. Research Runtime Profile Boundary
 
-DailyPrice readiness Job은 다음이 모두 남아야 성공으로 본다.
+Research Lab의 Critic independence, exposure, blinding, holdout, evaluation linkage 같은 의미는 Shared Run Ledger에 넣지 않는다.
 
-1. Job intake record
-2. exact base SHA
-3. isolated worktree/branch record
-4. authority refs loaded
-5. Codex invocation identity/version
-6. DB access = read-only 기록
-7. probe/test result artifacts
-8. data-gap outputs
-9. candidate commit SHA
-10. `waiting_for_push_approval` terminal state
-11. push가 아직 발생하지 않았음을 확인
+```text
+Shared Run Ledger
+→ execution facts
 
-이 기록이 다음 runner 버전의 Meta-Evaluation 입력으로 재사용될 수 있어야 한다.
+Research Experiment Profile
+→ research experiment semantics
+```
+
+`research_runtime/` profile은 기존 Research/Evaluation Methodology와 ORS를 재정의하지 않는다.
