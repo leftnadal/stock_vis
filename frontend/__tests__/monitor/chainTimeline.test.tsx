@@ -1,13 +1,20 @@
-// 관계망 이벤트 컴포넌트 (EVT-CHAIN-1 STEP 3) — RelationBadge 라벨 매핑 · 위젯 빈/pill 상태 ·
+// 관계망 이벤트 컴포넌트 (EVT-CHAIN-1/1B) — RelationBadge 라벨 · 상단 밴드(pill·앵커) ·
 // 타임라인 이웃 0 비표시 · 접힘 카운트 · 부호 중립(방향 색상 클래스 부재).
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { ChainTimeline } from '@/components/monitor/chain/ChainTimeline'
 import { RelationBadge } from '@/components/monitor/chain/RelationBadge'
-import { UpcomingEventsWidget } from '@/components/monitor/chain/UpcomingEventsWidget'
 import type { ChainEventItem, ChainFeed } from '@/types/chainFeed'
 import type { EventItem } from '@/types/eventCalendar'
+
+// 밴드는 useChainFeed를 직접 호출 → mock으로 제어(ChainTimeline/RelationBadge는 미사용).
+const useChainFeedMock = vi.fn()
+vi.mock('@/hooks/useEventCalendar', () => ({
+  useChainFeed: () => useChainFeedMock(),
+}))
+// 밴드는 mock 이후 import(호이스팅 안전).
+import { UpcomingEventsBand } from '@/components/monitor/chain/UpcomingEventsBand'
 
 function evt(overrides: Partial<EventItem>): EventItem {
   return {
@@ -81,16 +88,40 @@ describe('RelationBadge', () => {
   })
 })
 
-describe('UpcomingEventsWidget', () => {
-  it('시드 이벤트 없음 → "예정 이벤트 없음"', () => {
-    render(<UpcomingEventsWidget seedEvents={[]} />)
-    expect(screen.getByTestId('widget-empty')).toHaveTextContent('예정 이벤트 없음')
+describe('UpcomingEventsBand (EVT-CHAIN-1B)', () => {
+  beforeEach(() => useChainFeedMock.mockReset())
+
+  it('이벤트 없음(어닝·배당·이웃 전무) → 밴드 비표시', () => {
+    useChainFeedMock.mockReturnValue({
+      data: feed({ seed_events: [], neighbors: [], items: [] }),
+      isError: false,
+    })
+    const { container } = render(<UpcomingEventsBand symbol="IREN" />)
+    expect(container).toBeEmptyDOMElement()
   })
 
-  it('시드 어닝 있음 → 어닝 pill', () => {
-    render(<UpcomingEventsWidget seedEvents={[evt({ symbol: 'IREN', d_day: 63 })]} />)
-    expect(screen.getByTestId('widget-earnings-pill')).toBeInTheDocument()
-    expect(screen.getByTestId('widget-earnings-pill')).toHaveTextContent('D-63')
+  it('어닝 pill + 관계망 N pill 렌더', () => {
+    useChainFeedMock.mockReturnValue({
+      data: feed({ seed_events: [evt({ symbol: 'IREN', d_day: 63 })] }),
+      isError: false,
+    })
+    render(<UpcomingEventsBand symbol="IREN" />)
+    expect(screen.getByTestId('upcoming-band')).toBeInTheDocument()
+    expect(screen.getByTestId('band-earnings-pill')).toHaveTextContent('D-63')
+    expect(screen.getByTestId('chain-anchor-pill')).toHaveTextContent('관계망 1')
+  })
+
+  it('관계망 pill 클릭 → 하단 타임라인 앵커로 스크롤', () => {
+    useChainFeedMock.mockReturnValue({ data: feed({}), isError: false })
+    const scrollSpy = vi.fn()
+    const getByIdSpy = vi
+      .spyOn(document, 'getElementById')
+      .mockReturnValue({ scrollIntoView: scrollSpy } as unknown as HTMLElement)
+    render(<UpcomingEventsBand symbol="IREN" />)
+    fireEvent.click(screen.getByTestId('chain-anchor-pill'))
+    expect(getByIdSpy).toHaveBeenCalledWith('chain-timeline')
+    expect(scrollSpy).toHaveBeenCalled()
+    getByIdSpy.mockRestore()
   })
 })
 

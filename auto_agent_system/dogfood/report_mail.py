@@ -167,15 +167,23 @@ def render_rubric_section(rubric: dict[str, Any] | None, reason: str = "") -> li
         lines.append("  ⚠️ 미인증 렌더 — 로그인 필요한 화면은 빈 상태로 채점됐습니다.")
 
     for row in scores:
+        title = row.get("title", row.get("id"))
         if row.get("invalid"):
-            lines.append(f"  · {row.get('title', row.get('id'))} — 채점 불가({row['invalid']})")
+            lines.append(f"  · {title} — 채점 불가({row['invalid']})")
             continue
+        # 빈 상태 화면은 기준이 다르다("안내가 충분한가") → 라벨로 구분해 오해를 막는다.
+        label = " [빈 상태]" if row.get("empty_state") else ""
+        lines.append(f"  · {title}{label} — {row.get('score')}/5 {_delta_mark(row.get('delta'))}")
+
+    empty_avg = rubric.get("empty_average")
+    if empty_avg is not None:
         lines.append(
-            f"  · {row.get('title', row.get('id'))} — {row.get('score')}/5 {_delta_mark(row.get('delta'))}"
+            f"  (빈 상태 {rubric.get('empty_count', 0)}건은 '안내가 충분한가' 기준 — 평균 {empty_avg}/5, 본 평균과 분리)"
         )
 
+    # 최저 화면은 본 채점(빈 상태 제외)에서 고른다 — 빈 계정 탓 점수를 대표로 세우지 않는다.
     worst = min(
-        (r for r in scores if r.get("score") is not None),
+        (r for r in scores if r.get("score") is not None and not r.get("empty_state")),
         key=lambda r: r["score"],
         default=None,
     )

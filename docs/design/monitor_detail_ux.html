@@ -1,0 +1,150 @@
+<title>모니터 상세 개편안</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--panel-2:#f1f3f6;--line:#e3e6ea;--line-2:#cfd4da;--ink:#151a21;--ink-2:#4b5563;--ink-3:#8a94a1;
+--accent:#2563eb;--accent-soft:#e6eefc;--earn:#4f46e5;--earn-soft:#e9e8fb;--div:#059669;--div-soft:#dff5ec;
+--rel:#0f766e;--rel-soft:#d9f0ee;--stable:#1d4ed8;--stable-soft:#dbe6fb;--up:#15803d;--down:#b91c1c;
+--rec:#15803d;--rec-soft:#dcf2e3;--note:#fff8e1;--note-ink:#6b4f00;--note-line:#f1d27a;--seed-soft:#e8edf5}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--panel:#161b22;--panel-2:#1d232c;--line:#2a323d;--line-2:#3a4453;--ink:#e8ecf1;--ink-2:#aab4c0;--ink-3:#6f7b89;
+--accent:#4f83f1;--accent-soft:#1a2740;--earn:#8b86f5;--earn-soft:#26264a;--div:#34c48e;--div-soft:#123626;
+--rel:#3cbdb0;--rel-soft:#12312e;--stable:#7ea6f5;--stable-soft:#1a2a4a;--up:#5dd48a;--down:#f27979;
+--rec:#5dd48a;--rec-soft:#143224;--note:#2c2610;--note-ink:#f1dc9c;--note-line:#5c4c17;--seed-soft:#222b38}}
+:root[data-theme="dark"]{--bg:#0e1116;--panel:#161b22;--panel-2:#1d232c;--line:#2a323d;--line-2:#3a4453;--ink:#e8ecf1;--ink-2:#aab4c0;--ink-3:#6f7b89;
+--accent:#4f83f1;--accent-soft:#1a2740;--earn:#8b86f5;--earn-soft:#26264a;--div:#34c48e;--div-soft:#123626;
+--rel:#3cbdb0;--rel-soft:#12312e;--stable:#7ea6f5;--stable-soft:#1a2a4a;--up:#5dd48a;--down:#f27979;
+--rec:#5dd48a;--rec-soft:#143224;--note:#2c2610;--note-ink:#f1dc9c;--note-line:#5c4c17;--seed-soft:#222b38}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:14px;line-height:1.5}
+.num{font-family:"IBM Plex Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1150px;margin:0 auto;padding:28px 22px 60px}
+h1{font-size:21px;margin:0 0 6px}.lede{color:var(--ink-2);margin:0 0 20px;max-width:78ch}
+h2{font-size:16px;margin:26px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.opt{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.opt.rec{border-color:var(--rec);box-shadow:0 0 0 2px var(--rec-soft)}
+.oh{padding:9px 13px;border-bottom:1px solid var(--line);background:var(--panel-2);font-size:13px}
+.oh .id{color:var(--accent);font-weight:700;margin-right:6px}.oh .t{font-weight:700}
+.oh .score{float:right;font-size:12px;color:var(--ink-3)}.oh .score b{color:var(--ink)}
+.oh .tag{display:inline-block;background:var(--rec);color:#fff;font-size:10px;border-radius:4px;padding:0 6px;margin-left:6px;vertical-align:1px}
+.ob{padding:10px 13px;font-size:12.5px;color:var(--ink-2)}
+.scr{margin:0 13px 12px;border:1px solid var(--line-2);border-radius:8px;background:var(--panel);padding:8px 10px;font-size:11px}
+.card{border:1px solid var(--line);border-radius:7px;padding:6px 8px;margin:4px 0;background:var(--panel)}
+.stat{display:flex;gap:14px;font-size:10.5px;color:var(--ink-3)}
+.stat b{display:block;color:var(--ink);font-size:12px}
+.stat .hl{outline:2px solid var(--rec);outline-offset:2px;border-radius:4px}
+.pill{display:inline-flex;gap:5px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:10.5px;margin:2px 3px 0 0}
+.b{border-radius:4px;padding:0 5px;font-size:9.5px;font-weight:500}
+.b-earn{background:var(--earn-soft);color:var(--earn)}.b-rel{background:var(--rel-soft);color:var(--rel)}.b-st{background:var(--stable-soft);color:var(--stable)}
+.dd{color:var(--accent);font-weight:700}
+.faded{opacity:.42;border:1px dashed var(--line);border-radius:6px;padding:4px 8px;font-size:10px;text-align:center;margin:4px 0;color:var(--ink-3)}
+.anchor{font-size:10px;color:var(--accent)}
+.pros{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 13px 12px;font-size:11.5px}
+.pros div{background:var(--panel-2);border-radius:6px;padding:6px 8px}
+.pros b{display:block;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin-bottom:2px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left}th{background:var(--panel-2);font-weight:500;color:var(--ink-2);font-size:11.5px}
+td.n{text-align:right}tr.win td{font-weight:700}
+/* journal redesign */
+.jr{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:8px}
+.jr-h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.jr-h b{font-size:14px}.jr-h .sub{color:var(--ink-3);font-size:11.5px}.jr-h .rng{margin-left:auto;font-size:11px;color:var(--ink-2)}
+.rng span{border:1px solid var(--line);border-radius:5px;padding:1px 7px;margin-left:4px}.rng .on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chart{position:relative}
+.tip{position:absolute;left:57%;top:2px;background:var(--panel);border:1px solid var(--line-2);border-radius:6px;padding:4px 8px;font-size:10.5px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.tip b{font-size:11px}
+.jlist{margin-top:10px;border-top:1px solid var(--line)}
+.jrow{display:flex;gap:10px;padding:6px 2px;border-bottom:1px dashed var(--line);font-size:12px;align-items:baseline}
+.jrow .d{color:var(--ink-3);font-size:11px;min-width:38px}
+.jrow .delta-up{color:var(--up);margin-left:auto}.jrow .delta-dn{color:var(--down);margin-left:auto}
+.b-ai{background:var(--earn-soft);color:var(--earn);border-radius:4px;padding:0 5px;font-size:9.5px}
+.fold{background:var(--panel-2);border-radius:6px;padding:4px 9px;color:var(--ink-2);font-size:11px;margin-top:6px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:12px}
+.note{background:var(--note);border:1px solid var(--note-line);color:var(--note-ink);border-radius:8px;padding:8px 10px;font-size:12.5px}
+.note b{display:block;margin-bottom:2px}
+</style>
+<div class="wrap">
+<h1>모니터 상세 개편안</h1>
+<p class="lede">9/3 실화면 피드백 3건의 목업이다. <b>(a) 이벤트 섹션이 맨 아래라 안 보임</b> — 배치 선택지 3안(EVT 트랙 소유). <b>(b) 일지가 화면 과점 + (c) 매일 숫자 나열 대신 그래프</b> — 점수 차트 + 일지 접기 통합안(모니터 트랙 소유, 별건 초안). 데이터는 IONQ 실화면 기준.</p>
+
+<h2>(a) 이벤트 섹션 배치 — 선택지 3안</h2>
+<div class="grid">
+
+<div class="opt rec">
+  <div class="oh"><span class="id">P1</span><span class="t">위젯만 상단, 타임라인은 하단 + 앵커 점프</span><span class="tag">추천</span><span class="score">가중합 <b>4.50</b></span></div>
+  <div class="ob">상태 카드 바로 아래에 <b>한 줄짜리 이벤트 pill</b>을 올린다. "관계망 ↓"를 누르면 하단 타임라인으로 스크롤. 관제 요소(사다리·신호·근거)의 순서는 그대로.</div>
+  <div class="scr">
+    <div class="card"><div class="stat"><span>상태<b>활성 관제 중</b></span><span>존<b>보유</b></span><span>점수<b class="num">-0.034</b></span><span>기한<b>D-39</b></span></div></div>
+    <div class="card"><span class="pill"><span class="b b-earn">어닝</span><span class="dd num">D-62</span>11/4 · EPS 예상 −0.746</span><span class="pill"><span class="b b-rel">관계망 1</span>CAH D-56</span><span class="anchor">타임라인 ↓</span></div>
+    <div class="faded">가격 사다리 · 신호 · 근거 · 일지 (순서 무변)</div>
+    <div class="faded">매수 시나리오 → 이벤트 타임라인 (기존 위치)</div>
+  </div>
+  <div class="pros"><div><b>가치</b>첫 화면에서 "다음 어닝 D-62"가 항상 보임. 관제 흐름 무방해.</div><div><b>비용</b>위젯 이동 + 앵커 1건. 附加 유지, 기존 DOM 무변.</div></div>
+</div>
+
+<div class="opt">
+  <div class="oh"><span class="id">P2</span><span class="t">위젯 + 타임라인 전부 상단</span><span class="score">가중합 <b>4.10</b></span></div>
+  <div class="ob">두 섹션을 통째로 상태 카드 아래로. 이벤트가 가장 잘 보이지만, 이웃이 많은 시드(PLTR·GOOGL top-10)는 타임라인이 길어져 <b>사다리·신호를 스크롤 밖으로 밀어낸다</b> — 관제 화면의 본업이 뒤로 밀림.</div>
+  <div class="scr">
+    <div class="card"><div class="stat"><span>상태<b>활성</b></span><span>점수<b class="num">-0.034</b></span></div></div>
+    <div class="card">위젯 + 배너 + 이웃 행 3~10개…</div>
+    <div class="faded">가격 사다리 · 신호 · 근거 · 일지 (아래로 밀림)</div>
+  </div>
+  <div class="pros"><div><b>가치</b>이벤트 가시성 최대.</div><div><b>비용</b>이동만이라 싸지만 관제 정보 위계 훼손.</div></div>
+</div>
+
+<div class="opt">
+  <div class="oh"><span class="id">P3</span><span class="t">상태 카드에 "다음 이벤트" 칸 편입</span><span class="score">가중합 <b>4.00</b></span></div>
+  <div class="ob">상태 카드의 기한(D-39) 옆에 <b>다음 어닝 D-62</b> 칸을 추가. 가장 우아하지만 상태 카드는 <b>모니터 앱 소유 컴포넌트</b>라 EVT의 附加 원칙(기존 diff 0)을 깬다 — 소유권 경계 침범.</div>
+  <div class="scr">
+    <div class="card"><div class="stat"><span>상태<b>활성</b></span><span>점수<b class="num">-0.034</b></span><span>기한<b>D-39</b></span><span class="hl">다음 어닝<b class="dd">D-62</b></span></div></div>
+    <div class="faded">이하 무변, 타임라인 상단 배치</div>
+  </div>
+  <div class="pros"><div><b>가치</b>정보 위계 가장 자연스러움.</div><div><b>비용</b>monitor 소유 컴포넌트 수정 = 트랙 경계 밖(그쪽 초안으로 넘겨야 함).</div></div>
+</div>
+</div>
+
+<table>
+<tr><th>기준 (합 1.00)</th><th class="n">P1</th><th class="n">P2</th><th class="n">P3</th></tr>
+<tr><td>이벤트 가시성 0.30</td><td class="n">4</td><td class="n">5</td><td class="n">5</td></tr>
+<tr><td>관제 흐름 무방해 0.25</td><td class="n">5</td><td class="n">3</td><td class="n">4</td></tr>
+<tr><td>구현 비용·附加 유지 0.25</td><td class="n">5</td><td class="n">5</td><td class="n">2</td></tr>
+<tr><td>정보 위계 자연스러움 0.20</td><td class="n">4</td><td class="n">3</td><td class="n">5</td></tr>
+<tr class="win"><td>가중합</td><td class="n">4.50</td><td class="n">4.10</td><td class="n">4.00</td></tr>
+</table>
+
+<h2>(b)+(c) 일지 개편 — 점수 차트 + 접힌 일지 (모니터 트랙 초안)</h2>
+<p class="lede" style="margin-bottom:10px">네 질문의 답: <b>숫자 추이는 그래프 하나로 전부 대체된다.</b> 대체 안 되는 것은 두 가지 — 비서의 서술 코멘트와 이벤트 기록(관제 개시·시나리오 변경). 그래서 차트가 주인공이 되고, 코멘트는 차트 위 마커 + 아래 접힌 리스트로 남긴다. 재료는 이미 있다(MonitorSnapshot 시계열 + 스파크라인 서비스) — 스파크라인을 본 차트로 승격하는 작업이라 비용이 낮다.</p>
+
+<div class="jr">
+  <div class="jr-h"><b>점수 추이</b><span class="sub">종합 점수 · 일 1회 스냅샷</span><span class="rng">기간<span>2주</span><span class="on">전체(39일)</span></span></div>
+  <div class="chart">
+    <svg viewBox="0 0 720 150" width="100%" height="150" role="img" aria-label="IONQ 종합 점수 추이, 7월 28일 0.013에서 9월 3일 -0.034">
+      <line x1="40" y1="20" x2="40" y2="120" stroke="var(--line)" stroke-width="1"/>
+      <line x1="40" y1="60" x2="710" y2="60" stroke="var(--line-2)" stroke-width="1" stroke-dasharray="3 3"/>
+      <line x1="40" y1="120" x2="710" y2="120" stroke="var(--line)" stroke-width="1"/>
+      <text x="34" y="63" font-size="9" fill="var(--ink-3)" text-anchor="end" class="num">0</text>
+      <text x="34" y="24" font-size="9" fill="var(--ink-3)" text-anchor="end" class="num">+0.05</text>
+      <text x="34" y="122" font-size="9" fill="var(--ink-3)" text-anchor="end" class="num">−0.05</text>
+      <polyline points="50,45 110,52 170,66 230,84 290,98 350,104 410,96 470,102 530,108 590,99 650,95 700,88" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="50" cy="45" r="4" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"/>
+      <circle cx="350" cy="104" r="4" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"/>
+      <circle cx="700" cy="88" r="4.5" fill="var(--accent)"/>
+      <text x="700" y="78" font-size="10" fill="var(--ink)" text-anchor="end" class="num" font-weight="600">−0.034</text>
+      <text x="50" y="35" font-size="9" fill="var(--ink-3)">관제 개시</text>
+      <text x="46" y="140" font-size="9" fill="var(--ink-3)">7/28</text><text x="345" y="140" font-size="9" fill="var(--ink-3)">8/15</text><text x="686" y="140" font-size="9" fill="var(--ink-3)">9/3</text>
+    </svg>
+    <div class="tip"><b>8/15 · −0.044</b><br>비서: 하방 압력 지속…<span style="color:var(--accent)"> 일지 보기</span></div>
+  </div>
+  <div class="jlist">
+    <div class="jrow"><span class="d">09/03</span><span class="b-ai">비서</span><span>종합 −0.0335 소폭 개선 · '반반이에요' 유지 · 손절 −12.63% 거리</span><span class="delta-up num">▲ +0.011</span></div>
+    <div class="jrow"><span class="d">09/02</span><span>종합 점수 −0.044</span><span class="delta-dn num">▼ −0.004</span></div>
+    <div class="jrow"><span class="d">09/01</span><span class="b-ai">비서</span><span>지표 9/9 커버 · 이상 없음</span><span class="delta-up num">▲ +0.002</span></div>
+  </div>
+  <div class="fold">▸ 이전 36건 (7/28 관제 개시부터) — 펼치기 · 차트 마커 클릭 시 해당 날짜로 점프</div>
+</div>
+
+<div class="notes">
+  <div class="note"><b>규칙</b>차트: 단일 시리즈 2px 라인 + 0 기준선(점선) + 끝점 강조·현재값 라벨. 비서 코멘트 있는 날만 마커(속빈 원). hover = 크로스헤어 + 날짜·점수·코멘트 첫 줄 툴팁.</div>
+  <div class="note"><b>일지 리스트</b>기본 = 최근 3일만. 나머지는 "이전 N건 ▸" 접힘. 비서 코멘트는 접힌 상태에서 한 줄 요약, 클릭 시 전문.</div>
+  <div class="note"><b>소유권</b>일지·점수·스냅샷은 모니터 앱 기능 → 이 안은 초안(MON-JOURNAL-1)으로 모니터 트랙에 전달. EVT 트랙은 (a)만 집행.</div>
+</div>
+</div>

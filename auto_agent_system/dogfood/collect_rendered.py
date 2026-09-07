@@ -24,6 +24,19 @@ from .check_quant import OUT_DIR
 from .targets import rubric_targets
 
 SCRIPT = Path(__file__).with_name("render_screens.mjs")
+PROJECT_DIR = Path(__file__).resolve().parents[2]
+# node에 넘길 키만 화이트리스트로 뽑는다. `.env` 전체를 subprocess에 흘리면 무관한
+# 비밀(DB·API 키)까지 노출 범위가 넓어진다.
+ENV_KEYS = (
+    "DOGFOOD_USER",
+    "DOGFOOD_PASSWORD",
+    "DOGFOOD_BASE_URL",
+    "DOGFOOD_API_URL",
+    "DOGFOOD_NAV_TIMEOUT",
+    "DOGFOOD_SETTLE_MS",
+    "DOGFOOD_MAX_CHARS",
+    "DOGFOOD_MIN_ANCHOR_CHARS",
+)
 # playwright가 설치된 트리(실측: web 런타임에만 node_modules 존재).
 WEB_TREE = Path(os.getenv("DOGFOOD_WEB_TREE", str(Path.home() / "worktrees" / "sv-web-runtime")))
 NODE_BIN = os.getenv("DOGFOOD_NODE", str(Path.home() / ".nvm/versions/node/v22.19.0/bin/node"))
@@ -51,8 +64,27 @@ def node_cwd() -> Path:
     return fe
 
 
+def dogfood_env() -> dict[str, str]:
+    """node에 넘길 DOGFOOD_* 값. 현재 환경 → 없으면 `.env`에서 보충.
+
+    **launchd에는 셸의 `.env`가 없다** — 수동 실행은 세션 셸에 변수가 있어 성공하지만
+    05:20 자동 발화는 로그인을 건너뛰고 미인증으로 채점한다(2026-09-04 실측: 평균
+    1.4/5 왜곡). 그래서 여기서 직접 읽는다. 값은 로깅하지 않는다.
+    """
+    from dotenv import dotenv_values  # settings.py와 같은 의존(python-dotenv)
+
+    file_vals = dotenv_values(PROJECT_DIR / ".env") if (PROJECT_DIR / ".env").exists() else {}
+    out: dict[str, str] = {}
+    for key in ENV_KEYS:
+        val = os.environ.get(key) or file_vals.get(key)
+        if val:
+            out[key] = str(val)
+    return out
+
+
 def run_render(screens: list[dict[str, Any]]) -> dict[str, Any]:
     cwd = node_cwd()
+    injected = dogfood_env()
     proc = subprocess.run(  # noqa: S603 - 고정 바이너리 + 고정 스크립트
         [NODE_BIN, str(SCRIPT)],
         input=json.dumps(screens),
@@ -62,6 +94,7 @@ def run_render(screens: list[dict[str, Any]]) -> dict[str, Any]:
         timeout=TIMEOUT_S,
         env={
             **os.environ,
+            **injected,  # launchd 환경에는 .env가 없다 → 필요한 키만 보충
             # ESM은 NODE_PATH를 무시한다 → playwright 진입점을 절대 경로로 넘긴다.
             "DOGFOOD_PLAYWRIGHT_MODULE": (cwd / "node_modules" / "playwright" / "index.js").as_uri(),
         },
@@ -100,6 +133,8 @@ def main() -> int:
         print("채점 대상 화면이 없습니다(confirmed + coreQuestion 0건).", file=sys.stderr)
         return 1
 
+    creds = "있음" if dogfood_env().get("DOGFOOD_USER") else "없음"
+    print(f"자격증명 {creds}(.env 포함 조회)")
     report = build_report(run_render(screens))
     auth = "인증" if report["authenticated"] else "미인증"
     print(f"렌더 수집 {report['ok_count']}/{report['screen_count']} ({auth})")

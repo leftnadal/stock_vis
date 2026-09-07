@@ -269,3 +269,124 @@ def test_load_rubric_missing_returns_none(tmp_path):
 def test_load_rubric_corrupt_returns_none(tmp_path):
     (tmp_path / "rubric_20260902.json").write_text("{ broken", encoding="utf-8")
     assert load_rubric(tmp_path, date(2026, 9, 2)) is None
+
+
+# ── AGENT-S2.1 ① env 주입 ────────────────────────────────────────────────────
+
+
+def test_dogfood_env_reads_from_dotenv_when_absent_in_environ(tmp_path, monkeypatch):
+    """launchd에는 셸의 .env가 없다 — 파일에서 직접 읽어야 로그인이 산다."""
+    from auto_agent_system.dogfood import collect_rendered as cr
+
+    env_file = tmp_path / ".env"
+    env_file.write_text("DOGFOOD_USER=u1\nDOGFOOD_PASSWORD=p1\nDB_PASSWORD=secret\n", encoding="utf-8")
+    monkeypatch.setattr(cr, "PROJECT_DIR", tmp_path)
+    monkeypatch.delenv("DOGFOOD_USER", raising=False)
+    monkeypatch.delenv("DOGFOOD_PASSWORD", raising=False)
+
+    got = cr.dogfood_env()
+    assert got["DOGFOOD_USER"] == "u1" and got["DOGFOOD_PASSWORD"] == "p1"
+    assert "DB_PASSWORD" not in got  # 화이트리스트 밖은 넘기지 않는다
+
+
+def test_dogfood_env_prefers_environ_over_file(tmp_path, monkeypatch):
+    from auto_agent_system.dogfood import collect_rendered as cr
+
+    (tmp_path / ".env").write_text("DOGFOOD_USER=from_file\n", encoding="utf-8")
+    monkeypatch.setattr(cr, "PROJECT_DIR", tmp_path)
+    monkeypatch.setenv("DOGFOOD_USER", "from_env")
+    assert cr.dogfood_env()["DOGFOOD_USER"] == "from_env"
+
+
+def test_dogfood_env_without_file(tmp_path, monkeypatch):
+    from auto_agent_system.dogfood import collect_rendered as cr
+
+    monkeypatch.setattr(cr, "PROJECT_DIR", tmp_path)
+    monkeypatch.delenv("DOGFOOD_USER", raising=False)
+    assert "DOGFOOD_USER" not in cr.dogfood_env()
+
+
+# ── AGENT-S2.1 ② 빈 상태 분기 ───────────────────────────────────────────────
+
+
+def test_empty_states_extracted(first_target):
+    rendered = {"screens": [{"id": first_target.id, "empty_state": "아직 비어있습니다"}]}
+    from auto_agent_system.dogfood.score_rubric import empty_states
+
+    assert empty_states(rendered)[first_target.id] == "아직 비어있습니다"
+
+
+def test_prompt_switches_criterion_for_empty_screen(first_target):
+    from auto_agent_system.dogfood.score_rubric import build_prompt
+
+    rendered = _rendered(first_target)
+    rendered["screens"][0]["empty_state"] = "아직 포트폴리오가 비어있습니다"
+    prompt = build_prompt(rendered)
+    assert "[빈 상태]" in prompt
+    assert "빈 상태 안내가 충분한가" in prompt
+    assert "행동 유도" in prompt
+
+
+def test_prompt_keeps_core_question_when_not_empty(first_target):
+    from auto_agent_system.dogfood.score_rubric import build_prompt
+
+    prompt = build_prompt(_rendered(first_target))
+    assert "[빈 상태]" not in prompt
+    assert first_target.core_question in prompt
+
+
+def test_average_excludes_empty_state_rows():
+    rows = [
+        {"score": 2, "empty_state": ""},
+        {"score": 4, "empty_state": ""},
+        {"score": 5, "empty_state": "비어있습니다"},
+    ]
+    assert average(rows) == 3.0
+    assert average(rows, empty=True) == 5.0
+
+
+def test_average_none_when_only_empty_rows():
+    assert average([{"score": 5, "empty_state": "x"}]) is None
+
+
+def test_validate_scores_propagates_empty_state(first_target):
+    texts = screen_texts(_rendered(first_target))
+    data = {
+        "scores": [{"id": first_target.id, "score": 4, "reason": "r", "quote": "상승 후반 경계 국면"}]
+    }
+    rows = validate_scores(data, texts, {first_target.id: "비어있습니다"})
+    assert rows[0]["empty_state"] == "비어있습니다"
+
+
+def test_mail_labels_empty_state_and_splits_average():
+    rubric = {
+        "authenticated": True,
+        "average": 4.0,
+        "empty_average": 4.5,
+        "empty_count": 2,
+        "invalid_count": 0,
+        "wish": "",
+        "scores": [
+            {"id": "a", "title": "대시보드", "score": 4, "empty_state": "", "reason": "r", "quote": "q"},
+            {"id": "b", "title": "모니터", "score": 5, "empty_state": "비어있어요", "reason": "r2", "quote": "q2"},
+        ],
+    }
+    body = "\n".join(render_rubric_section(rubric))
+    assert "모니터 [빈 상태] — 5/5" in body
+    assert "빈 상태 2건은" in body and "평균 4.5/5" in body
+
+
+def test_mail_worst_screen_ignores_empty_state():
+    """빈 계정 탓 점수를 '최저 화면'으로 대표 세우지 않는다."""
+    rubric = {
+        "authenticated": True,
+        "average": 4.0,
+        "invalid_count": 0,
+        "scores": [
+            {"id": "a", "title": "대시보드", "score": 4, "empty_state": "", "reason": "정상근거", "quote": "q1"},
+            {"id": "b", "title": "모니터", "score": 1, "empty_state": "비어있어요", "reason": "빈근거", "quote": "q2"},
+        ],
+    }
+    body = "\n".join(render_rubric_section(rubric))
+    assert "최저 화면: 대시보드" in body
+    assert "최저 화면: 모니터" not in body
