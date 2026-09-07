@@ -1,5 +1,6 @@
 'use client';
 
+import { Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { fetchMarketStoryFeed } from '@/services/chainsightService';
@@ -21,12 +22,15 @@ export default function MarketStoryFeed() {
     staleTime: 1000 * 60 * 5,
   });
 
-  // A-5 정직화: 제목은 단일 창 N 미주장(발견 2), 부제는 meta 소비(급증/신규 대신 정직 카운트).
+  // A-5 정직화: 헤더는 창을 말하지 않는다(발견 2). 부제 = 오늘 새로 온 것 n · 전체 N.
   const subtitle = data
     ? data.has_event
-      ? `${data.meta.as_of} · 오늘 새로 온 것 ${data.meta.new_today}건 · 이야기 ${data.meta.stories}`
+      ? `오늘 새로 온 것 ${data.meta.new_today} · 전체 ${data.meta.stories}`
       : '오늘은 큰 사건이 없어요 — 꾸준히 활발한 이야기들'
     : null;
+
+  // 사건(new_sec·daily_spike) → 배경(weekly_active) 전환점(구분선 삽입 위치).
+  const firstSteadyIdx = data ? data.cards.findIndex((c) => c.type === 'weekly_active') : -1;
 
   return (
     <div className="p-6">
@@ -64,11 +68,21 @@ export default function MarketStoryFeed() {
 
       {data && data.cards.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.cards.map((card) => (
-            <MarketStoryCardItem
-              key={card.story_id ?? `${card.type}-${card.symbol_a}-${card.symbol_b}`}
-              card={card}
-            />
+          {data.cards.map((card, i) => (
+            <Fragment key={card.story_id ?? `${card.type}-${card.symbol_a}-${card.symbol_b}`}>
+              {/* 사건→배경 전환점 구분선(앞에 사건 카드가 있을 때만). */}
+              {i === firstSteadyIdx && firstSteadyIdx > 0 && (
+                <div
+                  data-testid="steady-divider"
+                  className="col-span-full flex items-center gap-3 py-1 text-[11px] text-gray-400 dark:text-gray-500"
+                >
+                  <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                  여기부터 잔잔한 흐름
+                  <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                </div>
+              )}
+              <MarketStoryCardItem card={card} />
+            </Fragment>
           ))}
         </div>
       )}

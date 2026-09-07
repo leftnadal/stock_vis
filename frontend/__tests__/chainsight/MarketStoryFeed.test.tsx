@@ -32,7 +32,7 @@ function feed(partial: Partial<MarketStoryFeedResponse> = {}): MarketStoryFeedRe
         days_since: 14, companions: [], is_group: false,
         story_id: '832af17221', story_key: 'new_sec:GOOGL-MRVL:2026-08-19',
         title: 'MRVL, GOOGL와 중요 계약 체결 공시', members: ['GOOGL', 'MRVL'],
-        window_days: 30,
+        window_label: '30일 내 신규 공시',
         evidence: [{ kind: '8k', ref: 'acc-1', title: 'MRVL, GOOGL와 중요 계약 체결 공시', url: null, date: '2026-08-19' }],
       },
       {
@@ -45,7 +45,7 @@ function feed(partial: Partial<MarketStoryFeedResponse> = {}): MarketStoryFeedRe
           { symbol_a: 'PANW', symbol_b: 'TJX', count: 12 },
           { symbol_a: 'ORCL', symbol_b: 'ROST', count: 6 },
         ],
-        window_days: 14,
+        window_label: '14일 중 이 하루',
         story_id: '4b359d1ac0', story_key: 'daily_spike:BLK-ORCL-PANW-ROST-TJX:2026-08-21',
         title: '오라클·팔로알토 클라우드 계약',
         evidence: [{ kind: 'article', ref: 'cne:1', title: '오라클·팔로알토 클라우드 계약', url: 'http://n/1', date: '2026-08-21T13:00:00+00:00' }],
@@ -53,7 +53,7 @@ function feed(partial: Partial<MarketStoryFeedResponse> = {}): MarketStoryFeedRe
       {
         type: 'weekly_active', kind: 'co_mention', symbol_a: 'JPM', symbol_b: 'BAC',
         count: 27, occurred_on: '2026-08-31', days_since: 2, companions: [], companions_outside: [],
-        is_group: false, members: ['BAC', 'JPM'], window_days: 7,
+        is_group: false, members: ['BAC', 'JPM'], window_label: '최근 7일 활동',
         story_id: 'e98a0a8bf2', story_key: 'weekly_active:BAC-JPM:2026-08-31',
         title: null, evidence: [],
       },
@@ -74,12 +74,10 @@ describe('MarketStoryFeed 헤더(A-5 정직화)', () => {
     expect(screen.queryByText(/최근 \d+일의 이야기/)).not.toBeInTheDocument();
   });
 
-  it('has_event=true 부제 = "{as_of} · 오늘 새로 온 것 {n}건 · 이야기 {m}"', async () => {
+  it('has_event=true 부제 = "오늘 새로 온 것 {n} · 전체 {N}"(창 미표기)', async () => {
     vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed());
     render(<MarketStoryFeed />, { wrapper });
-    expect(
-      await screen.findByText('2026-09-02 · 오늘 새로 온 것 1건 · 이야기 3'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('오늘 새로 온 것 1 · 전체 3')).toBeInTheDocument();
   });
 
   it('has_event=false 부제 = 조용한 날 카피(정문 무공허)', async () => {
@@ -175,6 +173,43 @@ describe('MarketStoryFeed 카드(S3-1 묶음·제목·정직)', () => {
     const spike = byType('daily_spike')(await screen.findAllByTestId('market-story-card'));
     expect(spike).toHaveTextContent('함께:');
     expect(spike).toHaveTextContent('CRM');
+  });
+
+  it('카드가 자기 관측 창을 말한다(window_label)', async () => {
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed());
+    render(<MarketStoryFeed />, { wrapper });
+    const cards = await screen.findAllByTestId('market-story-card');
+    expect(byType('daily_spike')(cards)).toHaveTextContent('14일 중 이 하루');
+    expect(byType('new_sec')(cards)).toHaveTextContent('30일 내 신규 공시');
+    expect(byType('weekly_active')(cards)).toHaveTextContent('최근 7일 활동');
+  });
+
+  it('사건→배경 전환점에 "여기부터 잔잔한 흐름" 구분선', async () => {
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed());
+    render(<MarketStoryFeed />, { wrapper });
+    const divider = await screen.findByTestId('steady-divider');
+    expect(divider).toHaveTextContent('여기부터 잔잔한 흐름');
+  });
+
+  it('사건 카드가 없으면(전부 steady) 구분선 없음', async () => {
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(
+      feed({
+        has_event: false,
+        meta: { as_of: '2026-09-02', new_today: 0, stories: 1, by_type: { new_sec: 0, daily_spike: 0, weekly_active: 1 } },
+        cards: [
+          {
+            type: 'weekly_active', kind: 'co_mention', symbol_a: 'JPM', symbol_b: 'BAC',
+            count: 27, occurred_on: '2026-08-31', days_since: 2, companions: [], companions_outside: [],
+            is_group: false, members: ['BAC', 'JPM'], window_label: '최근 7일 활동',
+            story_id: 'e98a0a8bf2', title: null, evidence: [],
+          },
+        ],
+        total: 1,
+      }),
+    );
+    render(<MarketStoryFeed />, { wrapper });
+    await screen.findAllByTestId('market-story-card');
+    expect(screen.queryByTestId('steady-divider')).not.toBeInTheDocument();
   });
 
   it('배지 색 계열 구분(사건 vs steady)', async () => {

@@ -100,6 +100,11 @@ export default function MarketStoryCardItem({ card }: { card: MarketStoryCard })
         </p>
       )}
 
+      {/* B안: 카드가 자기 관측 창을 말함(헤더는 창을 말하지 않음). */}
+      {card.window_label && (
+        <p className="text-[11px] text-gray-400 dark:text-gray-500">{card.window_label}</p>
+      )}
+
       {evidenceCount > 0 && (
         <p className="text-[11px] text-gray-400 dark:text-gray-500">근거 {evidenceCount}</p>
       )}

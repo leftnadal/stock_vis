@@ -377,8 +377,8 @@ export interface MarketStoryCard {
   max_mentions?: number;
   /** 멤버 외 동반 종목. */
   companions_outside?: string[];
-  /** 이 카드가 말하는 자기 관측 창(일). daily_spike=14·new_sec=30·weekly_active=7. */
-  window_days?: number;
+  /** 이 카드가 말하는 자기 관측 창 문구(B안·상수 파생). 예: "14일 중 이 하루". */
+  window_label?: string;
   /** 근거 팩(A-6). */
   evidence?: StoryEvidence[];
 }
