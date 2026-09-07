@@ -74,3 +74,28 @@ poetry run python -m lab_automation.research_runtime.vertical_slice
 이 pilot은 deterministic synthetic calibration이며 모델 품질을 평가하지 않는다. 목적은 shared Run / Invocation / Artifact 기록과 Research-specific Exposure / target lineage / Evaluation linkage가 하나의 재구성 가능한 흐름으로 연결되는지 확인하는 것이다.
 
 세부 성공 조건과 해석 경계는 [Research Runtime First Vertical Slice v0.1](vertical_slice_ko.md)을 따른다.
+
+## 6. Model-backed vertical slice
+
+두 번째 vertical slice는 `SV-RES-RUNTIME-MODEL-E2E-001`이다.
+
+```text
+Researcher command backend
+→ Critic command backend
+→ Revision command backend
+→ separated Evaluator command backend
+→ harness benchmark + Experiment Profile
+```
+
+공통 backend contract는 `backends.py`에 있으며, v0.1은 stdin prompt → stdout 단일 JSON object를 요구하는 `command_json` backend만 지원한다. role별 command/model identity를 config에서 다르게 지정할 수 있다.
+
+실행 예:
+
+```bash
+poetry run python -m lab_automation.research_runtime.model_vertical_slice \
+  --config lab_automation/research_runtime/model_backend.example.json
+```
+
+이 단계에서도 runtime completion과 epistemic quality를 분리한다. 모델이 정답을 맞추거나 Critic이 개선해야 runtime이 성공하는 것이 아니라, 정확한 input/output/exposure/target lineage와 integrity boundary가 보존되어야 한다.
+
+세부 contract와 해석 경계는 [Research Runtime Model-backed Vertical Slice v0.1](model_vertical_slice_ko.md)을 따른다.
