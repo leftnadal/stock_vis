@@ -6,6 +6,7 @@ from lab_automation.contracts import JobEnvelope, Lab
 from lab_automation.local_runner import (
     _candidate_branch,
     _enforce_write_scope,
+    _ensure_minimum_artifacts,
     _path_allowed,
     _validate_job,
 )
@@ -55,3 +56,19 @@ def test_write_scope_rejects_other_lab():
 def test_candidate_branch_is_local_run_specific():
     branch = _candidate_branch("SV:MATH:1", "12345678-abcd")
     assert branch == "lab-run/SV-MATH-1/12345678"
+
+
+def test_missing_agent_outputs_are_marked_as_runner_placeholders(tmp_path: Path):
+    origins = _ensure_minimum_artifacts(tmp_path)
+    assert origins["agent_report.md"] == "runner_placeholder"
+    assert origins["result.json"] == "runner_placeholder"
+    assert origins["data_gaps.json"] == "runner_placeholder"
+
+
+def test_existing_agent_outputs_keep_agent_generated_origin(tmp_path: Path):
+    (tmp_path / "agent_report.md").write_text("report", encoding="utf-8")
+    (tmp_path / "result.json").write_text("{}", encoding="utf-8")
+    origins = _ensure_minimum_artifacts(tmp_path)
+    assert origins["agent_report.md"] == "agent_generated"
+    assert origins["result.json"] == "agent_generated"
+    assert origins["data_gaps.json"] == "runner_placeholder"
