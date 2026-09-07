@@ -155,7 +155,7 @@ def _daily_spike_group_cards(now, since14):
                     "companions_outside": comps_outside,
                     "occurred_on": occurred,
                     "days_since": (now.date() - d).days if d else None,
-                    "window_days": DAILY_SPIKE_DAYS,  # 카드 자기 창 표기(B안)
+                    "window_label": f"{DAILY_SPIKE_DAYS}일 중 이 하루",  # 카드 자기 창(B안·상수 파생)
                     "evidence": [],
                 }
             )
@@ -196,7 +196,7 @@ def _weekly_active_cards(now):
                 "max_mentions": r["count_7d"],
                 "occurred_on": occurred,
                 "days_since": (now.date() - d).days if d else None,
-                "window_days": WEEKLY_ACTIVE_WINDOW_DAYS,  # 카드 자기 창 표기(B안)
+                "window_label": f"최근 {WEEKLY_ACTIVE_WINDOW_DAYS}일 활동",  # 카드 자기 창(B안·상수 파생)
                 "companions": [],
                 "companions_outside": [],
                 "evidence": [],
@@ -246,7 +246,7 @@ def _new_sec_cards(now, since30):
                 "item_code": e["item_code"],
                 "occurred_on": occurred,
                 "days_since": (now.date() - d).days if d else None,
-                "window_days": NEW_SEC_DAYS,  # 카드 자기 창 표기(B안)
+                "window_label": f"{NEW_SEC_DAYS}일 내 신규 공시",  # 카드 자기 창(B안·상수 파생)
                 "companions": [],
                 "companions_outside": [],
                 "max_mentions": 0,

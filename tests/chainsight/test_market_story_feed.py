@@ -176,6 +176,14 @@ class TestFeedComposition:
         types = [c["type"] for c in feed["cards"]]
         assert types.index("new_sec") < types.index("daily_spike")
 
+    def test_sort_key_places_sec_above_recent_steady(self):
+        # 디렉터 확정: 그저께 new_sec 1건 + 어제 weekly_active 2건 → new_sec가 index 0.
+        _sec("MRVL", "GOOGL", "PARTNER_WITH", filing_days_ago=2)   # 그저께
+        _cache("JPM", "BAC", 27, last_days_ago=1)                   # 어제
+        _cache("BLK", "MS", 19, last_days_ago=1)                    # 어제
+        feed = build_market_story_feed(now=NOW)
+        assert feed["cards"][0]["type"] == "new_sec"
+
     def test_sort_within_tier_recent_first(self):
         # 같은 티어(daily_spike) 안에서는 occurred_on desc(최근 발생일 먼저).
         _edge("AAA", "BBB", 9, last_days_ago=6, span_days=0)   # 6일 전
@@ -300,16 +308,25 @@ class TestHeaderMeta:
 
 @pytest.mark.django_db
 class TestCardWindow:
-    def test_each_card_states_own_window(self):
-        # B안: 카드가 자기 창을 말함(window_days per card).
+    def test_each_card_states_own_window_label(self):
+        # B안(디렉터 확정): 카드가 자기 창을 문자열로 말함(window_label).
         _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
         _sec("MRVL", "GOOGL", "PARTNER_WITH", filing_days_ago=3)
         _cache("JPM", "BAC", 27, last_days_ago=2)
         feed = build_market_story_feed(now=NOW)
-        wd = {c["type"]: c["window_days"] for c in feed["cards"]}
-        assert wd["daily_spike"] == 14
-        assert wd["new_sec"] == 30
-        assert wd["weekly_active"] == 7
+        wl = {c["type"]: c["window_label"] for c in feed["cards"]}
+        assert wl["daily_spike"] == "14일 중 이 하루"
+        assert wl["new_sec"] == "30일 내 신규 공시"
+        assert wl["weekly_active"] == "최근 7일 활동"
+
+    def test_window_label_derives_from_constant(self, monkeypatch):
+        # 하드코딩 금지: 상수를 바꾸면 문구가 따라온다.
+        import apps.chain_sight.services.market_story_feed as msf
+        monkeypatch.setattr(msf, "DAILY_SPIKE_DAYS", 9)
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
+        assert card["window_label"] == "9일 중 이 하루"
 
 
 @pytest.mark.django_db
