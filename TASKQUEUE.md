@@ -13,6 +13,7 @@
 |--------|------|------|-----------|------|
 | CS-S3-PRE | — | 데이터·구조 전제 측정(P1~P9) + DECISIONS 5건 + 사이징 | R2-S2 | ✅ **done (2026-09-03, 측정 전용)** |
 | CS-S3-1 | M | 묶음(union-find)·제목 인용·8-K 템플릿·story_id 슬러그·헤더 정직화·정렬(사건성 1차)·응답 캐시·window_days·evidence 스키마. FE 카드/헤더/가이드 겹침 | CS-S3-PRE | ✅ **LANDED+DEPLOYED (main `5e4e70ea`·커밋 A~H). BE 817·vitest 19·tsc0·ruff0·eslint0. worker_sync 3트리 재기동+FE prod 리빌드·:3000 200·라이브 API 검증. 픽셀 스샷=browse 데몬 이슈로 미수행(API 갈음)** |
+| CS-S3-1B | S | D-S3-7 배경 접기(FE 전용): weekly_active 기본 접힘·구분선→접힘 줄·펼치면 줄 목록(카드 아님)·조용한 날 peek 3+"오늘은 조용합니다"·펼침 비저장·상수 FOLD_STEADY_BY_DEFAULT/QUIET_DAY_PEEK. BE 무변경 | CS-S3-1 | ✅ **done (커밋 `129a9e3d`·vitest chainsight 310·tsc0·eslint0). ★배포 후보(병진 "푸시"/승인 대기)** |
 | CS-S3-2 | M | 사슬 대조(§3). **RelationConfidence 쌍 조회 서비스 신설**(P4 진입점 미발견·지연 1.02ms→배치 불요) + 신뢰도 4밴드(0.35/0.60/0.85). **evidence[] 스키마 = D-S3-EVIDENCE-SCHEMA(§1 입력 확정)**. `hidden` 두 갈래 판정(previous_status: 미승격 vs weak감쇠·D-RC-DECAY-SEMANTIC) — STEP 0에서 previous_status 분포만 계수 | CS-S3-1 | 🟢 **착수 가능** |
 | CS-S3-3 | S | 시계열(§2). read-time 일별 재집계(P3: NewsEntity.published_at ~6개월 보존→물질화 확장 불요) | CS-S3-1 | 🆕 todo |
 | CS-S3-4 | L | 해석(§4)·규칙(①②③⑤⑥ 결정론+④ LLM shared 래퍼)·리포트 페이지(`/chainsight/story/:id`)·AI 의견란(접힘)·8-K SEC 원문 링크(카드 비-링크라 여기서 수용) | CS-S3-2, CS-S3-3 | 🆕 todo |

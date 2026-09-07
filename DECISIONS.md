@@ -31,6 +31,7 @@
 - **D-S3-STORYID = 결정론 슬러그** `blake2b(f"{type}:{'-'.join(sorted(members))}:{occurred_on}", digest_size=5)`(10-hex)·저장 없음·`story_key` 원문 병기(S3-4 라우트/추적 앵커).
 - **D-S3-FEED-CACHE**: 피드 응답을 (limit, ET 날짜) 키로 캐시(TTL 900s). STEP0-2 NewsEntity 재조회 p95 368ms(콜드) → 표시 카드 제목·evidence 조회 비용 응답 단위 흡수(#15 키 일관).
 - **소스 재조회(A-1)**: CoMentionEdge에 기사 링크 없음(P1) → `story_source.articles_for_pair`가 ChainNewsEvent 직결 제목 → NewsEntity 교집합으로 (쌍,날짜) 복원. 발행시각 창 = ±1일 UTC-aware(naive 창의 TIME_ZONE 클리핑 회피).
+- **D-S3-7 배경 접기(FE 전용·S3-1B·2026-09-07)**: weekly_active(배경)는 **기본 접힘**, 사건 카드(new_sec·daily_spike)는 항상 펴짐. **Why**: 아침 첫 화면의 조용함이 목적 — 배경 28장이 사건을 덮으면 안 된다. **How**: D-S3-6의 구분선 "여기부터 잔잔한 흐름" → **접힘 줄** "이번 주 꾸준한 흐름 {m}쌍 · 펼치기 ▸"로 대체(D-S3-6 구분선 부분 SUPERSEDED). 펼치면 **카드 반복 금지** — 조밀한 줄 목록 `[종목쌍][언급 수][마지막 날짜]`(SteadyFold·카드 컴포넌트 미사용·한 줄 ≤카드 1/3). 펼침 상태 **비저장**(localStorage/쿠키 금지·매일 접힌 채 열림). **조용한 날**(사건 0): 배경 상위 `QUIET_DAY_PEEK`장 카드 + "오늘은 조용합니다 — 이번 주 흐름만 보여드립니다" + 나머지 접힘(빈 화면 금지). 상수 `FOLD_STEADY_BY_DEFAULT`·`QUIET_DAY_PEEK=3`(도그푸딩=상수 변경). 헤더 부제 D-S3-6 잠금(배경 수는 부제 아닌 접힘 줄이 말함). BE 무변경. 커밋 `129a9e3d`.
 
 **How to apply**: BE `apps/chain_sight/services/{story_source,market_story_feed}.py`·`api/feed_views.py`. FE `components/chainsight/story/*`·`types/chainsight.ts`. 커밋 A `ceb270e2`(BE)·B `ceb3e050`(FE). 마이그 0·외부콜 0·prod write 0·LLM 0. cf. [[project_r2s2_market_story_feed]]·D-CS-STORY-SOURCE.
 
