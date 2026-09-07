@@ -17,14 +17,18 @@
 6. destructive action, secret mutation, force-push, production data deletion은 일반 promotion approval보다 더 강한 별도 consequential decision을 요구한다.
 7. runtime telemetry는 Lab Knowledge와 구분한다.
 8. 각 실행 단계는 append-only run event로 남기며, 이 기록은 platform 자체를 평가·개선하는 근거로 사용한다.
+9. Artifact identity는 physical storage path와 분리한다.
+10. Lab-specific experiment semantics는 shared runtime schema를 오염시키지 않고 adapter/profile layer에 둔다.
 
 ## 1. Shared Core
 
 ```text
 Lab Job
   -> Local Runner
-  -> Agent / Codex / Frontier API
-  -> Workspace / Tests / Artifacts
+  -> Run
+       -> Invocation(s)
+       -> content-addressed Artifacts
+       -> Tests / Runtime Events
   -> Candidate Result
   -> Review
   -> CEO Approval Gates
@@ -35,27 +39,59 @@ Lab Job
   -> Verification / Rollback
 ```
 
-## 2. Lab-specific layer
+## 2. Shared Execution vs Lab-specific Semantics
 
-각 Lab adapter는 다음만 정의한다.
+공통 layer는 실행 사실을 담당한다.
+
+- Job / Run / Event
+- Invocation identity
+- immutable input snapshot
+- Artifact logical identity / hash
+- runtime integrity
+- approval / promotion state
+
+각 Lab adapter/profile은 자기 영역의 의미만 정의한다.
 
 - authority references
 - allowed write scope
 - expected output contract
 - evaluation/review entrypoint
 - Lab-specific escalation rules
+- Lab-specific experiment semantics
 
 공통 runner는 Research Claim, Design object, Math Experiment의 의미를 재정의하지 않는다.
 
-## 3. First customer
+Research Lab의 Critic exposure, blinding, holdout, independence, evaluation linkage는 `research_runtime/` profile에 둔다.
+
+## 3. Artifact Store
+
+기본 local store:
+
+```text
+~/.stockvis-lab-automation/artifacts/sha256/...
+```
+
+logical identity:
+
+```text
+artifact://sha256/<digest>
+```
+
+`--state-root`를 외장 NVMe/NAS mount로 옮겨도 artifact identity는 바뀌지 않는다. 현재 내부 SSD 용량은 architecture constraint로 사용하지 않는다.
+
+## 4. First customer
 
 첫 vertical slice는 Math Lab의 `DailyPrice readiness probe`다. 하지만 core contract는 처음부터 `research_lab`, `design_lab`, `math_lab`을 모두 지원한다.
 
-## 4. Current bootstrap files
+## 5. Current bootstrap files
 
 - `contracts.py` — Job / candidate revision / approval 공통 contract
-- `ledger.py` — append-only runtime ledger
-- `local_runner.py` — local candidate commit까지만 수행하는 MacBook runner
+- `ledger.py` — append-only runtime event ledger
+- `execution_records.py` — Run과 분리된 Invocation contract
+- `artifact_store.py` — content-addressed local Artifact Store
+- `integrity.py` — shared runtime integrity checks
+- `local_runner.py` — local candidate commit까지만 수행하는 runner
+- `research_runtime/` — Research Experiment Profile + research-specific preflight
 - `doctor.py` — git / Python / Poetry / Codex / PostgreSQL preflight
 - `run_first_job.sh` — doctor + dry-run + explicit restricted real-run launcher
 - `first_run_ko.md` — 첫 end-to-end 실행 절차와 hard-stop 조건
@@ -63,12 +99,14 @@ Lab Job
 - `run_ledger_ko.md` — 운영 기록과 platform learning 원칙
 - `jobs/math_daily_price_readiness.example.json` — 첫 Math Lab Job
 
-## 5. First-run boundary
+## 6. Current boundary
 
-현재 구현의 최종 상태는 다음이다.
+실제 실행의 최종 상태는 다음이다.
 
 ```text
-local candidate branch + commit
+local candidate branch + one final commit
+        ↓
+external ledger records exact final SHA
         ↓
 waiting_for_push_approval
 ```
