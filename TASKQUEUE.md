@@ -65,6 +65,9 @@
 | AGENT-S2 | 2단계 — 루브릭 채점(화면별 coreQuestion 기준) | 미배정 | AGENT-S1-AUTH · GUIDE 검수(done) | 🆕 **todo(별도 지시서)** | 채점 기준 = confirmed `coreQuestion`. 결핍 = ⑴ 인증 계정 ⑵ 화면별 "정상 상태" 정의 ⑶ 렌더 후 DOM 접근 수단(1단계는 SSR HTML만 봄 — 클라이언트 렌더 데이터·`data-guide` 앵커는 HTTP로 안 보임). |
 | AGENT-S3 | 3단계 — 관찰 후보 0~5개 + 성적 원장 | 미배정 | AGENT-S2 | 🆕 **todo(별도 지시서)** | — |
 | AGENT-API-GAPS | 1단계에서 드러난 **필요 API 목록**(도메인 앱 이관) | 해당 앱 트랙 | — | 🔭 **관찰(등재만·구현 금지)** | ⑴ 무인증 **점검용 요약 엔드포인트 부재** — 화면 데이터 유무를 보려면 사용자 토큰이 필요(EOD만 baked JSON으로 무인증 접근 가능). ⑵ `/api/v2/market-pulse/health`가 **인증 게이트**라 헬스 용도로 못 씀(무인증 `/api/v1/health/`는 있음). |
+| AGENT-SHOT-1 | 야간 렌더러 온디맨드화(임의 화면 캡처) | @ops(CC 집행) | AGENT-S2(렌더 경로) | ✅ **구현 완료(2026-09-07·sess-agent-shot1·커밋 로컬·push 대기·상세 [[DECISIONS]] D-AGENT-SHOT-1)** — `scripts/shot.sh` + `auto_agent_system/dogfood/shot.py`. `collect_rendered.run_render` 재사용(신규 인증 0)·`render_screens.mjs`에 env-gated `page.screenshot(fullPage)` + 로딩 소멸 대기 추가(야간 미영향). 산출물 `stock-vis-nightly/adhoc/<ts>/`(PNG+텍스트+meta). **--path/--screens·--full(기본on)·--no-score(기본·LLM 0)**. **DoD**: env -i 재현 `authenticated=true`(**S2.1 인증 실증 겸함**)·야간 회귀 0(collect_rendered 5/5 동일·rendered_/quant_/rubric_ 무접촉)·pytest 신규 9 GREEN(선존 2 실패=`marketPulse.macro: draft` guide 드리프트·무관)·ruff 0. **⚠️첫 사용 사례 IONQ(df008c88) = goid545 소유** → dogfood_agent 인증으론 "찾을 수 없는 모니터"(교차사용자 404). 도구·인증·풀페이지는 증명. **밴드 렌더엔 goid545 자격증명 필요**(`DOGFOOD_USER=goid545 DOGFOOD_PASSWORD=… shot.sh` = 기존 auth 경로·신규 코드 아님) → **처분 상신 대기**. |
+| AGENT-SHOT-1-INAPP-BLOCKED | 인앱 브라우저 캡처 경로 = **구조적 불가**(재시도 금지) | — | — | 🚫 **확정** | 클로드 인앱 패널이 :3000 외 오리진 XHR을 `ERR_BLOCKED_BY_CLIENT`로 전면 차단(09-07 포트 3종 프로브 확증). 온디맨드 캡처 정본 = 헤드리스 `scripts/shot.sh`. |
+| AGENT-SHOT-1-CB-CANDIDATE | common-bugs 후보(채번 대기·mgmt 소유) | @qa/mgmt | — | 🆕 **후보** | "`ERR_BLOCKED_BY_CLIENT`(브라우저 확장/패널 차단)를 '서버 다운/500'으로 표시하면 오진을 부른다 — 클라이언트 차단과 서버 장애를 구분해 표기." 앱 로그인 실패 문구 개선은 **별건(앱 백로그 이관)**. |
 
 ## GUIDE 트랙 (2026-08-27 개설, D-GUIDE-TRACK)
 

@@ -7556,3 +7556,15 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **공유 데이터**: 밴드·타임라인 모두 `useChainFeed(symbol)` 동일 키 → TanStack 캐시 공유(중복 fetch 0). BE·API·파라미터 무변.
 
 **Why**: 9/3 실화면 피드백 — 이벤트 섹션이 일지·시나리오 아래로 매몰돼 "다음 어닝 D-N"이 첫 화면에서 안 보임. P1은 위젯만 상단으로 올려 첫 화면 가시성을 확보하면서(가중합 최고 4.50) 관제 흐름·컴포넌트 소유권을 건드리지 않는다(P2=두 섹션 통째 이동은 이웃 많은 시드에서 사다리/신호를 스크롤 밖으로 밀어냄, P3=소유권 침범). 附加 원칙 보존이 P1 채택의 핵심.
+
+## [2026-09-07] D-AGENT-SHOT-1 — 야간 렌더러 온디맨드화 (신규 인증 표면 0·산출물 경로 분리) [ops][infra]
+
+> 트랙: AGENT-SHOT-1. 야간 도그푸딩(run_dogfood.sh) 렌더 경로 재사용으로 임의 화면 온디맨드 캡처.
+
+- **재사용**: `scripts/shot.sh` → `auto_agent_system/dogfood/shot.py` → 기존 `collect_rendered.run_render(screens)`(인증·Playwright) 그대로 호출. **신규 인증 코드 0** — `dogfood_env()` `.env` 명시 로드(S2.1)와 `render_screens.mjs` `login()`(API POST + localStorage) 재사용. 사용자 override는 `DOGFOOD_USER/PASSWORD` env(기존 경로·신규 코드 아님).
+- **PNG 능력 추가(env-gated)**: 야간 렌더러는 **스크린샷을 안 찍고 innerText만 추출**(실측). `render_screens.mjs`에 `DOGFOOD_SHOT_DIR` 설정 시에만 `page.screenshot({fullPage})` + 로딩 소멸 대기(`불러오는 중`/스켈레톤 폴링) 추가. **야간은 env 미설정 → 무영향**(행위보존: collect_rendered 5/5 인증 동일·스크린샷 0).
+- **산출물 분리**: `stock-vis-nightly/adhoc/<YYYYMMDD_HHMM>/`(PNG + 텍스트 + meta.json{URL·authenticated·web_tree_hash·ts}). `rendered_/quant_/rubric_` 파일명 규칙·야간 05:20 경로·launchd plist **무접촉**.
+- **채점 분리**: `--no-score` 기본(캡처 전용) → LLM 비용 0. 렌더·채점은 별도 `python -m` 모듈이라 서비스 개작 없이 분리(HALT 조건 미해당).
+- **인앱 브라우저 경로 불가(확정)**: 클로드 인앱 패널이 :3000 외 오리진 XHR을 `ERR_BLOCKED_BY_CLIENT`로 차단(09-07 포트 3종 프로브 확증) → 재시도 금지. 온디맨드 캡처는 이 헤드리스 경로가 정본.
+
+**Why**: 디렉터가 특정 화면(예: EVT-CHAIN-1B 밴드)을 즉시 눈으로 판정하려면 야간 배치를 기다리거나 인앱 브라우저(구조적 불가)에 의존해야 했다. 야간 렌더러는 이미 라이브 :3000 + 실 로그인으로 실화면을 읽으므로, 인증·렌더를 재사용하고 스크린샷만 env-gated로 얹으면 신규 인증 표면 0·야간 행위보존으로 온디맨드 캡처가 성립한다.

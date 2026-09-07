@@ -136,6 +136,22 @@ async function collectScreen(page, screen) {
       /* 폴링 화면 — 무시 */
     }
 
+    // AGENT-SHOT-1: 온디맨드 캡처 시(env-gated)만 추가 안정화 — 로딩 스켈레톤/스피너·
+    // "불러오는 중" 텍스트가 사라질 때까지 폴링(최대 SHOT_WAIT) + 여유. 야간 경로는
+    // DOGFOOD_SHOT_DIR 미설정이라 이 블록을 건너뛴다(SETTLE_MS 동작 그대로 = 무영향).
+    if (process.env.DOGFOOD_SHOT_DIR) {
+      const deadline = Date.now() + Number(process.env.DOGFOOD_SHOT_WAIT_MS ?? 15000)
+      while (Date.now() < deadline) {
+        const busy = await page
+          .locator('[aria-busy="true"], .animate-pulse, [data-loading="true"]')
+          .count()
+        const loading = await page.getByText('불러오는 중').count()
+        if (busy === 0 && loading === 0) break
+        await page.waitForTimeout(500)
+      }
+      await page.waitForTimeout(1500) // 렌더 여유
+    }
+
     for (const anchor of screen.anchors ?? []) {
       const loc = page.locator(`[data-guide="${anchor}"]`).first()
       const region = { anchor, found: false, text: '' }
@@ -175,6 +191,21 @@ async function collectScreen(page, screen) {
       out.regions.map((r) => r.text).join(' ') + ' ' + out.fallback_text,
     )
     out.ok = Boolean((anchorChars > 0 || out.fallback_text) && !out.error)
+
+    // AGENT-SHOT-1: 온디맨드 캡처만 추가(env-gated). DOGFOOD_SHOT_DIR 미설정 = 야간 경로
+    // 무영향(스크린샷 안 찍음·텍스트 추출 동일). full=DOGFOOD_SHOT_FULL('1'=풀페이지).
+    const shotDir = process.env.DOGFOOD_SHOT_DIR
+    if (shotDir) {
+      try {
+        const full = process.env.DOGFOOD_SHOT_FULL === '1'
+        const safeId = String(screen.id || 'screen').replace(/[^\w.-]/g, '_')
+        const shotPath = `${shotDir}/${safeId}.png`
+        await page.screenshot({ path: shotPath, fullPage: full })
+        out.screenshot = shotPath
+      } catch (e) {
+        out.screenshot_error = squash(String(e)).slice(0, 160)
+      }
+    }
   } catch (e) {
     out.error = squash(String(e)).slice(0, 200)
   } finally {
