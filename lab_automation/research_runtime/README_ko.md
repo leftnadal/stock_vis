@@ -52,3 +52,25 @@ v0.1은 최소한 다음 실패를 탐지할 수 있어야 한다.
 ## 4. Holdout
 
 `protected_holdout` Case는 retrieval, training, expectation access와 분리되어야 한다. 실제 격리 정책과 저장소 권한 enforcement는 후속 구현에서 강화하되, v0.1부터 partition과 contamination check를 기록한다.
+
+## 5. First vertical slice
+
+첫 end-to-end Research Runtime pilot은 `SV-RES-RUNTIME-E2E-001`이다.
+
+```text
+Researcher fixture
+→ independent Critic fixture
+→ Revision fixture
+→ separated Evaluator fixture
+→ Experiment Profile + integrity findings
+```
+
+실행:
+
+```bash
+poetry run python -m lab_automation.research_runtime.vertical_slice
+```
+
+이 pilot은 deterministic synthetic calibration이며 모델 품질을 평가하지 않는다. 목적은 shared Run / Invocation / Artifact 기록과 Research-specific Exposure / target lineage / Evaluation linkage가 하나의 재구성 가능한 흐름으로 연결되는지 확인하는 것이다.
+
+세부 성공 조건과 해석 경계는 [Research Runtime First Vertical Slice v0.1](vertical_slice_ko.md)을 따른다.
