@@ -20,6 +20,7 @@ RETENTION_CLASSES = {
     "redownloadable",
     "ephemeral",
 }
+ARTIFACT_URI_PREFIX = "artifact://sha256/"
 
 
 @dataclass(frozen=True)
@@ -60,11 +61,20 @@ class LocalArtifactStore:
 
     @staticmethod
     def _logical_uri(digest: str) -> str:
-        return f"artifact://sha256/{digest}"
+        return f"{ARTIFACT_URI_PREFIX}{digest}"
 
     @staticmethod
     def _artifact_id(digest: str) -> str:
         return f"art-sha256-{digest}"
+
+    @staticmethod
+    def digest_from_uri(logical_uri: str) -> str:
+        if not logical_uri.startswith(ARTIFACT_URI_PREFIX):
+            raise ValueError(f"unsupported artifact URI: {logical_uri}")
+        digest = logical_uri[len(ARTIFACT_URI_PREFIX) :]
+        if len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest):
+            raise ValueError(f"invalid sha256 artifact URI: {logical_uri}")
+        return digest
 
     def put_bytes(
         self,
@@ -143,12 +153,21 @@ class LocalArtifactStore:
             metadata=metadata,
         )
 
-    def verify(self, ref: ArtifactRef) -> bool:
-        target = self._path_for_digest(ref.sha256)
+    def path_for_uri(self, logical_uri: str) -> Path:
+        return self._path_for_digest(self.digest_from_uri(logical_uri))
+
+    def read_bytes(self, logical_uri: str) -> bytes:
+        return self.path_for_uri(logical_uri).read_bytes()
+
+    def verify_uri(self, logical_uri: str) -> bool:
+        digest = self.digest_from_uri(logical_uri)
+        target = self._path_for_digest(digest)
         if not target.is_file():
             return False
-        digest = hashlib.sha256(target.read_bytes()).hexdigest()
-        return digest == ref.sha256
+        return hashlib.sha256(target.read_bytes()).hexdigest() == digest
+
+    def verify(self, ref: ArtifactRef) -> bool:
+        return self.verify_uri(ref.logical_uri)
 
     def path_for(self, ref: ArtifactRef) -> Path:
-        return self._path_for_digest(ref.sha256)
+        return self.path_for_uri(ref.logical_uri)
