@@ -178,16 +178,16 @@ export function rotationSentence(sectors: CdStateHolder[]): string | null {
   const worsening = count(['leading_weakening', 'lagging_deteriorating'])
 
   let base: string
-  if (improving >= majority) base = `과반 섹터가 개선 흐름(개선 ${improving}/${total})`
-  else if (worsening >= majority) base = `과반 섹터가 악화 흐름(악화 ${worsening}/${total})`
+  if (improving >= majority) base = `과반 섹터가 개선 쪽으로 돌고 있습니다(개선 ${improving}/${total})`
+  else if (worsening >= majority) base = `과반 섹터가 악화 쪽으로 돌고 있습니다(악화 ${worsening}/${total})`
   else {
     const leading = count(['leading_strengthening', 'leading_weakening'])
     const lagging = count(['lagging_improving', 'lagging_deteriorating'])
-    if (leading >= majority) base = `주도 섹터군이 우위(주도 ${leading}/${total})`
-    else if (lagging >= majority) base = `후행 섹터군이 우위(후행 ${lagging}/${total})`
-    else base = `섹터 회전이 갈려 있음(개선 ${improving}·악화 ${worsening}/${total})`
+    if (leading >= majority) base = `주도 섹터군이 우위입니다(주도 ${leading}/${total})`
+    else if (lagging >= majority) base = `후행 섹터군이 우위입니다(후행 ${lagging}/${total})`
+    else base = `섹터 회전이 갈려 있습니다(개선 ${improving}·악화 ${worsening}/${total})`
   }
 
   const transitioning = sectors.filter((s) => isTransitioning(s.cd_state, s.cd_state_raw)).length
-  return transitioning > 0 ? `${base}. ${transitioning}개 섹터는 전환 확인 중.` : `${base}.`
+  return transitioning > 0 ? `${base}. ${transitioning}개 섹터는 전환 확인 중입니다.` : `${base}.`
 }
