@@ -211,3 +211,32 @@ describe('이벤트 카드(회귀 — 사건 카드는 항상 펴짐)', () => {
     );
   });
 });
+
+describe('상태 회귀(K 복원)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  // S3-1에 있었으나 S3-1B 통합 과정에서 소실된 회귀 — 구현 무변경, 잠그는 테스트.
+  it('fetch 실패(isError): "다시 시도" 버튼 + 마인드맵 링크 유지', async () => {
+    vi.mocked(fetchMarketStoryFeed).mockRejectedValue(new Error('network'));
+    render(<MarketStoryFeed />, { wrapper });
+    expect(await screen.findByText('데이터를 불러올 수 없습니다')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '업종별 보기 (마인드맵)' })).toHaveAttribute(
+      'href', '/chainsight/mindmap',
+    );
+  });
+
+  it('배지 색 계열 구분(복원): 사건=blue/amber, 배경=gray', async () => {
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed([secCard, spikeCard], [weekly(1)]));
+    const { unmount } = render(<MarketStoryFeed />, { wrapper });
+    await screen.findAllByTestId('market-story-card');
+    expect(screen.getByText('신규 연결 · 8-K').className).toMatch(/blue/);
+    expect(screen.getByText('일간 급등').className).toMatch(/amber/);
+    unmount();
+    // 배경 배지는 조용한 날(peek 카드)에서 확인
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed([], [weekly(1)]));
+    render(<MarketStoryFeed />, { wrapper });
+    await screen.findAllByTestId('market-story-card');
+    expect(screen.getByText('이번 주 활발').className).toMatch(/gray/);
+  });
+});
