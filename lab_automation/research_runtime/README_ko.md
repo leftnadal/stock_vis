@@ -1,0 +1,54 @@
+# Research Runtime Profile v0.1
+
+**Status:** Working / Implementation Candidate  
+**Scope:** Shared Lab Automation 위의 Research Lab-specific experiment semantics
+
+## 0. 목적
+
+이 디렉터리는 별도 Research Ledger를 만들지 않는다. 공통 Lab Automation의 Job / Run / Event / Invocation / Artifact 실행 기록을 재사용하고, Research Lab 실험에만 필요한 의미를 참조 형태로 추가한다.
+
+```text
+Shared Run Ledger
+  -> execution facts / artifacts / invocation history
+
+Research Experiment Profile
+  -> experiment purpose / workload / exposure / blinding / independence / evaluation linkage
+```
+
+이 profile은 Research Methodology, Evaluation Methodology, Operational Record Specification을 재정의하지 않으며 Research Knowledge나 새로운 epistemic object를 만들지 않는다.
+
+## 1. 최소 객체
+
+- `ExperimentProfile` — 실험 목적, validation question, scope, confounds, interpretation boundary
+- `WorkloadProfile` — case/task/instruction/evidence snapshot과 evaluation partition
+- `StageProfile` — function, planned runs, completion policy, independence intent
+- `RunLink` — shared Run과 exact target/input snapshot 연결
+- `ExposureProfile` — 실제로 agent 판단에 영향을 줄 수 있었던 material context
+- `EvaluationLink` — Evaluation Methodology에 따른 외부 평가 기록과 shared run 연결
+
+## 2. Integrity preflight
+
+v0.1은 최소한 다음 실패를 탐지할 수 있어야 한다.
+
+- protected expectation leakage
+- declared independent stage에서 peer Critic output exposure
+- protected holdout의 known contamination
+- all-required stage의 incomplete execution
+
+`NO_KNOWN_LEAK_DETECTED`와 `NO_KNOWN_CONTAMINATION`은 완전 무오염 증명이 아니라 현재 기록에서 알려진 누수가 없다는 뜻이다.
+
+## 3. Exposure 원칙
+
+모든 token이나 private chain-of-thought를 저장하지 않는다. 결과 해석을 materially 바꿀 수 있는 context만 reference로 보존한다.
+
+예:
+
+- Evidence snapshot
+- prior agent output
+- retrieved learning artifact
+- material tool result
+- 기타 판단에 영향을 줄 수 있는 explicit context
+
+## 4. Holdout
+
+`protected_holdout` Case는 retrieval, training, expectation access와 분리되어야 한다. 실제 격리 정책과 저장소 권한 enforcement는 후속 구현에서 강화하되, v0.1부터 partition과 contamination check를 기록한다.
