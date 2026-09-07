@@ -32,6 +32,18 @@ def _cache(sym, partner, c7, last_days_ago=1):
     )
 
 
+def _chain_event(symbol, co_syms, title, days_ago, url="http://cne/x"):
+    from apps.chain_sight.models.news_event import ChainNewsEvent
+    from packages.shared.stocks.models import Stock
+
+    Stock.objects.get_or_create(symbol=symbol, defaults={"stock_name": symbol})
+    pub = NOW - datetime.timedelta(days=days_ago)
+    return ChainNewsEvent.objects.create(
+        symbol_id=symbol, source="marketaux", source_id=f"cne-{symbol}-{title[:8]}",
+        title=title, url=url, published_at=pub, co_mentioned_symbols=list(co_syms),
+    )
+
+
 def _sec(a, b, rel, filing_days_ago, item="1.01"):
     from packages.shared.stocks.models import Stock
     from services.sec_pipeline.models import (
@@ -78,12 +90,20 @@ class TestDailySpike:
         feed = build_market_story_feed(now=NOW)
         assert not [c for c in feed["cards"] if c["type"] == "daily_spike"]
 
-    def test_companions_from_same_day(self):
+    def test_same_day_shared_member_merges_into_one_group_card(self):
+        # A-2: 같은 날 멤버 공유 쌍 → 묶음 카드 1장(members 합집합·pairs 보존).
         _edge("ORCL", "PANW", 13, last_days_ago=12, span_days=0)
-        _edge("PANW", "TJX", 12, last_days_ago=12, span_days=0)  # 같은 날 클러스터
+        _edge("PANW", "TJX", 12, last_days_ago=12, span_days=0)  # PANW 공유 → 병합
         feed = build_market_story_feed(now=NOW)
-        card = next(c for c in feed["cards"] if frozenset((c["symbol_a"], c["symbol_b"])) == frozenset(("ORCL", "PANW")))
-        assert "TJX" in card["companions"]
+        spikes = [c for c in feed["cards"] if c["type"] == "daily_spike"]
+        assert len(spikes) == 1
+        card = spikes[0]
+        assert card["is_group"] is True
+        assert set(card["members"]) == {"ORCL", "PANW", "TJX"}
+        assert len(card["pairs"]) == 2
+        assert card["max_mentions"] == 13
+        # 상위 쌍 = 최다 언급(ORCL-PANW 13)
+        assert frozenset((card["symbol_a"], card["symbol_b"])) == frozenset(("ORCL", "PANW"))
 
 
 @pytest.mark.django_db
@@ -139,13 +159,30 @@ class TestFeedComposition:
         assert feed["has_event"] is False
         assert feed["total"] == 0
 
-    def test_sort_sec_then_spike_then_steady(self):
-        _cache("JPM", "BAC", 27)
+    def test_sort_same_day_type_tiebreak_sec_spike_steady(self):
+        # A-5 정렬: occurred_on desc 우선 → 동일일이면 사건성(sec>spike>steady) tiebreak.
+        _cache("JPM", "BAC", 27, last_days_ago=1)
         _edge("ORCL", "PANW", 13, last_days_ago=1, span_days=0)
-        _sec("MRVL", "GOOGL", "PARTNER_WITH", filing_days_ago=5)
+        _sec("MRVL", "GOOGL", "PARTNER_WITH", filing_days_ago=1)  # 동일일로 맞춤
         feed = build_market_story_feed(now=NOW)
         types = [c["type"] for c in feed["cards"]]
         assert types.index("new_sec") < types.index("daily_spike") < types.index("weekly_active")
+
+    def test_sort_event_tier_beats_recency(self):
+        # 확정 스펙: 사건성 1차 → 오래된 SEC(20일 전)도 최신 급등(어제)보다 위.
+        _edge("ORCL", "PANW", 13, last_days_ago=1, span_days=0)   # 어제
+        _sec("MRVL", "GOOGL", "PARTNER_WITH", filing_days_ago=20)  # 20일 전(창내)
+        feed = build_market_story_feed(now=NOW)
+        types = [c["type"] for c in feed["cards"]]
+        assert types.index("new_sec") < types.index("daily_spike")
+
+    def test_sort_within_tier_recent_first(self):
+        # 같은 티어(daily_spike) 안에서는 occurred_on desc(최근 발생일 먼저).
+        _edge("AAA", "BBB", 9, last_days_ago=6, span_days=0)   # 6일 전
+        _edge("CCC", "DDD", 8, last_days_ago=2, span_days=0)   # 2일 전(더 최근)
+        feed = build_market_story_feed(now=NOW)
+        spikes = [c for c in feed["cards"] if c["type"] == "daily_spike"]
+        assert spikes[0]["occurred_on"] > spikes[1]["occurred_on"]
 
     def test_cross_type_dedup_event_wins(self):
         # 같은 페어가 급등+steady 둘 다 → steady 에서 제거(사건 우선).
@@ -161,3 +198,135 @@ class TestFeedComposition:
             _cache("HUB", f"P{i:02d}", 40 - i)
         feed = build_market_story_feed(now=NOW, limit=10)
         assert feed["total"] == 10
+
+
+@pytest.mark.django_db
+class TestGrouping:
+    def test_disjoint_same_day_two_group_cards(self):
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        _edge("AAA", "BBB", 9, last_days_ago=2, span_days=0)  # 멤버 공유 없음
+        feed = build_market_story_feed(now=NOW)
+        spikes = [c for c in feed["cards"] if c["type"] == "daily_spike"]
+        assert len(spikes) == 2
+
+    def test_single_pair_group_shape(self):
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
+        assert card["is_group"] is True
+        assert set(card["members"]) == {"ORCL", "PANW"}
+        assert len(card["pairs"]) == 1
+        assert card["count"] == 13  # backward compat = max_mentions
+
+    def test_companions_outside_excludes_members(self):
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        _edge("PANW", "TJX", 12, last_days_ago=2, span_days=0)   # TJX = 멤버
+        _edge("ORCL", "EBAY", 8, last_days_ago=2, span_days=0)   # EBAY = 멤버(ORCL 공유)
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
+        assert {"ORCL", "PANW", "TJX", "EBAY"} <= set(card["members"])
+        assert "TJX" not in card["companions_outside"]
+        assert "EBAY" not in card["companions_outside"]
+
+    def test_different_days_not_merged(self):
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        _edge("PANW", "TJX", 12, last_days_ago=5, span_days=0)  # 다른 날 → 병합 안 함
+        feed = build_market_story_feed(now=NOW)
+        spikes = [c for c in feed["cards"] if c["type"] == "daily_spike"]
+        assert len(spikes) == 2
+
+
+@pytest.mark.django_db
+class TestStoryId:
+    def test_cards_have_deterministic_story_id_and_key(self):
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        _sec("MRVL", "GOOGL", "PARTNER_WITH", filing_days_ago=3)
+        f1 = build_market_story_feed(now=NOW)
+        f2 = build_market_story_feed(now=NOW)
+        for c in f1["cards"]:
+            assert len(c["story_id"]) == 10
+            int(c["story_id"], 16)
+            assert ":" in c["story_key"]
+        # 결정론: 같은 입력 → 같은 id
+        ids1 = {c["story_key"]: c["story_id"] for c in f1["cards"]}
+        ids2 = {c["story_key"]: c["story_id"] for c in f2["cards"]}
+        assert ids1 == ids2
+
+
+@pytest.mark.django_db
+class TestTitles:
+    def test_8k_card_title_template(self):
+        _sec("MRVL", "GOOGL", "PARTNER_WITH", filing_days_ago=3, item="1.01")
+        feed = build_market_story_feed(now=NOW)
+        sec = [c for c in feed["cards"] if c["type"] == "new_sec"][0]
+        assert sec["title"] == "MRVL, GOOGL와 중요 계약 체결 공시"
+
+    def test_co_mention_card_title_from_article_quote(self):
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        _chain_event("ORCL", ["PANW"], "오라클·팔로알토 클라우드 계약", days_ago=2)
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
+        assert card["title"] == "오라클·팔로알토 클라우드 계약"  # 원문 인용
+
+    def test_co_mention_card_title_null_when_no_article(self):
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
+        assert card["title"] is None
+
+
+@pytest.mark.django_db
+class TestHeaderMeta:
+    def test_meta_new_today_counts_today_cards(self):
+        _edge("ORCL", "PANW", 13, last_days_ago=0, span_days=0)  # 오늘 발생
+        _edge("AAA", "BBB", 9, last_days_ago=3, span_days=0)     # 3일 전
+        feed = build_market_story_feed(now=NOW)
+        assert feed["meta"]["new_today"] == 1
+        assert feed["meta"]["stories"] == feed["total"]
+        assert set(feed["meta"]["by_type"]) == {"new_sec", "daily_spike", "weekly_active"}
+
+    def test_meta_new_today_zero_ok(self):
+        _cache("JPM", "BAC", 27, last_days_ago=2)
+        feed = build_market_story_feed(now=NOW)
+        assert feed["meta"]["new_today"] == 0
+
+    def test_meta_has_no_single_window_claim(self):
+        # 발견 2(B안): 단일 창 N이 없다 → meta 에 window 필드 없음.
+        _cache("JPM", "BAC", 27, last_days_ago=2)
+        feed = build_market_story_feed(now=NOW)
+        assert "window" not in feed["meta"]
+        assert "window_days" not in feed["meta"]
+
+
+@pytest.mark.django_db
+class TestCardWindow:
+    def test_each_card_states_own_window(self):
+        # B안: 카드가 자기 창을 말함(window_days per card).
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        _sec("MRVL", "GOOGL", "PARTNER_WITH", filing_days_ago=3)
+        _cache("JPM", "BAC", 27, last_days_ago=2)
+        feed = build_market_story_feed(now=NOW)
+        wd = {c["type"]: c["window_days"] for c in feed["cards"]}
+        assert wd["daily_spike"] == 14
+        assert wd["new_sec"] == 30
+        assert wd["weekly_active"] == 7
+
+
+@pytest.mark.django_db
+class TestEvidence:
+    def test_8k_evidence_schema(self):
+        _sec("MRVL", "GOOGL", "PARTNER_WITH", filing_days_ago=3)
+        feed = build_market_story_feed(now=NOW)
+        sec = [c for c in feed["cards"] if c["type"] == "new_sec"][0]
+        assert len(sec["evidence"]) >= 1
+        ev = sec["evidence"][0]
+        assert ev["kind"] == "8k"
+        assert set(ev) == {"kind", "ref", "title", "url", "date"}
+
+    def test_article_evidence_schema(self):
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        _chain_event("ORCL", ["PANW"], "동반 기사", days_ago=2)
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
+        assert card["evidence"][0]["kind"] == "article"
+        assert set(card["evidence"][0]) == {"kind", "ref", "title", "url", "date"}
