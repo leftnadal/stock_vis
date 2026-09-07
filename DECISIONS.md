@@ -7479,6 +7479,7 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **슬라이스 순서(기본안)**: **S1 신뢰 수리**(Breadth 날짜·Anomaly 정직화·금은 배선) → S2 네비+번역층 → S3 시계열 → S4 AI요약+무버스. 근거 = 신뢰(데이터 정직) 선행이 없으면 번역층·시계열이 거짓 위에 쌓임.
 - **자동 결정 5건(근거)**: ① 시계열 1차 대상 = Part B (가)그룹만(당장 가능·신규수집 0), (나)(다)는 데이터 트랙 분리 ② 기간 프리셋 최대 1Y(다년은 SPY만) ③ 공포탐욕 = VIXCLS+T10Y2Y 소급 결정론(비저장이나 재계산 가능) ④ AI요약 = BriefingLog 재사용(신규 훅 0) ⑤ GLD·SLV = 배선 수리(402 반증·대체 소스 불요).
 - **본 세션 = S1만.** S2~S4는 각 별도 사이클/지시서.
+- **[2026-09-07 S2 정정] (c)계층·fallback 실태**: 홈 4카드는 LLM `senses` 봉투로 (c) 문구를 **이미 부분 구현**(translationSelector→SenseNote). S2 = ⑴ 미적용 표면(거시 허브·로테이션) 정적 문장 확장 ⑵ `senses` 부재 시 fallback 보강. **AUTO-1 재정의(D-MACRO-SENSE-STATIC)**: "SenseNote 슬롯 채우기"가 아니라 **"카드당 의미 문장 1개 보장"** — regime·concentration은 인라인 의미문을 상시 렌더하므로 fallback 미적용(중복 0), **breadth·sector만** 정적 fallback(의도 충족·구현 대상 2카드, 스펙 트림 아님).
 
 ## [2026-09-03] D-BREADTH-ASOF — Breadth 기준일 = 데이터 최신 거래일(캘린더 산술 금지) [backend][market_pulse]
 
@@ -7530,3 +7531,23 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **공유 데이터**: 밴드·타임라인 모두 `useChainFeed(symbol)` 동일 키 → TanStack 캐시 공유(중복 fetch 0). BE·API·파라미터 무변.
 
 **Why**: 9/3 실화면 피드백 — 이벤트 섹션이 일지·시나리오 아래로 매몰돼 "다음 어닝 D-N"이 첫 화면에서 안 보임. P1은 위젯만 상단으로 올려 첫 화면 가시성을 확보하면서(가중합 최고 4.50) 관제 흐름·컴포넌트 소유권을 건드리지 않는다(P2=두 섹션 통째 이동은 이웃 많은 시드에서 사다리/신호를 스크롤 밖으로 밀어냄, P3=소유권 침범). 附加 원칙 보존이 P1 채택의 핵심.
+
+## [2026-09-07] D-MP2-SUBNAV — Market Pulse v2 전역 헤더 서브탭 (A) [frontend][market_pulse]
+
+> HUB-V02-S2. 병진 승인(2026-09-04 허브 v0.2 사이클 S2). 화면 간 왕복 동선.
+
+- **결정 = (A) 전역 헤더 서브탭.** 가중합 A 4.19 / B 페이지 인라인 4.08 / C 허브 탭바 확장 3.48 (w: 왕복 체감 0.30·구현/회귀 0.20·리스크 0.20·유지보수 0.15·확장 0.15 = 1.00). 마진 0.11 < 0.40 → **타이브레이커**: ① MySubNav 선례로 새 패턴 발명 0 ② 서브페이지 증가 예정(무버스·이벤트)으로 확장 축 실발생.
+- **구현**: `MarketPulseSubNav.tsx`(MySubNav 동형·border-b-2 active·"준비 중" 비활성) + `isMarketPulseV2Page` 순수 함수(**v1 `/market-pulse` 미포획** = base 정확일치·`base+'/'` 접두만). Header `{isMarketPulseV2Page && <MarketPulseSubNav/>}`(My와 경로 상호배타). 탭: 개요(정확일치)·거시 근거·로테이션·무버스(비활성). **fetch 0**(Link만·배지/프리페치 금지). 허브 "← Market Pulse" 링크 제거(중복).
+
+**Why**: 병진 검수 원인은 문구가 아니라 화면 왕복 동선 부재도 포함. MySubNav 선례 재사용으로 새 네비 패턴 발명 0·회귀 최소. v1 미포획이 핵심 안전 경계.
+
+## [2026-09-07] D-MACRO-SENSE-STATIC — 거시 밴드 문장 = 정적 결정론 확장 (ⓐ) [frontend][market_pulse]
+
+> HUB-V02-S2. 병진 승인. "이 지표가 투자 행동에 어떤 의미인지 감이 안 옴"의 결정론 해소.
+
+- **결정 = (ⓐ) 정적 결정론 확장.** 가중합 ⓐ 4.35 / ⓒ 하이브리드 4.22 / ⓑ senses 봉투 확장 3.52 (w: 의미 전달 0.30·비용 0.20·리스크 0.20·유지보수 0.15·확장 0.15). 마진 0.13 → **타이브레이커**: ⓒ = ⓐ + S4이고 AI 요약은 이미 S4 몫 → S2는 ⓐ, S4에서 요약을 얹어 (c)계층 완성. **ⓑ 기각**: 허브 진입당 호출 1→2·문구 회귀 고정 불가·LLM 실패일 문장 소실.
+- **구현**: `macroMeaning.ts`(순수함수 4종 — fearGreed 심리3×변동성2·yieldCurve status5·economy 물가3+고용3·globalIndices 4지수 부호). 임계 = 백엔드 앵커(VIX_RULES·YIELD_CURVE_RULES·fed_target=2.0·breakeven 87k) — 재분류 0. 결측 → "판정 불가 — 입력 데이터 대기"(AUTO-2, 가짜 정상 금지). 허브 위젯 아래 SenseNote 형제(위젯 파일 diff 0).
+- **AUTO-1 = 홈 정적 fallback = "카드당 의미 문장 1개 보장"**(디렉터 확정, 2026-09-07). LLM `senses` 부재 시 정적 문장 대체 → **breadth·sector만**(인라인 의미문 없는 카드). regime·concentration은 인라인 의미문 상시 렌더 → fallback 미적용(**중복 0**, 스펙 트림 아님·의도 충족). breadth 정적 = 밴드 동어반복 금지 → **댐핑 적용 여부 + 상승/하락 실수치** 서술(화면에 없는 정보). sector 정적 = SectorHeatmap 내부(sectorFlow 재사용 in/out → sectorSentence, 새 판정 0). LLM 있는 날 렌더 IDENTICAL.
+- **폐기 지표(등재)**: 신규 실업수당 260k(실측 203k라 미발동 + NFP와 모순 문장) · DXY ±0.5%(실측 `dxy: null` 영구 미발동 → DATA-GAP-DXY). 미국 4지수는 `change` 부호만(`change_percent` 실 payload null). 해외지수·DXY는 문장에서 언급 금지(DATA-GAP-GLOBALIDX).
+
+**Why**: 문구 회귀 고정(golden)과 LLM 실패일 소실 방지가 정적의 강점. AUTO-1을 "슬롯 채우기"에서 "카드당 의미문 1개 보장"으로 재정의해 인라인 의미문 있는 카드의 중복을 원천 차단.

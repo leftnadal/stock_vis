@@ -156,3 +156,38 @@ export const CD_STATE_ORDER: CdState[] = [
   'lagging_improving',
   'lagging_deteriorating',
 ]
+
+/* ───────────────────────── HUB-V02-S2 RRG 한 줄 ─────────────────────────
+ * cd_state 집계 → 회전 서사 한 줄. 재분류 0(서빙된 cd_state 카운팅뿐).
+ *   1차: 개선(강화+개선) vs 악화(둔화+악화) 과반(6/11) → 개선/악화 우위.
+ *   2차(1차 무과반): 주도(leading_*) vs 후행(lagging_*) 과반 → 주도/후행 우위.
+ *   그 밖 → "갈려 있음". cd_state 보유 섹터가 과반 미만 → null(판정 불가·보류).
+ * 꼬리말: cd_state ≠ cd_state_raw 섹터 수(전환 확인 중). cd_state_raw는 비교에만(주어 금지).
+ */
+type CdStateHolder = { cd_state?: CdState | null; cd_state_raw?: CdState | null }
+
+export function rotationSentence(sectors: CdStateHolder[]): string | null {
+  const total = sectors.length
+  const withState = sectors.filter((s) => s.cd_state != null)
+  const majority = Math.floor(total / 2) + 1 // 11 → 6 (과반)
+  if (total === 0 || withState.length < majority) return null // null 과반 → 판정 불가
+
+  const count = (states: CdState[]) =>
+    withState.filter((s) => s.cd_state != null && states.includes(s.cd_state)).length
+  const improving = count(['leading_strengthening', 'lagging_improving'])
+  const worsening = count(['leading_weakening', 'lagging_deteriorating'])
+
+  let base: string
+  if (improving >= majority) base = `과반 섹터가 개선 흐름(개선 ${improving}/${total})`
+  else if (worsening >= majority) base = `과반 섹터가 악화 흐름(악화 ${worsening}/${total})`
+  else {
+    const leading = count(['leading_strengthening', 'leading_weakening'])
+    const lagging = count(['lagging_improving', 'lagging_deteriorating'])
+    if (leading >= majority) base = `주도 섹터군이 우위(주도 ${leading}/${total})`
+    else if (lagging >= majority) base = `후행 섹터군이 우위(후행 ${lagging}/${total})`
+    else base = `섹터 회전이 갈려 있음(개선 ${improving}·악화 ${worsening}/${total})`
+  }
+
+  const transitioning = sectors.filter((s) => isTransitioning(s.cd_state, s.cd_state_raw)).length
+  return transitioning > 0 ? `${base}. ${transitioning}개 섹터는 전환 확인 중.` : `${base}.`
+}

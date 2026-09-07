@@ -1,10 +1,30 @@
 'use client'
 
 import { translate } from '@/lib/i18n/marketPulse'
-import type { SectorDetail } from '@/lib/api/marketPulseV2'
+import type { SectorDetail, SectorRow } from '@/lib/api/marketPulseV2'
 import { useCardDetail } from '@/hooks/useMarketPulseV2'
 import { sectorTileClass } from '../sectorColor'
+import { sectorFlow, sectorSentence } from '../meaning'
 import { SenseNote } from './SenseNote'
+
+/**
+ * HUB-V02-S2 (AUTO-1) sector 정적 fallback — 데이터가 이 컴포넌트 내부 fetch라 여기서 조립.
+ * 유입(rel_strength>ε 상위 2)·유출(< -ε 하위 2) 섹터를 i18n 라벨로 sectorSentence(단일소스)에.
+ * 양쪽 다 없거나 섹터 부재 → null(미렌더).
+ */
+function buildSectorStatic(sectors: SectorRow[], labels?: Record<string, string>): string | null {
+  if (!sectors.length) return null
+  const ins = sectors
+    .filter((s) => sectorFlow(s.rel_strength).dir === 'in')
+    .sort((a, b) => b.rel_strength - a.rel_strength)
+    .slice(0, 2)
+  const outs = sectors
+    .filter((s) => sectorFlow(s.rel_strength).dir === 'out')
+    .sort((a, b) => a.rel_strength - b.rel_strength)
+    .slice(0, 2)
+  const name = (s: SectorRow) => translate(`sector.${s.symbol}`, labels, s.symbol)
+  return sectorSentence(ins.map(name), outs.map(name))
+}
 
 function formatRel(v: number): string {
   const sign = v > 0 ? '+' : ''
@@ -80,8 +100,8 @@ export function SectorHeatmap({ labels, onOpen, sense }: SectorHeatmapProps) {
         </div>
       )}
 
-      {/* sense 한 줄 복원: 히트맵 아래 상시 — null이면 SenseNote가 미렌더 */}
-      <SenseNote sense={sense} />
+      {/* sense 한 줄: LLM 우선 → 없으면 정적 fallback(AUTO-1) → 둘 다 없으면 미렌더 */}
+      <SenseNote sense={sense ?? buildSectorStatic(sectors, labels)} />
     </section>
   )
 }

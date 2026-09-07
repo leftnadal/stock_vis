@@ -38,8 +38,9 @@ test.describe('거시 근거 허브 안전망', () => {
       await expect(page.locator(`[data-guide="${anchor}"]`)).toBeVisible()
     }
 
-    // 무버스 탭 = 준비 중(비활성)
-    await expect(page.getByText('준비 중')).toBeVisible()
+    // 무버스 탭 = 준비 중(비활성). HUB-V02-S2: 헤더 서브탭에도 무버스 "준비 중"이 생겨
+    //   "준비 중"이 2곳(전역 서브탭 + 페이지 탭바) → 페이지 탭바(거시 탭)로 범위 지정해 명확화.
+    await expect(page.getByRole('navigation', { name: '거시 탭' }).getByText('준비 중')).toBeVisible()
 
     // 전면 에러(준비 중 안내) 부재 — 실데이터 렌더 시엔 안 나와야 함
     await expect(
