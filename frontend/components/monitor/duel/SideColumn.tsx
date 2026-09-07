@@ -76,6 +76,12 @@ export function SideColumn({
               <li key={c}>{c}</li>
             ))}
           </ul>
+          {/* SWAP-P1 §4.3 — 감시 미등록 후보(claim 없고 monitor 없음)는 가격만 비교한다는 문구 분기 */}
+          {claim == null && !monitorId && (
+            <p data-testid="unregistered-candidate-note" className="text-xs text-gray-500">
+              감시 미등록 종목입니다 — 가격만 비교합니다. 근거 비교를 하려면 먼저 감시에 등록하세요.
+            </p>
+          )}
           {/* C-1 — claim은 있으나 근거가 부족/없어서 판단 불가인 경우, 근거 관리로 바로 유도 */}
           {claim && monitorId && (
             <button
