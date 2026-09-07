@@ -30,9 +30,15 @@ export function newSecRelationLabel(relationType: string | undefined): string {
   return relationTypeLabel(relationType);
 }
 
-/** 카드 클릭 시 딥링크 대상 — 페어의 symbol_a로 마인드맵 카드 포커스. */
+/** 카드 클릭 시 딥링크 대상 — 페어의 symbol_a로 마인드맵 카드 포커스(기존 동작 보존, B-3). */
 export function storyCardDeepLink(card: MarketStoryCard): string {
   return `/chainsight/mindmap?symbol=${encodeURIComponent(card.symbol_a.toUpperCase())}`;
+}
+
+/** 멤버 라인 표시 — 묶음이면 members(정렬), 아니면 페어. " · "로 결합. */
+export function membersDisplay(card: MarketStoryCard): string {
+  const members = card.members && card.members.length ? card.members : [card.symbol_a, card.symbol_b];
+  return members.join(' · ');
 }
 
 /** 규칙 3(신뢰 위계): co_mention 카드에만 "관계 아님" 캡션 — sec_evidence는 표시 안 함. */

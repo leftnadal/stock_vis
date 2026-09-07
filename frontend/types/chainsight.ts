@@ -324,11 +324,28 @@ export type MarketStoryCardType = 'new_sec' | 'daily_spike' | 'weekly_active';
 /** 신뢰 위계(규칙 3) — sec_evidence만 "관계"를 시사 가능, co_mention은 동시 언급일 뿐(관계 아님). */
 export type MarketStoryCardKind = 'sec_evidence' | 'co_mention';
 
+/** 근거 팩 항목(A-6) — 기사 또는 8-K. S3-2 §1 입력 스키마(여기서 고정). */
+export interface StoryEvidence {
+  kind: 'article' | '8k';
+  ref: string;
+  title: string | null;
+  url: string | null;
+  date: string | null;
+}
+
+/** daily_spike 묶음의 원래 쌍(언급 수 유지). */
+export interface StoryPair {
+  symbol_a: string;
+  symbol_b: string;
+  count: number;
+}
+
 /**
- * 피드 카드 — type별로 일부 필드만 채워짐.
- * - daily_spike: count(단일일 co-mention 수) + companions(동반 클러스터, 최대 4).
+ * 피드 카드 — type별로 일부 필드만 채워짐 (S3-1 확장).
+ * - daily_spike: 묶음 카드(is_group). members[]·pairs[]·max_mentions·companions_outside.
  * - weekly_active: count(7일 co-mention 수). companions는 항상 빈 배열.
- * - new_sec: relation_type + item_code(8-K 근거). companions는 항상 빈 배열.
+ * - new_sec: relation_type + item_code(8-K 근거) + title(공시 사실 템플릿).
+ * 공통(S3-1): title(인용/템플릿·없으면 null)·story_id·members·window_days·evidence.
  */
 export interface MarketStoryCard {
   type: MarketStoryCardType;
@@ -338,12 +355,32 @@ export interface MarketStoryCard {
   occurred_on: string | null;
   days_since: number | null;
   companions: string[];
-  /** daily_spike · weekly_active 전용 (co-mention 횟수). */
+  /** daily_spike · weekly_active 전용 (co-mention 횟수 / 묶음은 max_mentions와 동일). */
   count?: number;
   /** new_sec 전용 — SEC 4종 게이트 관계 유형. */
   relation_type?: MindmapRelationType;
   /** new_sec 전용 — 8-K item code (예: "1.01"). */
   item_code?: string;
+  // ── S3-1 추가 ──
+  /** 이야기 id(결정론 슬러그) — S3-4 라우트/추적 앵커. */
+  story_id?: string;
+  story_key?: string;
+  /** 제목 = 근거 기사 원문 인용 또는 8-K 템플릿. 근거 없으면 null(정직 표기). */
+  title?: string | null;
+  /** 이야기 참여 종목(정렬). */
+  members?: string[];
+  /** daily_spike 묶음 여부. */
+  is_group?: boolean;
+  /** daily_spike 묶음의 원래 쌍들. */
+  pairs?: StoryPair[];
+  /** daily_spike 묶음 최대 언급 수. */
+  max_mentions?: number;
+  /** 멤버 외 동반 종목. */
+  companions_outside?: string[];
+  /** 이 카드가 말하는 자기 관측 창(일). daily_spike=14·new_sec=30·weekly_active=7. */
+  window_days?: number;
+  /** 근거 팩(A-6). */
+  evidence?: StoryEvidence[];
 }
 
 export interface MarketStoryFeedSummary {
@@ -352,12 +389,21 @@ export interface MarketStoryFeedSummary {
   weekly_active: number;
 }
 
+/** 헤더 메타(A-5) — 단일 창 N 없음(카드가 자기 창을 말함). */
+export interface MarketStoryFeedMeta {
+  as_of: string;
+  new_today: number;
+  stories: number;
+  by_type: MarketStoryFeedSummary;
+}
+
 /** GET /api/v1/chainsight/feed/ 응답 */
 export interface MarketStoryFeedResponse {
   as_of: string;
   /** 규칙 2(정문 무공허) — false여도 cards는 weekly_active로 항상 채워짐. */
   has_event: boolean;
   summary: MarketStoryFeedSummary;
+  meta: MarketStoryFeedMeta;
   total: number;
   cards: MarketStoryCard[];
 }
