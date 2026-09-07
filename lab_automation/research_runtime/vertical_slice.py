@@ -131,8 +131,8 @@ def _researcher(_: dict[str, Any]) -> dict[str, Any]:
             "customer_z_total_share": 0.40,
         },
         "reasoning_summary": (
-            "The researcher incorrectly treated Customer Z's 40% share of Segment A "
-            "as 40% of total company revenue."
+            "Customer Z accounts for 40% of total company revenue based on the "
+            "reported customer share."
         ),
         "uncertainty": [],
     }
