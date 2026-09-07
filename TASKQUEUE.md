@@ -9,8 +9,15 @@
 - D-DSS-BEAT-1. celery `chainsight-load-dss-weekly`(Fri 19:00 ET·default 큐) + 폴백 command `load_dss_week`. **2단 스위치**: PeriodicTask enabled=False 등재 → §D 워커 재시작+검증 후 enable.
 - **가동 완료(2026-08-31)**: §C push 착지(origin/main `64c5b622`) → 병진 `sv sync`(worker 트리 `835da979` re-detach + celery-worker/beat 재기동·inspect ping ✓) → CC 검증 2종 통과(트리 조상 `64c5b622` 포함 · `inspect registered`에 chainsight-load-dss-weekly) → **PeriodicTask id=143 enabled=True**. **다음 발화 = 09-04(금) 19:00 ET**. 관측 = DSS-BEAT-OBS-1. 폴백(미발화 시) = 착지 트리 `manage.py load_dss_week`.
 
-## DSS-BEAT-OBS-1 — 09-04 발화 후 검증 (등재만·차기, DSS-BEAT-1 2026-08-31) [theme-heat][dss]
+## ✅ DSS-BEAT-OBS-1 — 09-04 첫 자동 발화 검증 (종결, DUAL-OBS-1 2026-09-07) [theme-heat][dss]
 - 09-04(금) 발화 후: SymbolDemandSignal anchor 09-04 신규 행 수·Score 11행(**DB 행 증거·last_run_at 불인정**) / flat_ratio 판정(§2) / arrow 상태 / 클린 쌍 5/6 갱신(ε는 09-11 6/6에 개시).
+- **검증 결과(2026-09-07·DB 행 증거)**: SymbolDemandSignal anchor 09-04 **501행** + ThemeDemandScore **11행**, Signal created_at **09-04 19:04 ET**(beat 19:00 ET 첫 자동 발화 성공·가드 skip 없음). invariant PASS(합=n·breadth∈[-1,1]·유효분모>0). **flat_ratio 42.15%(정상<60)**. **arrow_suppressed=False**(curr 42.15%·prev 08-28 52.85%). 오프셋 = 스냅샷 완료 16:40 ET → DSS 19:04 ET = **+2h24m ≥2h ✅**. **클린 WoW 쌍 = 4**(pair-based 양끝 비축퇴: 07-31·08-07·08-28·09-04 clean / 08-14 self-축퇴·08-21 prev-축퇴 오염 제외 / 07-24 prev-미평가 판정부재). 직전 단순 anchor 카운트=6/7. **6/6 성숙 ≈ 09-18**(직전 예상 09-11은 5/6 가정분·실측 4 클린이라 +1주). DSS-BEAT 자동화 정상 가동 확인.
+
+## ⏸️ LLM-CREDIT-OUTAGE — LLM 분석 파이프라인 크레딧/quota 소진 (판정 대기, DUAL-OBS-1 2026-09-07) [news][llm][infra] — 디렉터 판정 대기
+- **§B-4 = 미회복**: 분석률 **전 일자 0%대 고착**(09-01 0.3%·09-02 0.1%·09-03 0.1%·09-04 0.1%·09-05 0.2%·09-06 0.0%) — 09-03 크레딧 충전 후에도 탈피 못함. 종결 기입 금지·**디렉터 판정 대기**.
+- **⚠ 실경로 = Gemini (지시서 B-2 'anthropic' 전제 정정)**: 분석률 소스 `news_deep_analyzer`는 **Gemini 2.5 Flash**(`MODEL=gemini-2.5-flash`·`GEMINI_API_KEY`), anthropic 아님. 워커 로그 gemini **8675** vs anthropic 139(=advisor 별도). Gemini 실패 마커 지배적: **quota/429/RESOURCE_EXHAUSTED/rate-limit/billing**. → **09-03 충전이 anthropic 대상이었다면 Gemini quota를 못 살린다(충전 대상 오인 가능성)** = 디렉터 판정 핵심 재료.
+- **재료(교정은 별도 지시)**: `analyze-news-deep-batch` beat **enabled·last_run 09-04 18:30 ET**·weekday(dow1-5)·total 808 → beat/dispatch 정상, 실행이 Gemini quota로 진척 미미(top-15%·max50 대상). 백로그 09-01~03 **미분석 7798/7807**. 최근 분석완료 09-04 18:30 ET(주말 미실행 정상). 뉴스 수집 생존(최신 09-06).
+- 관찰(C-1): 야간 감사 `docs/nightly_auto_system/reports/`에 09-04~07 산출물 부재(구독 경로·크레딧과 분리). 관찰(C-2): Celery NotRegistered 09-01 이후 **0건**(08-31 5회=재시작 창 일회성 확증).
 
 ## AGENT-DOGFOOD-DSS-FRESHNESS — dogfood에 DSS/사분면 신선도 커버 추가 (이관 등재, DSS-BEAT-1 0-4 2026-08-31) [agent][dss] — @agent 소관
 - 0-4 실측: `auto_agent_system/dogfood/`가 ThemeDemandScore/사분면 API(`/api/v1/chainsight/theme-heat/quadrant/`) 신선도 **미점검**. 주간 적재 자동화(DSS-BEAT) 후 무발화 감지 공백 → dogfood 신선도 타깃에 편입 검토. **구현은 AGENT 트랙 소관**(본 트랙 구현 금지·등재만).

@@ -1907,3 +1907,9 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **DoD**: launchd로 도는 코드는 **`env -i HOME=$HOME PATH=/usr/bin:/bin <cmd>`로 재현**해야 검증이 끝난 것이다. 이 재현 없이 "수동으로 됐다"는 통과 근거가 아니다.
 
 **관측성**: 실패 사유를 구분해 로그에 남긴다(자격증명 부재 vs 로그인 거부 status vs 토큰 없음). 재발 시 로그만으로 판별된다.
+
+## 무인 LLM 파이프라인 크레딧 소진 — 자동 충전+잔액 감시로 방어, 소진 시 분석률 0% 고착 (채번 후보, DUAL-OBS-1 2026-09-07) `[news][llm][infra][process]`
+
+무인 LLM 파이프라인 크레딧 소진 — API 크레딧은 사람 기억이 아닌 자동 충전+잔액 감시로 방어. 소진 시 증상 = 분석률 0% 고착·타 경로 잔불로 오인 가능. 실증: 09-01~03 3일 공백(LLM-CREDIT-OUTAGE).
+
+**정정 재료(DUAL-OBS-1 실측)**: 분석률(뉴스 심층분석)의 실경로는 **Gemini 2.5 Flash**(`news_deep_analyzer.py`·`GEMINI_API_KEY`)이며 **anthropic 아님**(anthropic=advisor 별도 경로). 실패 마커 = **quota/429/RESOURCE_EXHAUSTED**(Gemini rate-limit/quota 소진). ⇒ "타 경로(anthropic) 잔불로 오인" + **충전 대상 provider 오인**(anthropic 충전이 Gemini quota를 못 살림) = 소진 대응의 2대 함정. 잔액 감시는 **소비 provider별**로 건다. 09-03 충전 후에도 분석률 0%대 고착(09-04~06)이 그 실증.
