@@ -163,13 +163,21 @@ def _daily_spike_group_cards(now, since14):
 
 
 def _weekly_active_cards(now):
-    """count_7d 절대 상위(무방향 dedup). steady — 항상 채우는 fallback(규칙 2)."""
+    """count_7d 절대 상위(무방향 dedup). steady — 항상 채우는 fallback(규칙 2).
+
+    H(정직성 보강): window_label "최근 7일 활동"은 캐시 신선도가 아니라 **쿼리**가 보장한다.
+    materialize(ET 12:00)가 밀려도 창 밖(last_co_mention_date < now-7d) 행이 그 라벨을
+    달고 노출되지 않도록 last_co_mention_date 하한을 건다(상수 파생).
+    """
     from apps.chain_sight.models import SymbolStoryActivity
 
+    since7 = now.date() - datetime.timedelta(days=WEEKLY_ACTIVE_WINDOW_DAYS)
     seen = set()
     cards = []
     for r in (
-        SymbolStoryActivity.objects.filter(count_7d__gte=WEEKLY_ACTIVE_MIN_7D)
+        SymbolStoryActivity.objects.filter(
+            count_7d__gte=WEEKLY_ACTIVE_MIN_7D, last_co_mention_date__gte=since7
+        )
         .order_by("-count_7d", "-last_co_mention_date")
         .values("symbol", "partner", "count_7d", "last_co_mention_date")
         .iterator()

@@ -123,6 +123,16 @@ class TestWeeklyActive:
         pairs = [frozenset((c["symbol_a"], c["symbol_b"])) for c in feed["cards"] if c["type"] == "weekly_active"]
         assert pairs.count(frozenset(("JPM", "BAC"))) == 1
 
+    def test_weekly_active_excludes_stale_cache_rows(self):
+        # H: window_label "최근 7일 활동"의 정직성 = 캐시 신선도가 아니라 쿼리가 보장.
+        # count_7d>=1 이지만 last_co_mention_date 8일 전(창 밖) 행 → 미노출.
+        _cache("STALE", "OLD", 27, last_days_ago=8)   # 창 밖(8일 전)
+        _cache("FRESH", "NEW", 12, last_days_ago=1)   # 창 안(어제)
+        feed = build_market_story_feed(now=NOW)
+        wa_pairs = {frozenset((c["symbol_a"], c["symbol_b"])) for c in feed["cards"] if c["type"] == "weekly_active"}
+        assert frozenset(("FRESH", "NEW")) in wa_pairs
+        assert frozenset(("STALE", "OLD")) not in wa_pairs
+
 
 @pytest.mark.django_db
 class TestNewSec:
