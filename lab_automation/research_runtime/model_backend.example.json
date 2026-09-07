@@ -1,0 +1,16 @@
+{
+  "backend_type": "command_json",
+  "default": {
+    "command": ["codex", "exec", "-"],
+    "backend_name": "codex_cli",
+    "requested_identity": "codex-cli/default",
+    "identity_assurance": "requested_only",
+    "timeout_seconds": 300
+  },
+  "roles": {
+    "researcher": {},
+    "critic": {},
+    "revision": {},
+    "evaluator": {}
+  }
+}
