@@ -5,6 +5,20 @@
 
 ---
 
+## CS-S3 트랙 — "이야기 리포트" (S3-PRE 등재 재landing + S3-1 착지, 2026-09-07) [chainsight][frontend]
+
+> D-S3-1~5 + CS-S3-1 착지 결정(DECISIONS 2026-09-07). R2-S1/S2 아크 연속. S3-PRE 등재분이 main 미랜딩이라 S3-1과 함께 통합.
+
+| 태스크 | 크기 | 내용 | depends_on | 상태 |
+|--------|------|------|-----------|------|
+| CS-S3-PRE | — | 데이터·구조 전제 측정(P1~P9) + DECISIONS 5건 + 사이징 | R2-S2 | ✅ **done (2026-09-03, 측정 전용)** |
+| CS-S3-1 | M | 묶음(union-find)·제목 인용·8-K 템플릿·story_id 슬러그·헤더 정직화·정렬(사건성 1차)·응답 캐시·window_days·evidence 스키마. FE 카드/헤더/가이드 겹침 | CS-S3-PRE | ✅ **LANDED+DEPLOYED (main `5e4e70ea`·커밋 A~H). BE 817·vitest 19·tsc0·ruff0·eslint0. worker_sync 3트리 재기동+FE prod 리빌드·:3000 200·라이브 API 검증. 픽셀 스샷=browse 데몬 이슈로 미수행(API 갈음)** |
+| CS-S3-2 | M | 사슬 대조(§3). **RelationConfidence 쌍 조회 서비스 신설**(P4 진입점 미발견·지연 1.02ms→배치 불요) + 신뢰도 4밴드(0.35/0.60/0.85). **evidence[] 스키마 = D-S3-EVIDENCE-SCHEMA(§1 입력 확정)**. `hidden` 두 갈래 판정(previous_status: 미승격 vs weak감쇠·D-RC-DECAY-SEMANTIC) — STEP 0에서 previous_status 분포만 계수 | CS-S3-1 | 🟢 **착수 가능** |
+| CS-S3-3 | S | 시계열(§2). read-time 일별 재집계(P3: NewsEntity.published_at ~6개월 보존→물질화 확장 불요) | CS-S3-1 | 🆕 todo |
+| CS-S3-4 | L | 해석(§4)·규칙(①②③⑤⑥ 결정론+④ LLM shared 래퍼)·리포트 페이지(`/chainsight/story/:id`)·AI 의견란(접힘)·8-K SEC 원문 링크(카드 비-링크라 여기서 수용) | CS-S3-2, CS-S3-3 | 🆕 todo |
+| CS-S3-5 | M | 추적·무시 연결(story_id 앵커) + 마인드맵 다중강조 딥링크(P8 단일 `?symbol=`만) | CS-S3-4 | 🆕 todo |
+| CS-S3-LEDGER | L(MIG) | 가설 원장(의견 채점). P7: 기존 테이블 부합 없음→신규(B안)·MIG 관문·결정 병진 | CS-S3-4 | 🕒 보류(병진) |
+
 ## ✅ DSS-BEAT — DSS 주간 적재 자동화 (가동, DSS-BEAT-1 2026-08-31) [theme-heat][dss][infra]
 - D-DSS-BEAT-1. celery `chainsight-load-dss-weekly`(Fri 19:00 ET·default 큐) + 폴백 command `load_dss_week`. **2단 스위치**: PeriodicTask enabled=False 등재 → §D 워커 재시작+검증 후 enable.
 - **가동 완료(2026-08-31)**: §C push 착지(origin/main `64c5b622`) → 병진 `sv sync`(worker 트리 `835da979` re-detach + celery-worker/beat 재기동·inspect ping ✓) → CC 검증 2종 통과(트리 조상 `64c5b622` 포함 · `inspect registered`에 chainsight-load-dss-weekly) → **PeriodicTask id=143 enabled=True**. **다음 발화 = 09-04(금) 19:00 ET**. 관측 = DSS-BEAT-OBS-1. 폴백(미발화 시) = 착지 트리 `manage.py load_dss_week`.

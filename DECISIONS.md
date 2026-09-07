@@ -8,6 +8,32 @@
 
 ---
 
+## [2026-09-07] D-DIRECTOR-READ — 디렉터의 worktree 읽기전용 직접 열람 [harness][process]
+
+**결정**: 디렉터(채팅 Claude)가 worktree를 **읽기 전용으로 직접 읽는다**(파일 read + diff). 쓰기·git 쓰기 계열·스크립트 실행·배포·prod DB는 종전대로 전부 CC 병진 손. 디렉터 측정값에는 읽은 시각·기준 커밋을 병기하고, CC가 STEP 0에서 다르면 HALT.
+**Why**: 아크 중 디렉터 오류 2건(FE 배포 경로·A-5 정렬 키)이 "디렉터가 사실을 못 봐서" 발생, CC HALT로 한 왕복 뒤 잡힘 → 왕복 앞당김. 가중합(합 1.00): 지시서정확 0.30/왕복절감 0.25/경계보존 0.20/병진부담 0.15/사고리스크 0.10 → A(무접근)3.20·**B(읽기전용)4.55**·C 3.75(마진 0.80). **한계**: 레포는 `~/Desktop/stock_vis`(접근 없음) → 커밋 해시·브랜치 대조는 CC STEP 0 몫.
+
+## [2026-09-07] S3 이야기 리포트 아크 — CS-S3-1 착지 + 아크 결정 재등재 [chainsight][frontend]
+
+> S3-PRE(측정 세션)의 D-S3-1~5 등재분이 main 미랜딩(stranded)이라 CS-S3-1 착지와 함께 재등재. R2-S1(D-CS-STORY-SOURCE)·R2-S2 아크 연속.
+
+**아크 결정(S3-PRE 2026-09-03 확정)**:
+- **D-S3-1 리포트 구조**: 이야기 = 브리프 카드(피드) + 6절 리포트(①무슨 일·②흐름·③사슬 대조·④해석·⑤지켜볼 것·⑥닿는 사슬).
+- **D-S3-2 해석 = H(인용 게이트 하이브리드)**: ①②③⑤⑥ 결정론·④만 LLM 1단락(shared 래퍼 경유·문장마다 근거 번호·폐기율>30% health WARN).
+- **D-S3-3 AI 의견란 = 기본 접힘**(미확인 문장만·§4 검증 0이면 숨김·비저장).
+- **D-S3-4 리포트 라우트 = `/chainsight/story/:id`**(이야기 id 앵커).
+- **D-S3-5 슬라이스 순서**: PRE→S3-1→S3-2(사슬 대조)→S3-3(시계열)→S3-4(해석·리포트·의견란)→S3-5(추적/무시). 가설 원장 = 신규 테이블(B안)·MIG 관문·병진.
+
+**CS-S3-1 착지 결정(2026-09-07)**:
+- **D-S3-SORT 정렬 = 사건성 asc → occurred_on desc → max_mentions desc**(D-DIRECTOR-READ 발견 1). **Why**: occurred_on 1차면 최신 weekly_active(잔잔한 배경)가 과거 사건(8-K·급등) 위로 와 사건이 매몰 → 스모크 ⑵/⑷·피드 목적 붕괴. 라이브에서 8-K@08-19·급등@08-21이 weekly@최근 밑 30위 밖 매몰 확인 후 정정.
+- **D-S3-6 헤더 창 표기 = B안(카드가 자기 창을 말함)**(병진 확정 2026-09-04·가중합 4.72·마진 1.11 = 자동 결정 구간). **Why**: 피드에 단일 창이 없다(daily_spike 14·new_sec 30·weekly_active 7 상이) → **헤더 단일 표기는 과대·과소 표기**가 된다. **How**: 헤더는 창 미주장(제목 "오늘 시장의 이야기"·부제 "오늘 새로 온 것 {n} · 전체 {N}"), 창은 카드별 **`window_label`**(상수 파생·하드코딩 금지: new_sec `f"{NEW_SEC_DAYS}일 내 신규 공시"`·daily_spike `f"{DAILY_SPIKE_DAYS}일 중 이 하루"`·weekly_active `f"최근 {WEEKLY_ACTIVE_WINDOW_DAYS}일 활동"`). 사건→배경 전환 구분선 "여기부터 잔잔한 흐름"(앞에 사건 카드 있을 때만). 상수 변경 시 문구 추종(회귀 테스트 `test_window_label_derives_from_constant`). **창 라벨은 캐시가 아니라 쿼리로 보장한다**(H·2026-09-07): weekly_active 쿼리에 `last_co_mention_date__gte = now - WEEKLY_ACTIVE_WINDOW_DAYS` — materialize(ET 12:00) 지연 시 창 밖 캐시 행이 "최근 7일 활동" 라벨로 오노출되는 것을 차단(`test_weekly_active_excludes_stale_cache_rows`).
+- **D-S3-EVIDENCE-SCHEMA (A-6)**: 카드 `evidence[] = {kind:"article"|"8k", ref, title, url, date}`. **S3-2 §1의 입력 스키마 — 여기서 고정**. 근거 없으면 `title:null`(정직 표기·인용만·LLM 0).
+- **D-S3-STORYID = 결정론 슬러그** `blake2b(f"{type}:{'-'.join(sorted(members))}:{occurred_on}", digest_size=5)`(10-hex)·저장 없음·`story_key` 원문 병기(S3-4 라우트/추적 앵커).
+- **D-S3-FEED-CACHE**: 피드 응답을 (limit, ET 날짜) 키로 캐시(TTL 900s). STEP0-2 NewsEntity 재조회 p95 368ms(콜드) → 표시 카드 제목·evidence 조회 비용 응답 단위 흡수(#15 키 일관).
+- **소스 재조회(A-1)**: CoMentionEdge에 기사 링크 없음(P1) → `story_source.articles_for_pair`가 ChainNewsEvent 직결 제목 → NewsEntity 교집합으로 (쌍,날짜) 복원. 발행시각 창 = ±1일 UTC-aware(naive 창의 TIME_ZONE 클리핑 회피).
+
+**How to apply**: BE `apps/chain_sight/services/{story_source,market_story_feed}.py`·`api/feed_views.py`. FE `components/chainsight/story/*`·`types/chainsight.ts`. 커밋 A `ceb270e2`(BE)·B `ceb3e050`(FE). 마이그 0·외부콜 0·prod write 0·LLM 0. cf. [[project_r2s2_market_story_feed]]·D-CS-STORY-SOURCE.
+
 ## [2026-08-31] D-DSS-BEAT-1 — DSS 주간 적재 자동화 (beat 태스크 + 2단 스위치) [theme-heat][dss][infra]
 
 > 출처: 지시서 DSS-BEAT-1(병진 승인 08-31). 구현 = §A~§D.

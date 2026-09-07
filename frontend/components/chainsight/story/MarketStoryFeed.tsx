@@ -1,5 +1,6 @@
 'use client';
 
+import { Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { fetchMarketStoryFeed } from '@/services/chainsightService';
@@ -21,15 +22,20 @@ export default function MarketStoryFeed() {
     staleTime: 1000 * 60 * 5,
   });
 
+  // A-5 정직화: 헤더는 창을 말하지 않는다(발견 2). 부제 = 오늘 새로 온 것 n · 전체 N.
   const subtitle = data
     ? data.has_event
-      ? `${data.as_of} · 급증 ${data.summary.daily_spike}건 · 신규 연결 ${data.summary.new_sec}건`
+      ? `오늘 새로 온 것 ${data.meta.new_today} · 전체 ${data.meta.stories}`
       : '오늘은 큰 사건이 없어요 — 꾸준히 활발한 이야기들'
     : null;
 
+  // 사건(new_sec·daily_spike) → 배경(weekly_active) 전환점(구분선 삽입 위치).
+  const firstSteadyIdx = data ? data.cards.findIndex((c) => c.type === 'weekly_active') : -1;
+
   return (
     <div className="p-6">
-      <div className="mb-6 flex items-start justify-between gap-4">
+      {/* B-4: pr-24 로 전역 가이드 풍선(GuideOverlay fixed 우상단) 자리 확보 → 버튼 겹침 해소(공용 컴포넌트 무접촉). */}
+      <div className="mb-6 flex items-start justify-between gap-4 pr-0 sm:pr-24">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">오늘 시장의 이야기</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -62,8 +68,21 @@ export default function MarketStoryFeed() {
 
       {data && data.cards.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.cards.map((card) => (
-            <MarketStoryCardItem key={`${card.type}-${card.symbol_a}-${card.symbol_b}`} card={card} />
+          {data.cards.map((card, i) => (
+            <Fragment key={card.story_id ?? `${card.type}-${card.symbol_a}-${card.symbol_b}`}>
+              {/* 사건→배경 전환점 구분선(앞에 사건 카드가 있을 때만). */}
+              {i === firstSteadyIdx && firstSteadyIdx > 0 && (
+                <div
+                  data-testid="steady-divider"
+                  className="col-span-full flex items-center gap-3 py-1 text-[11px] text-gray-400 dark:text-gray-500"
+                >
+                  <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                  여기부터 잔잔한 흐름
+                  <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                </div>
+              )}
+              <MarketStoryCardItem card={card} />
+            </Fragment>
           ))}
         </div>
       )}
