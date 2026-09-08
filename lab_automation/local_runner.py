@@ -35,10 +35,30 @@ from uuid import uuid4
 from lab_automation.artifact_store import ArtifactRef, LocalArtifactStore
 from lab_automation.contracts import JobEnvelope, JobStatus, Lab
 from lab_automation.execution_records import InvocationRecord
-from lab_automation.integrity import require_output_contract
+from lab_automation.integrity import (
+    require_output_contract,
+    validate_json_artifact,
+    validate_nonempty_text_artifact,
+)
 from lab_automation.ledger import AppendOnlyLedger, RunEvent
 
-RUNNER_VERSION = "0.1.2"
+RUNNER_VERSION = "0.1.3"
+REQUIRED_AGENT_ARTIFACTS = (
+    "agent_report.md",
+    "result.json",
+    "data_gaps.json",
+)
+
+
+class CommandFailure(RuntimeError):
+    """A failed external command whose captured diagnostics must survive."""
+
+    def __init__(self, payload: dict[str, Any]):
+        self.payload = payload
+        super().__init__(
+            f"{payload['stage']} command failed with return code "
+            f"{payload['returncode']}: {payload['command']}"
+        )
 
 
 def _utc_now() -> str:
@@ -144,14 +164,19 @@ Expected outputs:
 {expected}
 
 Constraints:
+- This Job already authorizes local implementation and validation within the declared scope.
+- Do not pause or ask for another approval; proceed with the authorized local work.
 - Do not push, merge, deploy, force-push, or modify main/master.
 - DB access policy: {job.db_access}.
 - Network policy: {job.network_policy}.
 - Do not perform destructive actions.
 - Record failures and uncertainty; do not hide unsuccessful attempts.
+- The three result paths below are runner-designated output locations authorized in addition to the Job write scope.
 - Write a concise execution report to: {result_dir / 'agent_report.md'}
 - Write machine-readable findings to: {result_dir / 'result.json'}
-- If data gaps are found, write: {result_dir / 'data_gaps.json'}
+- Write machine-readable data gaps to: {result_dir / 'data_gaps.json'}
+- All three result artifacts are required. Use valid JSON and write [] to data_gaps.json when no gaps are found.
+- result.json must contain findings and must not be an empty JSON object.
 """
 
 
@@ -239,22 +264,36 @@ def _enforce_write_scope(paths: list[str], allowed: tuple[str, ...]) -> None:
         raise PermissionError(f"write-scope violation: {disallowed}")
 
 
-def _ensure_minimum_artifacts(result_dir: Path) -> dict[str, str]:
-    """Ensure review files exist while preserving whether the agent made them."""
+def _meaningful_changed_paths(
+    paths: list[str],
+    allowed: tuple[str, ...],
+) -> list[str]:
+    return [
+        path
+        for path in paths
+        if _path_allowed(path, allowed)
+        and not _path_allowed(path, (".lab_automation",))
+    ]
+
+
+def _ensure_minimum_artifacts(result_dir: Path, *, dry_run: bool) -> dict[str, str]:
+    """Locate agent artifacts; synthesize clearly marked dry-run files only."""
     result_dir.mkdir(parents=True, exist_ok=True)
-    origins: dict[str, str] = {}
-    defaults = {
-        "agent_report.md": "# Agent report\n\nNo report was produced by the agent.\n",
-        "result.json": "{}\n",
-        "data_gaps.json": "[]\n",
+    placeholders = {
+        "agent_report.md": "# DRY RUN placeholder\n\nNo executor was invoked.\n",
+        "result.json": '{"dry_run_placeholder": true}\n',
+        "data_gaps.json": '{"dry_run_placeholder": true}\n',
     }
-    for name, default in defaults.items():
+    origins: dict[str, str] = {}
+    for name, placeholder in placeholders.items():
         path = result_dir / name
-        if path.exists():
+        if path.is_file():
             origins[name] = "agent_generated"
+        elif dry_run:
+            path.write_text(placeholder, encoding="utf-8")
+            origins[name] = "dry_run_placeholder"
         else:
-            path.write_text(default, encoding="utf-8")
-            origins[name] = "runner_placeholder"
+            origins[name] = "missing"
     return origins
 
 
@@ -264,7 +303,20 @@ def _candidate_commit(worktree: Path, job_id: str, dry_run: bool) -> str | None:
     if not _changed_paths(worktree):
         return _current_sha(worktree)
     _git(worktree, "add", "--all")
-    _git(worktree, "commit", "-m", f"lab-automation: candidate result for {job_id}")
+    commit_args = ("commit", "-m", f"lab-automation: candidate result for {job_id}")
+    proc = _git(worktree, *commit_args, check=False)
+    if proc.returncode != 0:
+        raise CommandFailure(
+            {
+                "schema_version": "command-failure/0.1",
+                "stage": "candidate_commit",
+                "command": ["git", *commit_args],
+                "cwd": str(worktree),
+                "stdout": proc.stdout,
+                "stderr": proc.stderr,
+                "returncode": proc.returncode,
+            }
+        )
     return _current_sha(worktree)
 
 
@@ -325,6 +377,7 @@ def execute_job(
     candidate_sha: str | None = None
     artifact_entries: list[dict[str, Any]] = []
     logical_artifact_refs: list[str] = []
+    run_succeeded = False
 
     ledger.append(
         RunEvent(
@@ -459,7 +512,7 @@ def execute_job(
             logical_artifact_refs.append(ref.logical_uri)
             artifact_entries.append(_artifact_manifest_entry(ref, origin="runner_generated"))
 
-        origins = _ensure_minimum_artifacts(result_dir)
+        origins = _ensure_minimum_artifacts(result_dir, dry_run=dry_run)
         review_invocation = {
             "schema_version": "invocation-review/0.1",
             "invocation": invocation_record.to_dict(),
@@ -483,6 +536,8 @@ def execute_job(
             ("codex_invocation.json", "invocation_review"),
         ):
             path = result_dir / name
+            if not path.is_file():
+                continue
             retention = "irreplaceable" if name != "codex_invocation.json" else "reconstructable"
             ref = _store_file(
                 store,
@@ -532,30 +587,93 @@ def execute_job(
         if codex_result["returncode"] != 0:
             raise RuntimeError("Codex execution failed")
 
-        output_finding = require_output_contract(
-            origins,
-            required_names=("agent_report.md", "result.json"),
-        )
+        output_findings = [
+            require_output_contract(
+                origins,
+                required_names=REQUIRED_AGENT_ARTIFACTS,
+            )
+        ]
+        if origins["agent_report.md"] == "agent_generated":
+            output_findings.append(
+                validate_nonempty_text_artifact(result_dir / "agent_report.md")
+            )
+        if origins["result.json"] == "agent_generated":
+            output_findings.append(
+                validate_json_artifact(
+                    result_dir / "result.json",
+                    reject_empty_object=True,
+                )
+            )
+        if origins["data_gaps.json"] == "agent_generated":
+            output_findings.append(
+                validate_json_artifact(result_dir / "data_gaps.json")
+            )
+        output_failures = [
+            finding for finding in output_findings if finding.status != "PASS"
+        ]
+        missing_artifacts = [
+            name
+            for name in REQUIRED_AGENT_ARTIFACTS
+            if origins[name] != "agent_generated"
+        ]
         ledger.append(
             RunEvent(
                 job_id=job.job_id,
                 run_id=run_id,
                 stage="output_contract",
-                status="completed" if output_finding.status == "PASS" or dry_run else "failed",
+                status=(
+                    "dry_run_only"
+                    if dry_run
+                    else ("failed" if output_failures else "completed")
+                ),
                 actor="local_runner",
                 runner_version=RUNNER_VERSION,
                 base_sha=base_sha,
                 artifact_refs=tuple(ref.logical_uri for ref in result_refs.values()),
                 metadata={
-                    "integrity_code": output_finding.code,
-                    "integrity_status": output_finding.status,
-                    "message": output_finding.message,
+                    "dry_run": dry_run,
+                    "findings": [asdict(finding) for finding in output_findings],
+                    "missing_artifacts": missing_artifacts,
                     "origins": origins,
                 },
             )
         )
-        if not dry_run and output_finding.status != "PASS":
-            raise RuntimeError(output_finding.message)
+        if not dry_run and output_failures:
+            raise RuntimeError(
+                "; ".join(finding.message for finding in output_failures)
+            )
+
+        executor_paths = [] if dry_run else _changed_paths(worktree)
+        meaningful_paths: list[str] = []
+        if not dry_run:
+            _enforce_write_scope(
+                executor_paths,
+                job.allowed_write_paths + (".lab_automation",),
+            )
+            meaningful_paths = _meaningful_changed_paths(
+                executor_paths,
+                job.allowed_write_paths,
+            )
+            ledger.append(
+                RunEvent(
+                    job_id=job.job_id,
+                    run_id=run_id,
+                    stage="workload_change",
+                    status="completed" if meaningful_paths else "failed",
+                    actor="local_runner",
+                    runner_version=RUNNER_VERSION,
+                    base_sha=base_sha,
+                    metadata={
+                        "changed_paths": executor_paths,
+                        "meaningful_changed_paths": meaningful_paths,
+                    },
+                )
+            )
+            if not meaningful_paths:
+                raise RuntimeError(
+                    "real run produced no meaningful changed path within the "
+                    "Job's allowed write scope"
+                )
 
         test_results = _run_tests(worktree, raw, dry_run=dry_run)
         tests_path = result_dir / "tests.json"
@@ -610,6 +728,7 @@ def execute_job(
             "base_sha": base_sha,
             "candidate_branch": candidate_branch if not dry_run else None,
             "changed_paths_before_manifest": paths_before_manifest,
+            "meaningful_changed_paths": meaningful_paths,
             "artifacts": artifact_entries,
             "promotion_state": (
                 "dry_run_complete" if dry_run else "waiting_for_push_approval"
@@ -667,8 +786,32 @@ def execute_job(
                 },
             )
         )
+        run_succeeded = True
         return 0
     except Exception as exc:
+        failure_artifact_ref: str | None = None
+        if isinstance(exc, CommandFailure):
+            failure_ref = store.put_json(
+                {
+                    **exc.payload,
+                    "job_id": job.job_id,
+                    "run_id": run_id,
+                },
+                kind="command_failure",
+                retention_class="irreplaceable",
+                metadata={
+                    "job_id": job.job_id,
+                    "run_id": run_id,
+                    "stage": exc.payload["stage"],
+                },
+            )
+            failure_artifact_ref = failure_ref.logical_uri
+            logical_artifact_refs.append(failure_artifact_ref)
+        preserved_worktree_path = (
+            str(worktree)
+            if not dry_run and worktree != repo and worktree.is_dir()
+            else None
+        )
         ledger.append(
             RunEvent(
                 job_id=job.job_id,
@@ -681,12 +824,16 @@ def execute_job(
                 candidate_sha=candidate_sha,
                 artifact_refs=tuple(logical_artifact_refs),
                 error=f"{type(exc).__name__}: {exc}",
+                metadata={
+                    "failure_artifact_ref": failure_artifact_ref,
+                    "preserved_worktree_path": preserved_worktree_path,
+                },
             )
         )
         print(f"runner failed: {exc}", file=sys.stderr)
         return 1
     finally:
-        if not dry_run and worktree != repo and worktree.exists():
+        if run_succeeded and not dry_run and worktree != repo and worktree.exists():
             _git(repo, "worktree", "remove", "--force", str(worktree), check=False)
 
 

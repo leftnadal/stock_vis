@@ -48,7 +48,8 @@ local/GitHub job file
 - Claude Code가 사용하는 기존 checkout을 더럽히지 않는다.
 - runtime execution history와 canonical repository artifact를 분리한다.
 - 실패한 run도 repository commit 여부와 무관하게 남긴다.
-- worktree가 제거된 뒤에도 raw input/output을 복원할 수 있다.
+- 성공한 worktree가 제거된 뒤에도 raw input/output을 복원할 수 있다.
+- 실패한 real-run worktree는 조사할 수 있도록 보존하고 terminal event에 경로를 기록한다.
 
 Artifact는 filesystem path가 아니라 `artifact://sha256/<digest>` logical URI로 식별한다. `--state-root`를 다른 디스크로 옮겨도 logical identity는 유지된다.
 
@@ -99,19 +100,24 @@ Codex 호출 전에 다음을 external artifact로 보존한다.
 
 ## 5. Output Provenance and Contract
 
-agent가 required file을 만들지 않았을 때 runner는 감사 가능성을 위해 placeholder를 만들 수 있다. 하지만 placeholder를 agent output으로 취급하지 않는다.
+실제 `--execute` run에서 runner는 required agent file을 대신 만들지 않는다. executor가
+`agent_report.md`, `result.json`, `data_gaps.json` 세 파일을 모두 직접 만들어야 한다.
+report는 비어 있지 않아야 하고 두 JSON 파일은 실제로 parse되어야 하며,
+`result.json`의 빈 object (`{}`)는 거부한다. gap이 없으면 executor가
+`data_gaps.json`에 `[]`를 쓴다.
 
 Origin 예:
 
 ```text
 agent_generated
-runner_placeholder
+missing
+dry_run_placeholder
 runner_generated
 ```
 
-실제 `--execute` run에서 `agent_report.md` 또는 `result.json`이 `runner_placeholder`이면 output contract failure로 run을 중단한다.
-
-Dry-run은 agent를 호출하지 않기 때문에 placeholder를 허용하고 contract 흐름만 검증한다.
+Dry-run은 executor를 호출하지 않으므로 `dry_run_placeholder`만 만들며 파일 내용과
+ledger stage를 모두 dry-run 전용으로 명시한다. 이 placeholder는 real output으로
+취급되지 않는다.
 
 ## 6. Candidate SHA
 
@@ -134,7 +140,12 @@ runner는 원본 job branch를 직접 수정하지 않고 다음과 같은 로�
 lab-run/<job-id>/<run-id-prefix>
 ```
 
-candidate commit이 만들어진 뒤 worktree는 제거할 수 있지만 로컬 branch는 남는다. CEO가 push를 승인하면 정확한 candidate branch와 external ledger의 final SHA를 대상으로 promotion한다.
+candidate commit이 만들어진 성공 run은 worktree를 제거할 수 있지만 로컬 branch는
+남는다. 실패한 real run은 worktree와 내부 artifact를 보존하고 terminal event의
+`preserved_worktree_path`에 위치를 남긴다. Git commit 실패는 command, stdout,
+stderr, return code를 `command_failure` artifact로 보존하고 그 logical URI를 같은
+terminal event에서 참조한다. CEO가 push를 승인하면 정확한 candidate branch와
+external ledger의 final SHA를 대상으로 promotion한다.
 
 ## 8. Dry Run
 
@@ -167,6 +178,8 @@ v0.2에서도 runner는 다음 job을 거부한다.
 - allowed write paths가 없음
 
 Codex가 allowed path 밖의 파일을 수정하면 candidate commit 전에 runner가 실패한다.
+Codex가 exit code 0을 반환해도 Job의 `allowed_write_paths` 아래에 실제 workload 변경이
+하나 이상 없으면 실패한다. runner가 만든 `.lab_automation` 파일은 이 판정에서 제외한다.
 
 ## 10. Known Limitations
 

@@ -15,7 +15,7 @@ git config core.hooksPath scripts/hooks
 
 ### `pre-commit`
 
-- **브랜치 화이트리스트**: `main`·`slice*`·`security/*`·`monorepo/*` 등 허용 브랜치만 커밋 통과(자동 브랜치 전환 오염 방지). 그 외 = 거부.
+- **브랜치 화이트리스트**: `main`·`slice*`·`security/*`·`monorepo/*`와 Lab Automation의 격리 candidate인 `lab-run/*`만 커밋 통과(자동 브랜치 전환 오염 방지). 그 외 = 거부.
 - **작업 경로 경고**: 표준 경로 밖이면 경고(비차단).
 - **KB 큐 미드레인 경고**: `shared_kb` 큐 미드레인 시 stderr 경고(비차단).
 - **채번 가드**: staged `sub_claude_md/common-bugs.md`에 신규 `#NN` 헤딩을 추가하는데 현재 브랜치가 `sess-mgmt` 계열이 아니면 **커밋 거부**. 채번은 mgmt 세션 전용이라는 규약의 집행.

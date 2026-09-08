@@ -149,18 +149,26 @@ agent/model invocation 전에 실제 입력을 immutable artifact로 만든다.
 
 ```text
 agent_generated
-runner_placeholder
+missing
+dry_run_placeholder
 runner_generated
 derived
 ```
 
 같은 origin 구분을 보존한다.
 
-`agent_report.md`와 `result.json`처럼 required output이 runner placeholder라면 execution process가 정상 종료했더라도 output contract는 실패로 기록한다.
+Real run의 required output은 runner가 대신 만들지 않는다. `agent_report.md`,
+`result.json`, `data_gaps.json`이 모두 executor-generated가 아니거나 JSON parsing 및
+non-empty result contract를 통과하지 못하면 execution process가 정상 종료했더라도
+output contract는 실패로 기록한다. Placeholder는 명시적으로 표시한 dry-run에만 있다.
 
 ```text
 execution success ≠ output contract success ≠ epistemic quality
 ```
+
+Git commit command 실패는 command/stdout/stderr/return code를 content-addressed
+`command_failure` artifact로 남기고 terminal event가 그 URI와 보존된 worktree 경로를
+참조한다.
 
 ## 7. Candidate SHA Boundary
 

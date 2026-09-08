@@ -91,6 +91,7 @@ artifact://sha256/<digest>
 - `artifact_store.py` — content-addressed local Artifact Store
 - `integrity.py` — shared runtime integrity checks
 - `local_runner.py` — local candidate commit까지만 수행하는 runner
+- `issue_queue.py` — queued intake와 명시적 running-issue resume
 - `research_runtime/` — Research Experiment Profile + research-specific preflight
 - `doctor.py` — git / Python / Poetry / Codex / PostgreSQL preflight
 - `run_first_job.sh` — doctor + dry-run + explicit restricted real-run launcher
@@ -99,7 +100,27 @@ artifact://sha256/<digest>
 - `run_ledger_ko.md` — 운영 기록과 platform learning 원칙
 - `jobs/math_daily_price_readiness.example.json` — 첫 Math Lab Job
 
-## 6. Current boundary
+## 6. 이미 running인 Issue의 안전한 재개
+
+정상 intake는 계속 `lab-automation` + `queued` Issue만 선택한다. 이미 claim되어
+`running`으로 바뀐 Issue의 Job 파일만 복구할 때는 명시적인 resume 경로를 사용한다.
+
+Issue #34의 정확한 명령:
+
+```bash
+poetry run python -m lab_automation.issue_queue \
+  --repo-slug leftnadal/stock_vis \
+  --state-root "$HOME/.stockvis-lab-automation" \
+  --issue 34 \
+  --resume-running
+```
+
+이 경로는 해당 Issue 하나를 read-only로 조회하고, `OPEN` + `lab-automation` +
+`running` 상태와 기존 `claims/issue-34.claim`의 issue/job identity를 확인한다. claim을
+다시 만들거나 GitHub label을 변경하지 않는다. 기존 Job이 같으면 그대로 반환하고,
+다르면 덮어쓰지 않고 실패한다.
+
+## 7. Current boundary
 
 실제 실행의 최종 상태는 다음이다.
 

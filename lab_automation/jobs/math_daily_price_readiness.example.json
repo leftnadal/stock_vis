@@ -15,7 +15,7 @@
     "adversarial candidate discovery results",
     "Data Eligibility decisions",
     "Data Gap / Opportunity proposals",
-    "tests"
+    "math_lab/runtime/test_daily_price_readiness.py readiness-probe test"
   ],
   "allowed_write_paths": [
     "math_lab",
@@ -28,6 +28,7 @@
   "parent_job_ids": [],
   "codex_command": ["codex", "exec", "-"],
   "test_commands": [
-    ["python", "-m", "pytest", "math_lab/runtime/test_data_eligibility.py", "-q"]
+    ["python", "-m", "pytest", "math_lab/runtime/test_data_eligibility.py", "-q"],
+    ["python", "-m", "pytest", "math_lab/runtime/test_daily_price_readiness.py", "-q"]
   ]
 }

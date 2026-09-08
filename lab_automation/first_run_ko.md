@@ -157,11 +157,11 @@ Expected behavior:
 3. authority refs snapshot
 4. Codex CLI execution
 5. DailyPrice read-only readiness 작업
-6. declared tests 실행
+6. 기존 Data Eligibility test와 executor가 추가한 DailyPrice readiness-probe test 실행
 7. write-scope 확인
 8. structured artifacts 저장
 9. local candidate commit 생성
-10. worktree 제거
+10. 성공한 worktree 제거 (실패한 worktree는 보존)
 11. candidate branch는 local repo에 보존
 12. ledger 최종 상태 `waiting_for_push_approval`
 
@@ -191,11 +191,15 @@ git diff <base-sha>..<candidate-sha> --stat
 intake
 authority_load
 agent_execution
+output_contract
+workload_change
 tests
 candidate_revision: waiting_for_push_approval
 ```
 
-실패 시에는 기존 events 뒤에 `terminal: failed`가 append되어야 한다.
+실패 시에는 기존 events 뒤에 `terminal: failed`가 append되어야 한다. 실패한 real
+run이면 terminal metadata의 `preserved_worktree_path`가 남아야 한다. commit
+실패라면 같은 event가 `command_failure` artifact URI를 참조해야 한다.
 
 ### Candidate artifacts
 
@@ -222,6 +226,8 @@ manifest.json
 - allowed write path violation
 - test failure
 - Codex non-zero return
+- required agent artifact 누락/빈 report/invalid JSON/빈 `result.json` object
+- `.lab_automation` 외의 의미 있는 allowed-path 변경 없음
 - authority ref 누락
 - candidate SHA 불명확
 - manifest에서 push/merge/deploy=true
@@ -265,6 +271,7 @@ Push 승인
 - 기록이 단계별로 남는가
 - 실패가 숨겨지지 않는가
 - candidate branch/SHA가 보존되는가
+- Data Eligibility test를 유지하면서 실제 DailyPrice readiness-probe test도 통과하는가
 - promotion boundary에서 정확히 멈추는가
 
 이것이 확인된 뒤에만 GitHub polling과 Push Approval executor를 다음 vertical slice로 추가한다.

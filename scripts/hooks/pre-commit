@@ -21,6 +21,11 @@ if [[ "$CURRENT_BRANCH" == monorepo/* ]]; then
     BRANCH_OK=true
 fi
 
+# Lab Automation runner의 격리 candidate branch 계약
+if [[ "$CURRENT_BRANCH" == lab-run/* ]]; then
+    BRANCH_OK=true
+fi
+
 if [ "$BRANCH_OK" = false ]; then
     echo "❌ pre-commit 차단: 비화이트리스트 브랜치 '$CURRENT_BRANCH'"
     echo ""

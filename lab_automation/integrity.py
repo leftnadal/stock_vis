@@ -7,6 +7,8 @@ replace Lab-specific epistemic or design evaluation.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+from pathlib import Path
 from typing import Iterable
 
 from lab_automation.artifact_store import ArtifactRef, LocalArtifactStore
@@ -88,4 +90,54 @@ def require_output_contract(
         code="output_contract",
         status="PASS",
         message="required agent outputs were produced by the agent",
+    )
+
+
+def validate_json_artifact(
+    path: Path,
+    *,
+    reject_empty_object: bool = False,
+) -> IntegrityFinding:
+    """Validate JSON syntax and the non-empty result-object invariant."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return IntegrityFinding(
+            code="json_artifact",
+            status="FAIL",
+            message=f"{path.name} contains invalid JSON: {exc}",
+        )
+    if reject_empty_object and payload == {}:
+        return IntegrityFinding(
+            code="json_artifact",
+            status="FAIL",
+            message=f"{path.name} must not be an empty JSON object",
+        )
+    return IntegrityFinding(
+        code="json_artifact",
+        status="PASS",
+        message=f"parsed valid JSON artifact: {path.name}",
+    )
+
+
+def validate_nonempty_text_artifact(path: Path) -> IntegrityFinding:
+    """Reject an executor report that exists but contains no text."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return IntegrityFinding(
+            code="text_artifact",
+            status="FAIL",
+            message=f"{path.name} could not be read as UTF-8 text: {exc}",
+        )
+    if not text.strip():
+        return IntegrityFinding(
+            code="text_artifact",
+            status="FAIL",
+            message=f"{path.name} must not be empty",
+        )
+    return IntegrityFinding(
+        code="text_artifact",
+        status="PASS",
+        message=f"read non-empty text artifact: {path.name}",
     )
