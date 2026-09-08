@@ -10,6 +10,14 @@
 import type { MarketStoryCard, MarketStoryCardType } from '@/types/chainsight';
 import { relationTypeLabel } from '../mindmapConfig';
 
+/**
+ * D-S3-7 배경 접기 상수(도그푸딩 피드백은 상수 변경으로 대응).
+ * FOLD_STEADY_BY_DEFAULT: weekly_active(steady) 기본 접힘 — 아침 첫 화면의 조용함이 목적.
+ * QUIET_DAY_PEEK: 사건 0장인 날 카드로 펴 보이는 배경 상위 수(빈 화면 금지·조용함을 말함).
+ */
+export const FOLD_STEADY_BY_DEFAULT = true;
+export const QUIET_DAY_PEEK = 3;
+
 /** 카드 유형 → 배지 문구. */
 export const STORY_CARD_LABEL: Record<MarketStoryCardType, string> = {
   new_sec: '신규 연결 · 8-K',
