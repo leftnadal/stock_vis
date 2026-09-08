@@ -22,8 +22,17 @@ import { rotationSentence } from '@/app/market-pulse-v2/sectorColor'
 import type { CdState } from '@/app/market-pulse-v2/sectorColor'
 import { macroPulseFixture } from '../../e2e/fixtures/macroPulse'
 
-// 금지 패턴(지시서 Part 6 + §3). 연도는 실제 연도참조(4자리+년)만 — index명 "러셀2000" 오탐 회피(S2-COPYFIX).
-const FORBIDDEN = [/오를/, /내릴/, /매수/, /매도/, /목표가/, /확실/, /반드시/, /위기/, /crisis/i, /유사/, /닮/, /(19|20)\d{2}\s*년/]
+// 금지 패턴(지시서 Part 6 + §3). 연도는 엄격 패턴 유지 — 단독 연도 참조("2008 수준")도 차단.
+//   index 고유명(러셀2000 등)은 아래 maskProperNouns로 스캔 전에 걷어낸다(S2-GUARDFIX).
+const FORBIDDEN = [/오를/, /내릴/, /매수/, /매도/, /목표가/, /확실/, /반드시/, /위기/, /crisis/i, /유사/, /닮/, /(19|20)\d{2}/]
+
+/**
+ * 숫자를 품은 고유명사 — 연도가 아니므로 금지어휘 스캔 전에 치환한다.
+ * 새 지수·상품명을 문장에 넣게 되면 여기에 추가한다(정규식 완화로 대응하지 말 것).
+ */
+const NUMERIC_PROPER_NOUNS: RegExp[] = [/러셀2000/g]
+const maskProperNouns = (s: string): string =>
+  NUMERIC_PROPER_NOUNS.reduce((acc, re) => acc.replace(re, '«IDX»'), s)
 
 const fg = (rule_key: FearGreedIndex['rule_key'], level?: string): FearGreedIndex =>
   ({ rule_key, vix: level ? { level } : undefined } as unknown as FearGreedIndex)
@@ -76,6 +85,25 @@ describe('yieldCurveSentence — 제약 여부(부호 spread)', () => {
     expect(yieldCurveSentence(ir('unknown', null))).toBe('금리차 판정 불가 — 입력 데이터 대기.')
     expect(yieldCurveSentence(ir('normal', null))).toBe('금리차 판정 불가 — 입력 데이터 대기.')
     expect(yieldCurveSentence(null)).toBe('금리차 판정 불가 — 입력 데이터 대기.')
+  })
+
+  // 불변식(재계산 0): 밴드는 백엔드 status enum이 지배하고 spread는 표기에만 쓰인다.
+  //   각 케이스의 spread는 YIELD_CURVE_RULES 상 '다른' 구간의 값을 일부러 넣었다
+  //   (<0 inverted · 0–0.5 flattening · 0.5–2.5 normal · ≥2.5 steep).
+  //   FE가 spread로 밴드를 재계산하기 시작하면 이 테스트가 즉시 깨진다.
+  it('status enum 지배 — spread가 다른 구간이어도 문장은 status를 따른다(재계산 0)', () => {
+    expect(yieldCurveSentence(ir('normal', 0.0))).toBe(
+      '금리는 지금 국면의 제약 요인이 아닙니다(10Y-2Y +0.00%p).',
+    )
+    expect(yieldCurveSentence(ir('steep', 0.39))).toBe(
+      '금리 여건이 완화 쪽으로 기울어 있습니다(10Y-2Y +0.39%p).',
+    )
+    expect(yieldCurveSentence(ir('inverted', 2.8))).toBe(
+      '금리가 국면의 부담으로 작용하는 쪽입니다(10Y-2Y +2.80%p).',
+    )
+    expect(yieldCurveSentence(ir('flattening', -0.42))).toBe(
+      '금리 여건이 우호에서 부담 쪽으로 넘어가는 중입니다(10Y-2Y -0.42%p).',
+    )
   })
 })
 
@@ -197,9 +225,18 @@ describe('★게이트 ② 위젯 룰 문장과 중복 차단(8자 연속 공통
 describe('금지어휘 전수 스캔(FE 짝)', () => {
   it('전 문장에 금지 어휘 부재', () => {
     for (const s of collectSentences()) {
+      const scanned = maskProperNouns(s)
       for (const re of FORBIDDEN) {
-        expect(s, `"${s}"`).not.toMatch(re)
+        expect(scanned, `"${s}"`).not.toMatch(re)
       }
     }
+  })
+
+  it('마스킹은 고유명만 걷어내고 연도 참조는 그대로 걸린다', () => {
+    // 고유명은 통과
+    expect(maskProperNouns('소형주(러셀2000)는 내렸습니다.')).not.toMatch(/(19|20)\d{2}/)
+    // 실제 연도 참조는 여전히 차단(단독 연도 포함)
+    expect(maskProperNouns('2008 수준의 변동성입니다.')).toMatch(/(19|20)\d{2}/)
+    expect(maskProperNouns('2008년과 닮았습니다.')).toMatch(/(19|20)\d{2}/)
   })
 })
