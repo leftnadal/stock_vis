@@ -7557,3 +7557,27 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **공유 데이터**: 밴드·타임라인 모두 `useChainFeed(symbol)` 동일 키 → TanStack 캐시 공유(중복 fetch 0). BE·API·파라미터 무변.
 
 **Why**: 9/3 실화면 피드백 — 이벤트 섹션이 일지·시나리오 아래로 매몰돼 "다음 어닝 D-N"이 첫 화면에서 안 보임. P1은 위젯만 상단으로 올려 첫 화면 가시성을 확보하면서(가중합 최고 4.50) 관제 흐름·컴포넌트 소유권을 건드리지 않는다(P2=두 섹션 통째 이동은 이웃 많은 시드에서 사다리/신호를 스크롤 밖으로 밀어냄, P3=소유권 침범). 附加 원칙 보존이 P1 채택의 핵심.
+
+## [2026-09-07] D-AGENT-SHOT-1 — 야간 렌더러 온디맨드화 (신규 인증 표면 0·산출물 경로 분리) [ops][infra]
+
+> 트랙: AGENT-SHOT-1. 야간 도그푸딩(run_dogfood.sh) 렌더 경로 재사용으로 임의 화면 온디맨드 캡처.
+
+- **재사용**: `scripts/shot.sh` → `auto_agent_system/dogfood/shot.py` → 기존 `collect_rendered.run_render(screens)`(인증·Playwright) 그대로 호출. **신규 인증 코드 0** — `dogfood_env()` `.env` 명시 로드(S2.1)와 `render_screens.mjs` `login()`(API POST + localStorage) 재사용. 사용자 override는 `DOGFOOD_USER/PASSWORD` env(기존 경로·신규 코드 아님).
+- **PNG 능력 추가(env-gated)**: 야간 렌더러는 **스크린샷을 안 찍고 innerText만 추출**(실측). `render_screens.mjs`에 `DOGFOOD_SHOT_DIR` 설정 시에만 `page.screenshot({fullPage})` + 로딩 소멸 대기(`불러오는 중`/스켈레톤 폴링) 추가. **야간은 env 미설정 → 무영향**(행위보존: collect_rendered 5/5 인증 동일·스크린샷 0).
+- **산출물 분리**: `stock-vis-nightly/adhoc/<YYYYMMDD_HHMM>/`(PNG + 텍스트 + meta.json{URL·authenticated·web_tree_hash·ts}). `rendered_/quant_/rubric_` 파일명 규칙·야간 05:20 경로·launchd plist **무접촉**.
+- **채점 분리**: `--no-score` 기본(캡처 전용) → LLM 비용 0. 렌더·채점은 별도 `python -m` 모듈이라 서비스 개작 없이 분리(HALT 조건 미해당).
+- **인앱 브라우저 경로 불가(확정)**: 클로드 인앱 패널이 :3000 외 오리진 XHR을 `ERR_BLOCKED_BY_CLIENT`로 차단(09-07 포트 3종 프로브 확증) → 재시도 금지. 온디맨드 캡처는 이 헤드리스 경로가 정본.
+
+**Why**: 디렉터가 특정 화면(예: EVT-CHAIN-1B 밴드)을 즉시 눈으로 판정하려면 야간 배치를 기다리거나 인앱 브라우저(구조적 불가)에 의존해야 했다. 야간 렌더러는 이미 라이브 :3000 + 실 로그인으로 실화면을 읽으므로, 인증·렌더를 재사용하고 스크린샷만 env-gated로 얹으면 신규 인증 표면 0·야간 행위보존으로 온디맨드 캡처가 성립한다.
+
+**종결(디렉터 처분 2026-09-08)**: DoD 충족 → AGENT-SHOT-1 종결. 첫 사용 사례 대상은 dogfood_agent 가시 화면(`/monitor` 목록 풀페이지·`adhoc/20260908_1124/adhoc_monitor.png`·authenticated=true)으로 교체(도구 사용례 문서화). IONQ(df008c88) 캡처는 보류(교차사용자 경계 = D-AUTO-NO-PERSONAL-CREDS).
+
+## [2026-09-08] D-AUTO-NO-PERSONAL-CREDS — 자동화가 사용자 개인 자격증명을 요구하면 "범위 설계 반려" [ops][process][security]
+
+> 트랙: AGENT-SHOT-1 상신 판정. 디렉터 처분(2026-09-08).
+
+- **규약**: 자동화/에이전트가 **사용자 개인 계정 비밀번호**를 요구해야 동작한다면, 그것은 상신(승인 요청) 대상이 아니라 **"범위 설계 반려"** 사유다 — 개인 자격증명은 전달 경로 자체가 기록으로 남으므로 요구·중계하지 않는다. 대안: 전용 에이전트 계정(dogfood_agent) 사용 or 대상 화면 교체 or 소유자 세션 밖 렌더 포기.
+- **적용례**: AGENT-SHOT-1이 goid545 소유 모니터(IONQ)를 렌더하려면 goid545 비밀번호가 필요 → 옵션 거부. dogfood_agent 가시 화면으로 대상 교체.
+- **교차사용자 404 = 결함 아님**: dogfood_agent가 타 사용자 모니터 조회 시 "찾을 수 없는 모니터" = **계정 경계 정상 작동의 실측 증거**(재조사 불요).
+
+**Why**: 개인 비밀번호를 채팅/스크립트로 요구하면 그 자체가 자격증명 노출 경로가 된다(마스킹해도 전달 시점에 기록). 자동화 설계는 전용 계정·공개 대상으로 성립해야 하며, 개인 세션 의존은 설계 결함으로 되돌린다.
