@@ -77,6 +77,7 @@ export function DuelView({ monitorId }: { monitorId: string }) {
       return out
     },
     retry: false,
+    staleTime: 5 * 60 * 1000, // D-3: 대결 화면 재진입마다 N+1 재요청 방지
   })
 
   const holdClaim = findHoldClaim(claims)

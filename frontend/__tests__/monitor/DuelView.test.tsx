@@ -236,4 +236,45 @@ describe('DuelView', () => {
       expect.objectContaining({ claim: 'c1', candidate_ref: 'MSFT' })
     )
   })
+
+  it('candidate-clear 클릭 시 후보 지정이 해제되고 빈 상태로 복귀한다(D-1)', async () => {
+    get.mockResolvedValue(HOLD_MONITOR)
+    list.mockResolvedValue([HOLD_MONITOR, CANDIDATE_MONITOR])
+    searchStocks.mockResolvedValue([
+      { symbol: 'MSFT', stock_name: 'Microsoft', real_time_price: '400.00' },
+    ])
+    render(<DuelView monitorId="m1" />, { wrapper })
+
+    await waitFor(() => expect(screen.getByTestId('candidate-picker')).toBeInTheDocument())
+    fireEvent.change(screen.getByTestId('candidate-picker'), { target: { value: 'MSFT' } })
+    await waitFor(() => expect(screen.getByTestId('candidate-option-MSFT')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('candidate-option-MSFT'))
+    await waitFor(() => expect(screen.getByTestId('duel-column-candidate')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByTestId('candidate-clear'))
+    await waitFor(() =>
+      expect(screen.getByTestId('duel-column-candidate-empty')).toBeInTheDocument()
+    )
+    expect(screen.queryByTestId('duel-column-candidate')).not.toBeInTheDocument()
+  })
+
+  it('입력창을 완전히 비우면 후보 지정이 해제된다(D-1)', async () => {
+    get.mockResolvedValue(HOLD_MONITOR)
+    list.mockResolvedValue([HOLD_MONITOR, CANDIDATE_MONITOR])
+    searchStocks.mockResolvedValue([
+      { symbol: 'MSFT', stock_name: 'Microsoft', real_time_price: '400.00' },
+    ])
+    render(<DuelView monitorId="m1" />, { wrapper })
+
+    await waitFor(() => expect(screen.getByTestId('candidate-picker')).toBeInTheDocument())
+    fireEvent.change(screen.getByTestId('candidate-picker'), { target: { value: 'MSFT' } })
+    await waitFor(() => expect(screen.getByTestId('candidate-option-MSFT')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('candidate-option-MSFT'))
+    await waitFor(() => expect(screen.getByTestId('duel-column-candidate')).toBeInTheDocument())
+
+    fireEvent.change(screen.getByTestId('candidate-picker'), { target: { value: '' } })
+    await waitFor(() =>
+      expect(screen.getByTestId('duel-column-candidate-empty')).toBeInTheDocument()
+    )
+  })
 })

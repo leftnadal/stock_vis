@@ -34,6 +34,7 @@ export function CandidatePicker({
   const [open, setOpen] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const boxRef = useRef<HTMLDivElement>(null)
+  const seqRef = useRef(0) // D-2: 검색 응답 경쟁 조건 가드(최신 질의만 반영)
 
   const registered = new Set(
     monitors.filter((m) => m.scope === 'stock').map((m) => m.target_ref.toUpperCase())
@@ -49,8 +50,11 @@ export function CandidatePicker({
     return () => document.removeEventListener('mousedown', onOutside)
   }, [])
 
-  // 언마운트 시 디바운스 타이머 정리
-  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
+  // 언마운트 시 디바운스 타이머 정리 + 진행 중 응답 무효화(D-2)
+  useEffect(() => () => {
+    seqRef.current++
+    if (timerRef.current) clearTimeout(timerRef.current)
+  }, [])
 
   function runSearch(q: string) {
     const term = q.trim()
@@ -59,9 +63,11 @@ export function CandidatePicker({
       setOpen(false)
       return
     }
+    const seq = ++seqRef.current
     stockService
       .searchStocks(term)
       .then((rows: unknown[]) => {
+        if (seq !== seqRef.current) return // 오래된/폐기된 응답 무시(D-2)
         const mapped = ((rows ?? []) as Record<string, unknown>[])
           .map((r) => ({
             symbol: String(r.symbol ?? '').toUpperCase(),
@@ -73,12 +79,13 @@ export function CandidatePicker({
         setOpen(true)
       })
       .catch(() => {
-        setResults([])
+        if (seq === seqRef.current) setResults([])
       })
   }
 
   function onInput(v: string) {
     setQuery(v)
+    if (v.trim() === '') onChange('', null) // D-1(a): 입력창이 완전히 비면 후보 해제
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => runSearch(v), 300)
   }
@@ -132,7 +139,23 @@ export function CandidatePicker({
         </div>
       </label>
 
-      {value && <span className="text-xs text-gray-500">지정된 후보: {value}</span>}
+      {value && (
+        <span className="flex items-center gap-1 text-xs text-gray-500">
+          지정된 후보: {value}
+          <button
+            type="button"
+            onClick={() => {
+              onChange('', null)
+              setQuery('')
+            }}
+            data-testid="candidate-clear"
+            aria-label="후보 지정 해제"
+            className="rounded px-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          >
+            ×
+          </button>
+        </span>
+      )}
 
       {watchlistItems.length > 0 && (
         <div className="mt-1 flex flex-wrap items-center gap-1">
