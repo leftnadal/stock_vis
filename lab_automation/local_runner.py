@@ -241,7 +241,7 @@ def _run_tests(worktree: Path, raw: dict[str, Any], dry_run: bool) -> list[dict[
 
 
 def _changed_paths(worktree: Path) -> list[str]:
-    proc = _git(worktree, "status", "--porcelain")
+    proc = _git(worktree, "status", "--porcelain", "--untracked-files=all")
     paths: list[str] = []
     for line in proc.stdout.splitlines():
         if line.strip():

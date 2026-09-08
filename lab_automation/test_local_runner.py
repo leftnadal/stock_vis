@@ -176,6 +176,30 @@ def test_write_scope_rejects_other_lab():
         _enforce_write_scope(["research_lab/file.md"], ("math_lab",))
 
 
+def test_changed_paths_reports_nested_untracked_file_for_scope_enforcement(
+    tmp_path: Path,
+):
+    repo = init_job_repo(tmp_path)
+    output = (
+        repo
+        / "lab_automation"
+        / "jobs"
+        / "results"
+        / "SV-MATH-DP-READINESS-001"
+        / "daily_price_readiness.json"
+    )
+    output.parent.mkdir(parents=True)
+    output.write_text("{}\n", encoding="utf-8")
+
+    paths = local_runner._changed_paths(repo)
+
+    assert paths == [
+        "lab_automation/jobs/results/SV-MATH-DP-READINESS-001/"
+        "daily_price_readiness.json"
+    ]
+    _enforce_write_scope(paths, ("lab_automation/jobs/results",))
+
+
 def test_candidate_branch_is_local_run_specific():
     branch = _candidate_branch("SV:MATH:1", "12345678-abcd")
     assert branch == "lab-run/SV-MATH-1/12345678"
