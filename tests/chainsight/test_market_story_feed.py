@@ -357,3 +357,63 @@ class TestEvidence:
         card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
         assert card["evidence"][0]["kind"] == "article"
         assert set(card["evidence"][0]) == {"kind", "ref", "title", "url", "date"}
+
+
+def _rc(a, b, rtype, layer, category="truth"):
+    from apps.chain_sight.models import RelationConfidence
+    return RelationConfidence.objects.create(
+        symbol_a=a, symbol_b=b, relation_type=rtype, serving_layer=layer,
+        relation_category=category, relation_status="confirmed",
+    )
+
+
+@pytest.mark.django_db
+class TestRelationLine:
+    def test_card_has_relation_line_and_flag(self):
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
+        assert "relation_line" in card and "relation_recorded" in card
+
+    def test_evidence_truth_recorded_line(self):
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        _rc("ORCL", "PANW", "PARTNER_WITH", "evidence", "truth")
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
+        assert card["relation_line"] == "제휴 관계로 기록됨"
+        assert card["relation_recorded"] is True
+
+    def test_co_mention_only_none_line(self):
+        # D-3: RC 무행(또는 CO_MENTIONED만) → 관계 기록 없음.
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        _rc("ORCL", "PANW", "CO_MENTIONED", "evidence", "market")
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
+        assert card["relation_line"] == "관계 기록 없음"
+        assert card["relation_recorded"] is False
+
+    def test_recorded_beats_context_peer(self):
+        # D-4: 기록된 관계 + PEER_OF(context) → 기록된 관계가 이긴다.
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        _rc("ORCL", "PANW", "PEER_OF", "context", "truth")
+        _rc("ORCL", "PANW", "SUPPLIES_TO", "evidence", "truth")
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
+        assert card["relation_line"] == "공급 관계로 기록됨"
+
+    def test_context_type_not_in_line(self):
+        # D-7: context 계층 타입 문자열이 관계 줄에 등장하지 않는다.
+        _cache("JPM", "BAC", 27, last_days_ago=1)
+        _rc("JPM", "BAC", "PEER_OF", "context", "truth")
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "weekly_active"][0]
+        assert card["relation_line"] == "관계 기록 없음"
+        for bad in ["PEER_OF", "PRICE_CORRELATED", "같은 업종"]:
+            assert bad not in card["relation_line"]
+
+    def test_new_sec_card_relation_line(self):
+        _sec("MRVL", "GOOGL", "PARTNER_WITH", filing_days_ago=3)
+        _rc("MRVL", "GOOGL", "PARTNER_WITH", "evidence", "truth")
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "new_sec"][0]
+        assert card["relation_line"] == "제휴 관계로 기록됨"
