@@ -1,0 +1,27 @@
+{
+  "blindness": "Did not read private-label-map.json or result-*.json",
+  "budget_usd_estimate_only": 0.5,
+  "created_at": "2026-09-05T11:42:06.601486+00:00",
+  "credential_source": "이번 실행의 메모리에서만 사용",
+  "endpoint": "https://api.openai.com/v1/responses",
+  "limitations": [
+    "Frontier review is still a model judgment, not ground truth",
+    "No external web/tools in review",
+    "Package-only cannot recover facts absent from package",
+    "Source-enabled can only use supplied synthetic evidence"
+  ],
+  "model": "gpt-5.6-sol",
+  "price_snapshot_date": "2026-09-05",
+  "prompt_files_order": [
+    "Arm-01-source-review.txt",
+    "Arm-02-source-review.txt"
+  ],
+  "prompt_hashes": {
+    "Arm-01-source-review.txt": "3215263e12ea2580ad55c8c6e270a688c58ece1f70b4490e420debc1b7a5d05c",
+    "Arm-02-source-review.txt": "bac89f16e0a21f49677668fd78faadc89c5eef32b0ade6ba8b38a3be763b3132"
+  },
+  "reasoning_effort": "medium",
+  "reserve_estimate_usd": 0.250776,
+  "review_type": "source",
+  "version": "0.7.1"
+}

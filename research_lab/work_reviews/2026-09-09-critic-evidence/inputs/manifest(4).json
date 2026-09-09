@@ -1,0 +1,52 @@
+{
+  "budget_usd_estimate_only": 0.5,
+  "case_hash": "b4443e554e386d37803cbd658558e1be244b21f6eaab764dc20e80e2dddbfe51",
+  "case_id": "hard-003",
+  "created_at": "2026-09-05T00:37:01.217983+00:00",
+  "credential_source": "이번 실행의 메모리에서만 사용",
+  "endpoint": "https://api.deepinfra.com/v1/openai/chat/completions",
+  "estimated_reservation_usd": 0.04783468,
+  "limitations": [
+    "fp4 vs fp8 confound",
+    "not Mac runtime or memory measurements",
+    "no frontier API run",
+    "public synthetic calibration only",
+    "no tools, no autonomous agents, no finetuning",
+    "no decision threshold"
+  ],
+  "max_tokens": 8192,
+  "messages_hash": "4629363fdfa8f4c56c791ad7841337332cf0ac46d0795d94f2740b8106f5d8e2",
+  "mode": "compare",
+  "order": [
+    [
+      "397b",
+      1
+    ],
+    [
+      "122b",
+      1
+    ]
+  ],
+  "price_and_format_snapshot": {
+    "122b": {
+      "advertised_format": "fp4",
+      "id": "Qwen/Qwen3.5-122B-A10B",
+      "input": 0.29,
+      "output": 2.4,
+      "source": "https://deepinfra.com/Qwen/Qwen3.5-122B-A10B"
+    },
+    "397b": {
+      "advertised_format": "fp8",
+      "id": "Qwen/Qwen3.5-397B-A17B",
+      "input": 0.45,
+      "output": 3.0,
+      "source": "https://deepinfra.com/Qwen/Qwen3.5-397B-A17B"
+    }
+  },
+  "prices_checked_at": "2026-09-05",
+  "purpose": "calibration / connectivity, not confirmed research",
+  "requested_thinking": true,
+  "seed": 9417,
+  "thinking_honored": "unverified",
+  "version": "0.2.0"
+}

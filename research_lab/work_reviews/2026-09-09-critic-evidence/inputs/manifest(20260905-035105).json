@@ -1,0 +1,24 @@
+{
+  "arms": [
+    "122-single",
+    "122-122-critic",
+    "122-397-critic",
+    "ind-122-397-synth"
+  ],
+  "budget_usd_estimate_only": 1.0,
+  "case_id": "hard-002",
+  "created_at": "2026-09-05T03:49:32.942908+00:00",
+  "credential_source": "이번 실행의 메모리에서만 사용",
+  "limitations": [
+    "synthetic calibration only",
+    "fp4 vs fp8 confound remains",
+    "topology arms have different call counts",
+    "no Frontier call in this script",
+    "not a Mac runtime or memory benchmark",
+    "sequential critic arms may anchor on first-pass framing",
+    "independent arms use 122B as fixed synthesizer"
+  ],
+  "max_tokens": 6144,
+  "total_nominal_cost_usd_from_usage": 0.07698911000000001,
+  "version": "0.6.1"
+}

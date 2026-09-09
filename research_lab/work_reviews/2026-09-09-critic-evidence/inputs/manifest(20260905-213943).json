@@ -1,0 +1,24 @@
+{
+  "cases": [
+    "hard-003",
+    "hard-005",
+    "hard-006"
+  ],
+  "created_at": "2026-09-05T13:31:15.315805+00:00",
+  "critics": [
+    "122b",
+    "397b",
+    "glm320",
+    "ds284"
+  ],
+  "limitations": [
+    "synthetic calibration only",
+    "serverless proxy, not Mac runtime benchmark",
+    "different model families/serving stacks/precisions are confounded",
+    "no automatic retry; errors continue to next model"
+  ],
+  "max_tokens": 8192,
+  "shared_primary": "122b",
+  "timeout": 420,
+  "version": "0.8.0"
+}

@@ -1,0 +1,22 @@
+{
+  "label": "hard-006/122b-critic",
+  "model_key": "122b",
+  "nominal_cost_usd_from_usage": 0.0156788,
+  "requested_model": "Qwen/Qwen3.5-122B-A10B",
+  "result": {
+    "answer": "1. Critic 이 발견한 material issue\n- **내부 사고과정 노출:** 후보 답변에 'Thinking Process' 섹션이 포함되어 '내부 사고과정 전문 대신 검증 가능한 근거 설명을 쓴다'는 핵심 제약에 위배됨.\n- **전제 연결성 약화:** '수주 잔고 62% 증가'(E1) 라는 주장의 핵심 전제를 배제하여, 성장 가능성 평가가 '전환율' 위주로만 국한됨. (지침에 따른 우선순위 준수이기는 하나, 주장 평가의 맥락이 약화됨).\n- **출력 포맷 혼동:** 후보는 원본 연구 태스크의 5 개 헤딩을 따랐으나, 본 Critic 태스크의 4 개 출력 헤딩 (문제, 수정 결과, Unknown, Frontier) 을 따르지 않음.\n\n2. 수정된 연구 결과\n\n**1. Problem & Core Question**\n람다그리드의 향후 12 개월 매출 28% 이상 성장 주장 (AI 수주 급증 및 산업 강세 기반) 의 실현 가능성 평가.\n\n**2. Supported Claims & Evidence IDs**\n- **AI 매출 비중:** 최근 분기 전체 매출 중 AI 관련 매출은 26% (E2).\n- **전환율 기준:** 과거 8 개 분기 평균 수주잔고의 72% 가 12 개월 내 매출 인식 (E6).\n- **잔고 병목:** AI 수주잔고의 31% 를 차지하는 LG-4/4B 프로젝트는 전력 인가 후 설치 확정 (E9).\n- **시간 불일치:** LG-4 캠퍼스 전력 인가 예상 시점은 15~21 개월 뒤 (E10).\n- **하방 리스크:** 비 AI 사업 중 전체 매출 9% 차지 계약이 7 개월 뒤 종료 (E14).\n\n**3. Core Counter-examples/Missing/Dependencies/Scope Limits**\n- **시간 범위 제약:** 주장 기간 (12 개월) 대비 주요 잔고의 인가 일정 (15~21 개월) 이 초과됨 (E10, E9).\n- **기반 매출 축소:** AI 성장 전제하에 비 AI 기반 매출의 9% 가 손실될 위험 존재 (E14).\n- **전환율 검증 부재:** 과거 전환율 (E6) 이 현재 AI 프로젝트 구성과 동일하지 않음 (E6).\n- **구성 불명확:** LG-4/4B 내 표준 장비 (출하 가능) 와 맞춤형 모듈 (인가 필요) 비중 미공개.\n\n**4. Tentative Evaluation & Remaining Uncertainties**\n- **평가:** 주장 **지지 근거 불충분 (Unsupported)**. 주요 수주잔고의 매출 인식 시점이 12 개월 전망을 초과하며, 기반 매출 감소 리스크가 상쇄될 가능성 있음.\n- **잔여 불확실성:** LG-4/4B 중 표준 장비 출하 가능 물량, 전력 인가 조기 가능성, 비 AI 계약 갱신 확률.\n\n**5. Next Verification or Termination Conditions**\n- **검증 항목:** LG-4/4B 프로젝트별 표준/맞춤 모듈 금액 비중 및 12 개월 내 출하 계획 확인.\n- **종료 조건:** 전력 인가 일정이 12 개월 이내로 단축되지 않거나, 비 AI 계약 갱신 불확실성이 해소되지 않을 경우 성장 전망 철회.\n\n3. 아직 남은 Unknown/Unassessed\n- **물류 인식 조건:** 표준 장비의 전력 인가 전 출하 가능 여부와 적용 프로젝트 범위.\n- **계약 갱신 확률:** 7 개월 뒤 종료되는 비 AI 대형 계약의 갱신 가능성 및 조건.\n- **부품 배정:** 부품 공급사 증설 물량 중 람다그리드 실제 확보량.\n- **프로젝트 세부:** LG-4/4B 내 표준 장비와 맞춤형 모듈의 구체적인 금액 비중.\n\n4. Frontier 가 필요하다고 판단하는지와 이유\n- **판단:** 필요함.\n- **이유:** 현재 내부 자료만으로는 주요 프로젝트의 전력 인가 일정 확정 및 표준 장비 출하 가능 여부 (E11/E12/E13 관련) 를 입증할 수 없음. 실제 투자 판단을 위해서는 고객사 인가 상태 확인 또는 추가 데이터 확보 (E17) 를 통한 외부 검증이 필수적임.",
+    "finish_reason": "stop",
+    "model_matches_request": true,
+    "reasoning_trace_saved": false,
+    "response_id": "chatcmpl-RlkpMyl0G7bv35iPDvtXQByK",
+    "returned_model": "Qwen/Qwen3.5-122B-A10B",
+    "status": "complete",
+    "system_fingerprint": "",
+    "usage": {
+      "completion_tokens": 5281,
+      "prompt_tokens": 10360,
+      "total_tokens": 15641
+    }
+  },
+  "wall_seconds": 37.275
+}

@@ -1,0 +1,404 @@
+[
+  {
+    "name": "manifest(20260905-214433).json",
+    "library_file_id": "libfile_1c2535c64cf08191908b0c609af3a28f",
+    "file_id": "file_0000000010548211a4f08a02eaaa819f",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-214317).json",
+    "library_file_id": "libfile_022e7d993de88191981f8023082031d4",
+    "file_id": "file_0000000064b48208ae4cf727bb10c926",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-214157).json",
+    "library_file_id": "libfile_bf5eeb7a716c8191bf1b0f094687273d",
+    "file_id": "file_00000000348c820792534a25b5502b82",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-213943).json",
+    "library_file_id": "libfile_a25b6b84ddb48191b843c65198b3f8ed",
+    "file_id": "file_0000000098648207af559d90aee11799",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-121703).json",
+    "library_file_id": "libfile_6e07412a6c0c81918edebb97d83864fc",
+    "file_id": "file_0000000095bc8211987c6821c593b85a",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-121305).json",
+    "library_file_id": "libfile_af4ccfaa4b4881918407427392eeb792",
+    "file_id": "file_00000000dbd882119058f6c4bc9fef88",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-120459).json",
+    "library_file_id": "libfile_c032deb7de808191b4ec5b7334a40f2f",
+    "file_id": "file_00000000cdec8211888859829866440f",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-120132).json",
+    "library_file_id": "libfile_191b6f8f1d3c8191b2f46290f0c737d4",
+    "file_id": "file_000000006a34820794847b017033e841",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-114418).json",
+    "library_file_id": "libfile_e08cf38b286081919c1434ef414cbd80",
+    "file_id": "file_00000000a5948208afec5fb5708bacc6",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-113937).json",
+    "library_file_id": "libfile_38d7b019d3b881919a229b2df6dda707",
+    "file_id": "file_0000000021f48211bed7e4c3b6873e4b",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-051016).json",
+    "library_file_id": "libfile_5a90ecbf9250819180ad713976658193",
+    "file_id": "file_0000000085508211a5e1e39e94fb4512",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-045707).json",
+    "library_file_id": "libfile_9e7ae8c8c2048191b438c8c0b45647db",
+    "file_id": "file_00000000e95c8211a31a767dc68d7ff9",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-043218).json",
+    "library_file_id": "libfile_1ca158ec2fa4819188de6c35c0b94773",
+    "file_id": "file_000000003b688211a9fcd11605072421",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-042235).json",
+    "library_file_id": "libfile_2322f3b12c988191817deac1881f93da",
+    "file_id": "file_000000000c048207b9dd38a56b1aed59",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-035105).json",
+    "library_file_id": "libfile_8af605560a8c8191aed1e626411351ce",
+    "file_id": "file_00000000e15c8211aa4ed5e222a137e4",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-033414).json",
+    "library_file_id": "libfile_ad94352e6b4c8191821c5ba9ec85be2f",
+    "file_id": "file_000000009bf082078e84226f153f468e",
+    "version_id": null
+  },
+  {
+    "name": "manifest(20260905-032954).json",
+    "library_file_id": "libfile_8693c4f12e888191a429cfe6349fedfd",
+    "file_id": "file_0000000008288211998b06f5d6c33535",
+    "version_id": null
+  },
+  {
+    "name": "manifest(10).json",
+    "library_file_id": "libfile_8946140f0acc8191acf3fa7913b2740c",
+    "file_id": "file_0000000031a08211aa95587934ca035b",
+    "version_id": null
+  },
+  {
+    "name": "manifest(9).json",
+    "library_file_id": "libfile_c6d0c4aebcf88191a7d5940fd211ed4d",
+    "file_id": "file_00000000fe108211afb3b0c97536746e",
+    "version_id": null
+  },
+  {
+    "name": "manifest(8).json",
+    "library_file_id": "libfile_b047f77ec4788191b582a78f4768c7d0",
+    "file_id": "file_00000000434882118124f726915a2d2e",
+    "version_id": null
+  },
+  {
+    "name": "manifest(7).json",
+    "library_file_id": "libfile_d1f698f8523481919ee1b2a2b47ed614",
+    "file_id": "file_00000000d97c81f5a88bc708b55e0f8b",
+    "version_id": null
+  },
+  {
+    "name": "manifest(6).json",
+    "library_file_id": "libfile_bbda2cbf9f248191bf7ccd66627757ff",
+    "file_id": "file_000000002dac8208bc3e3cda7c67ca15",
+    "version_id": null
+  },
+  {
+    "name": "manifest(5).json",
+    "library_file_id": "libfile_89ae49294ecc819180b308fcfaaad7d0",
+    "file_id": "file_0000000002e08211a48911fa6e347501",
+    "version_id": null
+  },
+  {
+    "name": "manifest(4).json",
+    "library_file_id": "libfile_3ff6690ef3c88191baf3b25ea1ad8638",
+    "file_id": "file_0000000026bc8208835352d3d6dc4f25",
+    "version_id": null
+  },
+  {
+    "name": "manifest(3).json",
+    "library_file_id": "libfile_b1341bc2c89081918044a81c1d7e8f3e",
+    "file_id": "file_000000005c588206a3faaa92a33b8d92",
+    "version_id": null
+  },
+  {
+    "name": "manifest(2).json",
+    "library_file_id": "libfile_9dab9baeedc48191abc6ba92e364d45d",
+    "file_id": "file_00000000133c8207ae83b9ba8c652bc3",
+    "version_id": null
+  },
+  {
+    "name": "manifest(1).json",
+    "library_file_id": "libfile_20498266944481919e05355adab11599",
+    "file_id": "file_00000000f4f48207ad1eea798979408f",
+    "version_id": null
+  },
+  {
+    "name": "manifest.json",
+    "library_file_id": "libfile_be2ebbfc880c8191ba2e8a2e8904e403",
+    "file_id": "file_0000000023d48209bb8dd071f8c2c201",
+    "version_id": null
+  },
+  {
+    "name": "ds284-critic(2).json",
+    "library_file_id": "libfile_6da24c6abd0c81918cf70a173ea23443",
+    "file_id": "file_00000000e5348211850fbe0cb35e7f6a",
+    "version_id": null
+  },
+  {
+    "name": "glm320-critic(2).json",
+    "library_file_id": "libfile_8c6722232a40819196135f7a37947a1a",
+    "file_id": "file_00000000142c82069b788ec426ddb7b8",
+    "version_id": null
+  },
+  {
+    "name": "122b-critic(2).json",
+    "library_file_id": "libfile_c47ffaaf07d0819181404b6afb914377",
+    "file_id": "file_00000000c620820793b53ae17d5afd68",
+    "version_id": null
+  },
+  {
+    "name": "397b-critic(2).json",
+    "library_file_id": "libfile_ee6287d7ffd8819191039c919b9b8e56",
+    "file_id": "file_00000000d57c820780be8d57f3305a58",
+    "version_id": null
+  },
+  {
+    "name": "ds284-critic(1).json",
+    "library_file_id": "libfile_34e5fb3d385c8191acfd2857d986cea8",
+    "file_id": "file_0000000002f08211bf808591cf9a3df7",
+    "version_id": null
+  },
+  {
+    "name": "glm320-critic(1).json",
+    "library_file_id": "libfile_15b73cbb1cd881918881adf8df90dfe5",
+    "file_id": "file_0000000031f48207a6aa1a2d5496cc7d",
+    "version_id": null
+  },
+  {
+    "name": "122b-critic(1).json",
+    "library_file_id": "libfile_af2e146a13dc8191901bf394311f4a9c",
+    "file_id": "file_0000000089b08207827eed7a09887e6c",
+    "version_id": null
+  },
+  {
+    "name": "397b-critic(1).json",
+    "library_file_id": "libfile_65c8c9c545c481918bc94e063f3857bf",
+    "file_id": "file_00000000da94821180827a38324830f6",
+    "version_id": null
+  },
+  {
+    "name": "glm320-critic.json",
+    "library_file_id": "libfile_a5c18252a3d48191871e32a4386b53ef",
+    "file_id": "file_0000000069548206a10a90bd4a98ffcd",
+    "version_id": null
+  },
+  {
+    "name": "122b-critic.json",
+    "library_file_id": "libfile_5f55dd940678819186dbc522102f27c0",
+    "file_id": "file_0000000076ac8211ae1aeac4921008ba",
+    "version_id": null
+  },
+  {
+    "name": "397b-critic.json",
+    "library_file_id": "libfile_30df45ef42d08191ab2ea91f9863da65",
+    "file_id": "file_0000000091b482118f3cea5d81c771f4",
+    "version_id": null
+  },
+  {
+    "name": "ds284-critic.json",
+    "library_file_id": "libfile_ceabd9126e448191ac792a9be811d86f",
+    "file_id": "file_00000000e464820796e35dad0985ce61",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_critic(5).json",
+    "library_file_id": "libfile_89165b1590f88191ab1abf7ce7bc578c",
+    "file_id": "file_00000000886482118823a9fe078b78d5",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_primary(5).json",
+    "library_file_id": "libfile_0429f7bc5e8481918f853ec9296dc74e",
+    "file_id": "file_00000000e8c4821183b59f05eefbd672",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_primary(5).json",
+    "library_file_id": "libfile_dd486fba720c8191933be693c19d2428",
+    "file_id": "file_00000000d7a88207990916c854ac5c13",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_critic(5).json",
+    "library_file_id": "libfile_b960659849c48191b10084706748daf1",
+    "file_id": "file_0000000065508211aae6bfc19d5a8da8",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_critic(4).json",
+    "library_file_id": "libfile_9662e1255fdc8191b55cf0f6a9944c95",
+    "file_id": "file_000000003c608211a02407d7a2d2efcf",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_critic(4).json",
+    "library_file_id": "libfile_66574c5c020c819189f1d2bc44097261",
+    "file_id": "file_0000000033ec82119118c49d4511734d",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_primary(4).json",
+    "library_file_id": "libfile_160ab86fd274819180acc79fed198a98",
+    "file_id": "file_0000000015b4821183fa897dfed2f3a7",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_primary(4).json",
+    "library_file_id": "libfile_3469458a79e8819188afd0417d03260e",
+    "file_id": "file_0000000035488211b2685d490af719e9",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_critic(3).json",
+    "library_file_id": "libfile_f63758f39a888191980d633c72365bb3",
+    "file_id": "file_000000002dd88211beb398bff8972685",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_critic(3).json",
+    "library_file_id": "libfile_6bd8049fe8108191af592cf3db9dc052",
+    "file_id": "file_00000000a874821183a2fbbc66bcd595",
+    "version_id": null
+  },
+  {
+    "name": "122-310-critic_critic.json",
+    "library_file_id": "libfile_4ee024046c5c81918eece15226eee5b6",
+    "file_id": "file_00000000798c821182a54265f70fb7ce",
+    "version_id": null
+  },
+  {
+    "name": "122-310-critic_primary.json",
+    "library_file_id": "libfile_8be4232ea5e081918d112fe415ce8a35",
+    "file_id": "file_0000000022fc82119aae3e061dc8c067",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_primary(3).json",
+    "library_file_id": "libfile_483d389124a081919ce43b1371e3146d",
+    "file_id": "file_00000000374082119477460d9ecb18e0",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_primary(3).json",
+    "library_file_id": "libfile_d0de6dbe94c48191843b057c3d9667a8",
+    "file_id": "file_0000000033cc8211ac8a199072b9b4a1",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_primary(2).json",
+    "library_file_id": "libfile_97a5dc1208808191b38124b11c11c19b",
+    "file_id": "file_00000000e3ec8211a67b1f17c65d5f72",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_critic(2).json",
+    "library_file_id": "libfile_1f56b979cc748191860aaf7e4e3fcdd5",
+    "file_id": "file_00000000241482088a782274462c04df",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_primary(2).json",
+    "library_file_id": "libfile_a44316ee8a808191925827f2ee48bbe3",
+    "file_id": "file_00000000d9dc8211ade3827275c37c10",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_critic(2).json",
+    "library_file_id": "libfile_f50b5921caa0819191c0ac8f1d575414",
+    "file_id": "file_00000000251c8207af658af3ee19e5ed",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_critic(1).json",
+    "library_file_id": "libfile_028baecb09fc8191a5f13f8738bd9704",
+    "file_id": "file_0000000049748211804ef2f42b5fae8d",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_critic(1).json",
+    "library_file_id": "libfile_2cd30ae608588191b754a1cf0bbbd7b1",
+    "file_id": "file_000000000984820894a3768b85d9f2dc",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_primary(1).json",
+    "library_file_id": "libfile_7497be355f008191b30ff894c9ab18ad",
+    "file_id": "file_00000000018082119a6bc518ac9c034f",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_primary(1).json",
+    "library_file_id": "libfile_7f93b935fd44819192b8a2ad5d2cf0ac",
+    "file_id": "file_00000000d71c82118606ed69cc152288",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_critic.json",
+    "library_file_id": "libfile_ec829cca0548819197a99764d11ddd52",
+    "file_id": "file_000000005d60821194ad03f51059b31d",
+    "version_id": null
+  },
+  {
+    "name": "122-397-critic_primary.json",
+    "library_file_id": "libfile_f48f528d7654819180fee6f1036ba66e",
+    "file_id": "file_00000000a648820786fb5ac2d3456e0c",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_critic.json",
+    "library_file_id": "libfile_b711da0569088191917c3996b4cae5f2",
+    "file_id": "file_0000000097dc8211ae40d19053ae470f",
+    "version_id": null
+  },
+  {
+    "name": "122-122-critic_primary.json",
+    "library_file_id": "libfile_035e211481588191a6a774341d2548dd",
+    "file_id": "file_00000000b52c821197bc030349700ff0",
+    "version_id": null
+  },
+  {
+    "name": "stockvis_serverless_starter_v0.8.1.zip",
+    "library_file_id": "libfile_0c433653ebf08191b2728b93234f689b",
+    "file_id": "file_00000000439c8211b7ba62845b32a831",
+    "version_id": null
+  }
+]
