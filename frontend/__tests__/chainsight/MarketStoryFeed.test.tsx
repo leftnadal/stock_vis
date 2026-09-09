@@ -24,6 +24,7 @@ const secCard: MarketStoryCard = {
   days_since: 14, companions: [], is_group: false, story_id: 'sec1',
   title: 'MRVL, GOOGL와 중요 계약 체결 공시', members: ['GOOGL', 'MRVL'],
   window_label: '30일 내 신규 공시',
+  relation_line: '제휴 관계로 기록됨', relation_recorded: true,
   evidence: [{ kind: '8k', ref: 'acc-1', title: 'MRVL, GOOGL와 중요 계약 체결 공시', url: null, date: '2026-08-19' }],
 };
 const spikeCard: MarketStoryCard = {
@@ -34,6 +35,7 @@ const spikeCard: MarketStoryCard = {
   pairs: [{ symbol_a: 'ORCL', symbol_b: 'PANW', count: 13 }, { symbol_a: 'PANW', symbol_b: 'TJX', count: 12 }],
   window_label: '14일 중 이 하루', story_id: 'spike1',
   title: '오라클·팔로알토 클라우드 계약',
+  relation_line: '관계 기록 없음', relation_recorded: false,
   evidence: [{ kind: 'article', ref: 'cne:1', title: '오라클·팔로알토 클라우드 계약', url: null, date: '2026-08-21' }],
 };
 function weekly(n: number, titleNull = false): MarketStoryCard {
@@ -42,6 +44,7 @@ function weekly(n: number, titleNull = false): MarketStoryCard {
     count: 30 - n, occurred_on: '2026-08-31', days_since: 2, companions: [], companions_outside: [],
     is_group: false, members: [`A${n}`, `B${n}`], window_label: '최근 7일 활동',
     story_id: `wk${n}`, title: titleNull ? null : `주간 기사 ${n}`, evidence: [],
+    relation_line: '관계 기록 없음', relation_recorded: false,
   };
 }
 
@@ -209,6 +212,62 @@ describe('이벤트 카드(회귀 — 사건 카드는 항상 펴짐)', () => {
     expect(screen.getByRole('link', { name: '업종별 보기 (마인드맵)' })).toHaveAttribute(
       'href', '/chainsight/mindmap',
     );
+  });
+});
+
+describe('D-S3-8 관계 종류 한 줄', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('기록된 관계 카드: relation_line 렌더 + recorded 시각 구분', async () => {
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed([secCard, spikeCard], [weekly(1)]));
+    render(<MarketStoryFeed />, { wrapper });
+    const cards = await screen.findAllByTestId('market-story-card');
+    const sec = cards.find((c) => c.getAttribute('data-card-type') === 'new_sec')!;
+    const line = sec.querySelector('[data-testid="relation-line"]')!;
+    expect(line).toHaveTextContent('제휴 관계로 기록됨');
+    expect(line.getAttribute('data-recorded')).toBe('true');
+  });
+
+  it('기록 없음 카드: "관계 기록 없음" + 가장 조용한 시각 구분', async () => {
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed([secCard, spikeCard], [weekly(1)]));
+    render(<MarketStoryFeed />, { wrapper });
+    const cards = await screen.findAllByTestId('market-story-card');
+    const spike = cards.find((c) => c.getAttribute('data-card-type') === 'daily_spike')!;
+    const line = spike.querySelector('[data-testid="relation-line"]')!;
+    expect(line).toHaveTextContent('관계 기록 없음');
+    expect(line.getAttribute('data-recorded')).toBe('false');
+  });
+
+  it('D-1 ★ 등급 단어가 카드에 절대 노출되지 않는다', async () => {
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed([secCard, spikeCard], [weekly(1)]));
+    render(<MarketStoryFeed />, { wrapper });
+    const cards = await screen.findAllByTestId('market-story-card');
+    for (const c of cards) {
+      const t = c.textContent ?? '';
+      for (const g of ['confirmed', 'probable', 'weak', 'hidden', 'stale', '확인된 관계']) {
+        expect(t).not.toContain(g);
+      }
+    }
+  });
+
+  it('D-7 context 타입 문자열이 카드에 등장하지 않는다', async () => {
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed([secCard, spikeCard], [weekly(1)]));
+    render(<MarketStoryFeed />, { wrapper });
+    const cards = await screen.findAllByTestId('market-story-card');
+    for (const c of cards) {
+      const t = c.textContent ?? '';
+      expect(t).not.toContain('PEER_OF');
+      expect(t).not.toContain('PRICE_CORRELATED');
+      expect(t).not.toContain('같은 업종');
+    }
+  });
+
+  it('접힌 배경 줄 목록에는 relation_line 이 없다(한 줄 높이 유지)', async () => {
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed([secCard, spikeCard], [weekly(1), weekly(2)]));
+    render(<MarketStoryFeed />, { wrapper });
+    fireEvent.click(await screen.findByTestId('steady-fold-toggle'));
+    const list = screen.getByTestId('steady-line-list');
+    expect(list.querySelector('[data-testid="relation-line"]')).toBeNull();
   });
 });
 
