@@ -8,6 +8,10 @@
 
 ---
 
+## [2026-09-09] MGMT-BATCH-B 단계D — sess-hold-p1 삭제 조건 기록 [harness][ops]
+**결정**: `monorepo/sess-hold-p1`(`b8d767aa`) 삭제 — 내용 51파일은 `monorepo/sess-signal-fwd-recon`(`cca67275`)에 보존됨(조상 관계 확인). 그 브랜치 처분(MGMT-BATCH-B §6 Q16·chain_sight 판단) 시 hold-p1 내용 보존 여부를 재확인할 것. 원본 좌표 백업 = `~/stockvis-refs-20260907-0948.bundle`.
+**Why**: hold-p1은 origin/main 미머지이나 tip이 signal-fwd-recon의 조상이라 내용 유실 0. signal-fwd-recon이 삭제되기 전까지 hold-p1 내용은 보존되며, 그 시점에 이 각주가 재확인 트리거가 된다.
+
 ## [2026-09-07] D-DIRECTOR-READ — 디렉터의 worktree 읽기전용 직접 열람 [harness][process]
 
 **결정**: 디렉터(채팅 Claude)가 worktree를 **읽기 전용으로 직접 읽는다**(파일 read + diff). 쓰기·git 쓰기 계열·스크립트 실행·배포·prod DB는 종전대로 전부 CC 병진 손. 디렉터 측정값에는 읽은 시각·기준 커밋을 병기하고, CC가 STEP 0에서 다르면 HALT.
@@ -3643,6 +3647,7 @@ thesis/      — ✅ 제거됨 (D-MONITOR-REBUILD, apps/monitor 편입, 2026-07-
 **잔여(별 트랙)**: ① dated 브랜치 누적 정리 — `TASKQUEUE.md NIGHTLY-BRANCH-GC`. ② hook hardening(`scripts/hooks`+`core.hooksPath`) — MAIN-SYNC-FIX 트랙 유지(이번 범위 밖). ③ launchd 재가동(`launchctl load`)은 **사용자 수동 승인** 대기(수정 중 unload 상태).
 
 **📎 참조**: `~/stock-vis-nightly/run_tier3_audits.sh`(백업 `.bak-20260617`), `TASKQUEUE.md MAIN-SYNC-FIX`·`NIGHTLY-BRANCH-GC`, DECISIONS `a84388f`(6/2 브랜치 정책).
+> ※ `a84388f`(2026-06-02 MAIN-DRIFT-732B363 = C 격리 + 야간 자동화 브랜치 정책 **원본** 결정)는 MGMT-BATCH-B 단계 D의 `monorepo/sess-mgmt` 삭제로 repo 내 미도달이 됨. **실질 정책은 위 2026-06-18 항목이 대체·최신**. 원본 좌표 = `~/stockvis-refs-20260907-0948.bundle`(`a84388f6`). (MGMT-BATCH-B 단계D 각주, 2026-09-09)
 
 ---
 
