@@ -21,6 +21,11 @@ if [[ "$CURRENT_BRANCH" == monorepo/* ]]; then
     BRANCH_OK=true
 fi
 
+# Lab Automation 자체 개발 branch namespace
+if [[ "$CURRENT_BRANCH" == lab-automation/* ]]; then
+    BRANCH_OK=true
+fi
+
 # Lab Automation runner의 격리 candidate branch 계약
 if [[ "$CURRENT_BRANCH" == lab-run/* ]]; then
     BRANCH_OK=true

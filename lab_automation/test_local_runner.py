@@ -412,7 +412,7 @@ def test_commit_failure_preserves_structured_command_diagnostics(
     real_git = local_runner._git
 
     def fail_candidate_commit(cwd, *args, check=True):
-        if args and args[0] == "commit":
+        if "commit" in args:
             return subprocess.CompletedProcess(
                 ["git", *args],
                 9,
@@ -438,11 +438,50 @@ def test_commit_failure_preserves_structured_command_diagnostics(
     failure = json.loads(LocalArtifactStore(state_root / "artifacts").read_bytes(failure_ref))
 
     assert returncode == 1
-    assert failure["command"][:2] == ["git", "commit"]
+    assert failure["command"][0] == "git"
+    assert failure["command"][1] == "-c"
+    assert failure["command"][2].startswith("core.hooksPath=")
+    assert failure["command"][3] == "commit"
     assert "commit-standard-output" in failure["stdout"]
     assert "commit-standard-error" in failure["stderr"]
     assert failure["returncode"] != 0
     assert failure_ref in terminal["artifact_refs"]
+
+
+def test_candidate_commit_pins_runner_hooks_path(
+    tmp_path: Path,
+    monkeypatch,
+):
+    repo = init_job_repo(tmp_path)
+    job_path = write_job_file(tmp_path)
+    state_root = tmp_path / "state"
+    real_git = local_runner._git
+    commit_calls = []
+
+    def capture_candidate_commit(cwd, *args, check=True):
+        if "commit" in args:
+            commit_calls.append(args)
+        return real_git(cwd, *args, check=check)
+
+    monkeypatch.setattr(local_runner, "_invoke_codex", fake_executor())
+    monkeypatch.setattr(local_runner, "_git", capture_candidate_commit)
+
+    returncode = local_runner.execute_job(
+        repo=repo,
+        job_path=job_path,
+        worktree_root=tmp_path / "worktrees",
+        state_root=state_root,
+        dry_run=False,
+    )
+
+    assert returncode == 0
+    assert len(commit_calls) == 1
+    commit_args = commit_calls[0]
+    assert commit_args[0] == "-c"
+    assert commit_args[1] == (
+        f"core.hooksPath={local_runner._runner_hooks_dir()}"
+    )
+    assert commit_args[2] == "commit"
 
 
 def test_failed_real_run_preserves_worktree_and_records_path(

@@ -297,13 +297,31 @@ def _ensure_minimum_artifacts(result_dir: Path, *, dry_run: bool) -> dict[str, s
     return origins
 
 
+def _runner_hooks_dir() -> Path:
+    """Return hooks shipped with the exact Lab Automation runner source."""
+    hooks_dir = Path(__file__).resolve().parents[1] / "scripts" / "hooks"
+    pre_commit = hooks_dir / "pre-commit"
+    if not pre_commit.is_file():
+        raise FileNotFoundError(
+            f"runner pre-commit hook not found: {pre_commit}"
+        )
+    return hooks_dir
+
+
 def _candidate_commit(worktree: Path, job_id: str, dry_run: bool) -> str | None:
     if dry_run:
         return None
     if not _changed_paths(worktree):
         return _current_sha(worktree)
     _git(worktree, "add", "--all")
-    commit_args = ("commit", "-m", f"lab-automation: candidate result for {job_id}")
+    hooks_dir = _runner_hooks_dir()
+    commit_args = (
+        "-c",
+        f"core.hooksPath={hooks_dir}",
+        "commit",
+        "-m",
+        f"lab-automation: candidate result for {job_id}",
+    )
     proc = _git(worktree, *commit_args, check=False)
     if proc.returncode != 0:
         raise CommandFailure(
