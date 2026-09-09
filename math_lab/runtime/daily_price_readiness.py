@@ -485,6 +485,9 @@ def _representative_rows(
                 "reason_codes": reason_codes,
             }
         )
+    for row in output:
+        row["observed_content_status"] = _observed_content_status(row)
+        row["research_input_sufficiency"] = "unassessed"
     return output
 
 
@@ -971,16 +974,36 @@ def _inventory_permission(read_only_verified: bool) -> dict[str, Any]:
     }
 
 
-def _research_input_scope(
+def _observed_content_status(row: Mapping[str, Any]) -> str:
+    """Describe the existing diagnostic evidence, never its research sufficiency."""
+    if row.get("observation_status") != "observed":
+        return "not_observed"
+    if not row.get("daily_price_row_count"):
+        return "no_price_rows_observed"
+    if "fatal_ohlcv_anomaly_observed" in row.get("reason_codes", ()):
+        return "fatal_observed"
+    return "nonfatal_observed"
+
+
+def _content_summary(representative: Sequence[Mapping[str, Any]]) -> str:
+    statuses = {_observed_content_status(row) for row in representative}
+    if {"fatal_observed", "nonfatal_observed"}.issubset(statuses):
+        return "mixed_observed"
+    for status in ("fatal_observed", "nonfatal_observed", "no_price_rows_observed"):
+        if status in statuses:
+            return status
+    return "not_observed"
+
+
+def _observed_content_scope(
     representative: Sequence[Mapping[str, Any]],
 ) -> tuple[list[str], list[dict[str, Any]], list[str]]:
-    """Apply only existence and the already recorded fatal OHLCV boundary.
+    """Separate observed nonfatal content from missing/fatal observations.
 
-    No new history, missingness, row-count, or basket pass-ratio threshold.
-    An asset flagged fatal by the existing diagnostic is excluded as a whole;
-    this does not clean rows, approve a final basket, or establish PIT safety.
+    These lists are diagnostic facts, not permitted inputs or a final basket.
+    History, row-count, missingness and basket sufficiency remain unassessed.
     """
-    eligible: list[str] = []
+    nonfatal: list[str] = []
     excluded: list[dict[str, Any]] = []
     for row in representative:
         reasons = []
@@ -995,9 +1018,9 @@ def _research_input_scope(
         if reasons:
             excluded.append({"symbol": row["symbol"], "reasons": reasons})
         else:
-            eligible.append(str(row["symbol"]))
-    blocking = [] if eligible else ["no_usable_representative_price_input"]
-    return eligible, excluded, blocking
+            nonfatal.append(str(row["symbol"]))
+    blocking = [] if nonfatal else ["no_nonfatal_representative_price_content_observed"]
+    return nonfatal, excluded, blocking
 
 
 def _eligibility_decisions(
@@ -1011,7 +1034,7 @@ def _eligibility_decisions(
     # validated provenance manifest, so every semantic claim stays unknown.
     point_in_time = False
     availability = AvailabilityConfidence.UNKNOWN
-    eligible_symbols, excluded_symbols, blocking = _research_input_scope(representative)
+    nonfatal_symbols, excluded_symbols, blocking = _observed_content_scope(representative)
     common_missing = [
         "sealed_data_view_fingerprint",
         "daily_price_provider_provenance",
@@ -1043,11 +1066,13 @@ def _eligibility_decisions(
         missing.extend(item for item in common_missing if item not in missing)
         if intended_use is IntendedUse.REPLICATION:
             missing.append("replication_independence_evidence")
-        reasons = list(base.reasons)
+        reasons = [reason for reason in base.reasons
+                   if reason != "usable_for_exploration_but_not_confirmation"]
         reasons.extend(blocking)
         if common_missing:
             reasons.append("daily_price_use_specific_contract_incomplete")
         reasons.append("semantic_evidence_not_validated")
+        reasons.append("research_input_sufficiency_unassessed")
         if intended_use is IntendedUse.REPLICATION:
             reasons.append("replication_independence_unassessed")
 
@@ -1064,7 +1089,7 @@ def _eligibility_decisions(
                 reason for reason in reasons
                 if reason != "usable_for_exploration_but_not_confirmation"
             ]
-            missing.append("usable_representative_price_input")
+            missing.append("nonfatal_representative_price_content")
         output.append(
             {
                 "data_view_id": view.data_view_id,
@@ -1080,18 +1105,20 @@ def _eligibility_decisions(
                 "entity_resolution_version": view.entity_resolution_version,
                 "revision_lineage_available": False,
                 "eligibility": eligibility.value,
-                "research_input_permitted": eligibility is not Eligibility.PROHIBITED,
+                "research_input_permitted": False,
+                "research_input_sufficiency": "unassessed",
+                "observed_content_status": _content_summary(representative),
+                "eligibility_scope": "declared_use_contract_only_not_sufficiency_or_authorization",
                 "input_scope": "listed_representative_symbols_only",
-                "permitted_symbols": (
-                    eligible_symbols if eligibility is not Eligibility.PROHIBITED else []
-                ),
-                "observed_nonfatal_symbols": eligible_symbols,
+                "permitted_symbols": [],
+                "observed_nonfatal_symbols": nonfatal_symbols,
                 "excluded_symbols": excluded_symbols,
                 "reasons": reasons,
                 "missing_requirements": missing,
                 "claim_restriction": (
-                    "Exploratory eligibility applies only to permitted_symbols; "
-                    "it does not authorize a new experiment or final basket. "
+                    "Eligibility is a declared-use restriction, not research-input permission. "
+                    "Nonfatal observations do not establish sufficiency; "
+                    "no research input, experiment, or final basket is authorized. "
                     "No predictive, total-return, historical-universe, "
                     "confirmatory, or production-readiness claim."
                 ),
@@ -1348,6 +1375,8 @@ def _unobserved_representative_rows() -> list[dict[str, Any]]:
         {
             "symbol": symbol,
             "observation_status": "not_observed",
+            "observed_content_status": "not_observed",
+            "research_input_sufficiency": "unassessed",
             "stock_exists": None,
             "asset_type": None,
             "exchange": None,
@@ -1379,7 +1408,10 @@ def _unobserved_representative_rows() -> list[dict[str, Any]]:
     ]
 
 
-def _unavailable_decisions(context: ProbeContext) -> list[dict[str, Any]]:
+def _unavailable_decisions(
+    context: ProbeContext,
+    representative: Sequence[Mapping[str, Any]] = (),
+) -> list[dict[str, Any]]:
     missing = [
         "observed_database_snapshot",
         "point_in_time_reconstructability",
@@ -1412,13 +1444,19 @@ def _unavailable_decisions(context: ProbeContext) -> list[dict[str, Any]]:
                 "revision_lineage_available": False,
                 "eligibility": Eligibility.PROHIBITED.value,
                 "research_input_permitted": False,
+                "research_input_sufficiency": "unassessed",
+                "observed_content_status": _content_summary(representative),
+                "eligibility_scope": "declared_use_contract_only_not_sufficiency_or_authorization",
                 "input_scope": "listed_representative_symbols_only",
                 "permitted_symbols": [],
-                "observed_nonfatal_symbols": [],
-                "excluded_symbols": [],
-                "reasons": ["database_snapshot_not_observed"],
+                "observed_nonfatal_symbols": _observed_content_scope(representative)[0],
+                "excluded_symbols": _observed_content_scope(representative)[1],
+                "reasons": [
+                    "incomplete_snapshot" if representative else "database_snapshot_not_observed",
+                    "research_input_sufficiency_unassessed",
+                ],
                 "missing_requirements": use_missing,
-                "claim_restriction": "No data-use claim is allowed until the read-only probe observes a snapshot.",
+                "claim_restriction": "Research input is not permitted; snapshot evidence is incomplete and sufficiency remains unassessed.",
             }
         )
     return output
@@ -1538,7 +1576,7 @@ def _query_failure_artifacts(
     representative_rows = representative or _unobserved_representative_rows()
     representative_observed = representative is not None
     result = {
-        "schema_version": "daily-price-readiness-result/0.2",
+        "schema_version": "daily-price-readiness-result/0.3",
         "job_id": context.job_id,
         "run_id": context.run_id,
         "status": "partial",
@@ -1576,7 +1614,7 @@ def _query_failure_artifacts(
             },
             "representative_basket": representative_rows,
             "adversarial_candidate_discovery": adversarial,
-            "data_eligibility_decisions": _unavailable_decisions(context),
+            "data_eligibility_decisions": _unavailable_decisions(context, representative_rows),
             "schema_capabilities": {
                 table: sorted(columns)
                 for table, columns in sorted(observed_schema.items())
@@ -1640,7 +1678,7 @@ def build_unavailable_artifacts(
         }
     adversarial = _unavailable_adversarial_discovery()
     result = {
-        "schema_version": "daily-price-readiness-result/0.2",
+        "schema_version": "daily-price-readiness-result/0.3",
         "job_id": context.job_id,
         "run_id": context.run_id,
         "status": "partial",
@@ -1733,7 +1771,7 @@ def render_markdown_report(artifacts: ReadinessArtifacts) -> str:
     probe = result["probe"]
     findings = result["findings"]
     lines = [
-        "# DailyPrice Readiness Probe v0.2",
+        "# DailyPrice Readiness Probe v0.3",
         "",
         f"- Job: `{result['job_id']}`",
         f"- Run: `{result['run_id']}`",
@@ -1744,6 +1782,7 @@ def render_markdown_report(artifacts: ReadinessArtifacts) -> str:
         f"- Inventory / diagnostic permission: `{result['inventory_permission']['status']}` (not research-input permission)",
         "",
         "This is a data-readiness inventory only. No predictive-validity, tradability, or production-readiness claim is made.",
+        "Observed nonfatal content and exploratory eligibility do not establish research input sufficiency or permission.",
         "",
         "## Representative basket",
         "",
@@ -1798,13 +1837,15 @@ def render_markdown_report(artifacts: ReadinessArtifacts) -> str:
             "",
             "## Data Eligibility decisions",
             "",
-            "| Declared use | Eligibility | Research input permitted | Permitted symbols | Availability | Point-in-time | Missing requirements |",
-            "|---|---|---|---|---|---:|---|",
+            "| Declared use | Eligibility (not permission) | Observed content | Input sufficiency | Research input permitted | Permitted symbols | Availability | Point-in-time | Missing requirements |",
+            "|---|---|---|---|---|---|---|---:|---|",
         ]
     )
     for decision in findings["data_eligibility_decisions"]:
         lines.append(
             f"| {_display(decision['intended_use'])} | {_display(decision['eligibility'])} | "
+            f"{_display(decision['observed_content_status'])} | "
+            f"{_display(decision['research_input_sufficiency'])} | "
             f"{_display(decision['research_input_permitted'])} | "
             f"{_display(', '.join(decision['permitted_symbols']) or 'none')} | "
             f"{_display(decision['availability_confidence'])} | "
@@ -1962,7 +2003,7 @@ def run_readiness_probe(
     eligibility = _eligibility_decisions(schema, context, fingerprint, representative)
     data_gaps = _data_gap_proposals(schema)
     result = {
-        "schema_version": "daily-price-readiness-result/0.2",
+        "schema_version": "daily-price-readiness-result/0.3",
         "job_id": context.job_id,
         "run_id": context.run_id,
         "status": "partial",

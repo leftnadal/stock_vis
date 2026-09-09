@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "parent_candidate": "ebcc59afc4b5d6919893b083ca2fde066c05d28a",
+  "branch": "math-lab/readiness-positive-boundary-v0.1",
+  "passed": 52,
+  "failed": 0,
+  "stdout": "....................................................                     [100%]\n52 passed in 0.22s\n",
+  "environment": {
+    "python": "3.12.14",
+    "os": "Linux",
+    "pytest": "9.1.1",
+    "config": "/dev/null",
+    "plugin_autoload": false
+  },
+  "test_modules": [
+    "math_lab/runtime/test_data_eligibility.py",
+    "math_lab/runtime/test_daily_price_readiness.py",
+    "math_lab/runtime/test_daily_price_boundaries.py",
+    "math_lab/runtime/test_daily_price_positive_boundary.py"
+  ],
+  "source_sha256": {
+    "math_lab/runtime/daily_price_probe.py": "829be20bf6857b6667506aa58c033f13702d590a398da3a46526406d708366bb",
+    "math_lab/runtime/daily_price_readiness.py": "6ebce85b570ac175a9b00fe57747045f5edb0abfabb6c94aa9f4d3b9fa43c92b",
+    "math_lab/runtime/test_daily_price_boundaries.py": "698c81ce8223cf5e60402528fde7dd0f20e1a539edab8e5c7bb946be6c643cbf",
+    "math_lab/runtime/test_daily_price_positive_boundary.py": "f5f0058f8f150ed94bc946f59a02b955f96b2fa8585f04e4364d0af52832aed0"
+  },
+  "live_observation_performed": false,
+  "f2_and_recovery_unchanged": true
+}

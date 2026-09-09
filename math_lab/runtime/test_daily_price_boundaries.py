@@ -56,7 +56,7 @@ def test_empty_or_all_fatal_input_does_not_block_diagnosis_but_blocks_research(s
     session = _fixture_session()
     _mutate_fixture(session, sql)
     result = run_readiness_probe(session, _context()).result
-    assert result["schema_version"] == "daily-price-readiness-result/0.2"
+    assert result["schema_version"] == "daily-price-readiness-result/0.3"
     assert result["inventory_permission"]["status"] == "permitted_read_only"
     assert not result["inventory_permission"]["implies_research_input_eligibility"]
     rows = result["findings"]["representative_basket"]
@@ -68,7 +68,7 @@ def test_empty_or_all_fatal_input_does_not_block_diagnosis_but_blocks_research(s
         assert decision["eligibility"] == "prohibited_for_declared_use"
         assert decision["research_input_permitted"] is False
         assert decision["permitted_symbols"] == []
-        assert "no_usable_representative_price_input" in decision["reasons"]
+        assert "no_nonfatal_representative_price_content_observed" in decision["reasons"]
     _assert_no_generic_allowed(result)
 
 
@@ -78,15 +78,18 @@ def test_original_dirty_fixture_is_no_longer_implicitly_usable():
     assert result["findings"]["representative_basket"][1]["daily_price_row_count"] == 3
 
 
-def test_nonfatal_fixture_retains_inventory_and_scoped_exploration():
+def test_nonfatal_fixture_retains_observations_without_input_permission():
     session = _fixture_session()
     _mutate_fixture(session, "UPDATE stocks_daily_price SET open_price=105, close_price=105 WHERE id=3;")
     artifacts = run_readiness_probe(session, _context())
     result = artifacts.result
     decision = _decision(result)
     assert decision["eligibility"] == "exploratory_only"
-    assert decision["research_input_permitted"] is True
-    assert decision["permitted_symbols"] == ["AAPL"]
+    assert decision["research_input_permitted"] is False
+    assert decision["research_input_sufficiency"] == "unassessed"
+    assert decision["observed_content_status"] == "nonfatal_observed"
+    assert decision["permitted_symbols"] == []
+    assert decision["observed_nonfatal_symbols"] == ["AAPL"]
     assert len(decision["excluded_symbols"]) == 5
     assert decision["content_fingerprint"] is None
     for use in ("confirmatory", "replication"):
@@ -98,7 +101,7 @@ def test_nonfatal_fixture_retains_inventory_and_scoped_exploration():
     _assert_no_generic_allowed(result)
 
 
-def test_mixed_basket_restricts_permission_to_nonfatal_assets_without_row_threshold():
+def test_mixed_basket_retains_nonfatal_observations_without_row_threshold():
     session = _fixture_session()
     _mutate_fixture(session, """
       INSERT INTO stocks_daily_price
@@ -107,7 +110,14 @@ def test_mixed_basket_restricts_permission_to_nonfatal_assets_without_row_thresh
     """)
     result = run_readiness_probe(session, _context()).result
     decision = _decision(result)
-    assert decision["permitted_symbols"] == ["JPM"]
+    assert decision["permitted_symbols"] == []
+    assert decision["observed_nonfatal_symbols"] == ["JPM"]
+    assert decision["observed_content_status"] == "mixed_observed"
+    assert decision["research_input_sufficiency"] == "unassessed"
+    assert decision["research_input_permitted"] is False
+    jpm = result["findings"]["representative_basket"][2]
+    assert jpm["observed_content_status"] == "nonfatal_observed"
+    assert jpm["research_input_sufficiency"] == "unassessed"
     assert next(x for x in decision["excluded_symbols"] if x["symbol"] == "AAPL")[
         "reasons"
     ] == ["fatal_ohlcv_anomaly_observed"]

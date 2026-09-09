@@ -200,7 +200,7 @@ def _git_extraction_version() -> str:
         )
         return f"git:{completed.stdout.strip()}{source_suffix}"
     except (OSError, subprocess.SubprocessError):
-        return f"source:daily-price-readiness-result/0.2{source_suffix}"
+        return f"source:daily-price-readiness-result/0.3{source_suffix}"
 
 
 def _aware_datetime(value: str | None) -> datetime:
