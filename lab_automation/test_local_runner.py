@@ -7,6 +7,7 @@ import pytest
 from lab_automation.artifact_store import LocalArtifactStore
 from lab_automation.contracts import JobEnvelope, Lab
 import lab_automation.local_runner as local_runner
+from lab_automation.ledger import AppendOnlyLedger, RunEvent
 from lab_automation.local_runner import (
     _build_codex_prompt,
     _candidate_branch,
@@ -482,6 +483,270 @@ def test_candidate_commit_pins_runner_hooks_path(
         f"core.hooksPath={local_runner._runner_hooks_dir()}"
     )
     assert commit_args[2] == "commit"
+
+
+def test_recover_candidate_commit_reuses_preserved_worktree(
+    tmp_path: Path,
+    monkeypatch,
+):
+    repo = init_job_repo(tmp_path)
+    job_path = write_job_file(tmp_path)
+    state_root = tmp_path / "state"
+    worktree_root = tmp_path / "worktrees"
+    real_git = local_runner._git
+
+    def fail_candidate_commit(cwd, *args, check=True):
+        if "commit" in args:
+            return subprocess.CompletedProcess(
+                ["git", *args],
+                1,
+                stdout="",
+                stderr="old candidate hook rejected lab-run branch\n",
+            )
+        return real_git(cwd, *args, check=check)
+
+    monkeypatch.setattr(
+        local_runner,
+        "_invoke_codex",
+        fake_executor(),
+    )
+    monkeypatch.setattr(
+        local_runner,
+        "_git",
+        fail_candidate_commit,
+    )
+
+    first_rc = local_runner.execute_job(
+        repo=repo,
+        job_path=job_path,
+        worktree_root=worktree_root,
+        state_root=state_root,
+        dry_run=False,
+    )
+    assert first_rc == 1
+
+    ledger_path = state_root / "ledger" / "SV-TEST-001.jsonl"
+    events = [
+        json.loads(line)
+        for line in ledger_path.read_text().splitlines()
+    ]
+    terminal = next(
+        row
+        for row in reversed(events)
+        if row["stage"] == "terminal"
+        and row["status"] == "failed"
+    )
+    run_id = terminal["run_id"]
+    preserved = Path(
+        terminal["metadata"]["preserved_worktree_path"]
+    )
+    assert preserved.is_dir()
+
+    hook_dir = tmp_path / "runner-hooks"
+    hook_dir.mkdir()
+    hook = hook_dir / "pre-commit"
+    hook.write_text(
+        "#!/bin/sh\nexit 0\n",
+        encoding="utf-8",
+    )
+    hook.chmod(0o755)
+
+    monkeypatch.setattr(
+        local_runner,
+        "_git",
+        real_git,
+    )
+    monkeypatch.setattr(
+        local_runner,
+        "_runner_hooks_dir",
+        lambda: hook_dir,
+    )
+
+    def codex_must_not_run(*args, **kwargs):
+        raise AssertionError(
+            "Codex must not be re-invoked during candidate recovery"
+        )
+
+    monkeypatch.setattr(
+        local_runner,
+        "_invoke_codex",
+        codex_must_not_run,
+    )
+
+    recovery_test_calls = []
+
+    def successful_recovery_tests(worktree, raw, dry_run):
+        recovery_test_calls.append(
+            (worktree, dry_run)
+        )
+        return [
+            {
+                "command": ["python", "-m", "pytest"],
+                "returncode": 0,
+                "stdout": "ok\n",
+                "stderr": "",
+            }
+        ]
+
+    monkeypatch.setattr(
+        local_runner,
+        "_run_tests",
+        successful_recovery_tests,
+    )
+
+    recovery_rc = local_runner.recover_candidate_commit(
+        repo=repo,
+        job_path=job_path,
+        state_root=state_root,
+        run_id=run_id,
+    )
+
+    assert recovery_rc == 0
+    assert recovery_test_calls == [
+        (preserved, False)
+    ]
+
+    recovered_events = [
+        json.loads(line)
+        for line in ledger_path.read_text().splitlines()
+    ]
+
+    candidate = next(
+        row
+        for row in reversed(recovered_events)
+        if row["run_id"] == run_id
+        and row["stage"] == "candidate_revision"
+        and row["status"] == "waiting_for_push_approval"
+    )
+
+    completed = next(
+        row
+        for row in reversed(recovered_events)
+        if row["run_id"] == run_id
+        and row["stage"] == "recovery"
+        and row["status"] == "completed"
+    )
+
+    assert candidate["candidate_sha"]
+    assert candidate["supersedes_event_id"] == terminal["event_id"]
+    assert candidate["metadata"]["codex_reinvoked"] is False
+    assert completed["candidate_sha"] == candidate["candidate_sha"]
+    assert completed["metadata"]["codex_reinvoked"] is False
+    assert not preserved.exists()
+
+
+def test_recover_candidate_commit_rejects_non_commit_failure(
+    tmp_path: Path,
+    monkeypatch,
+):
+    repo = init_job_repo(tmp_path)
+    job_path = write_job_file(tmp_path)
+    state_root = tmp_path / "state"
+    worktree_root = tmp_path / "worktrees"
+    real_git = local_runner._git
+
+    def fail_candidate_commit(cwd, *args, check=True):
+        if "commit" in args:
+            return subprocess.CompletedProcess(
+                ["git", *args],
+                1,
+                stdout="",
+                stderr="candidate commit failed\n",
+            )
+        return real_git(cwd, *args, check=check)
+
+    monkeypatch.setattr(
+        local_runner,
+        "_invoke_codex",
+        fake_executor(),
+    )
+    monkeypatch.setattr(
+        local_runner,
+        "_git",
+        fail_candidate_commit,
+    )
+
+    assert local_runner.execute_job(
+        repo=repo,
+        job_path=job_path,
+        worktree_root=worktree_root,
+        state_root=state_root,
+        dry_run=False,
+    ) == 1
+
+    ledger_path = state_root / "ledger" / "SV-TEST-001.jsonl"
+    ledger = AppendOnlyLedger(ledger_path)
+    events = ledger.read_all()
+    original_terminal = next(
+        row
+        for row in reversed(events)
+        if row["stage"] == "terminal"
+        and row["status"] == "failed"
+    )
+
+    store = LocalArtifactStore(state_root / "artifacts")
+    wrong_failure = store.put_json(
+        {
+            "schema_version": "command-failure/0.1",
+            "stage": "tests",
+            "job_id": "SV-TEST-001",
+            "run_id": original_terminal["run_id"],
+            "returncode": 1,
+            "command": ["pytest"],
+            "cwd": original_terminal["metadata"][
+                "preserved_worktree_path"
+            ],
+            "stdout": "",
+            "stderr": "test failed",
+        },
+        kind="command_failure",
+        retention_class="irreplaceable",
+    )
+
+    ledger.append(
+        RunEvent(
+            job_id="SV-TEST-001",
+            run_id=original_terminal["run_id"],
+            stage="terminal",
+            status="failed",
+            actor="test",
+            runner_version="test",
+            base_sha=original_terminal["base_sha"],
+            artifact_refs=(wrong_failure.logical_uri,),
+            metadata={
+                "failure_artifact_ref": wrong_failure.logical_uri,
+                "preserved_worktree_path": original_terminal[
+                    "metadata"
+                ]["preserved_worktree_path"],
+            },
+        )
+    )
+
+    monkeypatch.setattr(
+        local_runner,
+        "_git",
+        real_git,
+    )
+
+    rc = local_runner.recover_candidate_commit(
+        repo=repo,
+        job_path=job_path,
+        state_root=state_root,
+        run_id=original_terminal["run_id"],
+    )
+
+    assert rc == 1
+
+    final_events = ledger.read_all()
+    recovery_failure = next(
+        row
+        for row in reversed(final_events)
+        if row["run_id"] == original_terminal["run_id"]
+        and row["stage"] == "recovery"
+        and row["status"] == "failed"
+    )
+
+    assert "candidate_commit failures only" in recovery_failure["error"]
 
 
 def test_failed_real_run_preserves_worktree_and_records_path(

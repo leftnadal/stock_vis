@@ -42,7 +42,7 @@ from lab_automation.integrity import (
 )
 from lab_automation.ledger import AppendOnlyLedger, RunEvent
 
-RUNNER_VERSION = "0.1.3"
+RUNNER_VERSION = "0.1.4"
 REQUIRED_AGENT_ARTIFACTS = (
     "agent_report.md",
     "result.json",
@@ -855,6 +855,394 @@ def execute_job(
             _git(repo, "worktree", "remove", "--force", str(worktree), check=False)
 
 
+
+def recover_candidate_commit(
+    repo: Path,
+    job_path: Path,
+    state_root: Path,
+    run_id: str,
+) -> int:
+    """Recover only a preserved candidate_commit failure.
+
+    Recovery deliberately does not re-run Codex or create a new Run ID/worktree.
+    It revalidates the preserved candidate, re-runs the Job test contract, then
+    commits with the hook version pinned to the current Lab Automation runner.
+    """
+
+    job, raw = _read_job(job_path)
+    _validate_job(job)
+
+    ledger_path = state_root / "ledger" / f"{job.job_id}.jsonl"
+    ledger = AppendOnlyLedger(ledger_path)
+    store = LocalArtifactStore(state_root / "artifacts")
+
+    events = [
+        row
+        for row in ledger.read_all()
+        if row.get("run_id") == run_id
+    ]
+
+    if not events:
+        print(
+            f"recovery failed: run_id not found for job {job.job_id}: {run_id}",
+            file=sys.stderr,
+        )
+        return 1
+
+    terminal = next(
+        (
+            row
+            for row in reversed(events)
+            if row.get("stage") == "terminal"
+            and row.get("status") == "failed"
+        ),
+        None,
+    )
+
+    if terminal is None:
+        print(
+            f"recovery failed: no failed terminal event for run {run_id}",
+            file=sys.stderr,
+        )
+        return 1
+
+    terminal_event_id = terminal.get("event_id")
+    base_sha = terminal.get("base_sha")
+    failure_artifact_ref = (
+        terminal.get("metadata", {}).get("failure_artifact_ref")
+    )
+    preserved_worktree_raw = (
+        terminal.get("metadata", {}).get("preserved_worktree_path")
+    )
+
+    recovery_artifact_refs: list[str] = []
+
+    try:
+        if terminal.get("job_id") != job.job_id:
+            raise ValueError(
+                "recovery job_id does not match failed run"
+            )
+
+        if not failure_artifact_ref:
+            raise ValueError(
+                "failed terminal event has no failure_artifact_ref"
+            )
+
+        failure = json.loads(
+            store.read_bytes(failure_artifact_ref)
+        )
+
+        if failure.get("job_id") != job.job_id:
+            raise ValueError(
+                "failure artifact job_id does not match Job"
+            )
+
+        if failure.get("run_id") != run_id:
+            raise ValueError(
+                "failure artifact run_id does not match requested run"
+            )
+
+        if failure.get("stage") != "candidate_commit":
+            raise ValueError(
+                "v0.1 recovery supports candidate_commit failures only"
+            )
+
+        if not preserved_worktree_raw:
+            raise ValueError(
+                "failed run has no preserved_worktree_path"
+            )
+
+        worktree = Path(preserved_worktree_raw).expanduser().resolve()
+
+        if not worktree.is_dir():
+            raise FileNotFoundError(
+                f"preserved worktree not found: {worktree}"
+            )
+
+        failure_cwd = failure.get("cwd")
+        if failure_cwd and Path(failure_cwd).expanduser().resolve() != worktree:
+            raise ValueError(
+                "failure artifact cwd does not match preserved worktree"
+            )
+
+        expected_branch = _candidate_branch(job.job_id, run_id)
+        current_branch = _git(
+            worktree,
+            "branch",
+            "--show-current",
+        ).stdout.strip()
+
+        if current_branch != expected_branch:
+            raise ValueError(
+                f"candidate branch mismatch: expected {expected_branch}, "
+                f"found {current_branch}"
+            )
+
+        if not base_sha:
+            raise ValueError("failed run has no recorded base_sha")
+
+        current_head = _current_sha(worktree)
+        if current_head != base_sha:
+            raise ValueError(
+                f"preserved worktree HEAD mismatch: expected {base_sha}, "
+                f"found {current_head}"
+            )
+
+        changed_paths = _changed_paths(worktree)
+        if not changed_paths:
+            raise ValueError(
+                "preserved worktree has no candidate changes to recover"
+            )
+
+        _enforce_write_scope(
+            changed_paths,
+            job.allowed_write_paths + (".lab_automation",),
+        )
+
+        meaningful_paths = _meaningful_changed_paths(
+            changed_paths,
+            job.allowed_write_paths,
+        )
+        if not meaningful_paths:
+            raise ValueError(
+                "preserved worktree has no meaningful changed path "
+                "within the Job write scope"
+            )
+
+        ledger.append(
+            RunEvent(
+                job_id=job.job_id,
+                run_id=run_id,
+                stage="recovery",
+                status="started",
+                actor="local_runner",
+                runner_version=RUNNER_VERSION,
+                base_sha=base_sha,
+                metadata={
+                    "recovery_kind": "candidate_commit_only",
+                    "recovery_of_event_id": terminal_event_id,
+                    "preserved_worktree_path": str(worktree),
+                    "candidate_branch": expected_branch,
+                    "changed_paths": changed_paths,
+                    "meaningful_changed_paths": meaningful_paths,
+                    "codex_reinvoked": False,
+                },
+            )
+        )
+
+        # Re-run the exact Job test contract. Do not re-run Codex.
+        test_results = _run_tests(
+            worktree,
+            raw,
+            dry_run=False,
+        )
+
+        recovery_tests_ref = store.put_json(
+            {
+                "schema_version": "recovery-test-results/0.1",
+                "job_id": job.job_id,
+                "run_id": run_id,
+                "runner_version": RUNNER_VERSION,
+                "recovery_of_event_id": terminal_event_id,
+                "test_results": test_results,
+            },
+            kind="recovery_test_results",
+            retention_class="irreplaceable",
+            metadata={
+                "job_id": job.job_id,
+                "run_id": run_id,
+                "recovery_of_event_id": terminal_event_id,
+            },
+        )
+        recovery_artifact_refs.append(
+            recovery_tests_ref.logical_uri
+        )
+
+        failing = [
+            row
+            for row in test_results
+            if row.get("returncode") != 0
+        ]
+
+        ledger.append(
+            RunEvent(
+                job_id=job.job_id,
+                run_id=run_id,
+                stage="recovery_tests",
+                status="failed" if failing else "completed",
+                actor="local_runner",
+                runner_version=RUNNER_VERSION,
+                base_sha=base_sha,
+                artifact_refs=(
+                    recovery_tests_ref.logical_uri,
+                ),
+                test_summary=(
+                    f"{len(test_results)} commands; "
+                    f"{len(failing)} failed"
+                ),
+                metadata={
+                    "recovery_of_event_id": terminal_event_id,
+                    "codex_reinvoked": False,
+                },
+            )
+        )
+
+        if failing:
+            raise RuntimeError(
+                "One or more recovery test commands failed"
+            )
+
+        # Tests should not have expanded the write scope.
+        post_test_paths = _changed_paths(worktree)
+        _enforce_write_scope(
+            post_test_paths,
+            job.allowed_write_paths + (".lab_automation",),
+        )
+
+        post_test_meaningful = _meaningful_changed_paths(
+            post_test_paths,
+            job.allowed_write_paths,
+        )
+        if not post_test_meaningful:
+            raise ValueError(
+                "candidate changes disappeared before recovery commit"
+            )
+
+        candidate_sha = _candidate_commit(
+            worktree,
+            job.job_id,
+            dry_run=False,
+        )
+
+        ledger.append(
+            RunEvent(
+                job_id=job.job_id,
+                run_id=run_id,
+                stage="candidate_revision",
+                status="waiting_for_push_approval",
+                actor="local_runner",
+                runner_version=RUNNER_VERSION,
+                base_sha=base_sha,
+                candidate_sha=candidate_sha,
+                authority_refs=job.authority_refs,
+                artifact_refs=tuple(
+                    recovery_artifact_refs
+                ),
+                test_summary=(
+                    f"{len(test_results)} recovery commands; "
+                    "0 failed"
+                ),
+                metadata={
+                    "candidate_branch": expected_branch,
+                    "recovery_of_run_id": run_id,
+                    "recovery_of_event_id": terminal_event_id,
+                    "preserved_worktree_path": str(worktree),
+                    "changed_paths": post_test_paths,
+                    "meaningful_changed_paths": post_test_meaningful,
+                    "push_performed": False,
+                    "merge_performed": False,
+                    "deploy_performed": False,
+                    "codex_reinvoked": False,
+                },
+                supersedes_event_id=terminal_event_id,
+            )
+        )
+
+        ledger.append(
+            RunEvent(
+                job_id=job.job_id,
+                run_id=run_id,
+                stage="recovery",
+                status="completed",
+                actor="local_runner",
+                runner_version=RUNNER_VERSION,
+                base_sha=base_sha,
+                candidate_sha=candidate_sha,
+                artifact_refs=tuple(
+                    recovery_artifact_refs
+                ),
+                metadata={
+                    "recovery_kind": "candidate_commit_only",
+                    "recovery_of_event_id": terminal_event_id,
+                    "candidate_branch": expected_branch,
+                    "push_performed": False,
+                    "merge_performed": False,
+                    "deploy_performed": False,
+                    "codex_reinvoked": False,
+                },
+                supersedes_event_id=terminal_event_id,
+            )
+        )
+
+        # Same lifecycle as a successful normal run:
+        # candidate branch/commit remain; temporary worktree is removed.
+        _git(
+            repo,
+            "worktree",
+            "remove",
+            "--force",
+            str(worktree),
+            check=False,
+        )
+
+        print(
+            f"recovered run {run_id}: candidate {candidate_sha} "
+            "is waiting_for_push_approval"
+        )
+        return 0
+
+    except Exception as exc:
+        failure_ref: str | None = None
+
+        if isinstance(exc, CommandFailure):
+            recovery_failure_ref = store.put_json(
+                {
+                    **exc.payload,
+                    "job_id": job.job_id,
+                    "run_id": run_id,
+                    "recovery_of_event_id": terminal_event_id,
+                },
+                kind="command_failure",
+                retention_class="irreplaceable",
+                metadata={
+                    "job_id": job.job_id,
+                    "run_id": run_id,
+                    "stage": exc.payload["stage"],
+                    "recovery": True,
+                },
+            )
+            failure_ref = recovery_failure_ref.logical_uri
+            recovery_artifact_refs.append(failure_ref)
+
+        ledger.append(
+            RunEvent(
+                job_id=job.job_id,
+                run_id=run_id,
+                stage="recovery",
+                status="failed",
+                actor="local_runner",
+                runner_version=RUNNER_VERSION,
+                base_sha=base_sha,
+                artifact_refs=tuple(
+                    recovery_artifact_refs
+                ),
+                error=f"{type(exc).__name__}: {exc}",
+                metadata={
+                    "recovery_kind": "candidate_commit_only",
+                    "recovery_of_event_id": terminal_event_id,
+                    "failure_artifact_ref": failure_ref,
+                    "preserved_worktree_path": preserved_worktree_raw,
+                    "codex_reinvoked": False,
+                },
+            )
+        )
+
+        print(
+            f"recovery failed: {exc}",
+            file=sys.stderr,
+        )
+        return 1
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", required=True, type=Path)
@@ -878,7 +1266,26 @@ def main() -> int:
         action="store_true",
         help="Run Codex and git mutations. Default is dry-run.",
     )
+    parser.add_argument(
+        "--recover-run",
+        metavar="RUN_ID",
+        help=(
+            "Recover a preserved candidate_commit failure without re-running "
+            "Codex. Requires --execute."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.recover_run:
+        if not args.execute:
+            parser.error("--recover-run requires --execute")
+        return recover_candidate_commit(
+            repo=args.repo.resolve(),
+            job_path=args.job.resolve(),
+            state_root=args.state_root.expanduser().resolve(),
+            run_id=args.recover_run,
+        )
+
     return execute_job(
         repo=args.repo.resolve(),
         job_path=args.job.resolve(),
