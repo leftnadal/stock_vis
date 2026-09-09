@@ -1,0 +1,527 @@
+{
+  "authority_references": [
+    "math_lab/00_foundation/foundation_ko.md",
+    "math_lab/01_operating_system/operating_model_ko.md",
+    "math_lab/02_methodology/research_methodology_ko.md",
+    "math_lab/05_validation/daily_price_validation_basket_v0_1_ko.md"
+  ],
+  "data_gap_ids": [
+    "DG-DP-ACCESS-001",
+    "DG-DP-EXPORT-001",
+    "DG-DP-AVAILABLE-AT-001",
+    "DG-DP-PROVENANCE-001",
+    "DG-DP-ADJUSTMENT-001",
+    "DG-DP-DIVIDEND-001",
+    "DG-DP-REVISION-001",
+    "DG-DP-ENTITY-001",
+    "DG-DP-TERMINAL-RETURN-001",
+    "DG-DP-CALENDAR-001"
+  ],
+  "failures": [
+    {
+      "consequence": "No live schema or DailyPrice rows were observed.",
+      "error_type": "OperationalError",
+      "message": "connection to server at \"localhost\" (::1), port 5432 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections?\nconnection to server at \"localhost\" (127.0.0.1), port 5432 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections?\n",
+      "stage": "database_connection",
+      "status": "failed"
+    }
+  ],
+  "findings": {
+    "adversarial_candidate_discovery": [
+      {
+        "candidates": [],
+        "failure_mode": "recorded_repeated_split",
+        "limitations": [
+          "Database access failed before live rows or deployed schema could be observed."
+        ],
+        "selection_method": "rank StockSplit event count",
+        "status": "not_run"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "recorded_large_or_reverse_split",
+        "limitations": [
+          "Database access failed before live rows or deployed schema could be observed."
+        ],
+        "selection_method": "rank split adjustment factor",
+        "status": "not_run"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "dividend_history",
+        "limitations": [
+          "Database access failed before live rows or deployed schema could be observed."
+        ],
+        "selection_method": "rank historical dividend events",
+        "status": "not_run"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "ipo_or_short_history",
+        "limitations": [
+          "Database access failed before live rows or deployed schema could be observed."
+        ],
+        "selection_method": "rank DailyPrice coverage ascending",
+        "status": "not_run"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "long_missing_period_or_suspension",
+        "limitations": [
+          "Database access failed before live rows or deployed schema could be observed."
+        ],
+        "selection_method": "rank exchange-session coverage gaps",
+        "status": "not_run"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "ohlcv_integrity",
+        "limitations": [
+          "Database access failed before live rows or deployed schema could be observed."
+        ],
+        "selection_method": "rank structural OHLCV anomaly counts",
+        "status": "not_run"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "ticker_change",
+        "limitations": [
+          "Database access failed before live rows or deployed schema could be observed."
+        ],
+        "selection_method": "resolve point-in-time symbol lifecycle",
+        "status": "not_run"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "merger_or_acquisition",
+        "limitations": [
+          "Database access failed before live rows or deployed schema could be observed."
+        ],
+        "selection_method": "resolve acquisition lifecycle events",
+        "status": "not_run"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "spin_off",
+        "limitations": [
+          "Database access failed before live rows or deployed schema could be observed."
+        ],
+        "selection_method": "resolve spin-off lifecycle events",
+        "status": "not_run"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "delisting_or_terminal_return",
+        "limitations": [
+          "Database access failed before live rows or deployed schema could be observed."
+        ],
+        "selection_method": "resolve delisting and terminal-return events",
+        "status": "not_run"
+      }
+    ],
+    "daily_price_schema_presence": {
+      "adjustment_semantics_column_present": "live_schema_unverified",
+      "available_at_column_present": "live_schema_unverified",
+      "created_at_field_present": "live_schema_unverified",
+      "date_field_present": "live_schema_unverified",
+      "entity_lifecycle_table_present": "live_schema_unverified",
+      "exchange_calendar_table_present": "live_schema_unverified",
+      "historical_dividend_table_present": "live_schema_unverified",
+      "provider_column_present": "live_schema_unverified",
+      "revision_lineage_column_present": "live_schema_unverified",
+      "terminal_return_table_present": "live_schema_unverified"
+    },
+    "data_eligibility_decisions": [
+      {
+        "allowed": false,
+        "availability_confidence": "unknown",
+        "claim_restriction": "No data-use claim is allowed until the read-only probe observes a snapshot.",
+        "content_fingerprint": null,
+        "content_fingerprint_scope": "not_available",
+        "data_view_id": "stockvis.daily_price:17239e86-7a44-4077-99e2-0bbbe0852f08:exploratory",
+        "decision_scope": "daily_price_price_return_research",
+        "decision_source": "readiness_adapter_precondition",
+        "eligibility": "prohibited_for_declared_use",
+        "entity_resolution_version": null,
+        "extraction_version": "git:16a627df7db3406563e71342351745816c92af47+probe-sha256:064c8f3078e589f1e44e3ad0d59dc93c0da9ccb124d24024de53454dbb595dbb",
+        "intended_use": "exploratory",
+        "missing_requirements": [
+          "observed_database_snapshot",
+          "point_in_time_reconstructability",
+          "sufficient_availability_confidence",
+          "content_fingerprint",
+          "daily_price_provider_provenance",
+          "price_adjustment_semantics",
+          "revision_lineage",
+          "entity_resolution_version"
+        ],
+        "point_in_time_reconstructable": false,
+        "probe_result_fingerprint": null,
+        "reasons": [
+          "database_snapshot_not_observed"
+        ],
+        "revision_lineage_available": false,
+        "universe_version": "daily_price_validation_basket_v0.1"
+      },
+      {
+        "allowed": false,
+        "availability_confidence": "unknown",
+        "claim_restriction": "No data-use claim is allowed until the read-only probe observes a snapshot.",
+        "content_fingerprint": null,
+        "content_fingerprint_scope": "not_available",
+        "data_view_id": "stockvis.daily_price:17239e86-7a44-4077-99e2-0bbbe0852f08:confirmatory",
+        "decision_scope": "daily_price_price_return_research",
+        "decision_source": "readiness_adapter_precondition",
+        "eligibility": "prohibited_for_declared_use",
+        "entity_resolution_version": null,
+        "extraction_version": "git:16a627df7db3406563e71342351745816c92af47+probe-sha256:064c8f3078e589f1e44e3ad0d59dc93c0da9ccb124d24024de53454dbb595dbb",
+        "intended_use": "confirmatory",
+        "missing_requirements": [
+          "observed_database_snapshot",
+          "point_in_time_reconstructability",
+          "sufficient_availability_confidence",
+          "content_fingerprint",
+          "daily_price_provider_provenance",
+          "price_adjustment_semantics",
+          "revision_lineage",
+          "entity_resolution_version"
+        ],
+        "point_in_time_reconstructable": false,
+        "probe_result_fingerprint": null,
+        "reasons": [
+          "database_snapshot_not_observed"
+        ],
+        "revision_lineage_available": false,
+        "universe_version": "daily_price_validation_basket_v0.1"
+      },
+      {
+        "allowed": false,
+        "availability_confidence": "unknown",
+        "claim_restriction": "No data-use claim is allowed until the read-only probe observes a snapshot.",
+        "content_fingerprint": null,
+        "content_fingerprint_scope": "not_available",
+        "data_view_id": "stockvis.daily_price:17239e86-7a44-4077-99e2-0bbbe0852f08:replication",
+        "decision_scope": "daily_price_price_return_research",
+        "decision_source": "readiness_adapter_precondition",
+        "eligibility": "prohibited_for_declared_use",
+        "entity_resolution_version": null,
+        "extraction_version": "git:16a627df7db3406563e71342351745816c92af47+probe-sha256:064c8f3078e589f1e44e3ad0d59dc93c0da9ccb124d24024de53454dbb595dbb",
+        "intended_use": "replication",
+        "missing_requirements": [
+          "observed_database_snapshot",
+          "point_in_time_reconstructability",
+          "sufficient_availability_confidence",
+          "content_fingerprint",
+          "daily_price_provider_provenance",
+          "price_adjustment_semantics",
+          "revision_lineage",
+          "entity_resolution_version",
+          "replication_independence_evidence"
+        ],
+        "point_in_time_reconstructable": false,
+        "probe_result_fingerprint": null,
+        "reasons": [
+          "database_snapshot_not_observed"
+        ],
+        "revision_lineage_available": false,
+        "universe_version": "daily_price_validation_basket_v0.1"
+      }
+    ],
+    "repository_schema_evidence": {
+      "observation_status": "repository_code_only_live_schema_unverified",
+      "schema_presence_from_code": {
+        "adjustment_semantics_column_present": false,
+        "available_at_column_present": false,
+        "created_at_field_present": true,
+        "date_field_present": true,
+        "entity_lifecycle_table_present": false,
+        "exchange_calendar_table_present": false,
+        "historical_dividend_table_present": false,
+        "provider_column_present": false,
+        "revision_lineage_column_present": false,
+        "terminal_return_table_present": false
+      },
+      "tables": {
+        "shared_calendar_event": [
+          "dividend_amount",
+          "event_date",
+          "event_type",
+          "first_seen_at",
+          "fmp_last_updated",
+          "id",
+          "last_seen_at",
+          "source",
+          "symbol"
+        ],
+        "stocks_daily_price": [
+          "close_price",
+          "created_at",
+          "currency",
+          "date",
+          "high_price",
+          "id",
+          "low_price",
+          "open_price",
+          "stock_id",
+          "volume"
+        ],
+        "stocks_stock": [
+          "asset_type",
+          "created_at",
+          "currency",
+          "exchange",
+          "industry",
+          "sector",
+          "symbol"
+        ],
+        "stocks_stock_split": [
+          "created_at",
+          "date",
+          "denominator",
+          "id",
+          "numerator",
+          "source",
+          "split_type",
+          "stock_id"
+        ]
+      }
+    },
+    "representative_basket": [
+      {
+        "anomalies": null,
+        "asset_type": null,
+        "currency_mismatch_row_count": null,
+        "daily_price_currencies": null,
+        "daily_price_recorded_at_max": null,
+        "daily_price_recorded_at_min": null,
+        "daily_price_row_count": null,
+        "dividend_event_count": null,
+        "dividend_event_first_date": null,
+        "dividend_event_last_date": null,
+        "dividend_observation_status": "not_observed",
+        "exchange": null,
+        "industry": null,
+        "max_date": null,
+        "min_date": null,
+        "observation_status": "not_observed",
+        "reason_codes": [
+          "database_probe_unavailable"
+        ],
+        "sector": null,
+        "selection_status": "deferred",
+        "stock_created_at": null,
+        "stock_currency": null,
+        "stock_exists": null,
+        "stock_split_count": null,
+        "stock_split_first_date": null,
+        "stock_split_last_date": null,
+        "stock_split_observation_status": "not_observed",
+        "symbol": "SPY",
+        "weekday_gap_proxy": null
+      },
+      {
+        "anomalies": null,
+        "asset_type": null,
+        "currency_mismatch_row_count": null,
+        "daily_price_currencies": null,
+        "daily_price_recorded_at_max": null,
+        "daily_price_recorded_at_min": null,
+        "daily_price_row_count": null,
+        "dividend_event_count": null,
+        "dividend_event_first_date": null,
+        "dividend_event_last_date": null,
+        "dividend_observation_status": "not_observed",
+        "exchange": null,
+        "industry": null,
+        "max_date": null,
+        "min_date": null,
+        "observation_status": "not_observed",
+        "reason_codes": [
+          "database_probe_unavailable"
+        ],
+        "sector": null,
+        "selection_status": "deferred",
+        "stock_created_at": null,
+        "stock_currency": null,
+        "stock_exists": null,
+        "stock_split_count": null,
+        "stock_split_first_date": null,
+        "stock_split_last_date": null,
+        "stock_split_observation_status": "not_observed",
+        "symbol": "AAPL",
+        "weekday_gap_proxy": null
+      },
+      {
+        "anomalies": null,
+        "asset_type": null,
+        "currency_mismatch_row_count": null,
+        "daily_price_currencies": null,
+        "daily_price_recorded_at_max": null,
+        "daily_price_recorded_at_min": null,
+        "daily_price_row_count": null,
+        "dividend_event_count": null,
+        "dividend_event_first_date": null,
+        "dividend_event_last_date": null,
+        "dividend_observation_status": "not_observed",
+        "exchange": null,
+        "industry": null,
+        "max_date": null,
+        "min_date": null,
+        "observation_status": "not_observed",
+        "reason_codes": [
+          "database_probe_unavailable"
+        ],
+        "sector": null,
+        "selection_status": "deferred",
+        "stock_created_at": null,
+        "stock_currency": null,
+        "stock_exists": null,
+        "stock_split_count": null,
+        "stock_split_first_date": null,
+        "stock_split_last_date": null,
+        "stock_split_observation_status": "not_observed",
+        "symbol": "JPM",
+        "weekday_gap_proxy": null
+      },
+      {
+        "anomalies": null,
+        "asset_type": null,
+        "currency_mismatch_row_count": null,
+        "daily_price_currencies": null,
+        "daily_price_recorded_at_max": null,
+        "daily_price_recorded_at_min": null,
+        "daily_price_row_count": null,
+        "dividend_event_count": null,
+        "dividend_event_first_date": null,
+        "dividend_event_last_date": null,
+        "dividend_observation_status": "not_observed",
+        "exchange": null,
+        "industry": null,
+        "max_date": null,
+        "min_date": null,
+        "observation_status": "not_observed",
+        "reason_codes": [
+          "database_probe_unavailable"
+        ],
+        "sector": null,
+        "selection_status": "deferred",
+        "stock_created_at": null,
+        "stock_currency": null,
+        "stock_exists": null,
+        "stock_split_count": null,
+        "stock_split_first_date": null,
+        "stock_split_last_date": null,
+        "stock_split_observation_status": "not_observed",
+        "symbol": "XOM",
+        "weekday_gap_proxy": null
+      },
+      {
+        "anomalies": null,
+        "asset_type": null,
+        "currency_mismatch_row_count": null,
+        "daily_price_currencies": null,
+        "daily_price_recorded_at_max": null,
+        "daily_price_recorded_at_min": null,
+        "daily_price_row_count": null,
+        "dividend_event_count": null,
+        "dividend_event_first_date": null,
+        "dividend_event_last_date": null,
+        "dividend_observation_status": "not_observed",
+        "exchange": null,
+        "industry": null,
+        "max_date": null,
+        "min_date": null,
+        "observation_status": "not_observed",
+        "reason_codes": [
+          "database_probe_unavailable"
+        ],
+        "sector": null,
+        "selection_status": "deferred",
+        "stock_created_at": null,
+        "stock_currency": null,
+        "stock_exists": null,
+        "stock_split_count": null,
+        "stock_split_first_date": null,
+        "stock_split_last_date": null,
+        "stock_split_observation_status": "not_observed",
+        "symbol": "WMT",
+        "weekday_gap_proxy": null
+      },
+      {
+        "anomalies": null,
+        "asset_type": null,
+        "currency_mismatch_row_count": null,
+        "daily_price_currencies": null,
+        "daily_price_recorded_at_max": null,
+        "daily_price_recorded_at_min": null,
+        "daily_price_row_count": null,
+        "dividend_event_count": null,
+        "dividend_event_first_date": null,
+        "dividend_event_last_date": null,
+        "dividend_observation_status": "not_observed",
+        "exchange": null,
+        "industry": null,
+        "max_date": null,
+        "min_date": null,
+        "observation_status": "not_observed",
+        "reason_codes": [
+          "database_probe_unavailable"
+        ],
+        "sector": null,
+        "selection_status": "deferred",
+        "stock_created_at": null,
+        "stock_currency": null,
+        "stock_exists": null,
+        "stock_split_count": null,
+        "stock_split_first_date": null,
+        "stock_split_last_date": null,
+        "stock_split_observation_status": "not_observed",
+        "symbol": "UNH",
+        "weekday_gap_proxy": null
+      }
+    ],
+    "schema_capabilities": {},
+    "summary": {
+      "adversarial_failure_modes_assessed": 0,
+      "adversarial_failure_modes_not_run": 10,
+      "confirmatory_safe": false,
+      "overall_decision": "defer_final_basket_and_prohibit_data_use",
+      "representative_candidate_count": 6,
+      "representative_candidates_deferred": 6,
+      "representative_candidates_observed": 0
+    }
+  },
+  "generated_at": "2026-09-08T04:44:17+00:00",
+  "job_id": "SV-MATH-DP-READINESS-001",
+  "probe": {
+    "calendar_contract": "not_executed",
+    "database_status": "unavailable",
+    "database_target": "postgresql://localhost:5432/stock_vis",
+    "extraction_version": "git:16a627df7db3406563e71342351745816c92af47+probe-sha256:064c8f3078e589f1e44e3ad0d59dc93c0da9ccb124d24024de53454dbb595dbb",
+    "read_only_evidence": {
+      "client_sql_guard": true,
+      "connection_established": false,
+      "rollback_on_exit": true,
+      "transaction_read_only": "not_observed"
+    },
+    "read_only_requested": true,
+    "read_only_verified": false
+  },
+  "run_id": "17239e86-7a44-4077-99e2-0bbbe0852f08",
+  "schema_version": "daily-price-readiness-result/0.1",
+  "status": "partial",
+  "uncertainties": [
+    {
+      "code": "live_database_state_unknown",
+      "detail": "Row counts, coverage, anomalies, deployed migrations, and adversarial candidates are unobserved."
+    },
+    {
+      "code": "repository_schema_is_not_live_schema",
+      "detail": "Model and migration inspection supports gap proposals but cannot prove deployed schema or data contents."
+    },
+    {
+      "code": "history_threshold_not_precommitted",
+      "detail": "No sufficient-history threshold was invented before observing the readiness distribution."
+    }
+  ]
+}

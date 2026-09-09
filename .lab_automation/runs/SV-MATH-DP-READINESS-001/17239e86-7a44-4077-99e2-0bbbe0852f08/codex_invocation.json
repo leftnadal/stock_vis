@@ -1,0 +1,33 @@
+{
+  "schema_version": "invocation-review/0.1",
+  "invocation": {
+    "run_id": "17239e86-7a44-4077-99e2-0bbbe0852f08",
+    "actor": "codex",
+    "backend": "codex_cli",
+    "execution_intent": "primary",
+    "invocation_id": "ebf3ea39-4436-44eb-8989-d8368ea05fc4",
+    "parent_invocation_id": null,
+    "input_snapshot_ref": "artifact://sha256/532f212a673155f24ad2864b86b8583363848ff7cd4ef959b3dec172831ece81",
+    "output_ref": "artifact://sha256/f2f49151587b83a1e09b56a3038f1b95894327d1ee657b28375a1a41ef9b458a",
+    "requested_identity": "codex_cli",
+    "returned_identity": null,
+    "identity_assurance": "requested_only",
+    "started_at": "2026-09-08T03:48:25.493414+00:00",
+    "ended_at": "2026-09-08T04:55:10.590796+00:00",
+    "status": "completed",
+    "finish_reason": null,
+    "returncode": 0,
+    "metadata": {
+      "command": [
+        "codex",
+        "exec",
+        "-"
+      ],
+      "dry_run": false
+    }
+  },
+  "prompt_ref": "artifact://sha256/57f814ba91c49585febe4f689807f20619da8f553b846c394410b1d76ed4b0f4",
+  "input_snapshot_ref": "artifact://sha256/532f212a673155f24ad2864b86b8583363848ff7cd4ef959b3dec172831ece81",
+  "raw_output_ref": "artifact://sha256/f2f49151587b83a1e09b56a3038f1b95894327d1ee657b28375a1a41ef9b458a",
+  "invocation_record_ref": "artifact://sha256/dee4b3949a618bf02d676269dae315e29ab5c9482e20e04f152b24a4c544bb35"
+}

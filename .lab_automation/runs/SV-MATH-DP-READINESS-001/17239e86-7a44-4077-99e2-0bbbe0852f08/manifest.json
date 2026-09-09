@@ -1,0 +1,182 @@
+{
+  "schema_version": "run-manifest/0.2",
+  "job": {
+    "job_id": "SV-MATH-DP-READINESS-001",
+    "lab": "math_lab",
+    "goal": "Perform a read-only DailyPrice readiness probe for the diversified validation basket, produce structured Data Eligibility decisions, and record Data Gap / Opportunity findings.",
+    "branch": "math-lab/data-eligibility-v0.1",
+    "authority_refs": [
+      "math_lab/00_foundation/foundation_ko.md",
+      "math_lab/01_operating_system/operating_model_ko.md",
+      "math_lab/02_methodology/research_methodology_ko.md",
+      "math_lab/05_validation/daily_price_validation_basket_v0_1_ko.md"
+    ],
+    "expected_outputs": [
+      "read-only readiness probe code",
+      "representative basket DB readiness table",
+      "adversarial candidate discovery results",
+      "Data Eligibility decisions",
+      "Data Gap / Opportunity proposals",
+      "tests"
+    ],
+    "allowed_write_paths": [
+      "math_lab",
+      "lab_automation/jobs/results"
+    ],
+    "db_access": "read_only",
+    "network_policy": "restricted",
+    "destructive_actions_allowed": false,
+    "status": "queued",
+    "parent_job_ids": []
+  },
+  "run_id": "17239e86-7a44-4077-99e2-0bbbe0852f08",
+  "runner_version": "0.1.3",
+  "base_sha": "16a627df7db3406563e71342351745816c92af47",
+  "candidate_branch": "lab-run/SV-MATH-DP-READINESS-001/17239e86",
+  "changed_paths_before_manifest": [
+    ".lab_automation/",
+    "math_lab/05_validation/daily_price_readiness_probe_v0_1_ko.md",
+    "math_lab/runtime/daily_price_probe.py",
+    "math_lab/runtime/daily_price_readiness.py",
+    "math_lab/runtime/test_daily_price_readiness.py"
+  ],
+  "meaningful_changed_paths": [
+    "math_lab/05_validation/daily_price_readiness_probe_v0_1_ko.md",
+    "math_lab/runtime/daily_price_probe.py",
+    "math_lab/runtime/daily_price_readiness.py",
+    "math_lab/runtime/test_daily_price_readiness.py"
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "art-sha256-ab263992eec67a2f082aab4bf7849d68b9e6433b8a19eabb58b1b2435b872fb4",
+      "sha256": "ab263992eec67a2f082aab4bf7849d68b9e6433b8a19eabb58b1b2435b872fb4",
+      "byte_size": 5978,
+      "kind": "authority_snapshot",
+      "logical_uri": "artifact://sha256/ab263992eec67a2f082aab4bf7849d68b9e6433b8a19eabb58b1b2435b872fb4",
+      "retention_class": "irreplaceable",
+      "repo_path": ".lab_automation/runs/SV-MATH-DP-READINESS-001/17239e86-7a44-4077-99e2-0bbbe0852f08/authority_snapshot/math_lab__00_foundation__foundation_ko.md",
+      "origin": "runner_snapshot"
+    },
+    {
+      "artifact_id": "art-sha256-4a57f1dba7797c54aaae25ccf75cd720b88170f44e96c47dc43894db79a72c8a",
+      "sha256": "4a57f1dba7797c54aaae25ccf75cd720b88170f44e96c47dc43894db79a72c8a",
+      "byte_size": 17383,
+      "kind": "authority_snapshot",
+      "logical_uri": "artifact://sha256/4a57f1dba7797c54aaae25ccf75cd720b88170f44e96c47dc43894db79a72c8a",
+      "retention_class": "irreplaceable",
+      "repo_path": ".lab_automation/runs/SV-MATH-DP-READINESS-001/17239e86-7a44-4077-99e2-0bbbe0852f08/authority_snapshot/math_lab__01_operating_system__operating_model_ko.md",
+      "origin": "runner_snapshot"
+    },
+    {
+      "artifact_id": "art-sha256-0b1e72ac5cb8137d5aade6c69e3e49a8a335518d6b0cd59d405a9bbc7bbfccaa",
+      "sha256": "0b1e72ac5cb8137d5aade6c69e3e49a8a335518d6b0cd59d405a9bbc7bbfccaa",
+      "byte_size": 7649,
+      "kind": "authority_snapshot",
+      "logical_uri": "artifact://sha256/0b1e72ac5cb8137d5aade6c69e3e49a8a335518d6b0cd59d405a9bbc7bbfccaa",
+      "retention_class": "irreplaceable",
+      "repo_path": ".lab_automation/runs/SV-MATH-DP-READINESS-001/17239e86-7a44-4077-99e2-0bbbe0852f08/authority_snapshot/math_lab__02_methodology__research_methodology_ko.md",
+      "origin": "runner_snapshot"
+    },
+    {
+      "artifact_id": "art-sha256-a7712c6b2cc434bec42ccbd1c03959535f27d1284edacc46ca670aae4a9e0905",
+      "sha256": "a7712c6b2cc434bec42ccbd1c03959535f27d1284edacc46ca670aae4a9e0905",
+      "byte_size": 5258,
+      "kind": "authority_snapshot",
+      "logical_uri": "artifact://sha256/a7712c6b2cc434bec42ccbd1c03959535f27d1284edacc46ca670aae4a9e0905",
+      "retention_class": "irreplaceable",
+      "repo_path": ".lab_automation/runs/SV-MATH-DP-READINESS-001/17239e86-7a44-4077-99e2-0bbbe0852f08/authority_snapshot/math_lab__05_validation__daily_price_validation_basket_v0_1_ko.md",
+      "origin": "runner_snapshot"
+    },
+    {
+      "artifact_id": "art-sha256-57f814ba91c49585febe4f689807f20619da8f553b846c394410b1d76ed4b0f4",
+      "sha256": "57f814ba91c49585febe4f689807f20619da8f553b846c394410b1d76ed4b0f4",
+      "byte_size": 2207,
+      "kind": "agent_prompt",
+      "logical_uri": "artifact://sha256/57f814ba91c49585febe4f689807f20619da8f553b846c394410b1d76ed4b0f4",
+      "retention_class": "irreplaceable",
+      "origin": "runner_generated"
+    },
+    {
+      "artifact_id": "art-sha256-532f212a673155f24ad2864b86b8583363848ff7cd4ef959b3dec172831ece81",
+      "sha256": "532f212a673155f24ad2864b86b8583363848ff7cd4ef959b3dec172831ece81",
+      "byte_size": 2865,
+      "kind": "agent_input_snapshot",
+      "logical_uri": "artifact://sha256/532f212a673155f24ad2864b86b8583363848ff7cd4ef959b3dec172831ece81",
+      "retention_class": "irreplaceable",
+      "origin": "runner_generated"
+    },
+    {
+      "artifact_id": "art-sha256-f2f49151587b83a1e09b56a3038f1b95894327d1ee657b28375a1a41ef9b458a",
+      "sha256": "f2f49151587b83a1e09b56a3038f1b95894327d1ee657b28375a1a41ef9b458a",
+      "byte_size": 16131268,
+      "kind": "raw_invocation_result",
+      "logical_uri": "artifact://sha256/f2f49151587b83a1e09b56a3038f1b95894327d1ee657b28375a1a41ef9b458a",
+      "retention_class": "irreplaceable",
+      "origin": "runner_generated"
+    },
+    {
+      "artifact_id": "art-sha256-dee4b3949a618bf02d676269dae315e29ab5c9482e20e04f152b24a4c544bb35",
+      "sha256": "dee4b3949a618bf02d676269dae315e29ab5c9482e20e04f152b24a4c544bb35",
+      "byte_size": 748,
+      "kind": "invocation_record",
+      "logical_uri": "artifact://sha256/dee4b3949a618bf02d676269dae315e29ab5c9482e20e04f152b24a4c544bb35",
+      "retention_class": "irreplaceable",
+      "origin": "runner_generated"
+    },
+    {
+      "artifact_id": "art-sha256-878acc7c7673d247ab567fb61c754f523476b8f311152c2343e1d068a234f947",
+      "sha256": "878acc7c7673d247ab567fb61c754f523476b8f311152c2343e1d068a234f947",
+      "byte_size": 9085,
+      "kind": "agent_report",
+      "logical_uri": "artifact://sha256/878acc7c7673d247ab567fb61c754f523476b8f311152c2343e1d068a234f947",
+      "retention_class": "irreplaceable",
+      "repo_path": ".lab_automation/runs/SV-MATH-DP-READINESS-001/17239e86-7a44-4077-99e2-0bbbe0852f08/agent_report.md",
+      "origin": "agent_generated"
+    },
+    {
+      "artifact_id": "art-sha256-8cc874534ff1689d664b6df545d9de4d8ab4d3414119b8edc60186277993f753",
+      "sha256": "8cc874534ff1689d664b6df545d9de4d8ab4d3414119b8edc60186277993f753",
+      "byte_size": 19239,
+      "kind": "agent_result",
+      "logical_uri": "artifact://sha256/8cc874534ff1689d664b6df545d9de4d8ab4d3414119b8edc60186277993f753",
+      "retention_class": "irreplaceable",
+      "repo_path": ".lab_automation/runs/SV-MATH-DP-READINESS-001/17239e86-7a44-4077-99e2-0bbbe0852f08/result.json",
+      "origin": "agent_generated"
+    },
+    {
+      "artifact_id": "art-sha256-991f6c2252f4dc41c8c0df10d643665629f9523e9332d0713bdab1ce58b2749c",
+      "sha256": "991f6c2252f4dc41c8c0df10d643665629f9523e9332d0713bdab1ce58b2749c",
+      "byte_size": 24984,
+      "kind": "data_gaps",
+      "logical_uri": "artifact://sha256/991f6c2252f4dc41c8c0df10d643665629f9523e9332d0713bdab1ce58b2749c",
+      "retention_class": "irreplaceable",
+      "repo_path": ".lab_automation/runs/SV-MATH-DP-READINESS-001/17239e86-7a44-4077-99e2-0bbbe0852f08/data_gaps.json",
+      "origin": "agent_generated"
+    },
+    {
+      "artifact_id": "art-sha256-f4eefb6cbaaf7fc5d0178ff9b09483849256f6b68a9940110c8cd33df5d2b6fe",
+      "sha256": "f4eefb6cbaaf7fc5d0178ff9b09483849256f6b68a9940110c8cd33df5d2b6fe",
+      "byte_size": 1366,
+      "kind": "invocation_review",
+      "logical_uri": "artifact://sha256/f4eefb6cbaaf7fc5d0178ff9b09483849256f6b68a9940110c8cd33df5d2b6fe",
+      "retention_class": "reconstructable",
+      "repo_path": ".lab_automation/runs/SV-MATH-DP-READINESS-001/17239e86-7a44-4077-99e2-0bbbe0852f08/codex_invocation.json",
+      "origin": "runner_generated"
+    },
+    {
+      "artifact_id": "art-sha256-4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "byte_size": 2,
+      "kind": "test_results",
+      "logical_uri": "artifact://sha256/4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "retention_class": "irreplaceable",
+      "repo_path": ".lab_automation/runs/SV-MATH-DP-READINESS-001/17239e86-7a44-4077-99e2-0bbbe0852f08/tests.json",
+      "origin": "runner_generated"
+    }
+  ],
+  "promotion_state": "waiting_for_push_approval",
+  "push_performed": false,
+  "merge_performed": false,
+  "deploy_performed": false,
+  "candidate_sha_canonical_home": "external_append_only_run_ledger"
+}

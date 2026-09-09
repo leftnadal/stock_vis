@@ -1,0 +1,384 @@
+[
+  {
+    "acceptance_criteria": [
+      "transaction_read_only is verified on before the first probe SELECT",
+      "all six representative rows and every adversarial failure mode have terminal statuses",
+      "snapshot content fingerprint and extraction cutoff are recorded"
+    ],
+    "alternatives": [
+      "Run the committed probe from an authorized host and return its immutable artifacts.",
+      "Provide a sealed read-only export with schema and extraction metadata."
+    ],
+    "blocked_eligibility": "all use while the snapshot is unobserved; confirmatory and replication use after observation",
+    "change_class": "provenance_improvement",
+    "current_limitation": "The restricted execution environment could not establish a database connection, so no live row or migration state was observed.",
+    "decision_authority": "Delegated for a small reversible pilot; escalate material purchase, large backfill, licensing risk, or production schema change.",
+    "evidence": {
+      "live_data_completeness": "not established by column presence",
+      "source": "readiness probe schema inventory"
+    },
+    "expected_cost": {
+      "api": "none if direct read-only DB access is approved",
+      "compute": "low for indexed aggregates; validate on production scale",
+      "engineering": "low-to-medium environment and role configuration",
+      "storage": "low for aggregate artifacts or bounded sealed export"
+    },
+    "frequency": "on readiness rerun and after material schema/source changes",
+    "gap_id": "DG-DP-ACCESS-001",
+    "history": "one current snapshot first; repeatable dated snapshots thereafter",
+    "lead_recommendation": "Prohibit use of an unobserved snapshot; after observation, keep affected research exploratory-only until this gap closes. Pilot an additive read-only research export before proposing production schema changes.",
+    "priority": "Required",
+    "proposal_type": "data_gap_or_opportunity",
+    "reconsideration_trigger": "rerun after an immutable sample export passes adversarial checks",
+    "requested_data_or_transformation": "Provide a runner-reachable PostgreSQL endpoint and SELECT-only role or operator-run sealed export.",
+    "research_need": "Observe deployed DailyPrice coverage and failure modes without write authority.",
+    "reusability": "Reusable across single-asset, cross-sectional, corporate-action, and market-system Math Lab cases.",
+    "title": "Read-only production snapshot access for readiness execution",
+    "uncertainty": [
+      "Provider capability, license, engineering effort, and historical coverage remain unassessed."
+    ],
+    "universe": "declared representative basket plus full candidate universe aggregates"
+  },
+  {
+    "acceptance_criteria": [
+      "the full consumed row set reproduces from the manifest",
+      "any row/value/schema change produces a different content fingerprint"
+    ],
+    "alternatives": [
+      "Keep work exploratory and attach the exact bounded extract to each run."
+    ],
+    "blocked_eligibility": "all use while the snapshot is unobserved; confirmatory and replication use after observation",
+    "change_class": "transformation",
+    "current_limitation": "The readiness fingerprint covers aggregate findings and cannot reconstruct the full experimental Data View.",
+    "decision_authority": "Delegated for a small reversible pilot; escalate material purchase, large backfill, licensing risk, or production schema change.",
+    "evidence": {
+      "live_schema_status": "unverified_due_database_connection_failure",
+      "source": "repository models/migrations: packages/shared/stocks/models.py and packages/shared/stocks/migrations"
+    },
+    "expected_cost": {
+      "api": "unknown pending provider/licensing evaluation",
+      "compute": "low-to-medium for incremental validation",
+      "engineering": "requires scoped design and pilot estimate",
+      "storage": "unknown pending retained-vintage design"
+    },
+    "frequency": "daily for price/session data; event-time for corporate actions",
+    "gap_id": "DG-DP-EXPORT-001",
+    "history": "per material experiment snapshot, with retained manifest and content-addressed artifact",
+    "lead_recommendation": "Prohibit use of an unobserved snapshot; after observation, keep affected research exploratory-only until this gap closes. Pilot an additive read-only research export before proposing production schema changes.",
+    "priority": "Required",
+    "proposal_type": "data_gap_or_opportunity",
+    "reconsideration_trigger": "rerun after an immutable sample export passes adversarial checks",
+    "requested_data_or_transformation": "Create a bounded immutable export manifest with query/version, cutoff, row-level content hash, schema, and artifact digest.",
+    "research_need": "Bind material experiments to the complete rows they consumed, not only readiness aggregates.",
+    "reusability": "Reusable across single-asset, cross-sectional, corporate-action, and market-system Math Lab cases.",
+    "title": "Sealed and reconstructable DailyPrice research export",
+    "uncertainty": [
+      "Provider capability, license, engineering effort, and historical coverage remain unassessed."
+    ],
+    "universe": "all StockVis-tracked assets, retaining inactive and zero-row entities"
+  },
+  {
+    "acceptance_criteria": [
+      "effective_time, available_at, and recorded_at are separately exported",
+      "DST, early-close, and after-close cases pass timing tests"
+    ],
+    "alternatives": [
+      "Use a conservative next-session lag for exploratory work."
+    ],
+    "blocked_eligibility": "all use while the snapshot is unobserved; confirmatory and replication use after observation",
+    "change_class": "provenance_improvement",
+    "current_limitation": "DailyPrice.date is effective time and created_at is ingestion time; neither proves when a bar became usable.",
+    "decision_authority": "Delegated for a small reversible pilot; escalate material purchase, large backfill, licensing risk, or production schema change.",
+    "evidence": {
+      "live_schema_status": "unverified_due_database_connection_failure",
+      "source": "repository models/migrations: packages/shared/stocks/models.py and packages/shared/stocks/migrations"
+    },
+    "expected_cost": {
+      "api": "unknown pending provider/licensing evaluation",
+      "compute": "low-to-medium for incremental validation",
+      "engineering": "requires scoped design and pilot estimate",
+      "storage": "unknown pending retained-vintage design"
+    },
+    "frequency": "daily for price/session data; event-time for corporate actions",
+    "gap_id": "DG-DP-AVAILABLE-AT-001",
+    "history": "full retained DailyPrice history",
+    "lead_recommendation": "Prohibit use of an unobserved snapshot; after observation, keep affected research exploratory-only until this gap closes. Pilot an additive read-only research export before proposing production schema changes.",
+    "priority": "Required",
+    "proposal_type": "data_gap_or_opportunity",
+    "reconsideration_trigger": "rerun after an immutable sample export passes adversarial checks",
+    "requested_data_or_transformation": "Add or reconstruct source available_at with exchange timezone and session rule.",
+    "research_need": "Prevent close/session timing leakage in historical research.",
+    "reusability": "Reusable across single-asset, cross-sectional, corporate-action, and market-system Math Lab cases.",
+    "title": "Market-session availability timestamp contract",
+    "uncertainty": [
+      "Provider capability, license, engineering effort, and historical coverage remain unassessed."
+    ],
+    "universe": "all StockVis-tracked assets, retaining inactive and zero-row entities"
+  },
+  {
+    "acceptance_criteria": [
+      "every exported row resolves to one declared source ancestry",
+      "shared ancestry is visible during replication evaluation"
+    ],
+    "alternatives": [
+      "Seal provider-specific research exports outside the production schema."
+    ],
+    "blocked_eligibility": "all use while the snapshot is unobserved; confirmatory and replication use after observation",
+    "change_class": "provenance_improvement",
+    "current_limitation": "DailyPrice has no provider/source column and update paths can share or change ancestry silently.",
+    "decision_authority": "Delegated for a small reversible pilot; escalate material purchase, large backfill, licensing risk, or production schema change.",
+    "evidence": {
+      "live_schema_status": "unverified_due_database_connection_failure",
+      "source": "repository models/migrations: packages/shared/stocks/models.py and packages/shared/stocks/migrations"
+    },
+    "expected_cost": {
+      "api": "unknown pending provider/licensing evaluation",
+      "compute": "low-to-medium for incremental validation",
+      "engineering": "requires scoped design and pilot estimate",
+      "storage": "unknown pending retained-vintage design"
+    },
+    "frequency": "daily for price/session data; event-time for corporate actions",
+    "gap_id": "DG-DP-PROVENANCE-001",
+    "history": "full history including backfills and overwritten overlaps",
+    "lead_recommendation": "Prohibit use of an unobserved snapshot; after observation, keep affected research exploratory-only until this gap closes. Pilot an additive read-only research export before proposing production schema changes.",
+    "priority": "Required",
+    "proposal_type": "data_gap_or_opportunity",
+    "reconsideration_trigger": "rerun after an immutable sample export passes adversarial checks",
+    "requested_data_or_transformation": "Retain provider, provider record key/version, extraction run, and source payload fingerprint.",
+    "research_need": "Identify which source and ingestion path produced every OHLCV row.",
+    "reusability": "Reusable across single-asset, cross-sectional, corporate-action, and market-system Math Lab cases.",
+    "title": "Row-level DailyPrice provider ancestry",
+    "uncertainty": [
+      "Provider capability, license, engineering effort, and historical coverage remain unassessed."
+    ],
+    "universe": "all StockVis-tracked assets, retaining inactive and zero-row entities"
+  },
+  {
+    "acceptance_criteria": [
+      "split dates reconcile to versioned adjustment factors",
+      "raw and adjusted series remain separately reproducible"
+    ],
+    "alternatives": [
+      "Restrict exploration to explicitly raw price levels and event-window diagnostics."
+    ],
+    "blocked_eligibility": "all use while the snapshot is unobserved; confirmatory and replication use after observation",
+    "change_class": "transformation",
+    "current_limitation": "The stored close has no adjustment flag; repository ingestion text says adjClose is not used, but rows cannot prove semantics.",
+    "decision_authority": "Delegated for a small reversible pilot; escalate material purchase, large backfill, licensing risk, or production schema change.",
+    "evidence": {
+      "live_schema_status": "unverified_due_database_connection_failure",
+      "source": "repository models/migrations: packages/shared/stocks/models.py and packages/shared/stocks/migrations"
+    },
+    "expected_cost": {
+      "api": "unknown pending provider/licensing evaluation",
+      "compute": "low-to-medium for incremental validation",
+      "engineering": "requires scoped design and pilot estimate",
+      "storage": "unknown pending retained-vintage design"
+    },
+    "frequency": "daily for price/session data; event-time for corporate actions",
+    "gap_id": "DG-DP-ADJUSTMENT-001",
+    "history": "full history across all recorded corporate actions",
+    "lead_recommendation": "Prohibit use of an unobserved snapshot; after observation, keep affected research exploratory-only until this gap closes. Pilot an additive read-only research export before proposing production schema changes.",
+    "priority": "Required",
+    "proposal_type": "data_gap_or_opportunity",
+    "reconsideration_trigger": "rerun after an immutable sample export passes adversarial checks",
+    "requested_data_or_transformation": "Version raw OHLC, split factors, adjusted price transformation, and total-return reinvestment convention.",
+    "research_need": "Compute returns without silently mixing corporate-action conventions.",
+    "reusability": "Reusable across single-asset, cross-sectional, corporate-action, and market-system Math Lab cases.",
+    "title": "Raw, split-adjusted, and total-return price contract",
+    "uncertainty": [
+      "Provider capability, license, engineering effort, and historical coverage remain unassessed."
+    ],
+    "universe": "all StockVis-tracked assets, retaining inactive and zero-row entities"
+  },
+  {
+    "acceptance_criteria": [
+      "coverage and missingness are quantified against an independent event sample",
+      "reinvestment convention is versioned and reproducible"
+    ],
+    "alternatives": [
+      "Exclude total-return claims and label dividend checks unassessed."
+    ],
+    "blocked_eligibility": "all use while the snapshot is unobserved; confirmatory and replication use after observation",
+    "change_class": "backfill",
+    "current_limitation": "CalendarEvent is an operational window and is not evidence of complete historical dividends.",
+    "decision_authority": "Delegated for a small reversible pilot; escalate material purchase, large backfill, licensing risk, or production schema change.",
+    "evidence": {
+      "live_schema_status": "unverified_due_database_connection_failure",
+      "source": "repository models/migrations: packages/shared/stocks/models.py and packages/shared/stocks/migrations"
+    },
+    "expected_cost": {
+      "api": "unknown pending provider/licensing evaluation",
+      "compute": "low-to-medium for incremental validation",
+      "engineering": "requires scoped design and pilot estimate",
+      "storage": "unknown pending retained-vintage design"
+    },
+    "frequency": "daily for price/session data; event-time for corporate actions",
+    "gap_id": "DG-DP-DIVIDEND-001",
+    "history": "maximum provider history with completeness metrics by asset",
+    "lead_recommendation": "Prohibit use of an unobserved snapshot; after observation, keep affected research exploratory-only until this gap closes. Pilot an additive read-only research export before proposing production schema changes.",
+    "priority": "Required",
+    "proposal_type": "data_gap_or_opportunity",
+    "reconsideration_trigger": "rerun after an immutable sample export passes adversarial checks",
+    "requested_data_or_transformation": "Backfill ex-date, record date, payment date, amount, currency, source vintage, and correction lineage.",
+    "research_need": "Evaluate dividend-sensitive assets and total-return targets.",
+    "reusability": "Reusable across single-asset, cross-sectional, corporate-action, and market-system Math Lab cases.",
+    "title": "Complete point-in-time dividend and total-return history",
+    "uncertainty": [
+      "Provider capability, license, engineering effort, and historical coverage remain unassessed."
+    ],
+    "universe": "all StockVis-tracked assets, retaining inactive and zero-row entities"
+  },
+  {
+    "acceptance_criteria": [
+      "a prior research snapshot can be reconstructed exactly",
+      "correction rate and affected rows are measurable"
+    ],
+    "alternatives": [
+      "Use sealed exports and periodically diff their fingerprints."
+    ],
+    "blocked_eligibility": "all use while the snapshot is unobserved; confirmatory and replication use after observation",
+    "change_class": "provenance_improvement",
+    "current_limitation": "Conflict updates can replace OHLCV without retaining the previous value or update timestamp.",
+    "decision_authority": "Delegated for a small reversible pilot; escalate material purchase, large backfill, licensing risk, or production schema change.",
+    "evidence": {
+      "live_schema_status": "unverified_due_database_connection_failure",
+      "source": "repository models/migrations: packages/shared/stocks/models.py and packages/shared/stocks/migrations"
+    },
+    "expected_cost": {
+      "api": "unknown pending provider/licensing evaluation",
+      "compute": "low-to-medium for incremental validation",
+      "engineering": "requires scoped design and pilot estimate",
+      "storage": "unknown pending retained-vintage design"
+    },
+    "frequency": "daily for price/session data; event-time for corporate actions",
+    "gap_id": "DG-DP-REVISION-001",
+    "history": "all future updates plus a measured re-extraction sample",
+    "lead_recommendation": "Prohibit use of an unobserved snapshot; after observation, keep affected research exploratory-only until this gap closes. Pilot an additive read-only research export before proposing production schema changes.",
+    "priority": "High Value",
+    "proposal_type": "data_gap_or_opportunity",
+    "reconsideration_trigger": "rerun after an immutable sample export passes adversarial checks",
+    "requested_data_or_transformation": "Retain immutable vintages or before/after revisions with supersession reason and time.",
+    "research_need": "Reconstruct what values were stored and available for past experiments.",
+    "reusability": "Reusable across single-asset, cross-sectional, corporate-action, and market-system Math Lab cases.",
+    "title": "DailyPrice correction and vintage lineage",
+    "uncertainty": [
+      "Provider capability, license, engineering effort, and historical coverage remain unassessed."
+    ],
+    "universe": "all StockVis-tracked assets, retaining inactive and zero-row entities"
+  },
+  {
+    "acceptance_criteria": [
+      "ticker changes and reused symbols resolve by effective date",
+      "merger and spin-off continuity has explicit policy tests"
+    ],
+    "alternatives": [
+      "Restrict scope to assets and dates manually verified for identity continuity."
+    ],
+    "blocked_eligibility": "all use while the snapshot is unobserved; confirmatory and replication use after observation",
+    "change_class": "new_collection",
+    "current_limitation": "Current symbol primary keys and current metadata cannot reconstruct historical identity.",
+    "decision_authority": "Delegated for a small reversible pilot; escalate material purchase, large backfill, licensing risk, or production schema change.",
+    "evidence": {
+      "live_schema_status": "unverified_due_database_connection_failure",
+      "source": "repository models/migrations: packages/shared/stocks/models.py and packages/shared/stocks/migrations"
+    },
+    "expected_cost": {
+      "api": "unknown pending provider/licensing evaluation",
+      "compute": "low-to-medium for incremental validation",
+      "engineering": "requires scoped design and pilot estimate",
+      "storage": "unknown pending retained-vintage design"
+    },
+    "frequency": "daily for price/session data; event-time for corporate actions",
+    "gap_id": "DG-DP-ENTITY-001",
+    "history": "full available entity history including inactive securities",
+    "lead_recommendation": "Prohibit use of an unobserved snapshot; after observation, keep affected research exploratory-only until this gap closes. Pilot an additive read-only research export before proposing production schema changes.",
+    "priority": "High Value",
+    "proposal_type": "data_gap_or_opportunity",
+    "reconsideration_trigger": "rerun after an immutable sample export passes adversarial checks",
+    "requested_data_or_transformation": "Add stable entity IDs and dated symbol/share-class/merger/spin-off successor edges.",
+    "research_need": "Avoid ticker reuse, successor, merger, and spin-off identity errors.",
+    "reusability": "Reusable across single-asset, cross-sectional, corporate-action, and market-system Math Lab cases.",
+    "title": "Point-in-time ticker and entity lifecycle",
+    "uncertainty": [
+      "Provider capability, license, engineering effort, and historical coverage remain unassessed."
+    ],
+    "universe": "all StockVis-tracked assets, retaining inactive and zero-row entities"
+  },
+  {
+    "acceptance_criteria": [
+      "inactive assets remain in frozen universe denominators",
+      "terminal-return cases reconcile to event terms"
+    ],
+    "alternatives": [
+      "Prohibit survivorship-sensitive confirmation and report stale tails separately."
+    ],
+    "blocked_eligibility": "all use while the snapshot is unobserved; confirmatory and replication use after observation",
+    "change_class": "new_collection",
+    "current_limitation": "No supported ledger distinguishes a stale tail from suspension, acquisition, or delisting.",
+    "decision_authority": "Delegated for a small reversible pilot; escalate material purchase, large backfill, licensing risk, or production schema change.",
+    "evidence": {
+      "live_schema_status": "unverified_due_database_connection_failure",
+      "source": "repository models/migrations: packages/shared/stocks/models.py and packages/shared/stocks/migrations"
+    },
+    "expected_cost": {
+      "api": "unknown pending provider/licensing evaluation",
+      "compute": "low-to-medium for incremental validation",
+      "engineering": "requires scoped design and pilot estimate",
+      "storage": "unknown pending retained-vintage design"
+    },
+    "frequency": "daily for price/session data; event-time for corporate actions",
+    "gap_id": "DG-DP-TERMINAL-RETURN-001",
+    "history": "full historical universe including inactive and acquired assets",
+    "lead_recommendation": "Prohibit use of an unobserved snapshot; after observation, keep affected research exploratory-only until this gap closes. Pilot an additive read-only research export before proposing production schema changes.",
+    "priority": "High Value",
+    "proposal_type": "data_gap_or_opportunity",
+    "reconsideration_trigger": "rerun after an immutable sample export passes adversarial checks",
+    "requested_data_or_transformation": "Collect delisting date, reason, cash/stock consideration, terminal price/return, and source vintage.",
+    "research_need": "Measure survivorship-safe returns and terminal outcomes.",
+    "reusability": "Reusable across single-asset, cross-sectional, corporate-action, and market-system Math Lab cases.",
+    "title": "Delisting and terminal-return history",
+    "uncertainty": [
+      "Provider capability, license, engineering effort, and historical coverage remain unassessed."
+    ],
+    "universe": "all StockVis-tracked assets, retaining inactive and zero-row entities"
+  },
+  {
+    "acceptance_criteria": [
+      "known holidays and early closes are not flagged as gaps",
+      "exchange mapping and calendar version are present in each export"
+    ],
+    "alternatives": [
+      "Keep the weekday metric explicitly labeled as a non-authoritative proxy."
+    ],
+    "blocked_eligibility": "all use while the snapshot is unobserved; confirmatory and replication use after observation",
+    "change_class": "transformation",
+    "current_limitation": "The current probe can calculate only a weekday proxy, not true missing business sessions.",
+    "decision_authority": "Delegated for a small reversible pilot; escalate material purchase, large backfill, licensing risk, or production schema change.",
+    "evidence": {
+      "live_schema_status": "unverified_due_database_connection_failure",
+      "source": "repository models/migrations: packages/shared/stocks/models.py and packages/shared/stocks/migrations"
+    },
+    "expected_cost": {
+      "api": "unknown pending provider/licensing evaluation",
+      "compute": "low-to-medium for incremental validation",
+      "engineering": "requires scoped design and pilot estimate",
+      "storage": "unknown pending retained-vintage design"
+    },
+    "frequency": "daily for price/session data; event-time for corporate actions",
+    "gap_id": "DG-DP-CALENDAR-001",
+    "history": "all DailyPrice coverage dates",
+    "lead_recommendation": "Prohibit use of an unobserved snapshot; after observation, keep affected research exploratory-only until this gap closes. Pilot an additive read-only research export before proposing production schema changes.",
+    "priority": "High Value",
+    "proposal_type": "data_gap_or_opportunity",
+    "reconsideration_trigger": "rerun after an immutable sample export passes adversarial checks",
+    "requested_data_or_transformation": "Provide versioned sessions by exchange, timezone, close time, holiday, and early-close status.",
+    "research_need": "Separate holidays and early closes from missing bars or suspensions.",
+    "reusability": "Reusable across single-asset, cross-sectional, corporate-action, and market-system Math Lab cases.",
+    "title": "Versioned exchange-session calendar",
+    "uncertainty": [
+      "Provider capability, license, engineering effort, and historical coverage remain unassessed."
+    ],
+    "universe": "all StockVis-tracked assets, retaining inactive and zero-row entities"
+  }
+]
