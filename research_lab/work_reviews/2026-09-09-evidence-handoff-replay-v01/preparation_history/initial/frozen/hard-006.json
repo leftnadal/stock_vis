@@ -1,0 +1,336 @@
+{
+  "candidate_refs": [
+    {
+      "answer_sha256": "cdd257366fefd9729293d3264ad34cfe919a78681c59970fdc529ed000812f59",
+      "file": "397b-critic(2).json",
+      "sha256": "cb66a66351de227c3a1a1626a9cd87151d226a44ff3edfcf58e152dc969e6af1",
+      "source_id": "482e235bd1f44d3da190d2cb3381bbbd"
+    }
+  ],
+  "case": {
+    "data_status": "완전히 가상인 hard stress 자료. 실제 기업·시장 사실이 아니다.",
+    "evidence": [
+      {
+        "id": "E1",
+        "source": "분기 실적발표",
+        "source_root": "R1",
+        "text": "회사 전체 수주잔고는 전년 대비 62% 증가했다. 회사는 증가분의 대부분이 AI 데이터센터용 전력장비에서 발생했다고 설명했다."
+      },
+      {
+        "id": "E2",
+        "source": "사업부 매출자료",
+        "source_root": "R2",
+        "text": "최근 분기 전체 매출 중 AI 데이터센터 관련 매출은 26%였다. 나머지 74%는 산업용 전력장비, 서비스, 기존 통신 인프라 매출이다."
+      },
+      {
+        "id": "E3",
+        "source": "산업협회 전망",
+        "source_root": "R3",
+        "text": "AI 데이터센터용 전력장비 시장은 향후 12개월 40% 성장할 것으로 전망됐다. 개별 업체의 점유율 변화는 가정하지 않았다."
+      },
+      {
+        "id": "E4",
+        "source": "대형 고객 투자계획 기사",
+        "source_root": "R4",
+        "text": "주요 데이터센터 고객 두 곳이 향후 18개월 설비투자를 45% 확대할 계획이라고 발표했다. 람다그리드의 확정 공급 비중은 공개되지 않았다."
+      },
+      {
+        "id": "E5",
+        "source": "부품 공급사 증설계획",
+        "source_root": "R5",
+        "text": "핵심 차단기 부품 공급사는 내년 생산능력을 30% 확대할 계획이다. 증설 물량의 고객별 배정과 람다그리드 확보량은 공개되지 않았다."
+      },
+      {
+        "id": "E6",
+        "source": "과거 수주 전환 분석",
+        "source_root": "R6",
+        "text": "과거 8개 분기 평균으로 기초 수주잔고의 72%가 이후 12개월 안에 매출로 인식됐다. 그러나 현재 AI 프로젝트 구성은 과거 평균과 동일하다고 검증되지 않았다."
+      },
+      {
+        "id": "E7",
+        "source": "경쟁사 실적",
+        "source_root": "R7",
+        "text": "경쟁사 한 곳의 최근 AI 전력장비 매출은 전년 대비 36% 증가했다. 고객 지역, 제품군, 프로젝트 단계의 비교 가능성은 제공되지 않았다."
+      },
+      {
+        "id": "E8",
+        "source": "가격 정책 메모",
+        "source_root": "R8",
+        "text": "일부 고압장비의 리스트 가격을 5% 인상했다. 실제 고객 할인과 제품 믹스는 제공되지 않았다."
+      },
+      {
+        "id": "E9",
+        "source": "프로젝트 코드 통합 감사",
+        "source_root": "R9",
+        "text": "AI 수주잔고 상위 코드 LG-4와 LG-4B는 서로 다른 고객이 아니라 동일 고객·동일 캠퍼스의 단계별 발주이며, 합산하면 보고된 AI 수주잔고의 31%를 차지한다. 두 단계 모두 현장 전력 인가 이후 최종 설치 일정이 확정된다."
+      },
+      {
+        "id": "E10",
+        "source": "지역 전력망 일정 통지",
+        "source_root": "R10",
+        "text": "LG-4 캠퍼스의 전력 인가 예상 시점은 현재 기준 15~21개월 뒤다. 단계별 조기 인가 여부는 확인되지 않았다."
+      },
+      {
+        "id": "E11",
+        "source": "물류 운영 메모",
+        "source_root": "R11",
+        "text": "표준 장비 일부는 현장 전력 인가 전에 창고 또는 고객 지정 장소로 출하할 수 있다. 어떤 프로젝트와 물량에 적용되는지는 공개되지 않았다."
+      },
+      {
+        "id": "E12",
+        "source": "매출 인식 정책",
+        "source_root": "R12",
+        "text": "표준 장비는 일반적으로 출하·검수 후 매출 인식이 가능하지만, 고객 맞춤형 모듈은 현장 설치 또는 고객 승인 조건이 붙을 수 있다."
+      },
+      {
+        "id": "E13",
+        "source": "프로젝트 사양 메모",
+        "source_root": "R13",
+        "text": "LG-4와 LG-4B에는 표준 장비와 고객 맞춤형 모듈이 모두 포함된다. 각 구성의 금액 비중은 공개되지 않았다."
+      },
+      {
+        "id": "E14",
+        "source": "기존 사업 계약기록",
+        "source_root": "R14",
+        "text": "비AI 사업 중 기존 통신 인프라 부문의 대형 계약 하나가 7개월 뒤 종료된다. 이 계약은 최근 분기 회사 전체 매출의 9%를 차지했으며 갱신 여부는 미정이다."
+      },
+      {
+        "id": "E15",
+        "source": "유통 채널 설문",
+        "source_root": "R15",
+        "text": "유통사 7곳 중 6곳이 AI 전력장비 문의 증가를 보고했다. 이 중 5곳은 회사가 제공한 주요 파트너 명단에서 선정되었다."
+      },
+      {
+        "id": "E16",
+        "source": "외부 산업 기사",
+        "source_root": "R16",
+        "text": "산업 전문지는 람다그리드 수요 강세를 보도했지만 인용한 유통사 두 곳은 E15 설문 참여사이며 별도 주문 데이터는 제시하지 않았다."
+      },
+      {
+        "id": "E17",
+        "source": "추가 조사 가능 자료",
+        "source_root": "R17",
+        "text": "프로젝트별 12개월 출하·검수 예정액, LG-4 계열의 표준/맞춤 모듈 금액 비중, 전력 인가 상태, 비AI 계약 갱신 가능성, 고객별 실제 배정량은 추가 확보를 시도할 수 있다."
+      }
+    ],
+    "id": "hard-006",
+    "question": "‘AI 전력장비 수주가 급증했고 산업도 강하므로 람다그리드의 향후 12개월 매출은 28% 이상 성장할 가능성이 높다’는 주장을 평가하라. 답변 전체에서 근거 ID는 최대 5개만 유지하라. 눈에 띄는 큰 수치보다 최종 판단의 composition, 실제 전환, 공통 병목, 시간범위 또는 하방 시나리오를 재구성하는 데 필요한 근거를 우선 보존하라. 선택하지 않은 근거를 본문에서 암묵적으로 복원하지 말라.",
+    "scope": "가상 기업 람다그리드의 향후 12개월 매출 성장 주장 평가. CEO용 압축 research package를 모사한다.",
+    "title": "압축하에서 composition·conversion·공통 병목의 동시 보존"
+  },
+  "documents": {
+    "04d7f064bde941fbacdd2622ac534024": {
+      "fragment": {
+        "id": "E12",
+        "source": "매출 인식 정책",
+        "source_root": "R12",
+        "text": "표준 장비는 일반적으로 출하·검수 후 매출 인식이 가능하지만, 고객 맞춤형 모듈은 현장 설치 또는 고객 승인 조건이 붙을 수 있다."
+      },
+      "kind": "evidence",
+      "sha256": "2b3d4d6db6993539f86bd3a78b38ed9f5dff7fa70871817a35bfaf5f2394530f",
+      "source_id": "04d7f064bde941fbacdd2622ac534024",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "1f4c948893db4c48ac28efb8e6309226": {
+      "fragment": {
+        "id": "E9",
+        "source": "프로젝트 코드 통합 감사",
+        "source_root": "R9",
+        "text": "AI 수주잔고 상위 코드 LG-4와 LG-4B는 서로 다른 고객이 아니라 동일 고객·동일 캠퍼스의 단계별 발주이며, 합산하면 보고된 AI 수주잔고의 31%를 차지한다. 두 단계 모두 현장 전력 인가 이후 최종 설치 일정이 확정된다."
+      },
+      "kind": "evidence",
+      "sha256": "4e92fcc3dd257495128b8ae6a2fbe1625789f9b622d82742d426deb4159ed717",
+      "source_id": "1f4c948893db4c48ac28efb8e6309226",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "482e235bd1f44d3da190d2cb3381bbbd": {
+      "fragment": "1. Critic 이 발견한 material issue\n후보 분석은 병목 (E9, E10) 과 하방 리스크 (E14) 를 정확히 식별했으나, 수주잔고의 매출 전환 시점을 '전량 지연'으로 단정하는 경향이 있음. 선택되지 않은 증거 (표준 장비 선출하 가능성 등) 를 인용할 수 없는 제약 하에서도, 결론의 불확실성 수준을 '미검증 믹스에 의존'으로 명시해야 함. 또한 후보는 1 차 답변 형식 (5 개 headings) 을 고민했으나, 실제 연구 결과의 핵심은 주장의 타당성 여부이므로 이를 명확히 단정하거나 유보해야 함.\n\n2. 수정된 연구 결과\n주장 (\"향후 12 개월 매출 28% 이상 성장\") 은 **근거 부족 (Unsupported)**으로 평가됨.\n*   **전환 시점 불일치:** AI 수주잔고의 주요 부분 (31%) 이 현장 전력 인가 후 설치가 확정되며 (E9), 해당 인가 시점이 예측 기간 (12 개월) 을 초과함 (15~21 개월) (E10).\n*   **전환율 검증 부재:** 과거 평균 전환율 (72%) 이 현재 AI 프로젝트 구성에 적용 가능한지 검증되지 않음 (E6).\n*   **기반 매출 erosion:** 전체 매출의 9% 를 차지하는 비 AI 계약이 7 개월 후 종료되며 갱신 여부가 미정임 (E14). AI 매출 비중 (26%) 만으로는 기반 감소 (E2) 를 상쇄하기 어려움.\n*   **결론:** 산업 성장률이나 수주 증가 추세와 무관하게, 인식 시점과 기반 매출 리스크로 인해 12 개월 내 28% 성장은 달성 가능성 낮음.\n\n3. 아직 남은 Unknown/Unassessed\n*   **LG-4/4B 프로젝트의 표준/맞춤 모듈 금액 비중:** 전력 인가 전 출하 가능한 표준 장비의 비중이 미공개임.\n*   **비 AI 계약 갱신 확률:** 종료 예정 계약의 갱신 가능성에 대한 정량 데이터 부재.\n*   **실제 출하 일정:** 전력 인가 이전에도 창고 출하 등이 가능한 물량의 구체적 스케줄.\n\n4. Frontier 가 필요하다고 판단하는지와 이유\n**필요함.** 현재 증거 (E2, E6, E9, E10, E14) 만으로는 하방 리스크 (계약 종료) 와 상방 가능성 (표준 장비 선인식) 의 정량적 균형이 불가능함. 프로젝트별 출하 예정액과 모듈 믹스, 계약 갱신 가능성에 대한 추가 확보 (E17 류의 데이터) 가 없으면 결론의 신뢰도를 높일 수 없음.",
+      "kind": "candidate_output",
+      "sha256": "cdd257366fefd9729293d3264ad34cfe919a78681c59970fdc529ed000812f59",
+      "source_id": "482e235bd1f44d3da190d2cb3381bbbd",
+      "version": "cb66a66351de227c3a1a1626a9cd87151d226a44ff3edfcf58e152dc969e6af1"
+    },
+    "4f320f65671e47f686450f20a0a1e5ad": {
+      "fragment": {
+        "id": "E13",
+        "source": "프로젝트 사양 메모",
+        "source_root": "R13",
+        "text": "LG-4와 LG-4B에는 표준 장비와 고객 맞춤형 모듈이 모두 포함된다. 각 구성의 금액 비중은 공개되지 않았다."
+      },
+      "kind": "evidence",
+      "sha256": "4323076ebe2e1b482dd91eee330a35419ee9f9d237ad9b7e32d99e89fae72431",
+      "source_id": "4f320f65671e47f686450f20a0a1e5ad",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "4f36b2e8ac924e9093db4e08f8520dd7": {
+      "fragment": {
+        "id": "E2",
+        "source": "사업부 매출자료",
+        "source_root": "R2",
+        "text": "최근 분기 전체 매출 중 AI 데이터센터 관련 매출은 26%였다. 나머지 74%는 산업용 전력장비, 서비스, 기존 통신 인프라 매출이다."
+      },
+      "kind": "evidence",
+      "sha256": "fe963fe1e552c0f7932b9cc7c098204ec9cdef56833abf77c3f9095f0519ec96",
+      "source_id": "4f36b2e8ac924e9093db4e08f8520dd7",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "51e019b2b63147438faa7a979035c2ca": {
+      "fragment": {
+        "id": "E1",
+        "source": "분기 실적발표",
+        "source_root": "R1",
+        "text": "회사 전체 수주잔고는 전년 대비 62% 증가했다. 회사는 증가분의 대부분이 AI 데이터센터용 전력장비에서 발생했다고 설명했다."
+      },
+      "kind": "evidence",
+      "sha256": "dc93fa0fcd5ee5c397894fad4a290ca1d3842cff5634cbe311335931d400f027",
+      "source_id": "51e019b2b63147438faa7a979035c2ca",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "75561af0c654429f832764232939e3da": {
+      "fragment": {
+        "id": "E14",
+        "source": "기존 사업 계약기록",
+        "source_root": "R14",
+        "text": "비AI 사업 중 기존 통신 인프라 부문의 대형 계약 하나가 7개월 뒤 종료된다. 이 계약은 최근 분기 회사 전체 매출의 9%를 차지했으며 갱신 여부는 미정이다."
+      },
+      "kind": "evidence",
+      "sha256": "509ca7b4148f9399f002246acb90ca814d56267cbc41ce25820ca1b6f1c94c1e",
+      "source_id": "75561af0c654429f832764232939e3da",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "9fed5dd67d6a4aa783fd8d851cd3e247": {
+      "fragment": {
+        "id": "E11",
+        "source": "물류 운영 메모",
+        "source_root": "R11",
+        "text": "표준 장비 일부는 현장 전력 인가 전에 창고 또는 고객 지정 장소로 출하할 수 있다. 어떤 프로젝트와 물량에 적용되는지는 공개되지 않았다."
+      },
+      "kind": "evidence",
+      "sha256": "89b49d6387d288b61ed74dd6253e112b3264590923606fc9f4732ef446d6e8a4",
+      "source_id": "9fed5dd67d6a4aa783fd8d851cd3e247",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "b2908ae8bc2942ecb702c105af38f801": {
+      "fragment": {
+        "id": "E16",
+        "source": "외부 산업 기사",
+        "source_root": "R16",
+        "text": "산업 전문지는 람다그리드 수요 강세를 보도했지만 인용한 유통사 두 곳은 E15 설문 참여사이며 별도 주문 데이터는 제시하지 않았다."
+      },
+      "kind": "evidence",
+      "sha256": "1e2c1c7162009228e28746585a4c7c28ba343e328924df045e327cc758850b87",
+      "source_id": "b2908ae8bc2942ecb702c105af38f801",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "b7d8cccc807247f09f6b89f43315b37d": {
+      "fragment": {
+        "id": "E7",
+        "source": "경쟁사 실적",
+        "source_root": "R7",
+        "text": "경쟁사 한 곳의 최근 AI 전력장비 매출은 전년 대비 36% 증가했다. 고객 지역, 제품군, 프로젝트 단계의 비교 가능성은 제공되지 않았다."
+      },
+      "kind": "evidence",
+      "sha256": "baa64a24337f85e9945c007dd76c5cd259b638c15576bdc5b33b85dfe7ff076d",
+      "source_id": "b7d8cccc807247f09f6b89f43315b37d",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "bf01302c48ac4b7b8914c33cf4c2d212": {
+      "fragment": {
+        "id": "E5",
+        "source": "부품 공급사 증설계획",
+        "source_root": "R5",
+        "text": "핵심 차단기 부품 공급사는 내년 생산능력을 30% 확대할 계획이다. 증설 물량의 고객별 배정과 람다그리드 확보량은 공개되지 않았다."
+      },
+      "kind": "evidence",
+      "sha256": "82dcbb05f9d50272b40f092b8f5dec6f9bbdf8953ba9404d303d636366471262",
+      "source_id": "bf01302c48ac4b7b8914c33cf4c2d212",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "c439587a796e4a97812295ae8faf3f96": {
+      "fragment": {
+        "id": "E8",
+        "source": "가격 정책 메모",
+        "source_root": "R8",
+        "text": "일부 고압장비의 리스트 가격을 5% 인상했다. 실제 고객 할인과 제품 믹스는 제공되지 않았다."
+      },
+      "kind": "evidence",
+      "sha256": "8ede66f92d2a190c0ff7c33fb3b48dcc9980ed117e089c30fdd3c71698fb3c1b",
+      "source_id": "c439587a796e4a97812295ae8faf3f96",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "c5a1bb27878f43608aa675b157ce5d27": {
+      "fragment": {
+        "id": "E4",
+        "source": "대형 고객 투자계획 기사",
+        "source_root": "R4",
+        "text": "주요 데이터센터 고객 두 곳이 향후 18개월 설비투자를 45% 확대할 계획이라고 발표했다. 람다그리드의 확정 공급 비중은 공개되지 않았다."
+      },
+      "kind": "evidence",
+      "sha256": "32a78cd8f273f8d2b1df232ad3d263c1ce1465f319061ba767ef6543f537c8c6",
+      "source_id": "c5a1bb27878f43608aa675b157ce5d27",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "d2695d33d04a4489b40c7f389d2abeb1": {
+      "fragment": {
+        "id": "E15",
+        "source": "유통 채널 설문",
+        "source_root": "R15",
+        "text": "유통사 7곳 중 6곳이 AI 전력장비 문의 증가를 보고했다. 이 중 5곳은 회사가 제공한 주요 파트너 명단에서 선정되었다."
+      },
+      "kind": "evidence",
+      "sha256": "190a8633c8df0bbca6b0eb481c9f12dbc0085a754e90744b98a28072cb67a690",
+      "source_id": "d2695d33d04a4489b40c7f389d2abeb1",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "ddcccf611d274f64a5ac22855afe521e": {
+      "fragment": {
+        "id": "E6",
+        "source": "과거 수주 전환 분석",
+        "source_root": "R6",
+        "text": "과거 8개 분기 평균으로 기초 수주잔고의 72%가 이후 12개월 안에 매출로 인식됐다. 그러나 현재 AI 프로젝트 구성은 과거 평균과 동일하다고 검증되지 않았다."
+      },
+      "kind": "evidence",
+      "sha256": "e8b281e43187cf498d39942905c77ef6431a69e888e3e3a8eacd846423afc394",
+      "source_id": "ddcccf611d274f64a5ac22855afe521e",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "df45e14c11ad4e57847999a9f09c68dd": {
+      "fragment": {
+        "id": "E3",
+        "source": "산업협회 전망",
+        "source_root": "R3",
+        "text": "AI 데이터센터용 전력장비 시장은 향후 12개월 40% 성장할 것으로 전망됐다. 개별 업체의 점유율 변화는 가정하지 않았다."
+      },
+      "kind": "evidence",
+      "sha256": "efba55e397c6a114ae126042870542b63edae5f7bc02bfe27a3f594ef0db7fc4",
+      "source_id": "df45e14c11ad4e57847999a9f09c68dd",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "f3b00551194c4addae27d74637e364cf": {
+      "fragment": {
+        "id": "E10",
+        "source": "지역 전력망 일정 통지",
+        "source_root": "R10",
+        "text": "LG-4 캠퍼스의 전력 인가 예상 시점은 현재 기준 15~21개월 뒤다. 단계별 조기 인가 여부는 확인되지 않았다."
+      },
+      "kind": "evidence",
+      "sha256": "115ffc96cf801f539863c95ae447df8e3feed814f2b26bf268634302d38f06a3",
+      "source_id": "f3b00551194c4addae27d74637e364cf",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    },
+    "fa8be33a3cba4ac8ae397e9d07b14d10": {
+      "fragment": {
+        "id": "E17",
+        "source": "추가 조사 가능 자료",
+        "source_root": "R17",
+        "text": "프로젝트별 12개월 출하·검수 예정액, LG-4 계열의 표준/맞춤 모듈 금액 비중, 전력 인가 상태, 비AI 계약 갱신 가능성, 고객별 실제 배정량은 추가 확보를 시도할 수 있다."
+      },
+      "kind": "evidence",
+      "sha256": "b3662b3e9127b954ea518a73ac2c7c79c3c554ee9c63390f6f53c318e7e74564",
+      "source_id": "fa8be33a3cba4ac8ae397e9d07b14d10",
+      "version": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c"
+    }
+  },
+  "summary": "람다그리드의 향후 12개월 28% 이상 매출 성장 주장을 검토한다. 최근 분기 AI 매출 비중은 26%, 과거 12개월 수주 전환율 평균은 72%다. AI 수주잔고 31%의 LG-4/4B는 동일 캠퍼스의 단계별 발주이며 전력 인가 이후 설치 일정이 확정된다. 인가 예상은 15~21개월 후다. 기존 비AI 계약 하나는 전체 매출 9%이며 7개월 후 종료, 갱신 미정이다. 후보 검토는 전량 지연으로 단정하지 말아야 한다고 했고 표준/맞춤형 금액 비중과 조기 출하 물량을 불확실성으로 남겼다. 평가는 Unsupported이며 최종적으로 12개월 내 28% 성장의 달성 가능성이 낮다고 서술했다.",
+  "summary_sha256": "7a1445a90167d33a7711f69660810bee3535a343c8fa19131929fc8a30167f79"
+}

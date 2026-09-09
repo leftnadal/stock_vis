@@ -1,0 +1,141 @@
+{
+  "backend": "existing DeepInfra hosted chat completions",
+  "base_commit": "b42eab30331726c4f1db4bd68fcb0a5f0ff2798b",
+  "config": {
+    "max_calls_per_run": 3,
+    "max_tokens": 8192,
+    "model": "Qwen/Qwen3.5-122B-A10B",
+    "reasoning": {
+      "enabled": true
+    },
+    "retry_count": 0,
+    "seed": 20260909,
+    "temperature": 0.6,
+    "timeout_seconds": 420,
+    "top_p": 0.95
+  },
+  "limitations": [
+    "Provider alias revision and stochastic setting support unverified until response.",
+    "B retrieval may consume extra calls; actual calls and tokens must be reported.",
+    "Summaries manually curated after exposure to audit; calibration only.",
+    "hard-006 original pre-critic primary lineage unavailable; do not invent a parent."
+  ],
+  "runs": [
+    {
+      "candidate_refs": [
+        {
+          "answer_sha256": "774e9cd5824058b310fce45d902d1af3d9d291e7c7c7ed8d517752df5066c4ae",
+          "file": "122-122-critic_primary(2).json",
+          "sha256": "1d7e3c046e77fb02c5363bf588c67603238074b07931b469539d482d8fa58dfc",
+          "source_id": "0d49ee0e543a4cd79d7a7f823b803631"
+        },
+        {
+          "answer_sha256": "e39b11ebf1c180efba9d0cce387e08e31e3d5159d3900f7cff61d9772b8740b9",
+          "file": "122-122-critic_critic(2).json",
+          "sha256": "571aa2419a04622fa543e2a883e66fd6d7304cf70c736bb6fd9ce72dd22b6dff",
+          "source_id": "0429d19e06c8433782409150f878be43"
+        }
+      ],
+      "case_id": "hard-003",
+      "case_sha256": "f34c39f274a0f2bcd48cff03812af8ef057f13ba60d1782ae9a5e29a80b9813f",
+      "condition": "A",
+      "input_sha256": "e83ad7d61ce07c90d4b796484a69b68fbb523b98c776176a168ef868f47da89c",
+      "run_id": "4d1e484d674d49f7b2beb44df51a8845",
+      "summary_sha256": "dba2c50c12479ae5f9887c54c1b0bc92fa9959f3bcb230280c75f149b8279f0a"
+    },
+    {
+      "candidate_refs": [
+        {
+          "answer_sha256": "774e9cd5824058b310fce45d902d1af3d9d291e7c7c7ed8d517752df5066c4ae",
+          "file": "122-122-critic_primary(2).json",
+          "sha256": "1d7e3c046e77fb02c5363bf588c67603238074b07931b469539d482d8fa58dfc",
+          "source_id": "0d49ee0e543a4cd79d7a7f823b803631"
+        },
+        {
+          "answer_sha256": "e39b11ebf1c180efba9d0cce387e08e31e3d5159d3900f7cff61d9772b8740b9",
+          "file": "122-122-critic_critic(2).json",
+          "sha256": "571aa2419a04622fa543e2a883e66fd6d7304cf70c736bb6fd9ce72dd22b6dff",
+          "source_id": "0429d19e06c8433782409150f878be43"
+        }
+      ],
+      "case_id": "hard-003",
+      "case_sha256": "f34c39f274a0f2bcd48cff03812af8ef057f13ba60d1782ae9a5e29a80b9813f",
+      "condition": "B",
+      "input_sha256": "2c1811e12e8398e3ed0979f931b632310d194067b7890e7def4d860686b32c32",
+      "run_id": "22e50d8cce0e4b5881b0c5322782a4bb",
+      "summary_sha256": "dba2c50c12479ae5f9887c54c1b0bc92fa9959f3bcb230280c75f149b8279f0a"
+    },
+    {
+      "candidate_refs": [
+        {
+          "answer_sha256": "774e9cd5824058b310fce45d902d1af3d9d291e7c7c7ed8d517752df5066c4ae",
+          "file": "122-122-critic_primary(2).json",
+          "sha256": "1d7e3c046e77fb02c5363bf588c67603238074b07931b469539d482d8fa58dfc",
+          "source_id": "0d49ee0e543a4cd79d7a7f823b803631"
+        },
+        {
+          "answer_sha256": "e39b11ebf1c180efba9d0cce387e08e31e3d5159d3900f7cff61d9772b8740b9",
+          "file": "122-122-critic_critic(2).json",
+          "sha256": "571aa2419a04622fa543e2a883e66fd6d7304cf70c736bb6fd9ce72dd22b6dff",
+          "source_id": "0429d19e06c8433782409150f878be43"
+        }
+      ],
+      "case_id": "hard-003",
+      "case_sha256": "f34c39f274a0f2bcd48cff03812af8ef057f13ba60d1782ae9a5e29a80b9813f",
+      "condition": "C",
+      "input_sha256": "44ddb3a17b62214d63517448d24068ca65b48996f318648bbcafda90fb7b33cb",
+      "run_id": "f3d0af38ee344e55bd52b9b6aa2438e6",
+      "summary_sha256": "dba2c50c12479ae5f9887c54c1b0bc92fa9959f3bcb230280c75f149b8279f0a"
+    },
+    {
+      "candidate_refs": [
+        {
+          "answer_sha256": "cdd257366fefd9729293d3264ad34cfe919a78681c59970fdc529ed000812f59",
+          "file": "397b-critic(2).json",
+          "sha256": "cb66a66351de227c3a1a1626a9cd87151d226a44ff3edfcf58e152dc969e6af1",
+          "source_id": "482e235bd1f44d3da190d2cb3381bbbd"
+        }
+      ],
+      "case_id": "hard-006",
+      "case_sha256": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c",
+      "condition": "A",
+      "input_sha256": "baadbd55076410b7993d79f5caef6b263b38b9ef1a1f6508d5ac5696ed9b659b",
+      "run_id": "32ca21798c48468d80518a9fd2933e51",
+      "summary_sha256": "7a1445a90167d33a7711f69660810bee3535a343c8fa19131929fc8a30167f79"
+    },
+    {
+      "candidate_refs": [
+        {
+          "answer_sha256": "cdd257366fefd9729293d3264ad34cfe919a78681c59970fdc529ed000812f59",
+          "file": "397b-critic(2).json",
+          "sha256": "cb66a66351de227c3a1a1626a9cd87151d226a44ff3edfcf58e152dc969e6af1",
+          "source_id": "482e235bd1f44d3da190d2cb3381bbbd"
+        }
+      ],
+      "case_id": "hard-006",
+      "case_sha256": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c",
+      "condition": "B",
+      "input_sha256": "1c37bd1f24379ff2252e322e7ad0fc6a617eefad1d6006f077065f9e338f144f",
+      "run_id": "e63d5e49425e4a7a8fbf63e5933f0110",
+      "summary_sha256": "7a1445a90167d33a7711f69660810bee3535a343c8fa19131929fc8a30167f79"
+    },
+    {
+      "candidate_refs": [
+        {
+          "answer_sha256": "cdd257366fefd9729293d3264ad34cfe919a78681c59970fdc529ed000812f59",
+          "file": "397b-critic(2).json",
+          "sha256": "cb66a66351de227c3a1a1626a9cd87151d226a44ff3edfcf58e152dc969e6af1",
+          "source_id": "482e235bd1f44d3da190d2cb3381bbbd"
+        }
+      ],
+      "case_id": "hard-006",
+      "case_sha256": "cf16b7cb88cf1ea42d28fbddaa6173e2c1c3662dfbc9e75bc7ec6dbae87d153c",
+      "condition": "C",
+      "input_sha256": "06e944eabafc20aa331870c114d0764db72971049eb270401fde9cfb9855f20b",
+      "run_id": "8b1a6d3583ac44e4aef940664a6f0c99",
+      "summary_sha256": "7a1445a90167d33a7711f69660810bee3535a343c8fa19131929fc8a30167f79"
+    }
+  ],
+  "status": "blocked_before_model_invocation",
+  "version": "0.1.0"
+}

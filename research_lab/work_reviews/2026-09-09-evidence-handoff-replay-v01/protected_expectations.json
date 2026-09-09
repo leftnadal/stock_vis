@@ -1,0 +1,31 @@
+{
+  "hard-003": {
+    "checks": [
+      "denominator correction",
+      "arithmetic versus bound",
+      "Unsupported versus low likelihood",
+      "quarter versus annual base"
+    ],
+    "material_refs": [
+      "E1",
+      "E2",
+      "E5"
+    ]
+  },
+  "hard-006": {
+    "checks": [
+      "availability",
+      "retrieval",
+      "recognition",
+      "constraint on final conclusion"
+    ],
+    "material_refs": [
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13"
+    ]
+  },
+  "not_model_visible": true
+}

@@ -1,0 +1,9 @@
+{
+  "credential_present": false,
+  "model_invocations": 0,
+  "network_reachability": "unverified",
+  "planned_runs": 6,
+  "reason": "existing_provider_credentials_unavailable",
+  "status": "blocked_before_model_invocation",
+  "timestamp": "2026-09-09T05:04:08.567720+00:00"
+}

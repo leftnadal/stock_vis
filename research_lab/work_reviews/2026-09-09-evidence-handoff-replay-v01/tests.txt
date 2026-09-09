@@ -1,0 +1,9 @@
+test_B_protocol_mock_not_model_result (test_replay.ReplayChecks.test_B_protocol_mock_not_model_result) ... ok
+test_invalid_source_never_disclosed (test_replay.ReplayChecks.test_invalid_source_never_disclosed) ... ok
+test_six_frozen_conditions (test_replay.ReplayChecks.test_six_frozen_conditions) ... ok
+test_visible_boundaries (test_replay.ReplayChecks.test_visible_boundaries) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.003s
+
+OK
