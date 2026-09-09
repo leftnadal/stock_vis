@@ -21,8 +21,8 @@ import { PlaybookCardContainer } from './cards/PlaybookCardContainer'
 import { StressCardContainer } from './cards/StressCardContainer'
 import { AnalogCardContainer } from './details/AnalogCard'
 import { CardDetailContainer } from './details/CardDetailContainer'
-import { REGIME_TERM } from './meaning'
-import { selectSense } from './translationSelector'
+import { REGIME_TERM, breadthStaticSentence } from './meaning'
+import { selectSense, resolveSense } from './translationSelector'
 
 type CardId = 'regime' | 'breadth' | 'sector' | 'concentration' | 'brief'
 
@@ -94,6 +94,11 @@ export default function MarketPulseV2Page() {
   const meta = overview._meta
   // S4: translations envelope → 카드별 sense 주입(fallback이 정상 경로 — null이면 카드는 밴드만).
   const translations = overview.translations
+  // HUB-V02-S2 (AUTO-1) = "카드당 의미 문장 1개 보장". LLM sense 부재 시 정적 문장 fallback.
+  //   대상 = breadth·sector(인라인 의미 문장이 없는 카드). regime·concentration은 카드가
+  //   의미 문장을 상시 인라인 렌더하므로 fallback 미적용(중복 0). LLM 있는 날은 렌더 IDENTICAL.
+  //   sector는 데이터가 SectorHeatmap 내부 fetch라 그 컴포넌트가 자체 정적 fallback 수행.
+  const breadthStatic = breadthStaticSentence(overview.cards.breadth)
 
   return (
     <PageShell title="Market Pulse v2">
@@ -162,7 +167,7 @@ export default function MarketPulseV2Page() {
             data={overview.cards.breadth}
             labels={labels}
             onOpen={() => setOpenCard('breadth')}
-            sense={selectSense(translations, 'breadth')}
+            sense={resolveSense(translations, 'breadth', breadthStatic)}
           />
           <ConcentrationCardSummary
             data={overview.cards.concentration}
