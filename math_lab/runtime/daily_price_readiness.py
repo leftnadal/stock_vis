@@ -17,6 +17,11 @@ import hashlib
 import json
 import re
 
+from math_lab.runtime.error_redaction import (
+    redact_error_message,
+    redact_persisted_errors,
+)
+
 from math_lab.runtime.data_eligibility import (
     AvailabilityConfidence,
     DataViewContract,
@@ -956,16 +961,57 @@ def _daily_price_schema_presence(schema: Mapping[str, set[str]]) -> dict[str, bo
     }
 
 
+def _inventory_permission(read_only_verified: bool) -> dict[str, Any]:
+    return {
+        "scope": "inventory_diagnostic_only",
+        "status": "permitted_read_only" if read_only_verified else "not_established",
+        "basis": "existing_authorized_access_and_verified_read_only_session",
+        "grants_database_privileges": False,
+        "implies_research_input_eligibility": False,
+    }
+
+
+def _research_input_scope(
+    representative: Sequence[Mapping[str, Any]],
+) -> tuple[list[str], list[dict[str, Any]], list[str]]:
+    """Apply only existence and the already recorded fatal OHLCV boundary.
+
+    No new history, missingness, row-count, or basket pass-ratio threshold.
+    An asset flagged fatal by the existing diagnostic is excluded as a whole;
+    this does not clean rows, approve a final basket, or establish PIT safety.
+    """
+    eligible: list[str] = []
+    excluded: list[dict[str, Any]] = []
+    for row in representative:
+        reasons = []
+        if row.get("observation_status") != "observed":
+            reasons.append("asset_not_observed")
+        if not row.get("stock_exists"):
+            reasons.append("stock_metadata_not_found")
+        if not row.get("daily_price_row_count"):
+            reasons.append("daily_price_rows_absent")
+        if "fatal_ohlcv_anomaly_observed" in row.get("reason_codes", ()):
+            reasons.append("fatal_ohlcv_anomaly_observed")
+        if reasons:
+            excluded.append({"symbol": row["symbol"], "reasons": reasons})
+        else:
+            eligible.append(str(row["symbol"]))
+    blocking = [] if eligible else ["no_usable_representative_price_input"]
+    return eligible, excluded, blocking
+
+
 def _eligibility_decisions(
     schema: Mapping[str, set[str]],
     context: ProbeContext,
     fingerprint: str,
+    representative: Sequence[Mapping[str, Any]],
 ) -> list[dict[str, Any]]:
     # Column names are discovery evidence, not proof of semantics, population,
     # completeness, or historical reconstructability.  This probe has no
     # validated provenance manifest, so every semantic claim stays unknown.
     point_in_time = False
     availability = AvailabilityConfidence.UNKNOWN
+    eligible_symbols, excluded_symbols, blocking = _research_input_scope(representative)
     common_missing = [
         "sealed_data_view_fingerprint",
         "daily_price_provider_provenance",
@@ -998,6 +1044,7 @@ def _eligibility_decisions(
         if intended_use is IntendedUse.REPLICATION:
             missing.append("replication_independence_evidence")
         reasons = list(base.reasons)
+        reasons.extend(blocking)
         if common_missing:
             reasons.append("daily_price_use_specific_contract_incomplete")
         reasons.append("semantic_evidence_not_validated")
@@ -1011,6 +1058,13 @@ def _eligibility_decisions(
                 if intended_use is IntendedUse.EXPLORATORY
                 else Eligibility.PROHIBITED
             )
+        if blocking:
+            eligibility = Eligibility.PROHIBITED
+            reasons = [
+                reason for reason in reasons
+                if reason != "usable_for_exploration_but_not_confirmation"
+            ]
+            missing.append("usable_representative_price_input")
         output.append(
             {
                 "data_view_id": view.data_view_id,
@@ -1026,12 +1080,20 @@ def _eligibility_decisions(
                 "entity_resolution_version": view.entity_resolution_version,
                 "revision_lineage_available": False,
                 "eligibility": eligibility.value,
-                "allowed": eligibility is not Eligibility.PROHIBITED,
+                "research_input_permitted": eligibility is not Eligibility.PROHIBITED,
+                "input_scope": "listed_representative_symbols_only",
+                "permitted_symbols": (
+                    eligible_symbols if eligibility is not Eligibility.PROHIBITED else []
+                ),
+                "observed_nonfatal_symbols": eligible_symbols,
+                "excluded_symbols": excluded_symbols,
                 "reasons": reasons,
                 "missing_requirements": missing,
                 "claim_restriction": (
-                    "Readiness inventory only; no predictive, total-return, "
-                    "historical-universe, or production-readiness claim."
+                    "Exploratory eligibility applies only to permitted_symbols; "
+                    "it does not authorize a new experiment or final basket. "
+                    "No predictive, total-return, historical-universe, "
+                    "confirmatory, or production-readiness claim."
                 ),
             }
         )
@@ -1349,7 +1411,11 @@ def _unavailable_decisions(context: ProbeContext) -> list[dict[str, Any]]:
                 "entity_resolution_version": None,
                 "revision_lineage_available": False,
                 "eligibility": Eligibility.PROHIBITED.value,
-                "allowed": False,
+                "research_input_permitted": False,
+                "input_scope": "listed_representative_symbols_only",
+                "permitted_symbols": [],
+                "observed_nonfatal_symbols": [],
+                "excluded_symbols": [],
                 "reasons": ["database_snapshot_not_observed"],
                 "missing_requirements": use_missing,
                 "claim_restriction": "No data-use claim is allowed until the read-only probe observes a snapshot.",
@@ -1472,11 +1538,12 @@ def _query_failure_artifacts(
     representative_rows = representative or _unobserved_representative_rows()
     representative_observed = representative is not None
     result = {
-        "schema_version": "daily-price-readiness-result/0.1",
+        "schema_version": "daily-price-readiness-result/0.2",
         "job_id": context.job_id,
         "run_id": context.run_id,
         "status": "partial",
         "generated_at": context.observed_at.astimezone(timezone.utc).isoformat(),
+        "inventory_permission": _inventory_permission(session.read_only_verified),
         "authority_references": list(AUTHORITY_REFERENCES),
         "probe": {
             "database_status": "query_failed",
@@ -1528,7 +1595,7 @@ def _query_failure_artifacts(
                 "stage": stage,
                 "status": "failed",
                 "error_type": type(error).__name__,
-                "message": str(error),
+                "message": redact_error_message(str(error)),
                 "consequence": (
                     "Completed earlier stages were retained; unfinished findings "
                     "were marked not run and cannot support eligibility."
@@ -1573,11 +1640,12 @@ def build_unavailable_artifacts(
         }
     adversarial = _unavailable_adversarial_discovery()
     result = {
-        "schema_version": "daily-price-readiness-result/0.1",
+        "schema_version": "daily-price-readiness-result/0.2",
         "job_id": context.job_id,
         "run_id": context.run_id,
         "status": "partial",
         "generated_at": context.observed_at.astimezone(timezone.utc).isoformat(),
+        "inventory_permission": _inventory_permission(False),
         "authority_references": list(AUTHORITY_REFERENCES),
         "probe": {
             "database_status": "unavailable",
@@ -1627,7 +1695,7 @@ def build_unavailable_artifacts(
                 "stage": failure_stage,
                 "status": "failed",
                 "error_type": error_type,
-                "message": error_message,
+                "message": redact_error_message(error_message),
                 "consequence": "No live schema or DailyPrice rows were observed.",
             }
         ],
@@ -1661,11 +1729,11 @@ def _display(value: Any) -> str:
 def render_markdown_report(artifacts: ReadinessArtifacts) -> str:
     """Render the machine result as a concise human audit report."""
 
-    result = artifacts.result
+    result = redact_persisted_errors(artifacts.result)
     probe = result["probe"]
     findings = result["findings"]
     lines = [
-        "# DailyPrice Readiness Probe v0.1",
+        "# DailyPrice Readiness Probe v0.2",
         "",
         f"- Job: `{result['job_id']}`",
         f"- Run: `{result['run_id']}`",
@@ -1673,6 +1741,7 @@ def render_markdown_report(artifacts: ReadinessArtifacts) -> str:
         f"- Database: `{probe['database_status']}` ({_display(probe['database_target'])})",
         f"- Read-only transaction verified: `{_display(probe['read_only_verified'])}`",
         f"- Extraction version: `{probe['extraction_version']}`",
+        f"- Inventory / diagnostic permission: `{result['inventory_permission']['status']}` (not research-input permission)",
         "",
         "This is a data-readiness inventory only. No predictive-validity, tradability, or production-readiness claim is made.",
         "",
@@ -1729,13 +1798,15 @@ def render_markdown_report(artifacts: ReadinessArtifacts) -> str:
             "",
             "## Data Eligibility decisions",
             "",
-            "| Declared use | Eligibility | Availability | Point-in-time | Missing requirements |",
-            "|---|---|---|---:|---|",
+            "| Declared use | Eligibility | Research input permitted | Permitted symbols | Availability | Point-in-time | Missing requirements |",
+            "|---|---|---|---|---|---:|---|",
         ]
     )
     for decision in findings["data_eligibility_decisions"]:
         lines.append(
             f"| {_display(decision['intended_use'])} | {_display(decision['eligibility'])} | "
+            f"{_display(decision['research_input_permitted'])} | "
+            f"{_display(', '.join(decision['permitted_symbols']) or 'none')} | "
             f"{_display(decision['availability_confidence'])} | "
             f"{_display(decision['point_in_time_reconstructable'])} | "
             f"{_display(', '.join(decision['missing_requirements']))} |"
@@ -1786,6 +1857,11 @@ def write_artifacts(
 ) -> None:
     """Write the three required artifacts as UTF-8 with deterministic JSON keys."""
 
+    # Final common boundary also covers failures appended after probe return.
+    artifacts = ReadinessArtifacts(
+        result=redact_persisted_errors(artifacts.result),
+        data_gaps=redact_persisted_errors(artifacts.data_gaps),
+    )
     for path in (result_path, data_gaps_path, report_path):
         path.parent.mkdir(parents=True, exist_ok=True)
     result_path.write_text(
@@ -1883,14 +1959,15 @@ def run_readiness_probe(
             "adversarial_candidate_discovery": adversarial,
         }
     )
-    eligibility = _eligibility_decisions(schema, context, fingerprint)
+    eligibility = _eligibility_decisions(schema, context, fingerprint, representative)
     data_gaps = _data_gap_proposals(schema)
     result = {
-        "schema_version": "daily-price-readiness-result/0.1",
+        "schema_version": "daily-price-readiness-result/0.2",
         "job_id": context.job_id,
         "run_id": context.run_id,
         "status": "partial",
         "generated_at": context.observed_at.astimezone(timezone.utc).isoformat(),
+        "inventory_permission": _inventory_permission(session.read_only_verified),
         "authority_references": list(AUTHORITY_REFERENCES),
         "probe": {
             "database_status": "available",

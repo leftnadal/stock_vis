@@ -12,6 +12,8 @@ from pathlib import Path
 import subprocess
 from typing import Any, Callable, Mapping, Sequence
 
+from math_lab.runtime.error_redaction import redact_error_message
+
 from math_lab.runtime.daily_price_readiness import (
     ProbeContext,
     ReadOnlySqlViolation,
@@ -64,17 +66,6 @@ def database_target_from_environment(environment: Mapping[str, str]) -> str:
     if host.startswith("/"):
         return f"postgresql+unix://{host}/{kwargs['dbname']}"
     return f"postgresql://{host}:{kwargs['port']}/{kwargs['dbname']}"
-
-
-def redact_error_message(message: str, environment: Mapping[str, str]) -> str:
-    """Remove configured database secrets before recording a failed attempt."""
-
-    redacted = message
-    for key in ("DB_PASSWORD", "PGPASSWORD"):
-        secret = environment.get(key)
-        if secret:
-            redacted = redacted.replace(secret, "[REDACTED]")
-    return redacted
 
 
 class PostgresReadOnlySession:
@@ -190,6 +181,7 @@ def _git_extraction_version() -> str:
             Path(__file__),
             Path(__file__).with_name("daily_price_readiness.py"),
             Path(__file__).with_name("data_eligibility.py"),
+            Path(__file__).with_name("error_redaction.py"),
         ),
         key=lambda item: item.name,
     ):
@@ -208,7 +200,7 @@ def _git_extraction_version() -> str:
         )
         return f"git:{completed.stdout.strip()}{source_suffix}"
     except (OSError, subprocess.SubprocessError):
-        return f"source:daily-price-readiness-result/0.1{source_suffix}"
+        return f"source:daily-price-readiness-result/0.2{source_suffix}"
 
 
 def _aware_datetime(value: str | None) -> datetime:

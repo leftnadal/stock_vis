@@ -1,0 +1,53 @@
+{
+  "schema_version": "daily-price-boundary-review-tests/0.1",
+  "status": "passed",
+  "validation_kind": "isolated_unit_sqlite_fake_postgres_not_live_observation",
+  "recorded_at": "2026-09-09T02:46:24.148431+00:00",
+  "parent_candidate": "1f5fa8420a02fbd683a31d75a5bd8724d78f188c",
+  "branch": "math-lab/readiness-boundary-fix-v0.1",
+  "environment": {
+    "python": "3.12.14",
+    "system": "Linux",
+    "pytest": "9.1.1",
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+    "config": "/dev/null",
+    "confcutdir": "math_lab/runtime"
+  },
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "-c",
+    "/dev/null",
+    "--rootdir=.",
+    "--confcutdir=math_lab/runtime",
+    "math_lab/runtime/test_data_eligibility.py",
+    "math_lab/runtime/test_daily_price_readiness.py",
+    "math_lab/runtime/test_daily_price_boundaries.py",
+    "-q",
+    "-p",
+    "no:cacheprovider"
+  ],
+  "result": {
+    "returncode": 0,
+    "passed": 46,
+    "failed": 0,
+    "stdout": "..............................................                           [100%]\n46 passed in 0.18s\n"
+  },
+  "source_sha256": {
+    "math_lab/runtime/daily_price_probe.py": "28edd7b7e64cc0a5f5a85cf55d9e31d0ae93e2605f2f023f4ec010d926c60e06",
+    "math_lab/runtime/daily_price_readiness.py": "4b786af1ac7034754c35d10db2579100fd58b502dfa45145cc5cef8023dfd907",
+    "math_lab/runtime/error_redaction.py": "22bc7ae0ebea3e9e33ddaf5ed98e03686b6b0aedb7a56d44b4cb5972e0493367",
+    "math_lab/runtime/test_daily_price_readiness.py": "fade0af62fa0046303719db5dff63c1dc4c6a003dfff8d945f5a0b53f007452e",
+    "math_lab/runtime/test_daily_price_boundaries.py": "2b5b07e4074a22bbd912036513805fc63f47c69acd0f41800f6e11586efdb328",
+    "math_lab/runtime/data_eligibility.py": "8aa761038f65b5d46402d030ef558b30928c9c21ae0acd99d54f7cb283f8ce56"
+  },
+  "tests_new": 11,
+  "existing_tests": 35,
+  "existing_fixture_change": "One provenance-only test makes AAPL nonfatal locally. New explicit regression preserves and prohibits the original dirty fixture.",
+  "limitations": [
+    "Not a Lab Automation run or recovery rerun.",
+    "Not the Mac/Django test environment.",
+    "No real PostgreSQL or production data accessed."
+  ]
+}

@@ -466,7 +466,16 @@ def test_absent_optional_event_tables_are_not_reported_as_zero_events():
 def test_current_daily_price_contract_is_only_exploratory_for_observed_fixture():
     """A fingerprint alone must not mask absent availability and provenance evidence."""
 
-    artifacts = run_readiness_probe(_fixture_session(), _context())
+    session = _fixture_session()
+    # F1 now excludes known fatal assets. Make this provenance-focused fixture
+    # nonfatal; the original dirty fixture is covered by boundary regressions.
+    session.connection.execute("PRAGMA query_only = OFF")
+    session.connection.execute(
+        "UPDATE stocks_daily_price SET open_price=105, close_price=105 WHERE id=3"
+    )
+    session.connection.commit()
+    session.connection.execute("PRAGMA query_only = ON")
+    artifacts = run_readiness_probe(session, _context())
     decisions = {
         row["intended_use"]: row
         for row in artifacts.result["findings"]["data_eligibility_decisions"]
