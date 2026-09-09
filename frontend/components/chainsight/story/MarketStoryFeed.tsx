@@ -1,18 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { fetchMarketStoryFeed } from '@/services/chainsightService';
 import MarketStoryCardItem from './MarketStoryCardItem';
+import SteadyFold from './SteadyFold';
+import { FOLD_STEADY_BY_DEFAULT, QUIET_DAY_PEEK } from './storyCardConfig';
 
 /**
- * "오늘 시장의 이야기" 피드 (R2-S2) — Chain Sight 신규 랜딩.
+ * "오늘 시장의 이야기" 피드 (R2-S2 + S3-1 + S3-1B) — Chain Sight 랜딩.
  *
- * 목업 준거 4항:
- * ⑴ 헤더 2줄(제목 + 부제, has_event=false는 정문 무공허 카피).
- * ⑵ 마인드맵 링크 헤더 우상단 상시 노출.
- * ⑶ 카드 클릭 → 마인드맵 카드 딥링크(?symbol=).
- * ⑷ 배지 색 계열 구분(사건=강조색·steady=중립색) — MarketStoryCardItem에서 처리.
+ * D-S3-7 배경 접기: 사건 카드(new_sec·daily_spike)는 항상 펴짐, weekly_active(배경)는
+ * 기본 접힘(FOLD_STEADY_BY_DEFAULT). 아침 첫 화면의 조용함이 목적 → 펼침 상태 비저장.
+ * 조용한 날(사건 0): 배경 상위 QUIET_DAY_PEEK장 카드 + "오늘은 조용합니다" + 나머지 접힘.
+ * 헤더 부제 = D-S3-6 그대로(배경 수는 접힘 줄이 말함, 부제엔 안 씀).
  */
 export default function MarketStoryFeed() {
   const { data, isLoading, isError, refetch } = useQuery({
@@ -21,15 +23,28 @@ export default function MarketStoryFeed() {
     staleTime: 1000 * 60 * 5,
   });
 
+  // 펼침 상태는 저장하지 않는다(localStorage·쿠키 금지) — 매일 접힌 채로 연다.
+  const [steadyExpanded, setSteadyExpanded] = useState(!FOLD_STEADY_BY_DEFAULT);
+
+  // A-5 정직화(D-S3-6 잠금): 헤더는 창을 말하지 않는다. 부제 = 오늘 새로 온 것 n · 전체 N.
   const subtitle = data
     ? data.has_event
-      ? `${data.as_of} · 급증 ${data.summary.daily_spike}건 · 신규 연결 ${data.summary.new_sec}건`
+      ? `오늘 새로 온 것 ${data.meta.new_today} · 전체 ${data.meta.stories}`
       : '오늘은 큰 사건이 없어요 — 꾸준히 활발한 이야기들'
     : null;
 
+  const eventCards = data ? data.cards.filter((c) => c.type !== 'weekly_active') : [];
+  const steadyCards = data ? data.cards.filter((c) => c.type === 'weekly_active') : [];
+  const hasEvent = eventCards.length > 0;
+  // 조용한 날엔 배경 상위 QUIET_DAY_PEEK장을 카드로 펴고 나머지를 접는다.
+  const peekCards = hasEvent ? [] : steadyCards.slice(0, QUIET_DAY_PEEK);
+  const foldedCards = hasEvent ? steadyCards : steadyCards.slice(QUIET_DAY_PEEK);
+  const toggle = () => setSteadyExpanded((v) => !v);
+
   return (
     <div className="p-6">
-      <div className="mb-6 flex items-start justify-between gap-4">
+      {/* B-4: pr-24 로 전역 가이드 풍선(GuideOverlay fixed 우상단) 자리 확보 → 버튼 겹침 해소(공용 컴포넌트 무접촉). */}
+      <div className="mb-6 flex items-start justify-between gap-4 pr-0 sm:pr-24">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">오늘 시장의 이야기</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -62,9 +77,28 @@ export default function MarketStoryFeed() {
 
       {data && data.cards.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.cards.map((card) => (
-            <MarketStoryCardItem key={`${card.type}-${card.symbol_a}-${card.symbol_b}`} card={card} />
+          {/* 조용한 날: 빈 화면 금지 — 조용함을 말한다. */}
+          {!hasEvent && (
+            <p
+              data-testid="quiet-note"
+              className="col-span-full text-sm text-gray-500 dark:text-gray-400"
+            >
+              오늘은 조용합니다 — 이번 주 흐름만 보여드립니다
+            </p>
+          )}
+
+          {/* 사건 카드(항상 펴짐) + 조용한 날 peek 카드. */}
+          {[...eventCards, ...peekCards].map((card) => (
+            <MarketStoryCardItem
+              key={card.story_id ?? `${card.type}-${card.symbol_a}-${card.symbol_b}`}
+              card={card}
+            />
           ))}
+
+          {/* 배경 접힘 줄(구분선 대체) — 접힐 배경이 있을 때만. */}
+          {foldedCards.length > 0 && (
+            <SteadyFold cards={foldedCards} expanded={steadyExpanded} onToggle={toggle} />
+          )}
         </div>
       )}
     </div>

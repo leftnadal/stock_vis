@@ -5,6 +5,21 @@
 
 ---
 
+## CS-S3 트랙 — "이야기 리포트" (S3-PRE 등재 재landing + S3-1 착지, 2026-09-07) [chainsight][frontend]
+
+> D-S3-1~5 + CS-S3-1 착지 결정(DECISIONS 2026-09-07). R2-S1/S2 아크 연속. S3-PRE 등재분이 main 미랜딩이라 S3-1과 함께 통합.
+
+| 태스크 | 크기 | 내용 | depends_on | 상태 |
+|--------|------|------|-----------|------|
+| CS-S3-PRE | — | 데이터·구조 전제 측정(P1~P9) + DECISIONS 5건 + 사이징 | R2-S2 | ✅ **done (2026-09-03, 측정 전용)** |
+| CS-S3-1 | M | 묶음(union-find)·제목 인용·8-K 템플릿·story_id 슬러그·헤더 정직화·정렬(사건성 1차)·응답 캐시·window_days·evidence 스키마. FE 카드/헤더/가이드 겹침 | CS-S3-PRE | ✅ **LANDED+DEPLOYED (main `5e4e70ea`·커밋 A~H). BE 817·vitest 19·tsc0·ruff0·eslint0. worker_sync 3트리 재기동+FE prod 리빌드·:3000 200·라이브 API 검증. 픽셀 스샷=browse 데몬 이슈로 미수행(API 갈음)** |
+| CS-S3-1B | S | D-S3-7 배경 접기(FE 전용): weekly_active 기본 접힘·구분선→접힘 줄·펼치면 줄 목록(카드 아님)·조용한 날 peek 3+"오늘은 조용합니다"·펼침 비저장·상수 FOLD_STEADY_BY_DEFAULT/QUIET_DAY_PEEK. BE 무변경 | CS-S3-1 | ✅ **LANDED+DEPLOYED (main `3a0c649b`·FE `129a9e3d`+K `255646bc`+docs). vitest chainsight 312·tsc0·eslint0. web-only 배포(next build+web-frontend 재기동·:3000 200·BE 무재기동)** |
+| CS-S3-2 | M | 사슬 대조(§3). **RelationConfidence 쌍 조회 서비스 신설**(P4 진입점 미발견·지연 1.02ms→배치 불요) + 신뢰도 4밴드(0.35/0.60/0.85). **evidence[] 스키마 = D-S3-EVIDENCE-SCHEMA(§1 입력 확정)**. `hidden` 두 갈래 판정(previous_status: 미승격 vs weak감쇠·D-RC-DECAY-SEMANTIC) — STEP 0에서 previous_status 분포만 계수 | CS-S3-1 | 🟢 **착수 가능** |
+| CS-S3-3 | S | 시계열(§2). read-time 일별 재집계(P3: NewsEntity.published_at ~6개월 보존→물질화 확장 불요) | CS-S3-1 | 🆕 todo |
+| CS-S3-4 | L | 해석(§4)·규칙(①②③⑤⑥ 결정론+④ LLM shared 래퍼)·리포트 페이지(`/chainsight/story/:id`)·AI 의견란(접힘)·8-K SEC 원문 링크(카드 비-링크라 여기서 수용) | CS-S3-2, CS-S3-3 | 🆕 todo |
+| CS-S3-5 | M | 추적·무시 연결(story_id 앵커) + 마인드맵 다중강조 딥링크(P8 단일 `?symbol=`만) | CS-S3-4 | 🆕 todo |
+| CS-S3-LEDGER | L(MIG) | 가설 원장(의견 채점). P7: 기존 테이블 부합 없음→신규(B안)·MIG 관문·결정 병진 | CS-S3-4 | 🕒 보류(병진) |
+
 ## ✅ DSS-BEAT — DSS 주간 적재 자동화 (가동, DSS-BEAT-1 2026-08-31) [theme-heat][dss][infra]
 - D-DSS-BEAT-1. celery `chainsight-load-dss-weekly`(Fri 19:00 ET·default 큐) + 폴백 command `load_dss_week`. **2단 스위치**: PeriodicTask enabled=False 등재 → §D 워커 재시작+검증 후 enable.
 - **가동 완료(2026-08-31)**: §C push 착지(origin/main `64c5b622`) → 병진 `sv sync`(worker 트리 `835da979` re-detach + celery-worker/beat 재기동·inspect ping ✓) → CC 검증 2종 통과(트리 조상 `64c5b622` 포함 · `inspect registered`에 chainsight-load-dss-weekly) → **PeriodicTask id=143 enabled=True**. **다음 발화 = 09-04(금) 19:00 ET**. 관측 = DSS-BEAT-OBS-1. 폴백(미발화 시) = 착지 트리 `manage.py load_dss_week`.
@@ -51,6 +66,12 @@
 | AGENT-S2 | 2단계 — 루브릭 채점(화면별 coreQuestion 기준) | 미배정 | AGENT-S1-AUTH · GUIDE 검수(done) | 🆕 **todo(별도 지시서)** | 채점 기준 = confirmed `coreQuestion`. 결핍 = ⑴ 인증 계정 ⑵ 화면별 "정상 상태" 정의 ⑶ 렌더 후 DOM 접근 수단(1단계는 SSR HTML만 봄 — 클라이언트 렌더 데이터·`data-guide` 앵커는 HTTP로 안 보임). |
 | AGENT-S3 | 3단계 — 관찰 후보 0~5개 + 성적 원장 | 미배정 | AGENT-S2 | 🆕 **todo(별도 지시서)** | — |
 | AGENT-API-GAPS | 1단계에서 드러난 **필요 API 목록**(도메인 앱 이관) | 해당 앱 트랙 | — | 🔭 **관찰(등재만·구현 금지)** | ⑴ 무인증 **점검용 요약 엔드포인트 부재** — 화면 데이터 유무를 보려면 사용자 토큰이 필요(EOD만 baked JSON으로 무인증 접근 가능). ⑵ `/api/v2/market-pulse/health`가 **인증 게이트**라 헬스 용도로 못 씀(무인증 `/api/v1/health/`는 있음). |
+| AGENT-SHOT-1 | 야간 렌더러 온디맨드화(임의 화면 캡처) | @ops(CC 집행) | AGENT-S2(렌더 경로) | ✅ **종결(디렉터 처분 2026-09-08·DoD 충족·상세 [[DECISIONS]] D-AGENT-SHOT-1)** — `scripts/shot.sh` + `auto_agent_system/dogfood/shot.py`. `collect_rendered.run_render` 재사용(신규 인증 0)·`render_screens.mjs`에 env-gated `page.screenshot(fullPage)` + 로딩 소멸 대기(야간 미영향). 산출물 `stock-vis-nightly/adhoc/<ts>/`(PNG+텍스트+meta). **--path/--screens·--full(기본on)·--no-score(기본·LLM 0)**. **DoD**: env -i `authenticated=true`(S2.1 인증 실증 겸함)·야간 회귀 0(collect_rendered 5/5 동일·rendered_/quant_/rubric_·plist·05:20 무접촉)·pytest 신규 9 GREEN·ruff 0. **도구 사용례**(대상 교체): `/monitor` 목록 풀페이지 `adhoc/20260908_1124/adhoc_monitor.png`(authenticated=true·dogfood_agent 빈목록). **IONQ 캡처 보류**=D-AUTO-NO-PERSONAL-CREDS(개인 자격증명 반려). |
+| AGENT-SHOT-1-XUSER-404 | 교차사용자 404 = 계정 경계 정상(결함 아님) | — | — | ✅ **실측 기록(재조사 방지)** | dogfood_agent가 goid545 소유 모니터(df008c88) 조회 시 "찾을 수 없는 모니터"(404) = **계정 경계 정상 작동의 실측 증거**. 온디맨드 캡처는 전용 계정 가시 화면·공개 대상으로 설계(D-AUTO-NO-PERSONAL-CREDS). |
+| AGENT-SHOT-1-INAPP-BLOCKED | 인앱 브라우저 캡처 경로 = **구조적 불가**(재시도 금지) | — | — | 🚫 **확정** | 클로드 인앱 패널이 :3000 외 오리진 XHR을 `ERR_BLOCKED_BY_CLIENT`로 전면 차단(09-07 포트 3종 프로브 확증). 온디맨드 캡처 정본 = 헤드리스 `scripts/shot.sh`. |
+| AGENT-SHOT-1-CB-CANDIDATE | common-bugs 후보(채번 대기·mgmt 소유) | @qa/mgmt | — | 🆕 **후보** | "`ERR_BLOCKED_BY_CLIENT`(브라우저 확장/패널 차단)를 '서버 다운/500'으로 표시하면 오진을 부른다 — 클라이언트 차단과 서버 장애를 구분해 표기." 앱 로그인 실패 문구 개선은 **별건(앱 백로그 이관)**. |
+| AGENT-QUANT-AUTH-GAP | quant 단계(check_quant) 인증 잔존 결함(S2.1 미적용) | @agent/@ops | — | 🆕 **후보(수리 별건)** | 항목7 실측(디렉터 질의): `quant_20260908.auth_mode=unauthenticated`는 **설계 아니라 잔존 결함**. `check_quant._login_token()`이 ⑴ 렌더와 **다른 env 키**(`DOGFOOD_API_USER/PASSWORD`·.env에 **0건**) ⑵ 렌더의 `dogfood_env()` `.env` 명시 로드(S2.1) 미적용(`os.getenv`만) ⑶ 다른 엔드포인트(`/users/login/` vs 렌더 `/jwt/login/`) → launchd에서 항상 미인증. **수리는 AGENT/ops 트랙**(본 트랙=SHOT 범위 밖). |
+| OPS-TRUST-1-TREE-WARN-REFINE | "실행 트리 정합" WARN 코드 경로 기준 정교화(디렉터 개정 지시 2026-09-08) | @ops(OPS-TRUST-1) | — | 🆕 **todo(별건·health_check 수정)** | 근거: 09-07 sv sync로 실행 트리 `01d39d8→5e4e70e` 전진했으나 같은 날 origin/main도 `087c7cd→1739654`(27 commits) 전진→WARN 즉시 재점등. 배포·main 전진 시점이 원리상 어긋나 "개발 활발한 날마다" 노란불=관제 신뢰 훼손. **개정**: 문서/연구 커밋만 앞선 상태=**INFO**, `apps/`·`packages/` 경로가 갈라졌을 때만 **WARN**. `runtime_check` WARN이 같은 뿌리(트리 드리프트)인지 함께 판정. **health_check.py 수정=별도 커밋/트랙**(AGENT-SHOT-1 push 범위 밖). |
 
 ## GUIDE 트랙 (2026-08-27 개설, D-GUIDE-TRACK)
 
@@ -1514,6 +1535,12 @@
 - 분류(스냅샷 `1d528a6e`·전수 225 브랜치): 즉시삭제 159 / 즉시삭제(wt선행) 42 / 보류 8 / 검토필요 15 / 유지 1. worktree 61: 즉시정리 43 / 보류 12 / 유지 6. 원격 삭제 후보 5(전부 MERGED).
 - **검토필요 16건**(§6 Q1~Q16): 오늘 활성(hub-recon·design-inspector·evt-8 외 드리프트분)·squash-merge(cn-repair-land·`-d` 거부→`-D` 필요)·아크 미상 다수·메인 트리 stale 처분(Q16). **삭제 실행 전제 = 모든 CC 세션 종료 + 활성 목록 재측정**(라이브 드리프트 1d528a6e→04ec8bf7 관측).
 - 명령 초안(실행 금지) = scratchpad `cmd_A_worktree.txt`(43)/`cmd_B1_branch_noWT.txt`(159)/`cmd_B2_branch_wt.txt`(42)/`cmd_C_remote.txt`(5).
+- **EXEC(MGMT-BATCH-B-EXEC, 09-04~09) 진행**: 단계 A(메인 트리 main 복귀·sess-main-integrate detach) · B(worktree 40 제거) · C(브랜치 -d 200) · D(브랜치 7 삭제) 집행. 게이트 정련 = D-GATE-SCOPE-1(범위=삭제 후보 집합). 삭제 로그 = `docs/mgmt/MGMT-BATCH-B_delete_log.txt`.
+
+### sess-r2pre 흡수 — FE 미해결 todo 2건 (MGMT-BATCH-B 단계D, 삭제 전 이식) [frontend][infra]
+> 출처: `monorepo/sess-r2pre`(`9bc85fff`, 2026-08-31 R2-S1 배포서 발견). 삭제 브랜치의 유일 미이식분(main 미추적·미해결 확인). 원본 좌표 = `~/stockvis-refs-20260907-0948.bundle`.
+- **FE-DEPLOY-NPM-INSTALL** 런타임 배포에 npm install 편입(비긴급·다음 FE 접촉 세션 번들) — `worker_sync.sh`가 web 트리 package.json 변경 시 **경고만** 하고 install 안 함(자동 금지 규약) → devDep 추가 시 `next build` 타입체크 실패(런타임 node_modules stale). 조치: FE 배포 경로에 "package(.json/-lock) 변경 감지 시 `npm install`" 편입. @infra
+- **FE-BUILD-E2E-EXCLUDE** `next build` 타입체크에서 e2e 제외(비긴급·FE 번들) — `frontend/e2e/*.spec.ts`가 `next build` TS 체크에 포함돼 dev 의존성(@playwright/test) 없으면 빌드 실패. 조치: `frontend/tsconfig.json` `exclude`에 `e2e/**` 추가(또는 build용 별도 tsconfig). @frontend
 
 ## CS-REDESIGN-BACKLOG — Chain Sight 재설계 D1/D2 후속 백로그 (등재, 2026-08-10)
 출처: D2-LEDGER-PROBE 지시서 Part 1-D. 결정 근거 = [[DECISIONS]] D1·D2. 채번 미부여(백로그).

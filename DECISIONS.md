@@ -8,6 +8,37 @@
 
 ---
 
+## [2026-09-09] MGMT-BATCH-B 단계D — sess-hold-p1 삭제 조건 기록 [harness][ops]
+**결정**: `monorepo/sess-hold-p1`(`b8d767aa`) 삭제 — 내용 51파일은 `monorepo/sess-signal-fwd-recon`(`cca67275`)에 보존됨(조상 관계 확인). 그 브랜치 처분(MGMT-BATCH-B §6 Q16·chain_sight 판단) 시 hold-p1 내용 보존 여부를 재확인할 것. 원본 좌표 백업 = `~/stockvis-refs-20260907-0948.bundle`.
+**Why**: hold-p1은 origin/main 미머지이나 tip이 signal-fwd-recon의 조상이라 내용 유실 0. signal-fwd-recon이 삭제되기 전까지 hold-p1 내용은 보존되며, 그 시점에 이 각주가 재확인 트리거가 된다.
+
+## [2026-09-07] D-DIRECTOR-READ — 디렉터의 worktree 읽기전용 직접 열람 [harness][process]
+
+**결정**: 디렉터(채팅 Claude)가 worktree를 **읽기 전용으로 직접 읽는다**(파일 read + diff). 쓰기·git 쓰기 계열·스크립트 실행·배포·prod DB는 종전대로 전부 CC 병진 손. 디렉터 측정값에는 읽은 시각·기준 커밋을 병기하고, CC가 STEP 0에서 다르면 HALT.
+**Why**: 아크 중 디렉터 오류 2건(FE 배포 경로·A-5 정렬 키)이 "디렉터가 사실을 못 봐서" 발생, CC HALT로 한 왕복 뒤 잡힘 → 왕복 앞당김. 가중합(합 1.00): 지시서정확 0.30/왕복절감 0.25/경계보존 0.20/병진부담 0.15/사고리스크 0.10 → A(무접근)3.20·**B(읽기전용)4.55**·C 3.75(마진 0.80). **한계**: 레포는 `~/Desktop/stock_vis`(접근 없음) → 커밋 해시·브랜치 대조는 CC STEP 0 몫.
+
+## [2026-09-07] S3 이야기 리포트 아크 — CS-S3-1 착지 + 아크 결정 재등재 [chainsight][frontend]
+
+> S3-PRE(측정 세션)의 D-S3-1~5 등재분이 main 미랜딩(stranded)이라 CS-S3-1 착지와 함께 재등재. R2-S1(D-CS-STORY-SOURCE)·R2-S2 아크 연속.
+
+**아크 결정(S3-PRE 2026-09-03 확정)**:
+- **D-S3-1 리포트 구조**: 이야기 = 브리프 카드(피드) + 6절 리포트(①무슨 일·②흐름·③사슬 대조·④해석·⑤지켜볼 것·⑥닿는 사슬).
+- **D-S3-2 해석 = H(인용 게이트 하이브리드)**: ①②③⑤⑥ 결정론·④만 LLM 1단락(shared 래퍼 경유·문장마다 근거 번호·폐기율>30% health WARN).
+- **D-S3-3 AI 의견란 = 기본 접힘**(미확인 문장만·§4 검증 0이면 숨김·비저장).
+- **D-S3-4 리포트 라우트 = `/chainsight/story/:id`**(이야기 id 앵커).
+- **D-S3-5 슬라이스 순서**: PRE→S3-1→S3-2(사슬 대조)→S3-3(시계열)→S3-4(해석·리포트·의견란)→S3-5(추적/무시). 가설 원장 = 신규 테이블(B안)·MIG 관문·병진.
+
+**CS-S3-1 착지 결정(2026-09-07)**:
+- **D-S3-SORT 정렬 = 사건성 asc → occurred_on desc → max_mentions desc**(D-DIRECTOR-READ 발견 1). **Why**: occurred_on 1차면 최신 weekly_active(잔잔한 배경)가 과거 사건(8-K·급등) 위로 와 사건이 매몰 → 스모크 ⑵/⑷·피드 목적 붕괴. 라이브에서 8-K@08-19·급등@08-21이 weekly@최근 밑 30위 밖 매몰 확인 후 정정.
+- **D-S3-6 헤더 창 표기 = B안(카드가 자기 창을 말함)**(병진 확정 2026-09-04·가중합 4.72·마진 1.11 = 자동 결정 구간). **Why**: 피드에 단일 창이 없다(daily_spike 14·new_sec 30·weekly_active 7 상이) → **헤더 단일 표기는 과대·과소 표기**가 된다. **How**: 헤더는 창 미주장(제목 "오늘 시장의 이야기"·부제 "오늘 새로 온 것 {n} · 전체 {N}"), 창은 카드별 **`window_label`**(상수 파생·하드코딩 금지: new_sec `f"{NEW_SEC_DAYS}일 내 신규 공시"`·daily_spike `f"{DAILY_SPIKE_DAYS}일 중 이 하루"`·weekly_active `f"최근 {WEEKLY_ACTIVE_WINDOW_DAYS}일 활동"`). 사건→배경 전환 구분선 "여기부터 잔잔한 흐름"(앞에 사건 카드 있을 때만). 상수 변경 시 문구 추종(회귀 테스트 `test_window_label_derives_from_constant`). **창 라벨은 캐시가 아니라 쿼리로 보장한다**(H·2026-09-07): weekly_active 쿼리에 `last_co_mention_date__gte = now - WEEKLY_ACTIVE_WINDOW_DAYS` — materialize(ET 12:00) 지연 시 창 밖 캐시 행이 "최근 7일 활동" 라벨로 오노출되는 것을 차단(`test_weekly_active_excludes_stale_cache_rows`).
+- **D-S3-EVIDENCE-SCHEMA (A-6)**: 카드 `evidence[] = {kind:"article"|"8k", ref, title, url, date}`. **S3-2 §1의 입력 스키마 — 여기서 고정**. 근거 없으면 `title:null`(정직 표기·인용만·LLM 0).
+- **D-S3-STORYID = 결정론 슬러그** `blake2b(f"{type}:{'-'.join(sorted(members))}:{occurred_on}", digest_size=5)`(10-hex)·저장 없음·`story_key` 원문 병기(S3-4 라우트/추적 앵커).
+- **D-S3-FEED-CACHE**: 피드 응답을 (limit, ET 날짜) 키로 캐시(TTL 900s). STEP0-2 NewsEntity 재조회 p95 368ms(콜드) → 표시 카드 제목·evidence 조회 비용 응답 단위 흡수(#15 키 일관).
+- **소스 재조회(A-1)**: CoMentionEdge에 기사 링크 없음(P1) → `story_source.articles_for_pair`가 ChainNewsEvent 직결 제목 → NewsEntity 교집합으로 (쌍,날짜) 복원. 발행시각 창 = ±1일 UTC-aware(naive 창의 TIME_ZONE 클리핑 회피).
+- **D-S3-7 배경 접기(FE 전용·S3-1B·2026-09-07)**: weekly_active(배경)는 **기본 접힘**, 사건 카드(new_sec·daily_spike)는 항상 펴짐. **Why**: 아침 첫 화면의 조용함이 목적 — 배경 28장이 사건을 덮으면 안 된다. **How**: D-S3-6의 구분선 "여기부터 잔잔한 흐름" → **접힘 줄** "이번 주 꾸준한 흐름 {m}쌍 · 펼치기 ▸"로 대체(D-S3-6 구분선 부분 SUPERSEDED). 펼치면 **카드 반복 금지** — 조밀한 줄 목록 `[종목쌍][언급 수][마지막 날짜]`(SteadyFold·카드 컴포넌트 미사용·한 줄 ≤카드 1/3). 펼침 상태 **비저장**(localStorage/쿠키 금지·매일 접힌 채 열림). **조용한 날**(사건 0): 배경 상위 `QUIET_DAY_PEEK`장 카드 + "오늘은 조용합니다 — 이번 주 흐름만 보여드립니다" + 나머지 접힘(빈 화면 금지). 상수 `FOLD_STEADY_BY_DEFAULT`·`QUIET_DAY_PEEK=3`(도그푸딩=상수 변경). 헤더 부제 D-S3-6 잠금(배경 수는 부제 아닌 접힘 줄이 말함). BE 무변경. 커밋 `129a9e3d`.
+
+**How to apply**: BE `apps/chain_sight/services/{story_source,market_story_feed}.py`·`api/feed_views.py`. FE `components/chainsight/story/*`·`types/chainsight.ts`. 커밋 A `ceb270e2`(BE)·B `ceb3e050`(FE). 마이그 0·외부콜 0·prod write 0·LLM 0. cf. [[project_r2s2_market_story_feed]]·D-CS-STORY-SOURCE.
+
 ## [2026-08-31] D-DSS-BEAT-1 — DSS 주간 적재 자동화 (beat 태스크 + 2단 스위치) [theme-heat][dss][infra]
 
 > 출처: 지시서 DSS-BEAT-1(병진 승인 08-31). 구현 = §A~§D.
@@ -3616,6 +3647,7 @@ thesis/      — ✅ 제거됨 (D-MONITOR-REBUILD, apps/monitor 편입, 2026-07-
 **잔여(별 트랙)**: ① dated 브랜치 누적 정리 — `TASKQUEUE.md NIGHTLY-BRANCH-GC`. ② hook hardening(`scripts/hooks`+`core.hooksPath`) — MAIN-SYNC-FIX 트랙 유지(이번 범위 밖). ③ launchd 재가동(`launchctl load`)은 **사용자 수동 승인** 대기(수정 중 unload 상태).
 
 **📎 참조**: `~/stock-vis-nightly/run_tier3_audits.sh`(백업 `.bak-20260617`), `TASKQUEUE.md MAIN-SYNC-FIX`·`NIGHTLY-BRANCH-GC`, DECISIONS `a84388f`(6/2 브랜치 정책).
+> ※ `a84388f`(2026-06-02 MAIN-DRIFT-732B363 = C 격리 + 야간 자동화 브랜치 정책 **원본** 결정)는 MGMT-BATCH-B 단계 D의 `monorepo/sess-mgmt` 삭제로 repo 내 미도달이 됨. **실질 정책은 위 2026-06-18 항목이 대체·최신**. 원본 좌표 = `~/stockvis-refs-20260907-0948.bundle`(`a84388f6`). (MGMT-BATCH-B 단계D 각주, 2026-09-09)
 
 ---
 
@@ -7551,3 +7583,26 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **폐기 지표(등재)**: 신규 실업수당 260k(실측 203k라 미발동 + NFP와 모순 문장) · DXY ±0.5%(실측 `dxy: null` 영구 미발동 → DATA-GAP-DXY). 미국 4지수는 `change` 부호만(`change_percent` 실 payload null). 해외지수·DXY는 문장에서 언급 금지(DATA-GAP-GLOBALIDX).
 
 **Why**: 문구 회귀 고정(golden)과 LLM 실패일 소실 방지가 정적의 강점. AUTO-1을 "슬롯 채우기"에서 "카드당 의미문 1개 보장"으로 재정의해 인라인 의미문 있는 카드의 중복을 원천 차단.
+## [2026-09-07] D-AGENT-SHOT-1 — 야간 렌더러 온디맨드화 (신규 인증 표면 0·산출물 경로 분리) [ops][infra]
+
+> 트랙: AGENT-SHOT-1. 야간 도그푸딩(run_dogfood.sh) 렌더 경로 재사용으로 임의 화면 온디맨드 캡처.
+
+- **재사용**: `scripts/shot.sh` → `auto_agent_system/dogfood/shot.py` → 기존 `collect_rendered.run_render(screens)`(인증·Playwright) 그대로 호출. **신규 인증 코드 0** — `dogfood_env()` `.env` 명시 로드(S2.1)와 `render_screens.mjs` `login()`(API POST + localStorage) 재사용. 사용자 override는 `DOGFOOD_USER/PASSWORD` env(기존 경로·신규 코드 아님).
+- **PNG 능력 추가(env-gated)**: 야간 렌더러는 **스크린샷을 안 찍고 innerText만 추출**(실측). `render_screens.mjs`에 `DOGFOOD_SHOT_DIR` 설정 시에만 `page.screenshot({fullPage})` + 로딩 소멸 대기(`불러오는 중`/스켈레톤 폴링) 추가. **야간은 env 미설정 → 무영향**(행위보존: collect_rendered 5/5 인증 동일·스크린샷 0).
+- **산출물 분리**: `stock-vis-nightly/adhoc/<YYYYMMDD_HHMM>/`(PNG + 텍스트 + meta.json{URL·authenticated·web_tree_hash·ts}). `rendered_/quant_/rubric_` 파일명 규칙·야간 05:20 경로·launchd plist **무접촉**.
+- **채점 분리**: `--no-score` 기본(캡처 전용) → LLM 비용 0. 렌더·채점은 별도 `python -m` 모듈이라 서비스 개작 없이 분리(HALT 조건 미해당).
+- **인앱 브라우저 경로 불가(확정)**: 클로드 인앱 패널이 :3000 외 오리진 XHR을 `ERR_BLOCKED_BY_CLIENT`로 차단(09-07 포트 3종 프로브 확증) → 재시도 금지. 온디맨드 캡처는 이 헤드리스 경로가 정본.
+
+**Why**: 디렉터가 특정 화면(예: EVT-CHAIN-1B 밴드)을 즉시 눈으로 판정하려면 야간 배치를 기다리거나 인앱 브라우저(구조적 불가)에 의존해야 했다. 야간 렌더러는 이미 라이브 :3000 + 실 로그인으로 실화면을 읽으므로, 인증·렌더를 재사용하고 스크린샷만 env-gated로 얹으면 신규 인증 표면 0·야간 행위보존으로 온디맨드 캡처가 성립한다.
+
+**종결(디렉터 처분 2026-09-08)**: DoD 충족 → AGENT-SHOT-1 종결. 첫 사용 사례 대상은 dogfood_agent 가시 화면(`/monitor` 목록 풀페이지·`adhoc/20260908_1124/adhoc_monitor.png`·authenticated=true)으로 교체(도구 사용례 문서화). IONQ(df008c88) 캡처는 보류(교차사용자 경계 = D-AUTO-NO-PERSONAL-CREDS).
+
+## [2026-09-08] D-AUTO-NO-PERSONAL-CREDS — 자동화가 사용자 개인 자격증명을 요구하면 "범위 설계 반려" [ops][process][security]
+
+> 트랙: AGENT-SHOT-1 상신 판정. 디렉터 처분(2026-09-08).
+
+- **규약**: 자동화/에이전트가 **사용자 개인 계정 비밀번호**를 요구해야 동작한다면, 그것은 상신(승인 요청) 대상이 아니라 **"범위 설계 반려"** 사유다 — 개인 자격증명은 전달 경로 자체가 기록으로 남으므로 요구·중계하지 않는다. 대안: 전용 에이전트 계정(dogfood_agent) 사용 or 대상 화면 교체 or 소유자 세션 밖 렌더 포기.
+- **적용례**: AGENT-SHOT-1이 goid545 소유 모니터(IONQ)를 렌더하려면 goid545 비밀번호가 필요 → 옵션 거부. dogfood_agent 가시 화면으로 대상 교체.
+- **교차사용자 404 = 결함 아님**: dogfood_agent가 타 사용자 모니터 조회 시 "찾을 수 없는 모니터" = **계정 경계 정상 작동의 실측 증거**(재조사 불요).
+
+**Why**: 개인 비밀번호를 채팅/스크립트로 요구하면 그 자체가 자격증명 노출 경로가 된다(마스킹해도 전달 시점에 기록). 자동화 설계는 전용 계정·공개 대상으로 성립해야 하며, 개인 세션 의존은 설계 결함으로 되돌린다.
