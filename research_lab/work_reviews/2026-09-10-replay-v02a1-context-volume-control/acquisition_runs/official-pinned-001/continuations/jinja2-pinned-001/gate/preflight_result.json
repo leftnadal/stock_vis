@@ -1,0 +1,36 @@
+{
+  "blocker": "local_tokenizer_does_not_reproduce_provider_reference_counts",
+  "experiment": "Research Evidence Handoff Replay v0.2A.1",
+  "model_invocations": 0,
+  "no_alternative_search_performed": true,
+  "reference_counts": {
+    "original": {
+      "local": 2,
+      "provider": 14387
+    },
+    "short": {
+      "local": 2,
+      "provider": 4903
+    }
+  },
+  "status": "blocked_tokenizer_accounting_mismatch",
+  "tokenizer_identity": {
+    "apply_chat_template_available": true,
+    "backend_tokenizer_sha256": "ffb7a28b27dabcc333662fd3e0b0005d9e79a1c22e31453ab5a3017fbd5f25c0",
+    "immutable_revision": "dc4d348443bc740c68e2d77492492c11606384d5",
+    "is_fast": true,
+    "local_files_only": true,
+    "name_or_path": "/Users/byeongjinjeong/Developer/stockvis_research_runtime/.experiments/replay-v02a1-official-pinned-001/tokenizer_snapshot",
+    "offline_environment": {
+      "HF_HUB_OFFLINE": "1",
+      "TRANSFORMERS_OFFLINE": "1"
+    },
+    "requested_model": "Qwen/Qwen3.5-122B-A10B",
+    "tokenizer_class": "Qwen2Tokenizer",
+    "tokenizers_version": "0.23.2",
+    "transformers_version": "5.16.1",
+    "trust_remote_code": false,
+    "use_fast": true,
+    "vocab_size": 248044
+  }
+}

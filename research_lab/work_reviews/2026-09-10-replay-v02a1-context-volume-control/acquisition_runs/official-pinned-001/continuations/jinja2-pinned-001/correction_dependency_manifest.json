@@ -1,0 +1,231 @@
+{
+  "direct_correction_dependencies": [
+    {
+      "name": "Jinja2",
+      "project_locator": "https://pypi.org/project/Jinja2/3.1.6/",
+      "version": "3.1.6"
+    },
+    {
+      "name": "MarkupSafe",
+      "project_locator": "https://pypi.org/project/MarkupSafe/3.0.2/",
+      "version": "3.0.2"
+    }
+  ],
+  "downloaded_correction_artifacts": [
+    {
+      "bytes": 12348,
+      "filename": "MarkupSafe-3.0.2-cp312-cp312-macosx_11_0_arm64.whl",
+      "sha256": "846ade7b71e3536c4e56b386c2a47adf5741d2d8b94ec9dc3e92e5e1ee1e2225",
+      "source_index": "https://pypi.org/simple"
+    },
+    {
+      "bytes": 134899,
+      "filename": "jinja2-3.1.6-py3-none-any.whl",
+      "sha256": "85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67",
+      "source_index": "https://pypi.org/simple"
+    }
+  ],
+  "installed_packages_freeze": [
+    "annotated-doc==0.0.5",
+    "anyio==4.15.1",
+    "certifi==2026.7.22",
+    "click==8.5.0",
+    "filelock==3.32.6",
+    "fsspec==2026.7.0",
+    "h11==0.16.0",
+    "hf-xet==1.6.0",
+    "httpcore==1.0.9",
+    "httpx==0.28.1",
+    "huggingface_hub==1.30.0",
+    "idna==3.19",
+    "Jinja2==3.1.6",
+    "markdown-it-py==4.2.0",
+    "MarkupSafe==3.0.2",
+    "mdurl==0.1.2",
+    "numpy==2.5.3",
+    "packaging==26.3",
+    "pip==24.0",
+    "Pygments==2.21.0",
+    "PyYAML==6.0.3",
+    "regex==2026.9.10",
+    "rich==15.0.0",
+    "safetensors==0.8.0",
+    "shellingham==1.5.4",
+    "tokenizers==0.23.2",
+    "tqdm==4.70.0",
+    "transformers==5.16.1",
+    "typer==0.27.2",
+    "typing_extensions==4.16.0"
+  ],
+  "original_asset_manifest_sha256": "c3ee5879f814039d1589aecfcd510661edb11bfcc9d5f2e79fad7c4cd2cea245",
+  "original_dependency_manifest_sha256": "40498fd446d4b518fbff76fb4f529f424f38e4457f9c746c132fc2f1594aaa1e",
+  "original_tokenizer_assets_verified": [
+    {
+      "bytes": 7756,
+      "filename": "chat_template.jinja",
+      "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715"
+    },
+    {
+      "bytes": 3798,
+      "filename": "config.json",
+      "sha256": "af07d0423658865afb52bd0d6fd3c2cc45d988425b76193467fd19129655cecd"
+    },
+    {
+      "bytes": 244,
+      "filename": "generation_config.json",
+      "sha256": "303aba891d66ab63908a7b3cc9163bcb835fdf8b9f6301c73216f3f1eb3992dd"
+    },
+    {
+      "bytes": 12807982,
+      "filename": "tokenizer.json",
+      "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+    },
+    {
+      "bytes": 16710,
+      "filename": "tokenizer_config.json",
+      "sha256": "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8"
+    }
+  ],
+  "original_wheels_verified": [
+    {
+      "bytes": 5302,
+      "filename": "annotated_doc-0.0.5-py3-none-any.whl",
+      "sha256": "117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101"
+    },
+    {
+      "bytes": 132079,
+      "filename": "anyio-4.15.1-py3-none-any.whl",
+      "sha256": "6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101"
+    },
+    {
+      "bytes": 136983,
+      "filename": "certifi-2026.7.22-py3-none-any.whl",
+      "sha256": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775"
+    },
+    {
+      "bytes": 125251,
+      "filename": "click-8.5.0-py3-none-any.whl",
+      "sha256": "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360"
+    },
+    {
+      "bytes": 100189,
+      "filename": "filelock-3.32.6-py3-none-any.whl",
+      "sha256": "3f16ecd0117feae0dfc147e8c62eb5daeccd8bd800378c3ddf416de9b4feb6b1"
+    },
+    {
+      "bytes": 206583,
+      "filename": "fsspec-2026.7.0-py3-none-any.whl",
+      "sha256": "b57ddbafedfaef7018c1ecab32aa200a9d7ca26b77965f64e48b70061249d279"
+    },
+    {
+      "bytes": 37515,
+      "filename": "h11-0.16.0-py3-none-any.whl",
+      "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"
+    },
+    {
+      "bytes": 3876287,
+      "filename": "hf_xet-1.6.0-cp38-abi3-macosx_11_0_arm64.whl",
+      "sha256": "f0906082d9932ae0c0057fa194041c22b4e2cdb46b2592ef3b91f020d62a081a"
+    },
+    {
+      "bytes": 78784,
+      "filename": "httpcore-1.0.9-py3-none-any.whl",
+      "sha256": "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"
+    },
+    {
+      "bytes": 73517,
+      "filename": "httpx-0.28.1-py3-none-any.whl",
+      "sha256": "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"
+    },
+    {
+      "bytes": 796795,
+      "filename": "huggingface_hub-1.30.0-py3-none-any.whl",
+      "sha256": "96ae0a8e99a234374a6fe43e989ebd21c04640b91ab2927e7e5773ba1131ca59"
+    },
+    {
+      "bytes": 68550,
+      "filename": "idna-3.19-py3-none-any.whl",
+      "sha256": "815e7be7a7806d54abb586dc943addc79e8b2ee16915059658cbeff4b1b43bf4"
+    },
+    {
+      "bytes": 91687,
+      "filename": "markdown_it_py-4.2.0-py3-none-any.whl",
+      "sha256": "9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a"
+    },
+    {
+      "bytes": 9979,
+      "filename": "mdurl-0.1.2-py3-none-any.whl",
+      "sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"
+    },
+    {
+      "bytes": 5445405,
+      "filename": "numpy-2.5.3-cp312-cp312-macosx_14_0_arm64.whl",
+      "sha256": "a72f874bc9e10e4b8f80426fb49716d5141f64442a0c8418065093ec8017fbb0"
+    },
+    {
+      "bytes": 129956,
+      "filename": "packaging-26.3-py3-none-any.whl",
+      "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
+    },
+    {
+      "bytes": 1250147,
+      "filename": "pygments-2.21.0-py3-none-any.whl",
+      "sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9"
+    },
+    {
+      "bytes": 173973,
+      "filename": "pyyaml-6.0.3-cp312-cp312-macosx_11_0_arm64.whl",
+      "sha256": "fc09d0aa354569bc501d4e787133afc08552722d3ab34836a80547331bb5d4a0"
+    },
+    {
+      "bytes": 291905,
+      "filename": "regex-2026.9.10-cp312-cp312-macosx_11_0_arm64.whl",
+      "sha256": "866de9f98df0611d7b62b3a8729d3284a64c0cc6edd90bb95a533e443a4939cb"
+    },
+    {
+      "bytes": 310654,
+      "filename": "rich-15.0.0-py3-none-any.whl",
+      "sha256": "33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb"
+    },
+    {
+      "bytes": 484562,
+      "filename": "safetensors-0.8.0-cp310-abi3-macosx_11_0_arm64.whl",
+      "sha256": "c80201d22cbf405b80647a60ada77bba06c8fba2da2743ba1e89cdcc39a81f25"
+    },
+    {
+      "bytes": 9755,
+      "filename": "shellingham-1.5.4-py2.py3-none-any.whl",
+      "sha256": "7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686"
+    },
+    {
+      "bytes": 3101593,
+      "filename": "tokenizers-0.23.2-cp310-abi3-macosx_11_0_arm64.whl",
+      "sha256": "986670e43691469dcee610ea0f846f91a8f84e91fc6f7a48d4c064414c0ec2bf"
+    },
+    {
+      "bytes": 80184,
+      "filename": "tqdm-4.70.0-py3-none-any.whl",
+      "sha256": "7f585706bfddbdebf89daac705b2dfcc16890130727d3197ca62c732b4310953"
+    },
+    {
+      "bytes": 12080592,
+      "filename": "transformers-5.16.1-py3-none-any.whl",
+      "sha256": "2f2d5b98a5ad3718713653734298fa620754ed683702a635ebb587df3ed29c7e"
+    },
+    {
+      "bytes": 123130,
+      "filename": "typer-0.27.2-py3-none-any.whl",
+      "sha256": "b3a5fc4342d5fc8fda8fc3010b1cf117e9249aab7fae800c2eff62fd3842d97d"
+    },
+    {
+      "bytes": 45571,
+      "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8"
+    }
+  ],
+  "platform": "macOS-26.3-arm64-arm-64bit",
+  "python": "3.12.2 (v3.12.2:6abddd9f6a, Feb  6 2024, 17:02:06) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "source": "official PyPI",
+  "source_index": "https://pypi.org/simple",
+  "status": "corrected_environment_ready"
+}

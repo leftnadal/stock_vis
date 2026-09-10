@@ -1,0 +1,36 @@
+{
+  "correction_dependency_provenance_complete": true,
+  "correction_id": "jinja2-pinned-001",
+  "experiment": "Research Evidence Handoff Replay v0.2A.1",
+  "external_environment_path": "/Users/byeongjinjeong/Developer/stockvis_research_runtime/.experiments/replay-v02a1-jinja2-pinned-001",
+  "finished_at": "2026-09-10T23:28:42.820425+00:00",
+  "gate_status": "blocked_tokenizer_accounting_mismatch",
+  "historical_artifacts_modified": false,
+  "historical_reference_counts": {
+    "original": {
+      "local": 2,
+      "provider": 14387
+    },
+    "short": {
+      "local": 2,
+      "provider": 4903
+    }
+  },
+  "long_control_input_tokens": null,
+  "model_invocations": 0,
+  "network_acquisition_command_attempts": 1,
+  "network_disabled_after_correction_acquisition": true,
+  "network_scope": "one official-PyPI download command for two exact wheels",
+  "original_tokenizer_assets_verified": 5,
+  "original_wheels_verified": 27,
+  "parent_acquisition": "official-pinned-001",
+  "pinned_stack": {
+    "Jinja2": "3.1.6",
+    "MarkupSafe": "3.0.2",
+    "tokenizers": "0.23.2",
+    "transformers": "5.16.1"
+  },
+  "short_input_tokens": null,
+  "started_at": "2026-09-10T23:28:23.638340+00:00",
+  "status": "blocked_tokenizer_accounting_mismatch"
+}
