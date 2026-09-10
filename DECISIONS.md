@@ -7658,3 +7658,45 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **Why**: 무기한 allowlist(ⓒ)는 "언젠가 치우자"를 코드에 새기는 것이고, 그 언젠가는 오지 않는다 — 이 트랙이 고친 원 병이 정확히 그것이었다(`chainsight.backbone` 10일 방치). 예약 슬라이스에 만료를 위탁하는 원 방식은 슬라이스가 있는 항목에만 통하므로 규약으로서 불완전했다. 기한을 목록 안에 박으면 **유예의 비용이 시간에 비례해 드러나고**, 연장하려면 DECISIONS에 근거를 남겨야 하므로 침묵 연장이 불가능해진다.
 
 **감수한 단점**: 코드 변경 없이 날짜만으로 RED가 되는 테스트다(빌드 재현성을 시간에 결합). 일반적으로 안티패턴이며 주석에 그렇게 명시했다. 여기서는 **의도된 트립와이어**이고, 그래서 실패 메시지가 사유(`why`)와 세 가지 해결 경로를 스스로 출력한다.
+## [2026-09-10] D-VERIFY-ORIGIN-SPLIT — 검증 지시서는 같은-오리진 항목과 백엔드-API 항목을 미리 가른다 [process][frontend][harness]
+
+> 트랙: DASH-TAB-VERIFY 실측 교훈. MGMT-BATCH-b48.
+
+- **규율**: UI 검증 지시서는 검증 항목을 **⑴ 같은 오리진(정적 파일·SSR)으로 확인 가능** vs **⑵ 백엔드 API 크로스 오리진 의존**으로 **미리 갈라 적는다**. 브라우저는 크로스 오리진 localhost(예: :3100 FE → :18765 API)를 CORS로 차단하므로, dev 오리진에서 API 구동 섹션은 fail-quiet(빈 표시)돼 육안 불가.
+- **실증(DASH-TAB-VERIFY)**: :3100 dev에서 [발견] 탭(dashboard.json=같은 오리진 심링크)은 완전 렌더됐으나, [시장] 탭(사분면·매크로·이벤트·뉴스=:18765 API)은 `CORS_ALLOWED_ORIGINS`가 :3000만 허용해 전부 차단 → "사분면 높이 축소" 육안 불가.
+- **적용**: 지시서 DoD에 "이 오리진에서 확인 가능 항목" 명시. API 의존 항목은 (a) 프록시·같은 오리진 서빙 or (b) CORS 임시 허용(서비스 재기동=승인) or (c) 별 오리금(:3000 배포 후) 중 택일을 사전 지정.
+
+## [2026-09-10] D-DEPLOY-TEE-LOG — 배포/관리 커맨드는 `2>&1 | tee <log>`로 stdout 영속 [ops][process]
+
+> 트랙: BF-1 종결 교훈. MGMT-BATCH-b48.
+
+- **규율**: 배포 카드·관리 커맨드(`manage.py *_apply` 등)는 **`2>&1 | tee ~/Library/Logs/stockvis/<cmd>_<ts>.log`로 stdout을 파일 영속**한다. 터미널 stdout만으로 실행하면 세션 종료 후 수치가 영구 소실된다.
+- **실증(BF-1)**: `backfill_news_stocknews --apply`의 `created` 수치가 어느 로그에도 남지 않아 **영구 미확정**으로 종결(beat `[stock_news_sync]`의 created는 celery 로그에 있어 대체 확보). 결함 아님·수치만 미확정.
+
+## [2026-09-10] D-NUMBERING-ORDER — common-bugs 번호 = 등재 순서(발견 순서 아님)·발견일 병기·예약 건너뜀 [harness][process]
+
+> 트랙: MGMT-BATCH-b48 채번 충돌 정정(디렉터 처분).
+
+- **규율**: common-bugs `#NN`은 **등재(부여) 순서**이지 발견 순서가 아니다. 각 엔트리에 **발견일을 병기**해 연대 정보를 보존한다(예: "#131, … 발견 2026-09-08, 채번 b48"). 예약분(선행 배치가 "후보 #NN"으로 찜한 번호)은 배치 엔트리에 명시하고, **다음 배치는 그 번호를 건너뛴다**(침범 시 renumber 불가·공개 repo).
+- **실증(이중 충돌)**: ⑴ b47이 #130을 launchd/.env 후보로 예약. ⑵ b48 편집 중 병렬 **MGMT-LEDGER-2**(`6bc5172d`)가 origin/main에 **#130~132를 먼저 착지**(dispatch규율·일련번호금지·크레딧소진). rebase가 텍스트 무충돌로 병합해 **번호 중복(#130~132 각 2회)** 발생 → 디렉터 처분으로 b48 전건을 **#133~136으로 순차 밀기**(launchd #133·llm_fill #134·health_check #135·metadata #136·순서 유지). **교훈**: 텍스트 무충돌 rebase도 의미 충돌(중복 번호)을 낼 수 있다 → push 전 번호 유일성 grep 필수.
+
+## [2026-09-10] D-NUMBERING-MEASURE-QUEUE — 채번 실측 = "max+1"이 아니라 대기열 전수 [harness][process]
+
+> 트랙: MGMT-BATCH-b48. D-INSTR-BATCH-NUM-MEASURED 보강.
+
+- **규율**: 채번 실측은 **`max+1`만 읽지 말고 미채번 후보 대기열 전수**(common-bugs "채번 후보/대기" 엔트리 + PROGRESS 예약분)를 본다. `max+1`만 보면 연대상 앞선 미채번 후보를 지나쳐 번호를 배정하는 오류가 난다.
+- **실증(이 충돌의 근인)**: b48 지시서가 max+1(#130)만 읽고 미채번 대기열(launchd/.env·DUAL-OBS-1·COPYFIX·S2-GUARDFIX)을 누락 → #130 배정 충돌 → 디렉터 정정.
+
+## [2026-09-10] D-SCAN-REC-JOIN-J2 — 추천 payload 섹터/재무 조인은 FE가 preview_stocks로, 실패 시 정칙 ⑴ 생략 [dashboard][frontend]
+
+> 트랙: SCAN-UX-2 설계 턴 F 결정. MGMT-BATCH-b48. 가중합 J2 8.30 vs J3 8.00(마진 0.30).
+
+- **결정(J2 채택)**: 추천 카드가 섹터 칩("추천 N/10")·재무 위계를 붙일 때, **FE가 `ticker`→`preview_stocks.sector`(및 technical)로 조인**한다. 조인 실패(해당 종목이 preview에 없음)면 **정칙 ⑴로 그 절만 조용히 생략**(N/A 배지 금지).
+- **타이브레이커**: J2=J3 근접(0.30) → **payload를 늘리지 않는 쪽**이 예산 초과 중인 현재에 정합(추천 payload에 sector·재무 미포함 실측=DASH-TAB recon). **J1(baker가 rec에 sector/technical 주입)은 추천 점수 눈금 재설계와 함께** 재검토(payload 증분 동반이라 눈금 트랙에 종속).
+
+## [2026-09-10] D-SCAN-PAYLOAD-OVERAGE — cards payload 예산 초과 확정·symbol-ref 축약 보류 해제 [dashboard][scanner]
+
+> 트랙: SCAN-UX-2 B 정정. MGMT-BATCH-b48. cf. DECISIONS payload 예산 문언(⑵ "cards gzip 246→~310KB").
+
+- **정정(초과 확정)**: 예산 원문 대상 = **cards gzip**("246→~310KB"). 실측 cards **393KB gz > ~310KB** → **초과 확정**. 단 cards/*.json은 **lazy fetch**(카드 드로어 첫 열림 1회, 초기 로드 아님)이므로 초기 로드 예산엔 무영향·드로어 UX만 대상.
+- **처분**: **symbol-ref 축약(D-SCAN-B2-DERIVE 기등재 완화책) 보류 해제·상신** — SCAN-UX-2 사이클 1의 보류를 연다. TASKQUEUE 위임(dashboard/shared).
