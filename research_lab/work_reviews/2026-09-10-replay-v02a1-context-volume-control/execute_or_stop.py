@@ -50,7 +50,8 @@ def verify_start():
 def verify_staged(prefixes: tuple[str, ...]):
     staged = git("diff", "--cached", "--name-only", capture=True).splitlines()
     root_prefix = str(ROOT.relative_to(REPO)) + "/"
-    if not staged or any(not path.startswith(root_prefix + prefixes) for path in staged):
+    allowed = tuple(root_prefix + prefix for prefix in prefixes)
+    if not staged or any(not path.startswith(allowed) for path in staged):
         raise RuntimeError("staged_scope_violation")
 
 
