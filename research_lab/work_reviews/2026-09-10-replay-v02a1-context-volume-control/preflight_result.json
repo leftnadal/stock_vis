@@ -1,0 +1,9 @@
+{
+  "blocker": "compatible_local_tokenizer_unavailable",
+  "experiment": "Research Evidence Handoff Replay v0.2A.1",
+  "historical_artifacts_modified": false,
+  "model_invocations": 0,
+  "network_tokenizer_download_attempted": false,
+  "safe_error_type": "ModuleNotFoundError",
+  "status": "blocked_before_model_invocation"
+}
