@@ -78,6 +78,41 @@ def test_h_seed_updates_score_but_not_status_on_existing():
 
 
 @pytest.mark.django_db
+def test_seed_new_pair_born_evidence_layer():
+    """S3-1C 보강 N-3c: 신규 SEC pair는 serving_layer='evidence'로 태어난다.
+
+    (CO_MENTIONED 생성부와 대칭 — 모델 default='pending'이라 미설정 시 관계 줄에서 사라진다.)
+    """
+    a, b = _stock("AAA"), _stock("BBB")
+    doc = _doc(a)
+    _sce(doc, a, b, grade="high")
+    seed_relations_to_chainsight()
+    rc = RelationConfidence.objects.get(
+        symbol_a=a.pk, symbol_b=b.pk, relation_type="SUPPLIES_TO")
+    assert rc.serving_layer == "evidence"
+
+
+@pytest.mark.django_db
+def test_seed_does_not_touch_existing_serving_layer():
+    """S3-1C 보강 N-2: 기존 행의 serving_layer 무접촉(excluded 거부권 보존).
+
+    create_defaults만 evidence를 쓰므로 update 경로는 excluded를 evidence로 되돌리지 않는다.
+    """
+    a, b = _stock("AAA"), _stock("BBB")
+    doc = _doc(a)
+    RelationConfidence.objects.create(
+        symbol_a=a.pk, symbol_b=b.pk, relation_type="SUPPLIES_TO",
+        relation_category="truth", relation_status="confirmed",
+        serving_layer="excluded", truth_score=85, evidence_tier_best=1,
+    )
+    _sce(doc, a, b, grade="high")  # 재관측 → update 경로
+    seed_relations_to_chainsight()
+    rc = RelationConfidence.objects.get(
+        symbol_a=a.pk, symbol_b=b.pk, relation_type="SUPPLIES_TO")
+    assert rc.serving_layer == "excluded"  # evidence로 안 되돌림
+
+
+@pytest.mark.django_db
 def test_f_seed_new_pair_keeps_initial_status_by_grade():
     """(f) 신규 pair 생성 초기값 현행 유지: high→confirmed, medium→probable (create_defaults)."""
     a, b = _stock("AAA"), _stock("BBB")

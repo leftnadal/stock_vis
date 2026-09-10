@@ -381,6 +381,11 @@ export interface MarketStoryCard {
   window_label?: string;
   /** 근거 팩(A-6). */
   evidence?: StoryEvidence[];
+  // ── S3-1C 추가(D-S3-8) ──
+  /** 관계 종류 한 줄(serving_layer 축). 기록됨 문장 또는 "관계 기록 없음". 등급 단어 금지. */
+  relation_line?: string;
+  /** relation_line 이 '기록됨' 계열인지(FE 시각 구분). context·CO_MENTIONED·무행=false. */
+  relation_recorded?: boolean;
 }
 
 export interface MarketStoryFeedSummary {
