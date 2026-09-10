@@ -5,6 +5,17 @@
 
 ---
 
+## MGMT-LEDGER-2 등재 (2026-09-08, 등재만 · 구현 금지) [ops][mgmt]
+
+> mgmt 배치 등재. ①③④=관찰/프로브(도메인·디렉터 판정), ②=상신 필요, ⑤=T3·T4 실효 조건. 구현은 각 소관 트랙.
+
+- 🆕 **EOD-ISSTALE-DEF** (①·todo·도메인 이관) — 베이커 `is_stale` 플래그 정의 프로브. 거래일 전진에도 지속 점등(08-27~ 관측·dogfood `eod.is_stale` WARN 재발). 플래그 산정 기준이 거래일 갱신을 반영하는지 정의 검토 → EOD/대시보드 도메인 트랙 소관.
+- 🆕 **LOG-ROTATE** (②·상신 필요·@infra) — `~/Library/Logs/stockvis` 대형 로그 로테이션 도입(worker-error ~327MB · neo4j-error ~531MB). **시스템 설정(launchd/newsyslog) 동반 → 상신 필요 항목**(자기 집행 금지).
+- 🆕 **LOG-FORMAT-DATE** (③·todo) — nightly 로그 본문 타임스탬프에 **날짜 포함**(현재 `[HH:MM:SS]`만, 날짜는 파일명에만). 0-3(a) 판별: health json은 mtime이 자기 날짜(9/4~9/8 각 05:40) → "매일 실행" 확정으로 catch-up 기각 가능했으나, **로그 본문만으로는 날짜 판별 불가**(mtime 의존) → 자기서술 로그 위해 등재.
+- 🆕 **NIGHTLY-AUDIT-MISS** (④·발동·디렉터 판정) — 0-3(b) 확정: tier3 감사 산출물 **09-04~ 매일 부재**(마지막 성공 09-03 `reports/9월/3일`). 로그는 존재하나 즉시 **HALT**: "전용 worktree에 미커밋 변경 존재 — 직전 run 커밋/push 실패 잔재 보호. 격리·커밋 중단"(launchd 23:00 발화는 확인 = 스케줄 미스 아님). 원인 = nightly repo worktree(`~/stock-vis-nightly/repo`)에 미커밋 `?? frontend/docs/` 잔재 → 격리 자기보호가 매일 중단. **원인 판정·복구(runtime op·worktree 정리)는 디렉터**(본 세션 무접촉). cf. LLM-CREDIT-OUTAGE 관찰 C-1(동일 부재 언급).
+- 🆕 **REPORT-FIX-REALIZE** (⑤·검증 대기) — T3(REPORT-TLDR-SYSLINE)·T4(DOGFOOD-EOD-LAG-TRADINGDAYS) **착지 ≠ 실효**. 실효 검증 = **다음 `sv sync`(worker_sync) 후 아침 메일 2종**(@backend 06:15 agent report의 System 줄 = 실제 beat/neo4j 반영 / dogfood 06:20 report의 `eod.trading_date` = 주말·휴장 개재에도 ok). **활성화≠배포** — 유닛 테스트 통과는 착지이며, 자연 발화가 실효 게이트. MIG-BUNDLE-1 배포창(관문②) 동반 랜딩으로 참조.
+
+
 ## CS-S3 트랙 — "이야기 리포트" (S3-PRE 등재 재landing + S3-1 착지, 2026-09-07) [chainsight][frontend]
 
 > D-S3-1~5 + CS-S3-1 착지 결정(DECISIONS 2026-09-07). R2-S1/S2 아크 연속. S3-PRE 등재분이 main 미랜딩이라 S3-1과 함께 통합.
@@ -1646,6 +1657,7 @@
 - ✅ **CS-UNIVERSE-EXCLUDE-FLAG** (B) — Stock.universe_excluded(stocks 0017)+데이터 승격(0018·OKLL/IREG/GEVG) + mindmap_views 전환 + 상수 제거. 검증: 행위보존 754==754.
 - ✅ **CS-STORY-ACTIVITY-CACHE** (C) — SymbolStoryActivity(chainsight 0035)+물질화 태스크·커맨드+캐시우선 서빙+전역조회. 검증: 31,978행/35.75초·전역조회 0.7ms·캐시 3.9ms vs 라이브 55ms.
 - 🔴 **[MIG-BUNDLE-1 관문②]** 병진 잔여 — `register_chainsight_beats`(chainsight-materialize-story-activity ET 12:00 등록) + **worker 재시작**([[lesson_celery_task_registration]]).
+  - 🆕 **동반 랜딩 (MGMT-LEDGER-2 ⑤·REPORT-FIX-REALIZE)** — T3 TL;DR System 줄(`agent_reports.py`) + T4 dogfood EOD 지연 산식(`check_quant.py`) 수정분이 다음 `sv sync`에 편승. 실효 검증 = 아침 메일 2종(@backend agent report System 줄 · dogfood `eod.trading_date`). 착지≠실효.
 - 🟢 **S2 착수 준비 완료** — 캐시·전역조회·(-activity_ratio) 인덱스 = R2-S2 전역 활동 뷰 소스 완비.
 - ✅ **[EVT-4B] 완료** — CORR-4(거시 event_time UTC 해석·경계 보정) + FE-TUNE-1(T2 거시 접기·세션 빈칸·서프라이즈 200%). BE `da3a871c`+FE `31bf7791`(로컬 sess-evt-6). 0-3 UTC 게이트 PASS. **push 후 :3000 재빌드 필요(사용자 지시)** — 재빌드 전까지 화면 미반영.
 - ✅ **[EVT-IMPL-4-SHOT] 완료** — 증적 = 2026-08-31 디렉터 채팅 첨부 5장·시각 계약 판정 통과.

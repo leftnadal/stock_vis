@@ -131,6 +131,42 @@ def test_freshness_empty_signal_cards_fails(monkeypatch):
     assert out["eod.signal_cards"]["status"] == cq.FAIL
 
 
+def test_freshness_ok_weekend_intervening(monkeypatch):
+    """MGMT-LEDGER-2 T4 회귀 ⑴ — 주말 개재(09-01 사례).
+
+    월요일 세션(08-31)을 점검하는데 최신 베이크가 직전 금요일(08-28)이면,
+    구 달력일 산식은 lag=3일 → FAIL(MAX=1). 신 거래일 산식은 08-28 =
+    previous_trading_day(08-31)이라 ok(방금 닫힌 세션 미베이크 정상태).
+    """
+    payload = json.dumps({
+        "trading_date": "2026-08-28",   # 금요일
+        "is_stale": False,
+        "signal_cards": [{"id": "x"}],
+        "recommendations": [{"id": "y"}],
+    }).encode()
+    monkeypatch.setattr(cq, "_fetch", lambda url, timeout=cq.ROUTE_TIMEOUT_S: (200, payload, 1.0))
+    out = cq.check_freshness(date(2026, 8, 31))  # 월요일
+    assert out["eod.trading_date"]["status"] == cq.OK
+
+
+def test_freshness_ok_holiday_intervening(monkeypatch):
+    """MGMT-LEDGER-2 T4 회귀 ⑵ — 휴장 개재(09-07 노동절 → 익일 점검).
+
+    노동절(09-07 월) + 주말이 개재한 화요일 세션(09-08)을 점검하는데 최신
+    베이크가 직전 금요일(09-04)이면, 구 달력일 산식은 lag=4일 → FAIL.
+    신 거래일 산식은 09-04 = previous_trading_day(09-08)이라 ok.
+    """
+    payload = json.dumps({
+        "trading_date": "2026-09-04",   # 노동절 직전 금요일
+        "is_stale": False,
+        "signal_cards": [{"id": "x"}],
+        "recommendations": [{"id": "y"}],
+    }).encode()
+    monkeypatch.setattr(cq, "_fetch", lambda url, timeout=cq.ROUTE_TIMEOUT_S: (200, payload, 1.0))
+    out = cq.check_freshness(date(2026, 9, 8))  # 노동절 익일(화)
+    assert out["eod.trading_date"]["status"] == cq.OK
+
+
 def test_api_401_is_ok_without_token_but_fail_with_token(monkeypatch):
     monkeypatch.setattr(cq, "_fetch", lambda url, timeout=cq.ROUTE_TIMEOUT_S: (401, b"", 1.0))
     without = cq.check_apis(None)
