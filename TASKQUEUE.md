@@ -1709,7 +1709,7 @@
 
 ## D1-SCOREBOARD 후속 (D1-CLOSE-LEDGER 2026-09-02 — D1 종결)
 
-- 🕒 **SCB-CONTEXT-LAYER** — 채점 카드에 애널리스트 논거·현재 상황 비교 맥락 추가(병진 09-02 소감: "가격만 나오니 그렇구나 싶다"). **선행 필수: 재료 실측 recon**(컨센서스 이력·news·rag_analysis 등 실재 여부 read) — **실측 전 설계 금지**(cf. #128 죽은 테이블 교훈 — 원천 생존 검사가 사양). recon GREEN 후 설계 슬라이스 발행.
+- 🕒 **SCB-CONTEXT-LAYER** — 채점 카드에 애널리스트 논거·현재 상황 비교 맥락 추가(병진 09-02 소감: "가격만 나오니 그렇구나 싶다"). **✅ recon 완료(2026-09-10, SCB-CONTEXT-RECON·보고서 `docs/mgmt/SCB-CONTEXT-RECON_report.md`) · 설계 슬라이스 발행 대기.** 요지: **맥락 축 GREEN**(NewsEntity 614k·StockNews 98k 부활[#128 반전·beat ON]·좌표쿼리 sub-second·주입지점 E3 AnalysisContext budget 7000) / **논거 텍스트 RED**(grades_historical 100%채움이나 등급 카운트 추이일 뿐·FMP grades-historical numeric-only 확증·논거 텍스트 엔드포인트 미구현). rag_analysis 휴면(RED)·Neo4j/RC 14,072 생존(AMBER). 디렉터 결정 = 논거 축 (a)카운트추이 대체 (b)신규 FMP수집 (c)news 우회 택1. ⚠ stale 문서: StockNews 0행·beat enabled=False 기록·cost_ledger 로깅 경로.
 - 💤 **SCB-DERIVED-VISIBILITY** — SMR·XE 표시 방식 결정(현행 제외 유지 vs "채점 불가/데이터 부재" 행 표시). DailyPrice 0이라 파생 spot 불가 → 현재 렌더 9종에서 구조적 제외. 트리거 = SCB-CONTEXT-LAYER 설계 시 동반 재평가(맥락 층에서 "데이터 부재" 표기 방식 함께 결정).
 ## AGENT-S2 (2026-09-03)
 
