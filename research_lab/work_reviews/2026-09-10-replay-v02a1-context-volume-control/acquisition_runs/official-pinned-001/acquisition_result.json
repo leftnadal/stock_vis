@@ -1,0 +1,23 @@
+{
+  "acquisition_id": "official-pinned-001",
+  "attempt_limit": 1,
+  "attempt_number": 1,
+  "dependency_provenance_complete": true,
+  "experiment": "Research Evidence Handoff Replay v0.2A.1",
+  "external_environment_path": "/Users/byeongjinjeong/Developer/stockvis_research_runtime/.experiments/replay-v02a1-official-pinned-001",
+  "finished_at": "2026-09-10T06:41:04.538771+00:00",
+  "gate_status": "blocked_tokenizer_integrity_failure",
+  "historical_artifacts_modified": false,
+  "historical_reference_counts": null,
+  "model_invocations": 0,
+  "network_disabled_after_acquisition": true,
+  "no_alternative_search_performed": true,
+  "official_model_repository": "Qwen/Qwen3.5-122B-A10B",
+  "pinned_stack": {
+    "tokenizers": "0.23.2",
+    "transformers": "5.16.1"
+  },
+  "started_at": "2026-09-10T06:39:49.691111+00:00",
+  "status": "blocked_tokenizer_integrity_failure",
+  "tokenizer_asset_provenance_complete": true
+}
