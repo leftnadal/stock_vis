@@ -7,6 +7,7 @@
 import { useMemo, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { AlertCircle } from 'lucide-react'
 
 import { CloseModal } from '@/components/monitor/CloseModal'
@@ -22,6 +23,7 @@ import {
 } from '@/hooks/useMonitor'
 import { useHoldings } from '@/hooks/useWallet'
 import { P2B_RECOMMIT_SENTENCE } from '@/lib/monitor/duel'
+import { watchlistService } from '@/services/watchlistService'
 import type { Claim } from '@/types/monitor'
 
 function findHoldClaim(claims: Claim[] | undefined): Claim | null {
@@ -45,18 +47,45 @@ export function DuelView({ monitorId }: { monitorId: string }) {
   const { data: monitors } = useMonitors()
   const { data: holdings } = useHoldings()
 
-  const [candidateId, setCandidateId] = useState('')
-  const { data: candidateClaims } = useMonitorClaims(candidateId)
+  const [candidateSymbol, setCandidateSymbol] = useState('')
+  const [candidatePriceHint, setCandidatePriceHint] = useState<string | null>(null)
   const candidateMonitor = useMemo(
-    () => (monitors ?? []).find((m) => m.id === candidateId),
-    [monitors, candidateId]
+    () => (monitors ?? []).find((m) => m.target_ref.toUpperCase() === candidateSymbol.toUpperCase()),
+    [monitors, candidateSymbol]
   )
+  // 미등록 후보면 monitorId가 빈 문자열 → useMonitorClaims는 enabled=false로 skip.
+  const { data: candidateClaims } = useMonitorClaims(candidateMonitor?.id ?? '')
+
+  // 관심종목 칩(SWAP-P1 §3.3) — 실패 격리: 오류 시 칩만 숨기고 검색은 계속 동작(§4.4).
+  const { data: watchlistItems } = useQuery({
+    queryKey: ['duel-watchlist-chips'],
+    queryFn: async () => {
+      const wls = await watchlistService.getWatchlists()
+      const groups = await Promise.all(
+        (wls ?? []).map((w) => watchlistService.getWatchlistStocks(w.id).catch(() => []))
+      )
+      const seen = new Set<string>()
+      const out: { symbol: string; name: string; price?: string | null }[] = []
+      for (const items of groups) {
+        for (const it of items) {
+          const s = it.stock_symbol.toUpperCase()
+          if (seen.has(s)) continue
+          seen.add(s)
+          out.push({ symbol: s, name: it.stock_name, price: it.current_price ?? null })
+        }
+      }
+      return out
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000, // D-3: 대결 화면 재진입마다 N+1 재요청 방지
+  })
 
   const holdClaim = findHoldClaim(claims)
   const candidateClaim = findHoldClaim(candidateClaims)
 
   const holding = findHolding(holdings, monitor?.target_ref)
-  const candidateHolding = findHolding(holdings, candidateMonitor?.target_ref)
+  const candidateHolding = findHolding(holdings, candidateSymbol)
+  const candidateCurrentPrice = candidateHolding?.current_price ?? candidatePriceHint ?? null
 
   const [closingClaim, setClosingClaim] = useState<Claim | null>(null)
   const createEntry = useCreateDecisionJournalEntry()
@@ -98,9 +127,13 @@ export function DuelView({ monitorId }: { monitorId: string }) {
       <div className="mb-4">
         <CandidatePicker
           monitors={monitors ?? []}
-          excludeId={monitorId}
-          value={candidateId}
-          onChange={setCandidateId}
+          excludeSymbol={monitor.target_ref}
+          value={candidateSymbol}
+          onChange={(symbol, priceHint) => {
+            setCandidateSymbol(symbol)
+            setCandidatePriceHint(priceHint ?? null)
+          }}
+          watchlistItems={watchlistItems ?? []}
         />
       </div>
 
@@ -114,15 +147,15 @@ export function DuelView({ monitorId }: { monitorId: string }) {
           avgCost={holding?.avg_cost}
           currentPrice={holding?.current_price}
         />
-        {candidateId ? (
+        {candidateSymbol ? (
           <SideColumn
             testKey="candidate"
-            label={`후보 · ${candidateMonitor?.target_ref ?? candidateId}`}
-            targetRef={candidateMonitor?.target_ref ?? ''}
-            claim={candidateClaim}
-            monitorId={candidateId}
+            label={`후보 · ${candidateSymbol}`}
+            targetRef={candidateSymbol}
+            claim={candidateMonitor ? candidateClaim : null}
+            monitorId={candidateMonitor?.id}
             avgCost={candidateHolding?.avg_cost}
-            currentPrice={candidateHolding?.current_price}
+            currentPrice={candidateCurrentPrice}
           />
         ) : (
           <div
@@ -138,10 +171,10 @@ export function DuelView({ monitorId }: { monitorId: string }) {
         <div className="mb-4 flex flex-col gap-4">
           <HoldGauge
             claimId={holdClaim.id}
-            candidateRef={candidateMonitor?.target_ref ?? null}
+            candidateRef={candidateSymbol || null}
             holdPnlPct={holdClaim.zone_display?.pnl_pct ?? null}
             holdCurrentPrice={holding?.current_price ?? null}
-            candidateCurrentPrice={candidateHolding?.current_price ?? null}
+            candidateCurrentPrice={candidateCurrentPrice}
           />
 
           {zoneReached && (

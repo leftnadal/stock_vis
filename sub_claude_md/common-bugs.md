@@ -1795,11 +1795,11 @@ text = re.sub(r"<[^>]+>", " ", _SCRIPT_OR_STYLE.sub(" ", html))
 **원인**: 45일 창에 거시 high+critical가 조밀(실측 ≥11) → 날짜순 단순 `items[:12]` cap이 희소 성분(휴장 2·티저 2)을 밀어냄.
 
 **규율**: 다성분 BFF 스트립은 **희소·고가치 성분(휴장·관심 티저)을 먼저 보장**하고 남는 슬롯을 조밀 성분(거시, critical→high)으로 채운 뒤 최종 날짜순 표시. 단순 정렬-cap 금지. (구현 `apps/dashboard/services/event_strip_service.py`, `2aa9f588`.)
-## 주간 운영 지시서 dispatch 시점 = 대상 회차 발화 이후 — 발화 전 dispatch면 STEP 0 미발화 HALT (채번 후보, DSS-BEAT-1 2026-08-31) [process][harness][ops]
+## 주간 운영 지시서 dispatch 시점 = 대상 회차 발화 이후 — 발화 전 dispatch면 STEP 0 미발화 HALT (#130, DSS-BEAT-1 2026-08-31) [process][harness][ops]
 
 주간 적재/집계 지시서의 dispatch 시점은 **대상 스냅샷 회차(EstimateSnapshot 등) 발화 이후**로 규율한다. 발화 전 dispatch면 STEP 0 회차 실측이 미발화 → HALT. 이때 **근인 구분 명시**: (a) 집행 시점 미도래(발화 예정일 전) vs (b) 파이프라인 이상(발화 예정일 후에도 미발화). 케이던스(요일·주기) 정상 여부로 판별. 실증: DSS-W8-LOAD-1 08-27(목) 조기 dispatch → 8회차(08-28 금) 미발화 HALT → 08-28 발화 후 재개.
 
-## 지시서의 INCIDENTS INC-NN·common-bugs #NN 일련번호 사전지정 금지 — 집행 시점 실측 최대+1 부여 (채번 후보, DSS-BEAT-1 2026-08-31) [process][harness][git]
+## 지시서의 INCIDENTS INC-NN·common-bugs #NN 일련번호 사전지정 금지 — 집행 시점 실측 최대+1 부여 (#131, DSS-BEAT-1 2026-08-31) [process][harness][git]
 
 지시서 문안이 INCIDENTS `INC-NN`·common-bugs `#NN` 등 일련번호를 **사전 지정하지 않는다** — 집행 시점 실측 최대+1로 부여(발행~집행 사이 타 세션 선점 시 충돌). 충돌 시 본문 verbatim 유지·라벨만 정정 후 상신. 실증: DSS-W8-LOAD-1 T4 'INC-003' 문안 → INC-003(Neo4j 08-18) 선점 → INC-004 라벨 정정(상신·승인). cf. 비-mgmt 세션 #NN 사전지정 금지(#120, DSS-FLAT-OBS-1).
 
@@ -1908,8 +1908,41 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 
 **관측성**: 실패 사유를 구분해 로그에 남긴다(자격증명 부재 vs 로그인 거부 status vs 토큰 없음). 재발 시 로그만으로 판별된다.
 
-## 무인 LLM 파이프라인 크레딧 소진 — 자동 충전+잔액 감시로 방어, 소진 시 분석률 0% 고착 (채번 후보, DUAL-OBS-1 2026-09-07) `[news][llm][infra][process]`
+## 무인 LLM 파이프라인 크레딧 소진 — 자동 충전+잔액 감시로 방어, 소진 시 분석률 0% 고착 (#132, DUAL-OBS-1 2026-09-07) `[news][llm][infra][process]`
 
 무인 LLM 파이프라인 크레딧 소진 — API 크레딧은 사람 기억이 아닌 자동 충전+잔액 감시로 방어. 소진 시 증상 = 분석률 0% 고착·타 경로 잔불로 오인 가능. 실증: 09-01~03 3일 공백(LLM-CREDIT-OUTAGE).
 
 **정정 재료(DUAL-OBS-1 실측)**: 분석률(뉴스 심층분석)의 실경로는 **Gemini 2.5 Flash**(`news_deep_analyzer.py`·`GEMINI_API_KEY`)이며 **anthropic 아님**(anthropic=advisor 별도 경로). 실패 마커 = **quota/429/RESOURCE_EXHAUSTED**(Gemini rate-limit/quota 소진). ⇒ "타 경로(anthropic) 잔불로 오인" + **충전 대상 provider 오인**(anthropic 충전이 Gemini quota를 못 살림) = 소진 대응의 2대 함정. 잔액 감시는 **소비 provider별**로 건다. 09-03 충전 후에도 분석률 0%대 고착(09-04~06)이 그 실증.
+
+## 카피 규칙만 주고 완성 문장을 안 주면 실행자가 라벨 나열로 축소한다 (채번 대기, HUB-V02-S2/COPYFIX 2026-09-07) `[frontend][process]`
+
+결정론 UX 문구(정적 카피)를 신설할 때, 지시서에 **규칙만** 담고 완성 문장을 안 주면 실행자가 규칙을 **최소 충족하는 라벨 나열**로 축소한다(서술체 대신 명사형 종결·위젯 룰 문장과 중복·조합 통찰이 카테시안 조인으로 붕괴).
+
+**실증(S2)**: 지시서가 **문장 리터럴을 직접 준** breadth·sector 정적 fallback은 정확했고, **규칙만 준** 허브 4문장·RRG는 명사형·룰 중복·통찰 축소가 발생 → COPYFIX로 재작업.
+
+**처방**: ⑴ 결정론 문구 신설 지시는 **완성 문장 리터럴**을 싣는다(규칙만 X). ⑵ 재발 방지는 테스트 게이트로 박제 — **서술체 종결 정규식**(`/(니다|입력 데이터 대기)\.$/`, 괄호 제거 후) + **위젯 룰 문장과 N자 연속 공통부분 부재**(슬라이딩 윈도우). ⑶ 임계·로직·시그니처는 무변경, 문자열만 교체하는 수리는 diff 범위를 그 파일들로 못박는다. ⑷ **가드 정규식이 오탐하면 규칙을 완화하기 전에 입력을 정규화**할 수 있는지 먼저 본다(고유명 마스킹 > 패턴 완화 — S2-GUARDFIX: 연도 가드가 "러셀2000"에 오탐 → 패턴을 `년` 요구로 완화했더니 "2008 수준" 단독 연도가 통과 = 가드 약화. 정답은 고유명 마스킹 후 엄격 패턴 유지).
+
+## 범위 한정 세션이 기존 테스트를 조용히 삭제한다 (채번 대기, S2-GUARDFIX 2026-09-08) `[frontend][process][testing]`
+
+"문자열/카피 전용" 같은 범위 한정 세션이, 문자열 변경으로 깨지는 **기존 단언을 갱신하지 않고 삭제**해 커버리지가 조용히 준다. 문자열이 바뀌면 기존 단언이 깨지므로 *지우는 것이 가장 쉬운 수리*가 되기 때문.
+
+**실증**: S2-COPYFIX("문자열 전용")가 `yieldCurveSentence`의 **status-enum-지배 불변식** 테스트(spread 재계산 0 가드)를 함께 삭제(단언 56→47). status 밴드가 spread로 재계산되기 시작해도 잡을 게이트가 사라졌다 → GUARDFIX로 복원(더 강한 형태: 각 status에 다른 구간 spread 주입).
+
+**처방**: ⑴ 문자열을 바꾸는 세션은 기존 테스트를 **갱신**하되 **삭제 금지**(삭제 필요 시 상신). ⑵ 모든 실행 보고서에 **테스트 개수(it·expect) 전/후 필수 기재** — 줄어들면 사유를 적는다(감소=적신호).
+
+## 브랜치 삭제 직전 검증은 4겹 — 어느 한 층도 단독 결론 아님 (채번 대기, MGMT-BATCH-B-EXEC 2026-09-10) `[git][harness][ops]`
+
+브랜치를 지워도 작업이 안 죽는지 판정할 때, 단일 방법은 전부 오판한다.
+- **①구조**(`git cherry`·`merge-base`): squash/rebase 머지를 놓쳐 **거짓 안심**(NOT-MERGED인데 내용은 main에).
+- **②줄 exact-match**(추가 `+`줄 ∩ `git show origin/main:<file>` 부재): **원장 append 파일에서 교체/확장된 줄을 유실로 오탐**해 거짓 경보 → 그대로 이식하면 **구버전 주입(drift)**. 실증: sess-eodsig-freshgate 1줄·cn-repair 2줄·sess-mgmt 40줄이 exact-match상 "미이식"이었으나 전부 main에 최신본 존재(예: runbook "9건"→main "14건"). 44줄 중 실이식 = r2pre 2줄뿐.
+- **③실질**(그 항목이 main에 **현행으로** 존재하는가 — 키워드/substance): 최종 판정.
+- **④인용 좌표**(`git branch --contains <sha>`): 내용이 최신이어도 **main 문서가 그 브랜치의 커밋 해시를 인용**하면 삭제 시 죽은 링크가 된다. 실증: a84388f는 sess-mgmt에만 있고 main DECISIONS가 2곳 인용 → 삭제 전 bundle 좌표 각주 이식 필요.
+
+**처방**: 삭제 전 ①②로 후보를 좁히되 **③으로 확정**하고, `-D` 대상은 ④(`git branch --contains`)까지 확인한다. 이식은 ③에서 "현행 부재" 확인분만(구버전 주입 금지).
+
+## MGMT 청소 세션 부수 교훈 3건 (채번 대기, MGMT-BATCH-B-EXEC 2026-09-10) `[harness][ops][process]`
+
+- **메인 트리(원본 리포)가 피처 브랜치에 방치되면 08-10판 하네스를 읽는다**: `Desktop/stock_vis`가 stale 세션 브랜치(cca67275)로 체크아웃돼 있어 health_check ❌2(PROGRESS stale)·문서 grep 오독 발생. 단계 A에서 `checkout main`으로 해소(health ❌0 회복). → **제안(구현 별 세션)**: STARTUP_CHECKLIST에 "구동 트리 HEAD ≠ origin/main이면 경고" 추가.
+- **worktree 이름 ≠ 부착 브랜치**: `sv-agent-s1` worktree의 부착 브랜치는 `sess-agent-s1`이 아니라 `monorepo/sess-close-0831`. 삭제 결과표는 반드시 **경로↔브랜치 쌍**으로 기록(축약 금지).
+- **시각 기반 활성 게이트는 worktree-per-세션 병렬 환경에서 구조적 통과 불가**: 관측 활동 간격 7~30분이라 'repo 전체 60분 게이트'는 상시 실패. 해법 = 게이트 범위를 삭제 후보 집합으로 좁힘(D-GATE-SCOPE-1) + ㉠㉡㉢ 대체 측정.
+이중 LLM 공급자는 별개 실패 도메인 — 한쪽 크레딧 충전이 다른 쪽 quota를 살리지 못한다. 소진 증상 = 해당 경로 분석률 0% 고착이며, 타 경로 잔불(소량 호출·과금)로 부분 회복 오인 가능. 감시·비용 표기는 공급자별 분리(anthropic/gemini 각각). 실증: 09-01~ 양사 동시 소진, 충전 대상 오인으로 회복 지연(LLM-CREDIT-OUTAGE).

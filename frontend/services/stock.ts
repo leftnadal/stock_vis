@@ -442,9 +442,10 @@ export const stockService = {
     return data.data || [];
   },
 
-  // Search for stocks (will be integrated later)
+  // 종목 검색 — 로컬 Stock 테이블(StockSearchAPIView, /stocks/search/?q=).
+  // 응답 {results:[{symbol, stock_name, sector, real_time_price, change_percent_numeric}]}
   async searchStocks(query: string): Promise<any[]> {
-    const response = await fetch(`${API_URL}/stocks/api/search/?q=${encodeURIComponent(query)}`, {
+    const response = await fetch(`${API_URL}/stocks/search/?q=${encodeURIComponent(query)}`, {
       headers: authHeaders(),
     });
 

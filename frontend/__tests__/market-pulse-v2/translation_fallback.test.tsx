@@ -81,9 +81,14 @@ describe('translations fallback 3상태', () => {
     expect(screen.getByText(BAND_ANCHOR)).toBeInTheDocument()
   })
 
-  it('상태3 전무(null): sense 0개, 카드 정상 렌더', async () => {
+  // HUB-V02-S2 (AUTO-1): senses 전무여도 "카드당 의미 문장 1개 보장" — breadth·sector만
+  //   정적 fallback. overviewFixture는 breadth 데이터 존재·sector detail 빈 배열([])이라
+  //   전무 상태의 정적 sense-note = breadth 1개(sector는 데이터 없어 미렌더).
+  it('상태3 전무(null): breadth 정적 fallback 1개 렌더 + 카드 정상', async () => {
     await renderWith(null)
-    expect(screen.queryAllByTestId('sense-note')).toHaveLength(0)
+    expect(screen.queryAllByTestId('sense-note')).toHaveLength(1)
+    // breadth 정적 = 실수치 서술(밴드칩 동어반복 아님). advance 320·decline 160.
+    expect(screen.getByTestId('sense-note')).toHaveTextContent('상승 320 대 하락 160')
     // 4카드 전부 정상 렌더 + 밴드/raw 불변
     expect(screen.getByText('Market Regime')).toBeInTheDocument()
     expect(screen.getByText('Market Breadth')).toBeInTheDocument()
@@ -91,6 +96,14 @@ describe('translations fallback 3상태', () => {
     expect(screen.getByText('Concentration')).toBeInTheDocument()
     expect(screen.getByText(BAND_ANCHOR)).toBeInTheDocument()
     expect(screen.getByText('320')).toBeInTheDocument()
+  })
+
+  // 디렉터 보강 3: regime·concentration은 인라인 의미 문장이 '정확히 1회'(중복 재발 방지 게이트).
+  //   fallback 대상이 아니므로 senses 전무여도 SenseNote로 재노출되지 않는다.
+  it('중복 방지 게이트: regime·concentration 의미 문장이 정확히 1회(전무 상태)', async () => {
+    await renderWith(null)
+    expect(screen.getAllByText(BAND_ANCHOR)).toHaveLength(1) // regime 인라인 1회(SenseNote 재노출 없음)
+    expect(screen.getAllByText('소수 대형주에 강하게 쏠림')).toHaveLength(1) // concentration 인라인 1회
   })
 })
 

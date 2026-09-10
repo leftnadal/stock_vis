@@ -5,6 +5,17 @@
 
 ---
 
+## MGMT-LEDGER-2 등재 (2026-09-08, 등재만 · 구현 금지) [ops][mgmt]
+
+> mgmt 배치 등재. ①③④=관찰/프로브(도메인·디렉터 판정), ②=상신 필요, ⑤=T3·T4 실효 조건. 구현은 각 소관 트랙.
+
+- 🆕 **EOD-ISSTALE-DEF** (①·todo·도메인 이관) — 베이커 `is_stale` 플래그 정의 프로브. 거래일 전진에도 지속 점등(08-27~ 관측·dogfood `eod.is_stale` WARN 재발). 플래그 산정 기준이 거래일 갱신을 반영하는지 정의 검토 → EOD/대시보드 도메인 트랙 소관.
+- 🆕 **LOG-ROTATE** (②·상신 필요·@infra) — `~/Library/Logs/stockvis` 대형 로그 로테이션 도입(worker-error ~327MB · neo4j-error ~531MB). **시스템 설정(launchd/newsyslog) 동반 → 상신 필요 항목**(자기 집행 금지).
+- 🆕 **LOG-FORMAT-DATE** (③·todo) — nightly 로그 본문 타임스탬프에 **날짜 포함**(현재 `[HH:MM:SS]`만, 날짜는 파일명에만). 0-3(a) 판별: health json은 mtime이 자기 날짜(9/4~9/8 각 05:40) → "매일 실행" 확정으로 catch-up 기각 가능했으나, **로그 본문만으로는 날짜 판별 불가**(mtime 의존) → 자기서술 로그 위해 등재.
+- 🆕 **NIGHTLY-AUDIT-MISS** (④·발동·디렉터 판정) — 0-3(b) 확정: tier3 감사 산출물 **09-04~ 매일 부재**(마지막 성공 09-03 `reports/9월/3일`). 로그는 존재하나 즉시 **HALT**: "전용 worktree에 미커밋 변경 존재 — 직전 run 커밋/push 실패 잔재 보호. 격리·커밋 중단"(launchd 23:00 발화는 확인 = 스케줄 미스 아님). 원인 = nightly repo worktree(`~/stock-vis-nightly/repo`)에 미커밋 `?? frontend/docs/` 잔재 → 격리 자기보호가 매일 중단. cf. LLM-CREDIT-OUTAGE 관찰 C-1(동일 부재 언급). **★복구 완료(2026-09-10, 디렉터 "남은 항목 작업" 지시)**: stray `frontend/docs/nightly_auto_system/`(잘못된 경로 감사 산출물·정상=`docs/`·untracked·gitignore 아님)를 **비파괴 move-aside**(백업 `~/stock-vis-nightly/stray_frontend_docs_backup_20260910_152027`) → nightly repo worktree **clean 확인**. 데몬 재시작 불요 — 다음 23:00 run이 격리 브랜치 생성·자가 정상화. **잔여 관찰**: 재발 시 근본(감사 스크립트가 `frontend/docs/`로 쓰는 경로 버그 OR gitignore 갭)은 도메인 트랙 소관.
+- 🆕 **REPORT-FIX-REALIZE** (⑤·검증 대기) — T3(REPORT-TLDR-SYSLINE)·T4(DOGFOOD-EOD-LAG-TRADINGDAYS) **착지 ≠ 실효**. 실효 검증 = **다음 `sv sync`(worker_sync) 후 아침 메일 2종**(@backend 06:15 agent report의 System 줄 = 실제 beat/neo4j 반영 / dogfood 06:20 report의 `eod.trading_date` = 주말·휴장 개재에도 ok). **활성화≠배포** — 유닛 테스트 통과는 착지이며, 자연 발화가 실효 게이트. MIG-BUNDLE-1 배포창(관문②) 동반 랜딩으로 참조.
+
+
 ## CS-S3 트랙 — "이야기 리포트" (S3-PRE 등재 재landing + S3-1 착지, 2026-09-07) [chainsight][frontend]
 
 > D-S3-1~5 + CS-S3-1 착지 결정(DECISIONS 2026-09-07). R2-S1/S2 아크 연속. S3-PRE 등재분이 main 미랜딩이라 S3-1과 함께 통합.
@@ -725,7 +736,7 @@
 | MP2-SUBPAGES-HOTFIX1 | pulse 스테일-캐시 즉시 응답(SWR) + 허브 로딩 완화 | **#3 (A)** | @backend+@frontend | ✅ **배포 완료 (main `279d4080`, 08-31)** | D-SUBPAGES-SWR(C). BE: `macro:market_pulse_full{,:stale(24h),:refreshing}` SWR — fresh 미스 시 stale 즉시 반환+백그라운드 갱신 1회(락 dedup), 태스크 `force_refresh=True`. 스키마·뷰 diff 0. FE: `getMarketPulse/useMarketPulse({timeoutMs?})` additive(v1 diff 0), 허브만 20s 타임아웃+재시도 안내+"N분 전 데이터" 배지(amber 토큰 재사용, → COLOR-TOKEN-UNIFY 대상). **배포 검증**: merge+sv sync+web 리빌드+워밍 → pulse fresh 0.18s·**stale 경로 0.13s**(종전 콜드 28.8s)·실데이터 스크린샷 데스크탑 941ms/모바일 766ms. pytest +6, vitest +8(364), E2E 3스펙 2회 GREEN. 채번 #125(콜드캐시)·#126(SSR≠데이터). |
 | MP2-SUBPAGES-WARMWINDOW | pulse 워밍 beat 창 재검토(A안 잔여) — SWR 운영 관측 후 | 미배정 | MP2-SUBPAGES-HOTFIX1 land + 운영 관측 | 🕒 **todo(관측 후 별건)** | 현 `refresh-market-pulse-cache` = ET 장중(9-16, 평일)만. SWR로 콜드 무해화됐으나, KST 사용 케이던스에 맞춘 워밍창(장외 1회 등) 추가 여부는 FMP/FRED 호출량 대비 관측 후 결정. beat DB 엔트리 변경 = 병진 수동(#28). |
 | MP2-SUBPAGES-S2 | 거시 허브 무버스 탭 — `MarketMoversSection` 흡수 | **#3 (A)** | @frontend | ▶️ **next (결정 사이클 선행: LLM 키워드 비용 게이트)** | S1·HOTFIX-1 배포 완료 → 이 트랙 next. **착수 전 결정**: `useGenerateKeywords`(Gemini·Celery async) 비용/rate 게이트를 디렉터 결정 사이클로 확정 후 지시서. **S1 STEP 0-7 재료**: 자체 fetch 3훅 — `useMarketMovers`(useQuery·staleTime 5m·**refetchInterval 5m**)·`useSyncMarketMovers`(mutation POST·sync 트리거)·**`useGenerateKeywords`(mutation→`keywordService.generateAllKeywords`=Gemini AI 키워드·Celery async·LLM 비용/rate 주의)**. 엔드포인트=serverless(market_pulse_user 미공유). 인증 경로·비용 게이트는 S2 STEP 0 재확인. 허브 무버스 탭은 현재 "준비 중" 배지. |
-| GUIDE-MACRO-REVIEW | 거시 허브 가이드(`marketPulse.macro`) 검수 → draft→confirmed 전환 | 사용자/병진 | MP2-SUBPAGES-S1 land | 🟡 **검수 대기(병진)** | reviewStatus:'draft'로 착지(guideData 테스트 allowlist 등재). coreQuestion="오늘 국면의 거시 근거는 무엇인가"·regions 4(심리/금리/지표/글로벌). 검수 후 confirmed 전환 + allowlist에서 제거. **연동**: 이 confirmed 전환이 `MP2-DOGFOOD-RECONCILE`(dogfood 2 RED = marketPulse.macro draft) 해소 경로. |
+| GUIDE-MACRO-REVIEW | 거시 허브 가이드(`marketPulse.macro`) 검수 → draft→confirmed 전환 | 사용자/병진 | MP2-SUBPAGES-S1 land | 🟢 **재작성 착수 가능 (선행 HUB-V02-S2 랜딩 완료 `b73da8e7`, 09-09)** | reviewStatus:'draft'로 착지(guideData 테스트 allowlist 등재). coreQuestion="오늘 국면의 거시 근거는 무엇인가"·regions 4(심리/금리/지표/글로벌). 검수 후 confirmed 전환 + allowlist에서 제거. **연동**: 이 confirmed 전환이 `MP2-DOGFOOD-RECONCILE`(dogfood 2 RED = marketPulse.macro draft) 해소 경로. **선행 충족**: S2가 허브에 정적 SenseNote 층 추가 완료(라이브) → 가이드 문구를 새 표면(위젯 룰 + SenseNote 국면연결 한 줄)과 정합하도록 재작성 착수 가능. |
 | P2-SUBPAGES-CLOSE | S1·HOTFIX-1 뒷정리 — 채번 + 브랜치 위생 + 원장 | @mgmt (b44) | HOTFIX-1 배포 | ✅ **done (2026-08-31, mgmt b44)** | 채번 #124(drf-spectacular)·#125(pulse 콜드캐시)·#126(SSR≠데이터)·#127(조기삭제 사고, 신규). D-REMOTE-BRANCH-HYGIENE **가안** 등재(랜딩 후 원격 삭제, 병진 B2 확정 대기). 브랜치 소진표: 로컬 144/소진 129/미소진 15, 원격 62/소진 54/미소진 8. 병진 스크립트 2본(`scratchpad/cleanup_{local,remote}_2026-08-31.sh`, 집행=병진) + 소진표 md + 체크리스트. push=병진 승인(docs-only). |
 | BRANCH-HYGIENE-EXEC | 원격 소진 54 삭제 집행 + 로컬 worktree 정리 | 병진 지시·CC 집행 | D-REMOTE-BRANCH-HYGIENE ✅확정 | ✅ **done (2026-09-01)** | 원격 소진 **54 삭제/스킵 0**(게이트 통과). 남은 원격 sess 9 = 미소진 8 + 신규 1(newsfix-sync). 로컬 Group A(hf1+mgmt-b29~38) 제거·worktree 65→55. 보호 대상(본체·런타임 3트리·b44·미소진 15) 무결·과삭제 0. **잔여 = 로컬 Group B**(나머지 소진 worktree, 활성 세션 확인 후 병진 주석 해제) = `cleanup_local` 스크립트에 주석 보존. |
 | MP2-DATA-FEDWATCH-GEX | FedWatch(fed funds futures)·GEX(감마 익스포저) 외부 데이터원 신설 | **#4** | @infra+@backend | 🔴 **데이터게이트** | recon [E] 코드베이스 흔적 **0**(클라이언트 미보유) → **데이터원 확보 전 착수 금지**. 별도 공급원 조사 선행 |
@@ -736,7 +747,11 @@
 | HUB-V02-S1 | 허브 v0.2 신뢰 수리 3건(Breadth 날짜·Anomaly 정직화·금은 배선) | @backend+@frontend | D-HUB-V02 | ✅ **랜딩·집행 완료 (2026-09-03·main `6e650a38`)** | A-1 Breadth(→MP2-DATA-BREADTH-CONC)·A-2 Anomaly(→HUB-ANOMALY-HONESTY)·A-3 금은(→MPS-OPS-GLD-DASH). pytest +15·vitest +5·E2E 3스펙 2회 GREEN·tsc0·marketpulse 540 무회귀. **커맨드 2건 집행(병진)**: `fix_commodity_ticker_wiring --commit`=**commodity 2행**·`recompute_breadth_history --commit`=**791/813**(purge 없이). 디렉터 검증 PASS + 관찰 2건(→SCHEMA-DRIFT-SECTORGROUP·HUB-ANOMALY-PARTIAL). **다음=HUB-V02-S2**. |
 | HUB-ANOMALY-HONESTY | 이상신호 "정상 확인" vs "데이터 없음" 구분 | @backend+@frontend | HUB-V02-S1 | ✅ **done (2026-09-03)** | `_anomaly_section` `status` additive(evaluated/no_data): 행 없을 때 read-time `build_context` 소스 검사(compute-on-read·prod쓰기 0). 전부 MISSING→no_data("판정 불가"), 하나라도 OK→evaluated. FE AnomalyPanel no_data 중립(slate·경보 아님). live=evaluated(inputs 존재). |
 | HUB-ANOMALY-PARTIAL | 부분 결측(일부 소스만 OK) 세분화 — evaluated로 뭉침 정직화 | @backend+@frontend | HUB-ANOMALY-HONESTY | 🕒 **관찰 등재(착수 금지·운영 관측 선행)** | S1 정직화는 "전부 MISSING=no_data"까지만. **부분 결측**(일부 소스만 OK)은 현재 evaluated로 뭉침. 세분화(예: `partial` 상태·커버리지 표기)는 **no_data/evaluated 실분포 운영 관측 후 별건**. 선제 추상화 금지(γ). |
-| HUB-V02-S2 | 허브 v0.2 사이클 다음 슬라이스 — 번역층(TranslationLayer) 문구 | @frontend+@backend | HUB-V02-S1 | ▶️ **next (D-HUB-V02 사이클)** | 신뢰 수리(S1) 다음 = 번역층 문구 슬라이스. **선행 = 번역층 문구 목업 디렉터 검수**(카피 게이트·서사 톤). 범위는 검수 확정 후 재정의. |
+| HUB-V02-S2 | 허브 v0.2 S2 — 전역 서브탭 + 정적 번역층(거시·로테이션) + 홈 fallback | @frontend+@backend | HUB-V02-S1 | ✅ **랜딩·배포 완료 (2026-09-09·main `b73da8e7`)** | D-MP2-SUBNAV(A)·D-MACRO-SENSE-STATIC(ⓐ). ⑴ `MarketPulseSubNav`(v1 미포획·개요/거시근거/로테이션/무버스) ⑵ `macroMeaning` 4종(공포탐욕·수익률·물가고용·4지수·COPYFIX 서술체) ⑶ 허브 위젯 아래 SenseNote 형제(위젯 diff 0) ⑷ 홈 **breadth·sector만** 정적 fallback(AUTO-1="카드당 의미문 1개 보장"·regime/concentration 중복 0) ⑸ 로테이션 RRG 한 줄. **백엔드 diff 0**. **3커밋 랜딩**: `e1faef19`(S2)+`0f878ee1`(COPYFIX 서술체·룰 중복 제거)+`32f5b015`(GUARDFIX status enum 불변식·연도 가드). vitest mp2 396 GREEN·tsc 0·E2E 4스펙 2회 GREEN·게이트 6종. **web 리빌드 완료**(런북 2.2·BUILD_ID kV1nr…·:3000 스모크 200·라이브 서브탭 렌더 확인). 잔여 카피 정확화=GUIDE-MACRO-REVIEW. |
+| HUB-V02-S3 | 허브 v0.2 S3 — 위젯 지표별 시계열(추세·기간 프리셋) | @frontend+@backend | HUB-V02-S2 | ▶️ **next (D-HUB-V02 사이클)** | (가)그룹 즉시 가능·프리셋 최대 1Y(D-HUB-V02 자동결정 ①②). **S2 랜딩 후** 착수. S3 재료 실측치 = HUB-V02-S2 보고 §S3 참조. |
+| DATA-GAP-DXY | `get_dollar_index()` 무응답 → `dxy: null` | @backend/@infra | — | 🕒 **데이터 공백 등재(S2 발견)** | 달러 꼬리말 미구현 사유(macroMeaning은 DXY 언급 금지). **PLAYBOOK-DOLLAR-V02 달러 다리의 선행 공백**. `get_dollar_index` 소스/파서 점검 필요. |
+| DATA-GAP-GLOBALIDX | `macro_service.py` `global_indices` 하드코딩 `{}`(스텁) | @backend | — | 🕒 **데이터 공백 등재(S2 발견)** | 해외 지수(ftse/nikkei/hangseng) 비교 문장의 선행 공백. 코드 스텁 → 실수집 배선 필요. 현재 macroMeaning은 미국 4지수만 사용(해외 언급 금지). |
+| MACRO-SENSE-TUNE | 정적 문장 임계 재튜닝 — 물가 갭 1.0%p · breadth 0.5중심 사다리 · RRG 과반 경계 | @frontend | 실데이터 누적 | 🕒 **TUNE 대기(선제 조정 금지)** | 물가 갭 1.0%p = 2022–23 재현용(올해 core 2.5~2.9·갭 0.5~0.9 미발동). breadth `BREADTH_THRESHOLDS`(0.6/0.7)=관례 앵커(dev DB n=1 미검증). **RRG 과반 6/11**(`rotationSentence`)은 **6:5도 "과반이 개선 쪽"으로 서술**됨(근소차를 우세로 읽음) → **2/3(8/11) 경계 검토**를 실데이터 누적 후 재튜닝(S2-COPYFIX 등재). 실 SPY breadth·물가 누적 후 재튜닝(concentrationBand TUNE 선례 동일 규율). |
 | BREADTH-PURGE-2차 | 비거래일 0-스냅샷 purge — `recompute_breadth_history --commit --purge-bogus` | @backend | MP2-DATA-BREADTH-CONC | 🕒 **대기(병진 판단·수동)** | S1 재계산은 `--purge-bogus` 없이 집행(791/813) → 비거래일 0-스냅샷 **21건 잔존**. purge 커맨드는 멱등. **판단 기준**: Breadth 궤적 차트에서 0-점이 선을 꺼뜨려 보이면 실행. 그 전엔 잔존 무해. |
 | MP2-MOBILE-EYECHECK | **모바일 실기기 눈확인**(P2-① 권고) — 실기기/브라우저 DevTools 모바일 모드로 `/market-pulse-v2` 1회 눈검증 | (권고) | 사용자/병진 | 🟢 **대부분 흡수(P2-DLITE, 2026-08-29)** | Pixel5 에뮬레이션 안전망(가로스크롤 부재·렌더 존재·풀페이지 스크린샷)이 뷰포트 회귀를 자동 흡수. **잔여 = 실기기 1회 눈확인(비차단·사용자 재량)** — 에뮬레이션≠실기기 폰트/터치 미세차. |
 | **MP1.5-FIX** | **단일 FE 슬라이스** — ⒜ A1 brief 모달 `body` fallback 매핑 ⒝ A2 authAxios refresh 인터셉터 401 재시도 ⒞ A3 `<Pie label>` 포맷터(`toFixed`)+레이블 겹침 처리 ⒟ "cache: MISS" 엔드유저 노출 정리 ⒠ **① 유효 종목 수(1/HHI) 카드 표시** | @frontend | ✅ **완료 (2026-06-25, `2c9fbca` + 시각검증) — A3-tail 종결로 "완전 통과"** | D-P15-SCREENGATE. 시각검증 실측: A1 본문·① 유효종목수(≈51종)·cache 가드(dev전용, 프로덕션 비노출 코드입증)·회귀 = PASS / A2 = vitest 갈음 / A3 = MP1.5-A3-TAIL(`77847ca`)로 겹침·클리핑 완전 해소. 커밋 `0f86e55`(A1)·`9529671`(A3)·`a079870`(cache)·`2c9fbca`(①)·`77847ca`(A3-tail) |
@@ -1529,10 +1544,17 @@
 - 상태: 💤 등재(저우선). 방치 무해(dangling ref)이나 census 위생용.
 
 ## MGMT-BATCH-B — 브랜치·worktree 분류 보고 (2026-09-04) [harness][ops]
-- **상태: ✅ 분류 보고 착지 · 병진 수동 삭제 대기** (보고서 = `docs/mgmt/MGMT-BATCH-B_classification.md`). 삭제·정리 0건 집행(D-BRANCH-DELETE-MANUAL).
+- **상태: ✅ 집행 완료 (MGMT-BATCH-B-EXEC, 2026-09-04~10)** (보고서 = `docs/mgmt/MGMT-BATCH-B_classification.md` §8). 단계별 승인(A/B[제외 sv-dash-s0]/C/D[3분할]/E) 하 CC 삭제 집행 = D-BRANCH-DELETE-DELEGATE-1.
 - 분류(스냅샷 `1d528a6e`·전수 225 브랜치): 즉시삭제 159 / 즉시삭제(wt선행) 42 / 보류 8 / 검토필요 15 / 유지 1. worktree 61: 즉시정리 43 / 보류 12 / 유지 6. 원격 삭제 후보 5(전부 MERGED).
 - **검토필요 16건**(§6 Q1~Q16): 오늘 활성(hub-recon·design-inspector·evt-8 외 드리프트분)·squash-merge(cn-repair-land·`-d` 거부→`-D` 필요)·아크 미상 다수·메인 트리 stale 처분(Q16). **삭제 실행 전제 = 모든 CC 세션 종료 + 활성 목록 재측정**(라이브 드리프트 1d528a6e→04ec8bf7 관측).
 - 명령 초안(실행 금지) = scratchpad `cmd_A_worktree.txt`(43)/`cmd_B1_branch_noWT.txt`(159)/`cmd_B2_branch_wt.txt`(42)/`cmd_C_remote.txt`(5).
+- **EXEC 완료(MGMT-BATCH-B-EXEC, 09-04~10)**: A(메인 트리 main 복귀·sess-main-integrate detach) · B(worktree **40** 제거·sv-dash-s0 제외) · C(브랜치 `-d` **200**·거부 0) · D(브랜치 **7** 삭제: 즉시-D 3 + 이식후-D 4·이식 4줄·42줄 철회) · E(원격 **5** 삭제). 게이트 정련 = D-GATE-SCOPE-1. bundle 2종 보존. 삭제 로그 = `docs/mgmt/MGMT-BATCH-B_delete_log.txt`(C 200 + D/E).
+- **잔여 = MGMT-BATCH-C 후보 (3덩이)**: ⓐ **동결 유지분** — 보류 8·검토필요 타 프로젝트 몫(Q1·2·7·8·11·12·13·14)·`sv-dash-s0`(HEAD 재정렬 이력=관리중, 보류 이관). ⓑ **원격 잔여 `nightly-20260618/19`** — 그래프상 NOT-MERGED(ahead=1)이나 12파일 전부 main 동일(단계 D 실측)·로컬 -D 커밋(b77635b8/bf613df7) 복구 좌표 역할 → 보존·다음 배치 별도 판단. ⓒ **보고서 이후 신규 유입** — 09-10 기준 원격 feature/research-*·math-lab·lab-automation 등 + 로컬/worktree 신규 다수(다세션 09-04~10) → 다음 배치 새 스냅샷 대상.
+
+### sess-r2pre 흡수 — FE 미해결 todo 2건 (MGMT-BATCH-B 단계D, 삭제 전 이식) [frontend][infra]
+> 출처: `monorepo/sess-r2pre`(`9bc85fff`, 2026-08-31 R2-S1 배포서 발견). 삭제 브랜치의 유일 미이식분(main 미추적·미해결 확인). 원본 좌표 = `~/stockvis-refs-20260907-0948.bundle`.
+- **FE-DEPLOY-NPM-INSTALL** 런타임 배포에 npm install 편입(비긴급·다음 FE 접촉 세션 번들) — `worker_sync.sh`가 web 트리 package.json 변경 시 **경고만** 하고 install 안 함(자동 금지 규약) → devDep 추가 시 `next build` 타입체크 실패(런타임 node_modules stale). 조치: FE 배포 경로에 "package(.json/-lock) 변경 감지 시 `npm install`" 편입. @infra
+- **FE-BUILD-E2E-EXCLUDE** `next build` 타입체크에서 e2e 제외(비긴급·FE 번들) — `frontend/e2e/*.spec.ts`가 `next build` TS 체크에 포함돼 dev 의존성(@playwright/test) 없으면 빌드 실패. 조치: `frontend/tsconfig.json` `exclude`에 `e2e/**` 추가(또는 build용 별도 tsconfig). @frontend
 
 ## CS-REDESIGN-BACKLOG — Chain Sight 재설계 D1/D2 후속 백로그 (등재, 2026-08-10)
 출처: D2-LEDGER-PROBE 지시서 Part 1-D. 결정 근거 = [[DECISIONS]] D1·D2. 채번 미부여(백로그).
@@ -1637,6 +1659,7 @@
 - ✅ **CS-UNIVERSE-EXCLUDE-FLAG** (B) — Stock.universe_excluded(stocks 0017)+데이터 승격(0018·OKLL/IREG/GEVG) + mindmap_views 전환 + 상수 제거. 검증: 행위보존 754==754.
 - ✅ **CS-STORY-ACTIVITY-CACHE** (C) — SymbolStoryActivity(chainsight 0035)+물질화 태스크·커맨드+캐시우선 서빙+전역조회. 검증: 31,978행/35.75초·전역조회 0.7ms·캐시 3.9ms vs 라이브 55ms.
 - 🔴 **[MIG-BUNDLE-1 관문②]** 병진 잔여 — `register_chainsight_beats`(chainsight-materialize-story-activity ET 12:00 등록) + **worker 재시작**([[lesson_celery_task_registration]]).
+  - 🆕 **동반 랜딩 (MGMT-LEDGER-2 ⑤·REPORT-FIX-REALIZE)** — T3 TL;DR System 줄(`agent_reports.py`) + T4 dogfood EOD 지연 산식(`check_quant.py`) 수정분이 다음 `sv sync`에 편승. 실효 검증 = 아침 메일 2종(@backend agent report System 줄 · dogfood `eod.trading_date`). 착지≠실효.
 - 🟢 **S2 착수 준비 완료** — 캐시·전역조회·(-activity_ratio) 인덱스 = R2-S2 전역 활동 뷰 소스 완비.
 - ✅ **[EVT-4B] 완료** — CORR-4(거시 event_time UTC 해석·경계 보정) + FE-TUNE-1(T2 거시 접기·세션 빈칸·서프라이즈 200%). BE `da3a871c`+FE `31bf7791`(로컬 sess-evt-6). 0-3 UTC 게이트 PASS. **push 후 :3000 재빌드 필요(사용자 지시)** — 재빌드 전까지 화면 미반영.
 - ✅ **[EVT-IMPL-4-SHOT] 완료** — 증적 = 2026-08-31 디렉터 채팅 첨부 5장·시각 계약 판정 통과.
@@ -1691,10 +1714,29 @@
 ## AGENT-S2 (2026-09-03)
 
 - 🟡 **AGENT-S2 야간 도그푸딩 2단계(루브릭 채점)** (@infra) — **구현·랜딩 완료 · `sv sync` 상신 대기**. 상신 `scratchpad/AGENT-S2_상신_20260903.md`. 신설 `collect_rendered.py`(Playwright 렌더 수집)·`score_rubric.py`(claude -p 1회 일괄 채점)·`render_screens.mjs` + `report_mail.py` 루브릭 섹션 + `run_dogfood.sh` 2단계 삽입. **plist 무변경**(같은 05:20 잡). 유닛 28 + 회귀 179 passed(선존 2건 = `test_targets.py`, 무변경 트리 동일). **수동 실증**: 렌더 5/5(인증) · 채점 평균 2.8/5 무효 0 · **인용 5/5 실제 화면 텍스트 일치** · 메일 실발송 1통. **묶음 권고**: `OPS-HC-WIRE` 상신과 함께 `sv sync` 1회.
-- 🟡 **GUIDE-ANCHOR-DRIFT** (@frontend) — **원인 확정 2026-09-04(AGENT-S2.1 ③), 코드 드리프트 아님**. 앵커 7건 모두 코드에 존재하며 DOM 부재는 두 부류: ⑴ **빈 상태 조건부 4건** — `monitor.scope-chips`·`monitor.list`(`monitors.length > 0`)·`monitor.status-segment`(`closedCount > 0`)·`portfolio.charts`(`portfolios.length > 0`) → **계정이 채워지면 자연 해소**, 조치 불요. ⑵ **route 불일치 3건** — `chainsight.event-grid`·`card-metrics`·`entrypoints`는 `EventBoard.tsx`에 있는데 `/chainsight`는 **`MarketStoryFeed`를 렌더**한다(EventBoard는 `/chainsight/events`로 이동). → **가이드 데이터가 화면 개편을 못 따라간 것**. 앵커를 `/chainsight/events`로 옮길지 `MarketStoryFeed`에 새로 부착할지 **화면 소유자 판단**(도메인 코드 무접촉).
+- 🟡 **GUIDE-ANCHOR-DRIFT** (@frontend) — **원인 확정 2026-09-04(AGENT-S2.1 ③), 코드 드리프트 아님**. 앵커 7건 모두 코드에 존재하며 DOM 부재는 두 부류: ⑴ **빈 상태 조건부 4건** — `monitor.scope-chips`·`monitor.list`(`monitors.length > 0`)·`monitor.status-segment`(`closedCount > 0`)·`portfolio.charts`(`portfolios.length > 0`) → **계정이 채워지면 자연 해소**, 조치 불요. ⑵ **route 불일치 3건** — `chainsight.event-grid`·`card-metrics`·`entrypoints`는 `EventBoard.tsx`에 있는데 `/chainsight`는 **`MarketStoryFeed`를 렌더**한다(EventBoard는 `/chainsight/events`로 이동). → **가이드 데이터가 화면 개편을 못 따라간 것**. **→ ⑵ RESOLVED 2026-09-07 (GUIDE-CS-GUARD-1)**: `chainsight.main` route를 `/chainsight/events`로 임시 이설 + 앵커↔라우트 동거 정적 가드 신설(재발 차단) + 야간 메일 앵커 누락 노출. 정문 문구는 2단계 소관([[D-GUIDE-CS-REFRESH]]). **⑴ 빈 상태 조건부 4건은 여전히 열림**(계정 충족 시 자연 해소·조치 불요).
 - ✅ **AGENT-S2-EMPTY-ACCOUNT** — **해소 2026-09-04(결정 ⒝ 채택, AGENT-S2.1 ②)**. 빈 상태 감지 시 `coreQuestion` 대신 **"빈 상태 안내가 충분한가"** 기준으로 채점하고, 메일 `[빈 상태]` 라벨 + **평균 별도 트랙** + 최저 화면 선정에서 제외. 효과: 같은 렌더로 평균 **1.4/5 → 본 4.0/5**(빈 상태 2건 4.5/5 분리). 표본 데이터 주입(⒜) 불필요.
 - 💤 **AGENT-S3 관찰 후보 + 성적 원장** (후보 등재만 — **구현 금지**) — 종목 추천·성적 원장. **착수 전 RC v3.0 분포 재측정 선행 필수**(눈금 [0,100]→[0,1] 전환 후 분포를 모르는 채로 추천 기준을 세울 수 없다).
 
 ## AGENT-S2.1 (2026-09-04)
 
 - 🟡 **AGENT-S2.1** (@infra) — **구현·랜딩 완료 · `sv sync` 상신 대기**. ① launchd env 로드 결함 수정(`.env` 화이트리스트 주입, `env -i` 재현으로 원인 확정·수정 검증) ② 빈 상태 채점 분기 ③ 앵커 원인 확정. 유닛 39 + 회귀 190 passed(선존 2건) · ruff 0 · health ❌0. 수동 실증: `env -i` 인증 렌더 5/5 · 본 평균 4.0/5 · 메일 실발송(라벨 확인). **마이그레이션 0건**. ★09-05 05:20 발화 전 `sv sync` 필요 — 안 하면 또 미인증 1.4/5가 발송된다.
+
+## GUIDE-CS-REFRESH (2026-09-07, worktree sv-guide-csg1)
+
+> 결정 = [[DECISIONS]] D-GUIDE-CS-REFRESH (ⓑ 재작성·2단계 분할). 1단계 = GUIDE-CS-GUARD-1.
+
+- ✅ **GUIDE-CS-GUARD-1** (@frontend) — 앵커↔라우트 동거 정적 가드 + 야간 앵커 누락 노출 + 정문 임시 이설. 화면 문구·컴포넌트 무접촉(`components/`·`app/` diff 0줄). vitest 1276 passed(신규 +7) · pytest dogfood/architecture 96 passed. 마이그레이션 0건. **서빙 반영: 다음 세션 sync 자동**(테스트·야간 스크립트 한정, FE 런타임 무영향 — `lib/guide/chainsight.ts` 이설은 `?` 버튼 위치를 바꾸므로 web 리빌드 시 반영).
+- 🔵 **GUIDE-CS-REFRESH 2단계** (@frontend) — 정문(`/chainsight`)용 `chainsight.feed` 가이드 신규 등재(문구·앵커 작성). **트리거: `monorepo/sess-s3s1`(묶음 카드·부제 정직화) main 머지.** 착수 시 화면 재측정 후 문구 작성 → 병진 검수 → confirmed. 등재 후 `chainsight.main`의 임시 이설 주석을 정규 상태로 정리.
+  - **하위 조건**: `chainsight.backbone` 앵커 4곳(`BackboneView.tsx` 3 + 주석 1)도 **함께 등재**하고 `guideAnchors.test.ts`의 `PENDING_ANCHORS`를 **비운다**([[D-GUIDE-ORPHAN-BACKBONE]] 만료 조건). **기한 2026-09-30** — 미이행 시 `PENDING_ANCHORS의 유예 기한이 지나지 않았다` 테스트가 자동 RED(코드 변경 없이 날짜만으로 터진다).
+  - **DoD 메모(2단계 지시서 작성 시 옮겨 쓸 것)**: **"allowlist가 비었는가"** — `PENDING_ANCHORS`가 `new Set()`이면 통과. 비우지 않으면 `PENDING_ANCHORS는 죽은 항목을 남기지 않는다` 테스트가 등재 완료를 감지해 RED로 알린다(방치 자동 차단).
+- 🔵 **GUIDE-COUPDATE-DOD** (@qa, 별건 소형) — 화면 개편 지시서 템플릿의 DoD에 **"이 화면에 가이드 데이터가 있으면 같이 갱신했는가"** 한 줄 추가. 근거: 09-02 랜딩 역전이 가이드를 남긴 채 지나갔고, 08-31 RC-C-1도 같은 부류(아래 GUIDE-ORPHAN-BACKBONE).
+- ✅ **GUIDE-ORPHAN-BACKBONE** (@frontend, **처분 완료 2026-09-07 = ⓒ allowlist**, [[D-GUIDE-ORPHAN-BACKBONE]] · GUIDE-CS-GUARD-1B) — `chainsight.backbone` 앵커가 `components/chainsight/BackboneView.tsx`(3곳)에 있으나 가이드 데이터에 미등재 → `guideAnchors.test.ts` "고아 앵커 금지"가 **origin/main에서 이미 RED**(도입 `3e7b15c3`, 2026-08-31 RC-C-1 backbone FE). GUIDE-CS-GUARD-1 스코프 밖(가이드 문구 작성 = 2단계 소관, 화면 컴포넌트 = 무접촉)이라 **미해소로 남김**. 처분 선택지: ⑴ `/chainsight/backbone` 가이드 화면 신규 등재(2단계와 묶음) ⑵ 앵커 제거 ⑶ 고아 허용 allowlist 등재. **가드가 제 일을 한 사례 — 08-31부터 지금까지 RED가 방치돼 있었다는 것 자체가 별건 관찰 대상**(vitest 전체 게이트가 랜딩 전에 안 돌고 있었을 가능성).
+  **→ RESOLVED 2026-09-07 (GUIDE-CS-GUARD-1B)**: ⓒ 채택 — `PENDING_ANCHORS` allowlist로 유예하되 **죽은 allowlist 금지 테스트**를 함께 세워 만료를 강제한다(등재 완료·소스 삭제 두 방향 모두 RED). 앵커·화면 컴포넌트 무접촉. 만료 = 2단계 등재 시 목록 비우기.
+
+## GUIDE-ORPHAN-DASHTABS (2026-09-10 등재)
+
+- 🔴 **GUIDE-ORPHAN-DASHTABS** (@frontend — **소유: dashboard 앱 트랙**) — `dashboard.tabs` 앵커(`components/eod/DashboardTabs.tsx:28`, `006d48cf` DASH-TAB 09-09)가 가이드 데이터 미등재 = 고아. **기한 2026-09-30**까지 ⑴ `lib/guide/dashboard.ts`에 등재(문구 작성) 또는 ⑵ `data-guide` 속성 제거 중 하나. **미이행 시 `guideAnchors.test.ts`의 기한 테스트가 자동 RED**가 되어 전 랜딩을 막는다.
+  - **ops는 문구를 쓰지 않는다**(소유 경계) — GUIDE-CS-GUARD-1D는 유예만 등록했고 `dashboard.ts`를 건드리지 않았다.
+  - 기한 연장이 필요하면 **DECISIONS.md에 근거를 남긴 뒤** `until`을 갱신한다. 코드에서 조용히 날짜만 바꾸는 것은 금지 — 그 순간 구조가 장식이 된다.
+  - 재발 맥락: `chainsight.backbone`(08-31)과 동일 패턴이 9일 만에 재발. 근본 처방은 게이트(OPS-FE-GATE-0 측정 완료) + [[GUIDE-COUPDATE-DOD]](지시서 템플릿 DoD).
