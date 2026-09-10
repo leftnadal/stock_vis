@@ -42,8 +42,16 @@ def load_token() -> str:
 def main() -> int:
     if run("git", "branch", "--show-current", capture=True) != BRANCH:
         raise RuntimeError("wrong_branch")
-    if run("git", "status", "--porcelain", capture=True):
-        raise RuntimeError("worktree_not_clean")
+    if subprocess.run(["git", "diff", "--quiet"], cwd=REPO).returncode != 0:
+        raise RuntimeError("tracked_worktree_changes_present")
+    if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=REPO).returncode != 0:
+        raise RuntimeError("preexisting_staged_changes_present")
+    task_status = subprocess.run(
+        ["git", "status", "--porcelain", "--", str(ROOT.relative_to(REPO))],
+        cwd=REPO, check=True, text=True, stdout=subprocess.PIPE,
+    ).stdout.strip()
+    if task_status:
+        raise RuntimeError("task_directory_not_clean")
     if (ROOT / "executions").exists():
         raise RuntimeError("executions_already_exist_refusing_duplicate_run")
 
