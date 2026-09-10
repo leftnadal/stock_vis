@@ -1929,3 +1929,13 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **실증**: S2-COPYFIX("문자열 전용")가 `yieldCurveSentence`의 **status-enum-지배 불변식** 테스트(spread 재계산 0 가드)를 함께 삭제(단언 56→47). status 밴드가 spread로 재계산되기 시작해도 잡을 게이트가 사라졌다 → GUARDFIX로 복원(더 강한 형태: 각 status에 다른 구간 spread 주입).
 
 **처방**: ⑴ 문자열을 바꾸는 세션은 기존 테스트를 **갱신**하되 **삭제 금지**(삭제 필요 시 상신). ⑵ 모든 실행 보고서에 **테스트 개수(it·expect) 전/후 필수 기재** — 줄어들면 사유를 적는다(감소=적신호).
+
+## force-graph 커스텀 canvasObject는 pointerAreaPaint 없으면 클릭 판정 사망 (화면 멀쩡) (채번 후보, RC-C1-HITAREA 2026-09-10) `[frontend][chainsight][graph]`
+
+**증상**: `/chainsight/backbone` 백본 그래프의 **엣지 클릭이 무반응**(근거바 미출현·라이브 0/5). 화면·중심성 리스트·그래프 렌더는 전부 정상이라 육안으로 결함이 안 보임.
+
+**원인**: react-force-graph 계열에서 **커스텀 `linkCanvasObject`(paintLink)를 쓰면 기본 포인터 히트영역이 사라진다** — `linkPointerAreaPaint`를 함께 주지 않으면 섀도 캔버스에 히트 영역이 안 칠해져 `onLinkClick`이 발화하지 않는다(핸들러는 배선돼 있으나 히트 판정 자체가 죽음). `BackboneGraph.tsx`가 linkCanvasObject+onLinkClick만 있고 linkPointerAreaPaint 부재. (노드도 동일 — nodeCanvasObject를 쓰면 nodePointerAreaPaint 필요. 선례 `GraphCanvas.tsx:227`·`MarketGraphCanvas.tsx:857`.)
+
+**해결**(RC-C1-HITAREA): `linkPointerAreaPaint=(link,color,ctx)=>` 섀도 캔버스에 `color`로 선을 칠하되 히트 폭 `Math.max(link.width, HIT_WIDTH=6)`로 넓혀 얇은 엣지도 잡히게. 시각 paintLink 무변경.
+
+**교훈**: ⑴ **커스텀 canvasObject를 쓰면 대응 pointerAreaPaint를 반드시 짝으로 준다**(node/link 공통). 화면은 멀쩡해 보이므로 육안 검증으로도 안 잡힌다 — 라이브 클릭 테스트 필수. ⑵ **핸들러 prop을 직접 호출하는 유닛 테스트는 포인터 히트 경로를 검증하지 못한다**: `props.onLinkClick(link)`를 직접 부르는 테스트는 클릭 배선이 깨져도 GREEN. 클릭 기능 회귀는 **pointerAreaPaint prop 전달 여부 + 그 함수가 color로 stroke·lineWidth≥히트폭인지**까지 검사해야 한다.
