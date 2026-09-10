@@ -8,6 +8,16 @@
 
 ---
 
+## [2026-09-10] D-BRANCH-DELETE-DELEGATE-1 — 단계별 승인 게이트 하 CC 삭제 집행 위임 [harness][ops][governance]
+**결정**: D-BRANCH-DELETE-MANUAL("삭제는 병진 수동")의 **정련**. 다음 4조건이 모두 충족된 경우에 한해 CC가 브랜치·worktree·원격 삭제를 **집행**한다 — ⑴ 분류 보고서가 main에 착지됨 ⑵ 전 ref `git bundle` 백업 + `verify` 통과 ⑶ 사용자가 세션 안에서 단계별 승인 토큰(`승인 A`~`E`)을 직접 입력 ⑷ 사후 재측정 보고. `-D`(강제)는 **줄 단위 실측으로 미이식 0이 확인된 건**에만(명시 목록 아님 — 실측이 목록을 갱신). **자가 `-D` 전환 금지**(`-d` 거부 = 건너뜀·기록이 기본, `-D`는 별도 승인·실측 근거 필요).
+**Why**: worktree-per-세션 병렬 환경에서 "후보만 보고" 고정은 누적 적체(225브랜치·61worktree)를 낳는다. 백업+단계 승인+사후측정의 3중 방어가 파괴성을 상쇄하면 위임이 안전·효율적. 집행 증거 = MGMT-BATCH-B-EXEC(2026-09-04~10): A(메인 트리 main 복귀)·B(worktree 40 제거·sv-dash-s0 제외)·C(브랜치 -d 200)·D(브랜치 7 삭제·이식 4줄·42줄 철회)·E(원격 5 삭제). bundle 2종 = `~/stockvis-refs-20260904-1119.bundle`·`~/stockvis-refs-20260907-0948.bundle`.
+**How to apply**: MGMT 계열 청소 세션 한정. D-GATE-SCOPE-1·D-BRANCH-DELETE-MANUAL과 묶어 적용. 보고서 §8에 단계별 승인 시각·건수·건너뜀 기록.
+
+## [2026-09-10] D-GATE-SCOPE-1 — 60분 활성 게이트 범위 = 삭제 후보 집합 [harness][ops]
+**결정**: 활성 세션 게이트의 판정 범위를 'repo 전체'에서 **'삭제 후보 집합'**으로 정련. 판정 = 후보 집합 안에서 (60분 내 커밋한 부착 브랜치) 또는 (최근 트리 활동)이 하나라도 있으면 HALT. 후보 밖 활성 세션은 판정 대상 아님. 필수 절차 승격(각 단계 직전): ㉠ 후보 내 60분 커밋(0이어야 진행) · ㉡ 후보 트리 `.git/worktrees/<name>/HEAD` mtime 전수 → 최근 활동분 · ㉢ ㉡ 적발분 후보 제외·보류 이관(규칙 5).
+**Why**: 게이트 목적은 '사용 중인 대상을 지우지 않는다'이고 규칙5(보고서∩재측정)·MERGED/조상 실측·--force 금지가 이미 담당. 시각 기준은 대리지표일 뿐이며 worktree-per-세션 병렬 환경에서 구조적 통과 불가(관측 활동 간격 7~30분). **완화가 아니라 대상 정정** — ㉠㉡㉢ 대체 측정을 필수로 승격. 적용: sv-dash-s0(HEAD 재정렬 이력 적발→보류)·sess-dual-obs1/s3s1(후보 밖 활성→판정 무관).
+**How to apply**: D-BRANCH-DELETE-DELEGATE-1과 묶음. MGMT 청소 세션 한정.
+
 ## [2026-09-09] MGMT-BATCH-B 단계D — sess-hold-p1 삭제 조건 기록 [harness][ops]
 **결정**: `monorepo/sess-hold-p1`(`b8d767aa`) 삭제 — 내용 51파일은 `monorepo/sess-signal-fwd-recon`(`cca67275`)에 보존됨(조상 관계 확인). 그 브랜치 처분(MGMT-BATCH-B §6 Q16·chain_sight 판단) 시 hold-p1 내용 보존 여부를 재확인할 것. 원본 좌표 백업 = `~/stockvis-refs-20260907-0948.bundle`.
 **Why**: hold-p1은 origin/main 미머지이나 tip이 signal-fwd-recon의 조상이라 내용 유실 0. signal-fwd-recon이 삭제되기 전까지 hold-p1 내용은 보존되며, 그 시점에 이 각주가 재확인 트리거가 된다.

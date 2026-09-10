@@ -1531,11 +1531,12 @@
 - 상태: 💤 등재(저우선). 방치 무해(dangling ref)이나 census 위생용.
 
 ## MGMT-BATCH-B — 브랜치·worktree 분류 보고 (2026-09-04) [harness][ops]
-- **상태: ✅ 분류 보고 착지 · 병진 수동 삭제 대기** (보고서 = `docs/mgmt/MGMT-BATCH-B_classification.md`). 삭제·정리 0건 집행(D-BRANCH-DELETE-MANUAL).
+- **상태: ✅ 집행 완료 (MGMT-BATCH-B-EXEC, 2026-09-04~10)** (보고서 = `docs/mgmt/MGMT-BATCH-B_classification.md` §8). 단계별 승인(A/B[제외 sv-dash-s0]/C/D[3분할]/E) 하 CC 삭제 집행 = D-BRANCH-DELETE-DELEGATE-1.
 - 분류(스냅샷 `1d528a6e`·전수 225 브랜치): 즉시삭제 159 / 즉시삭제(wt선행) 42 / 보류 8 / 검토필요 15 / 유지 1. worktree 61: 즉시정리 43 / 보류 12 / 유지 6. 원격 삭제 후보 5(전부 MERGED).
 - **검토필요 16건**(§6 Q1~Q16): 오늘 활성(hub-recon·design-inspector·evt-8 외 드리프트분)·squash-merge(cn-repair-land·`-d` 거부→`-D` 필요)·아크 미상 다수·메인 트리 stale 처분(Q16). **삭제 실행 전제 = 모든 CC 세션 종료 + 활성 목록 재측정**(라이브 드리프트 1d528a6e→04ec8bf7 관측).
 - 명령 초안(실행 금지) = scratchpad `cmd_A_worktree.txt`(43)/`cmd_B1_branch_noWT.txt`(159)/`cmd_B2_branch_wt.txt`(42)/`cmd_C_remote.txt`(5).
-- **EXEC(MGMT-BATCH-B-EXEC, 09-04~09) 진행**: 단계 A(메인 트리 main 복귀·sess-main-integrate detach) · B(worktree 40 제거) · C(브랜치 -d 200) · D(브랜치 7 삭제) 집행. 게이트 정련 = D-GATE-SCOPE-1(범위=삭제 후보 집합). 삭제 로그 = `docs/mgmt/MGMT-BATCH-B_delete_log.txt`.
+- **EXEC 완료(MGMT-BATCH-B-EXEC, 09-04~10)**: A(메인 트리 main 복귀·sess-main-integrate detach) · B(worktree **40** 제거·sv-dash-s0 제외) · C(브랜치 `-d` **200**·거부 0) · D(브랜치 **7** 삭제: 즉시-D 3 + 이식후-D 4·이식 4줄·42줄 철회) · E(원격 **5** 삭제). 게이트 정련 = D-GATE-SCOPE-1. bundle 2종 보존. 삭제 로그 = `docs/mgmt/MGMT-BATCH-B_delete_log.txt`(C 200 + D/E).
+- **잔여 = MGMT-BATCH-C 후보 (3덩이)**: ⓐ **동결 유지분** — 보류 8·검토필요 타 프로젝트 몫(Q1·2·7·8·11·12·13·14)·`sv-dash-s0`(HEAD 재정렬 이력=관리중, 보류 이관). ⓑ **원격 잔여 `nightly-20260618/19`** — 그래프상 NOT-MERGED(ahead=1)이나 12파일 전부 main 동일(단계 D 실측)·로컬 -D 커밋(b77635b8/bf613df7) 복구 좌표 역할 → 보존·다음 배치 별도 판단. ⓒ **보고서 이후 신규 유입** — 09-10 기준 원격 feature/research-*·math-lab·lab-automation 등 + 로컬/worktree 신규 다수(다세션 09-04~10) → 다음 배치 새 스냅샷 대상.
 
 ### sess-r2pre 흡수 — FE 미해결 todo 2건 (MGMT-BATCH-B 단계D, 삭제 전 이식) [frontend][infra]
 > 출처: `monorepo/sess-r2pre`(`9bc85fff`, 2026-08-31 R2-S1 배포서 발견). 삭제 브랜치의 유일 미이식분(main 미추적·미해결 확인). 원본 좌표 = `~/stockvis-refs-20260907-0948.bundle`.

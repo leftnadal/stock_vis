@@ -215,3 +215,34 @@ BATCH-A 이전판정과 상충: 0 (전용 BATCH-A 보고서 미발견)
 서빙 반영: **코드 변경 없음 — 문서만, 다음 sync에 자동 반영**
 HALT 여부: 아님 (완주). 삭제 실행 전제 = 모든 CC 세션 종료 + 활성 목록 재측정
 ```
+
+---
+
+## §8 집행 결과 (MGMT-BATCH-B-EXEC, 2026-09-04~10)
+
+> 위임 근거 = D-BRANCH-DELETE-DELEGATE-1 · 게이트 정련 = D-GATE-SCOPE-1. 단계마다 병진 `승인 X` 토큰 + ㉠㉡㉢ 게이트.
+> 백업 bundle 2종(복구 좌표): `~/stockvis-refs-20260904-1119.bundle`(21.5MB) · `~/stockvis-refs-20260907-0948.bundle`(21.6MB·verify "complete history").
+> 전 삭제 로그(C 200 + D 7 + E 5) = `docs/mgmt/MGMT-BATCH-B_delete_log.txt`(221줄).
+
+### §8-1 단계 A — 메인 트리 main 복귀 (`승인 A`, 09-04)
+- `Desktop/stock_vis`(원본 리포): `sess-signal-fwd-recon`(cca67275·stale) → **main**. 충돌 처리: `PORTFOLIO_SURVEY_S0_REPORT.md` 복원 · `ops_worktree_isolation_impl_directive.md` rm(origin/main 동일). untracked 보존.
+- `sess-main-integrate`: `eodsig-freshgate` → **detach origin/main**. `sess-signal-fwd-recon` 브랜치 **미삭제**(Q16 대기).
+- health_check ❌2(stale 아티팩트) → **❌0 회복**. 통합 트리 판정 = SESSION_CONTRACT §44.
+
+### §8-2 단계 B·C — worktree 40 + 브랜치 -d 200 (`승인 B 제외 sv-dash-s0`/`승인 C`, 09-07)
+- **B**: worktree **40 제거**(부착 39 + detached 1 sess-monitor-rebuild)·SKIP 0·prune 0. `sv-dash-s0` HEAD 재정렬 이력(rule 5) → **보류 이관**. 경로↔브랜치 쌍 = 단계 B 결과표.
+- **C**: `git branch -d` **200**(nightly 76 + sess 124)·**거부 0**. 구동 트리 sess-mgmt-b 기준 판정(origin/main 순수 조상).
+- ㉠(60분 0)·㉡(후보 mtime 4일+ 유휴)·㉢(0) 통과.
+
+### §8-3 단계 D — 브랜치 7 삭제 + 이식 4줄 (`승인 D` 3분할, 09-08~09)
+- **즉시 -D 3**(미이식 0 실측): `nightly-20260618`(b77635b8)·`nightly-20260619`(bf613df7)·`sess-eodsig-freshgate`(d1a2b43e).
+- **이식 후 -D 4**: `sess-r2pre`(9bc85fff)·`sess-mgmt`(5a4ce8e9)·`sess-cn-repair-land`(f72c0c3a)·`sess-hold-p1`(b8d767aa).
+- **이식 커밋 `b17325b4`**: 디렉터 계획 44줄 중 **42줄 철회**(superseded·구버전 주입 방지), 실이식 = **3항목 4줄**(r2pre FE todo 2 + hold-p1 조건 각주 + a84388f 좌표 각주). 검증 4겹(①구조②줄③실질④인용) 적용.
+
+### §8-4 단계 E — 원격 5 삭제 (`승인 E`, 09-10)
+- `git push origin --delete` **5건**(각 `merge-base --is-ancestor` + ahead=0 재확인): sess-mgmt-b46·newsfix-be·r2s2·sess-mgmt-b45·newsfix-sync. SKIP 0.
+
+### §8-5 사후 측정
+- worktree **50** · 로컬 **56** · 원격 **25**(09-10). **삭제분** = 로컬 207(C200+D7)·원격 5·worktree 42(B40+D2). 잔여 증가분 = 09-04~10 다세션 **신규 유입**(삭제분과 분리 해석).
+- health ✅16/⚠2/❌0 · candC 200 전부 부재 · `~/stockvis-branches-after.txt` 기록.
+- 잔여 = MGMT-BATCH-C 후보(ⓐ 동결 유지 ⓑ 원격 nightly-618/19 복구좌표 보존 ⓒ 신규 유입) — TASKQUEUE 등재.

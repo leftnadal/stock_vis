@@ -1929,3 +1929,19 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **실증**: S2-COPYFIX("문자열 전용")가 `yieldCurveSentence`의 **status-enum-지배 불변식** 테스트(spread 재계산 0 가드)를 함께 삭제(단언 56→47). status 밴드가 spread로 재계산되기 시작해도 잡을 게이트가 사라졌다 → GUARDFIX로 복원(더 강한 형태: 각 status에 다른 구간 spread 주입).
 
 **처방**: ⑴ 문자열을 바꾸는 세션은 기존 테스트를 **갱신**하되 **삭제 금지**(삭제 필요 시 상신). ⑵ 모든 실행 보고서에 **테스트 개수(it·expect) 전/후 필수 기재** — 줄어들면 사유를 적는다(감소=적신호).
+
+## 브랜치 삭제 직전 검증은 4겹 — 어느 한 층도 단독 결론 아님 (채번 대기, MGMT-BATCH-B-EXEC 2026-09-10) `[git][harness][ops]`
+
+브랜치를 지워도 작업이 안 죽는지 판정할 때, 단일 방법은 전부 오판한다.
+- **①구조**(`git cherry`·`merge-base`): squash/rebase 머지를 놓쳐 **거짓 안심**(NOT-MERGED인데 내용은 main에).
+- **②줄 exact-match**(추가 `+`줄 ∩ `git show origin/main:<file>` 부재): **원장 append 파일에서 교체/확장된 줄을 유실로 오탐**해 거짓 경보 → 그대로 이식하면 **구버전 주입(drift)**. 실증: sess-eodsig-freshgate 1줄·cn-repair 2줄·sess-mgmt 40줄이 exact-match상 "미이식"이었으나 전부 main에 최신본 존재(예: runbook "9건"→main "14건"). 44줄 중 실이식 = r2pre 2줄뿐.
+- **③실질**(그 항목이 main에 **현행으로** 존재하는가 — 키워드/substance): 최종 판정.
+- **④인용 좌표**(`git branch --contains <sha>`): 내용이 최신이어도 **main 문서가 그 브랜치의 커밋 해시를 인용**하면 삭제 시 죽은 링크가 된다. 실증: a84388f는 sess-mgmt에만 있고 main DECISIONS가 2곳 인용 → 삭제 전 bundle 좌표 각주 이식 필요.
+
+**처방**: 삭제 전 ①②로 후보를 좁히되 **③으로 확정**하고, `-D` 대상은 ④(`git branch --contains`)까지 확인한다. 이식은 ③에서 "현행 부재" 확인분만(구버전 주입 금지).
+
+## MGMT 청소 세션 부수 교훈 3건 (채번 대기, MGMT-BATCH-B-EXEC 2026-09-10) `[harness][ops][process]`
+
+- **메인 트리(원본 리포)가 피처 브랜치에 방치되면 08-10판 하네스를 읽는다**: `Desktop/stock_vis`가 stale 세션 브랜치(cca67275)로 체크아웃돼 있어 health_check ❌2(PROGRESS stale)·문서 grep 오독 발생. 단계 A에서 `checkout main`으로 해소(health ❌0 회복). → **제안(구현 별 세션)**: STARTUP_CHECKLIST에 "구동 트리 HEAD ≠ origin/main이면 경고" 추가.
+- **worktree 이름 ≠ 부착 브랜치**: `sv-agent-s1` worktree의 부착 브랜치는 `sess-agent-s1`이 아니라 `monorepo/sess-close-0831`. 삭제 결과표는 반드시 **경로↔브랜치 쌍**으로 기록(축약 금지).
+- **시각 기반 활성 게이트는 worktree-per-세션 병렬 환경에서 구조적 통과 불가**: 관측 활동 간격 7~30분이라 'repo 전체 60분 게이트'는 상시 실패. 해법 = 게이트 범위를 삭제 후보 집합으로 좁힘(D-GATE-SCOPE-1) + ㉠㉡㉢ 대체 측정.
