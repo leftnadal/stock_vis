@@ -1,0 +1,28 @@
+{
+  "job_id": "SV-MATH-DP-OBSERVATION-003",
+  "lab": "math_lab",
+  "branch": "c9bd21effbf0f3b3c728bed97e64f5aca330304c",
+  "execution_mode": "fixed_daily_price_local_then_codex_review_v1",
+  "goal": "Approved read-only DailyPrice inventory; research sufficiency remains unassessed",
+  "authority_refs": [
+    "math_lab/00_foundation/foundation_ko.md",
+    "math_lab/01_operating_system/operating_model_ko.md",
+    "math_lab/02_methodology/research_methodology_ko.md",
+    "math_lab/05_validation/daily_price_validation_basket_v0_1_ko.md"
+  ],
+  "expected_outputs": [
+    "sealed local observation",
+    "independent Codex review"
+  ],
+  "allowed_write_paths": [
+    "math_lab/05_validation/observations/SV-MATH-DP-OBSERVATION-003"
+  ],
+  "db_access": "read_only",
+  "network_policy": "restricted",
+  "destructive_actions_allowed": false,
+  "status": "queued",
+  "parent_job_ids": [
+    "SV-MATH-DP-OBSERVATION-002"
+  ],
+  "parent_run_id": "5ace7522-6535-4f16-81b0-bbc63b5daea9"
+}

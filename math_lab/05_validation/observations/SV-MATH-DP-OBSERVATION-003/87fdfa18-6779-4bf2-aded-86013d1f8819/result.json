@@ -1,0 +1,1639 @@
+{
+  "authority_references": [
+    "math_lab/00_foundation/foundation_ko.md",
+    "math_lab/01_operating_system/operating_model_ko.md",
+    "math_lab/02_methodology/research_methodology_ko.md",
+    "math_lab/05_validation/daily_price_validation_basket_v0_1_ko.md"
+  ],
+  "data_gap_ids": [
+    "DG-DP-EXPORT-001",
+    "DG-DP-AVAILABLE-AT-001",
+    "DG-DP-PROVENANCE-001",
+    "DG-DP-ADJUSTMENT-001",
+    "DG-DP-DIVIDEND-001",
+    "DG-DP-REVISION-001",
+    "DG-DP-ENTITY-001",
+    "DG-DP-TERMINAL-RETURN-001",
+    "DG-DP-CALENDAR-001"
+  ],
+  "failures": [],
+  "findings": {
+    "adversarial_candidate_discovery": [
+      {
+        "candidates": [
+          {
+            "candidate_status": "deferred_event_outside_price_coverage",
+            "daily_price_coverage": {
+              "max_date": "2026-09-09",
+              "min_date": "2023-07-10",
+              "row_count": 796
+            },
+            "event_count": 6,
+            "events_inside_price_range": 1,
+            "events_outside_price_range": 5,
+            "first_event_date": "2000-06-27",
+            "invalid_ratio_rows": 0,
+            "last_event_date": "2024-06-10",
+            "maximum_adjustment_factor": 10.0,
+            "sources": [
+              "fmp"
+            ],
+            "symbol": "NVDA"
+          },
+          {
+            "candidate_status": "deferred_event_outside_price_coverage",
+            "daily_price_coverage": {
+              "max_date": "2026-09-09",
+              "min_date": "2023-07-10",
+              "row_count": 796
+            },
+            "event_count": 5,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 5,
+            "first_event_date": "1987-06-16",
+            "invalid_ratio_rows": 0,
+            "last_event_date": "2020-08-31",
+            "maximum_adjustment_factor": 7.0,
+            "sources": [
+              "fmp"
+            ],
+            "symbol": "AAPL"
+          },
+          {
+            "candidate_status": "deferred_event_outside_price_coverage",
+            "daily_price_coverage": {
+              "max_date": "2026-09-09",
+              "min_date": "2023-07-10",
+              "row_count": 796
+            },
+            "event_count": 2,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 2,
+            "first_event_date": "2014-04-03",
+            "invalid_ratio_rows": 0,
+            "last_event_date": "2022-07-18",
+            "maximum_adjustment_factor": 20.0,
+            "sources": [
+              "fmp"
+            ],
+            "symbol": "GOOGL"
+          },
+          {
+            "candidate_status": "deferred_event_outside_price_coverage",
+            "daily_price_coverage": {
+              "max_date": "2026-09-09",
+              "min_date": "2023-07-10",
+              "row_count": 796
+            },
+            "event_count": 2,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 2,
+            "first_event_date": "2020-08-31",
+            "invalid_ratio_rows": 0,
+            "last_event_date": "2022-08-25",
+            "maximum_adjustment_factor": 5.0,
+            "sources": [
+              "fmp"
+            ],
+            "symbol": "TSLA"
+          }
+        ],
+        "failure_mode": "recorded_repeated_split",
+        "limitations": [
+          "Absence from StockSplit does not establish that no split occurred.",
+          "Recorded events may share a single provider ancestry."
+        ],
+        "selection_method": "rank StockSplit event count; require count >= 2",
+        "status": "completed_recorded_events_only"
+      },
+      {
+        "candidates": [
+          {
+            "candidate_status": "deferred_event_outside_price_coverage",
+            "daily_price_coverage": {
+              "max_date": "2026-09-09",
+              "min_date": "2023-07-10",
+              "row_count": 796
+            },
+            "event_count": 2,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 2,
+            "first_event_date": "2014-04-03",
+            "invalid_ratio_rows": 0,
+            "last_event_date": "2022-07-18",
+            "maximum_adjustment_factor": 20.0,
+            "sources": [
+              "fmp"
+            ],
+            "symbol": "GOOGL"
+          },
+          {
+            "candidate_status": "deferred_event_outside_price_coverage",
+            "daily_price_coverage": {
+              "max_date": "2026-09-09",
+              "min_date": "2023-07-10",
+              "row_count": 796
+            },
+            "event_count": 6,
+            "events_inside_price_range": 1,
+            "events_outside_price_range": 5,
+            "first_event_date": "2000-06-27",
+            "invalid_ratio_rows": 0,
+            "last_event_date": "2024-06-10",
+            "maximum_adjustment_factor": 10.0,
+            "sources": [
+              "fmp"
+            ],
+            "symbol": "NVDA"
+          },
+          {
+            "candidate_status": "deferred_event_outside_price_coverage",
+            "daily_price_coverage": {
+              "max_date": "2026-09-09",
+              "min_date": "2023-07-10",
+              "row_count": 796
+            },
+            "event_count": 5,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 5,
+            "first_event_date": "1987-06-16",
+            "invalid_ratio_rows": 0,
+            "last_event_date": "2020-08-31",
+            "maximum_adjustment_factor": 7.0,
+            "sources": [
+              "fmp"
+            ],
+            "symbol": "AAPL"
+          },
+          {
+            "candidate_status": "deferred_event_outside_price_coverage",
+            "daily_price_coverage": {
+              "max_date": "2026-09-09",
+              "min_date": "2023-07-10",
+              "row_count": 796
+            },
+            "event_count": 2,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 2,
+            "first_event_date": "2020-08-31",
+            "invalid_ratio_rows": 0,
+            "last_event_date": "2022-08-25",
+            "maximum_adjustment_factor": 5.0,
+            "sources": [
+              "fmp"
+            ],
+            "symbol": "TSLA"
+          }
+        ],
+        "failure_mode": "recorded_large_or_reverse_split",
+        "limitations": [
+          "Price discontinuities around split dates were not classified by this readiness probe."
+        ],
+        "selection_method": "rank maximum numerator:denominator adjustment factor",
+        "status": "completed_recorded_events_only"
+      },
+      {
+        "candidates": [
+          {
+            "candidate_status": "deferred_no_daily_price_coverage",
+            "daily_price_coverage": {
+              "max_date": null,
+              "min_date": null,
+              "row_count": 0
+            },
+            "event_count": 23,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 23,
+            "first_event_date": "2026-08-27",
+            "last_event_date": "2026-09-29",
+            "symbol": "SATA"
+          },
+          {
+            "candidate_status": "deferred_no_daily_price_coverage",
+            "daily_price_coverage": {
+              "max_date": null,
+              "min_date": null,
+              "row_count": 0
+            },
+            "event_count": 14,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 14,
+            "first_event_date": "2026-09-01",
+            "last_event_date": "2026-12-01",
+            "symbol": "BMNP"
+          },
+          {
+            "candidate_status": "deferred_no_daily_price_coverage",
+            "daily_price_coverage": {
+              "max_date": null,
+              "min_date": null,
+              "row_count": 0
+            },
+            "event_count": 5,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 5,
+            "first_event_date": "2026-09-02",
+            "last_event_date": "2026-12-02",
+            "symbol": "MSIF"
+          },
+          {
+            "candidate_status": "deferred_no_daily_price_coverage",
+            "daily_price_coverage": {
+              "max_date": null,
+              "min_date": null,
+              "row_count": 0
+            },
+            "event_count": 4,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 4,
+            "first_event_date": "2026-08-31",
+            "last_event_date": "2026-11-30",
+            "symbol": "AMIVF"
+          },
+          {
+            "candidate_status": "deferred_no_daily_price_coverage",
+            "daily_price_coverage": {
+              "max_date": null,
+              "min_date": null,
+              "row_count": 0
+            },
+            "event_count": 4,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 4,
+            "first_event_date": "2026-08-31",
+            "last_event_date": "2026-11-30",
+            "symbol": "BOWFF"
+          },
+          {
+            "candidate_status": "deferred_no_daily_price_coverage",
+            "daily_price_coverage": {
+              "max_date": null,
+              "min_date": null,
+              "row_count": 0
+            },
+            "event_count": 4,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 4,
+            "first_event_date": "2026-08-31",
+            "last_event_date": "2026-11-30",
+            "symbol": "FCMGF"
+          },
+          {
+            "candidate_status": "deferred_no_daily_price_coverage",
+            "daily_price_coverage": {
+              "max_date": null,
+              "min_date": null,
+              "row_count": 0
+            },
+            "event_count": 4,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 4,
+            "first_event_date": "2026-08-31",
+            "last_event_date": "2026-11-30",
+            "symbol": "FRMUF"
+          },
+          {
+            "candidate_status": "deferred_no_daily_price_coverage",
+            "daily_price_coverage": {
+              "max_date": null,
+              "min_date": null,
+              "row_count": 0
+            },
+            "event_count": 4,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 4,
+            "first_event_date": "2026-09-02",
+            "last_event_date": "2026-12-02",
+            "symbol": "ITUB"
+          },
+          {
+            "candidate_status": "deferred_no_daily_price_coverage",
+            "daily_price_coverage": {
+              "max_date": null,
+              "min_date": null,
+              "row_count": 0
+            },
+            "event_count": 4,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 4,
+            "first_event_date": "2026-09-08",
+            "last_event_date": "2026-11-06",
+            "symbol": "MAIN"
+          },
+          {
+            "candidate_status": "deferred_no_daily_price_coverage",
+            "daily_price_coverage": {
+              "max_date": null,
+              "min_date": null,
+              "row_count": 0
+            },
+            "event_count": 4,
+            "events_inside_price_range": 0,
+            "events_outside_price_range": 4,
+            "first_event_date": "2026-08-31",
+            "last_event_date": "2026-11-30",
+            "symbol": "TBCRF"
+          }
+        ],
+        "failure_mode": "dividend_history",
+        "limitations": [
+          "CalendarEvent is not demonstrated to be a complete historical dividend ledger."
+        ],
+        "selection_method": "rank DIVIDEND CalendarEvent count",
+        "status": "completed_with_operational_event_window"
+      },
+      {
+        "candidates": [
+          {
+            "daily_price_row_count": 0,
+            "max_date": null,
+            "min_date": null,
+            "symbol": "BF.B"
+          },
+          {
+            "daily_price_row_count": 0,
+            "max_date": null,
+            "min_date": null,
+            "symbol": "BRK.B"
+          },
+          {
+            "daily_price_row_count": 0,
+            "max_date": null,
+            "min_date": null,
+            "symbol": "GEVG"
+          },
+          {
+            "daily_price_row_count": 0,
+            "max_date": null,
+            "min_date": null,
+            "symbol": "IREG"
+          },
+          {
+            "daily_price_row_count": 0,
+            "max_date": null,
+            "min_date": null,
+            "symbol": "OKLL"
+          },
+          {
+            "daily_price_row_count": 0,
+            "max_date": null,
+            "min_date": null,
+            "symbol": "PAL"
+          },
+          {
+            "daily_price_row_count": 0,
+            "max_date": null,
+            "min_date": null,
+            "symbol": "SMR"
+          },
+          {
+            "daily_price_row_count": 0,
+            "max_date": null,
+            "min_date": null,
+            "symbol": "XE"
+          },
+          {
+            "daily_price_row_count": 1,
+            "max_date": "2025-08-28",
+            "min_date": "2025-08-28",
+            "symbol": "WBA"
+          },
+          {
+            "daily_price_row_count": 1,
+            "max_date": "2025-11-26",
+            "min_date": "2025-11-26",
+            "symbol": "IPG"
+          }
+        ],
+        "failure_mode": "ipo_or_short_history",
+        "limitations": [
+          "Short coverage cannot be classified as IPO history without point-in-time listing metadata."
+        ],
+        "selection_method": "rank DailyPrice row count ascending, retaining zero-row stocks",
+        "status": "completed_with_short_history_proxy"
+      },
+      {
+        "candidates": [
+          {
+            "daily_price_row_count": 796,
+            "expected_weekday_proxy_count": 828,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2023-07-10",
+            "missing_ratio": 0.038647,
+            "missing_weekday_proxy_count": 32,
+            "observed_weekday_count": 796,
+            "selection_ranks": {
+              "max_internal_calendar_gap_days": 5,
+              "missing_weekday_proxy_count": 1
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "A",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 158,
+            "expected_weekday_proxy_count": 171,
+            "max_date": "2026-06-15",
+            "max_internal_calendar_gap_days": 10,
+            "min_date": "2025-10-20",
+            "missing_ratio": 0.076023,
+            "missing_weekday_proxy_count": 13,
+            "observed_weekday_count": 158,
+            "selection_ranks": {
+              "max_internal_calendar_gap_days": 1,
+              "missing_weekday_ratio": 3
+            },
+            "stale_tail_calendar_days": 87,
+            "symbol": "SPY",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 12,
+            "expected_weekday_proxy_count": 13,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2026-08-24",
+            "missing_ratio": 0.076923,
+            "missing_weekday_proxy_count": 1,
+            "observed_weekday_count": 12,
+            "selection_ranks": {
+              "missing_weekday_ratio": 1
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "RDDT",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 1,
+            "expected_weekday_proxy_count": 1,
+            "max_date": "2025-08-28",
+            "max_internal_calendar_gap_days": 0,
+            "min_date": "2025-08-28",
+            "missing_ratio": 0.0,
+            "missing_weekday_proxy_count": 0,
+            "observed_weekday_count": 1,
+            "selection_ranks": {
+              "stale_tail_calendar_days": 1
+            },
+            "stale_tail_calendar_days": 378,
+            "symbol": "WBA",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 796,
+            "expected_weekday_proxy_count": 828,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2023-07-10",
+            "missing_ratio": 0.038647,
+            "missing_weekday_proxy_count": 32,
+            "observed_weekday_count": 796,
+            "selection_ranks": {
+              "max_internal_calendar_gap_days": 7,
+              "missing_weekday_proxy_count": 2
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "AAPL",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 295,
+            "expected_weekday_proxy_count": 310,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 7,
+            "min_date": "2025-07-03",
+            "missing_ratio": 0.048387,
+            "missing_weekday_proxy_count": 15,
+            "observed_weekday_count": 295,
+            "selection_ranks": {
+              "max_internal_calendar_gap_days": 2
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "IONQ",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 1,
+            "expected_weekday_proxy_count": 1,
+            "max_date": "2025-11-26",
+            "max_internal_calendar_gap_days": 0,
+            "min_date": "2025-11-26",
+            "missing_ratio": 0.0,
+            "missing_weekday_proxy_count": 0,
+            "observed_weekday_count": 1,
+            "selection_ranks": {
+              "stale_tail_calendar_days": 2
+            },
+            "stale_tail_calendar_days": 288,
+            "symbol": "IPG",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 12,
+            "expected_weekday_proxy_count": 13,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2026-08-24",
+            "missing_ratio": 0.076923,
+            "missing_weekday_proxy_count": 1,
+            "observed_weekday_count": 12,
+            "selection_ranks": {
+              "missing_weekday_ratio": 2
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "VMRK",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 796,
+            "expected_weekday_proxy_count": 828,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2023-07-10",
+            "missing_ratio": 0.038647,
+            "missing_weekday_proxy_count": 32,
+            "observed_weekday_count": 796,
+            "selection_ranks": {
+              "max_internal_calendar_gap_days": 9,
+              "missing_weekday_proxy_count": 3
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "ABBV",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 7,
+            "expected_weekday_proxy_count": 7,
+            "max_date": "2025-12-08",
+            "max_internal_calendar_gap_days": 3,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.0,
+            "missing_weekday_proxy_count": 0,
+            "observed_weekday_count": 7,
+            "selection_ranks": {
+              "stale_tail_calendar_days": 3
+            },
+            "stale_tail_calendar_days": 276,
+            "symbol": "FI",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 295,
+            "expected_weekday_proxy_count": 310,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 7,
+            "min_date": "2025-07-03",
+            "missing_ratio": 0.048387,
+            "missing_weekday_proxy_count": 15,
+            "observed_weekday_count": 295,
+            "selection_ranks": {
+              "max_internal_calendar_gap_days": 3
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "IREN",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 796,
+            "expected_weekday_proxy_count": 828,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2023-07-10",
+            "missing_ratio": 0.038647,
+            "missing_weekday_proxy_count": 32,
+            "observed_weekday_count": 796,
+            "selection_ranks": {
+              "missing_weekday_proxy_count": 4
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "ABNB",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 141,
+            "expected_weekday_proxy_count": 152,
+            "max_date": "2026-06-29",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.072368,
+            "missing_weekday_proxy_count": 11,
+            "observed_weekday_count": 141,
+            "selection_ranks": {
+              "missing_weekday_ratio": 4
+            },
+            "stale_tail_calendar_days": 73,
+            "symbol": "BK",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 9,
+            "expected_weekday_proxy_count": 9,
+            "max_date": "2025-12-10",
+            "max_internal_calendar_gap_days": 3,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.0,
+            "missing_weekday_proxy_count": 0,
+            "observed_weekday_count": 9,
+            "selection_ranks": {
+              "stale_tail_calendar_days": 4
+            },
+            "stale_tail_calendar_days": 274,
+            "symbol": "K",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 295,
+            "expected_weekday_proxy_count": 310,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 7,
+            "min_date": "2025-07-03",
+            "missing_ratio": 0.048387,
+            "missing_weekday_proxy_count": 15,
+            "observed_weekday_count": 295,
+            "selection_ranks": {
+              "max_internal_calendar_gap_days": 4
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "TLN",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 45,
+            "expected_weekday_proxy_count": 48,
+            "max_date": "2026-02-03",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.0625,
+            "missing_weekday_proxy_count": 3,
+            "observed_weekday_count": 45,
+            "selection_ranks": {
+              "missing_weekday_ratio": 5,
+              "stale_tail_calendar_days": 5
+            },
+            "stale_tail_calendar_days": 219,
+            "symbol": "DAY",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 796,
+            "expected_weekday_proxy_count": 828,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2023-07-10",
+            "missing_ratio": 0.038647,
+            "missing_weekday_proxy_count": 32,
+            "observed_weekday_count": 796,
+            "selection_ranks": {
+              "missing_weekday_proxy_count": 5
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "ABT",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 49,
+            "expected_weekday_proxy_count": 52,
+            "max_date": "2026-02-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.057692,
+            "missing_weekday_proxy_count": 3,
+            "observed_weekday_count": 49,
+            "selection_ranks": {
+              "missing_weekday_ratio": 6,
+              "stale_tail_calendar_days": 6
+            },
+            "stale_tail_calendar_days": 213,
+            "symbol": "MMC",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 251,
+            "expected_weekday_proxy_count": 261,
+            "max_date": "2026-08-12",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-08-13",
+            "missing_ratio": 0.038314,
+            "missing_weekday_proxy_count": 10,
+            "observed_weekday_count": 251,
+            "selection_ranks": {
+              "max_internal_calendar_gap_days": 6
+            },
+            "stale_tail_calendar_days": 29,
+            "symbol": "AAP",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 796,
+            "expected_weekday_proxy_count": 828,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2023-07-10",
+            "missing_ratio": 0.038647,
+            "missing_weekday_proxy_count": 32,
+            "observed_weekday_count": 796,
+            "selection_ranks": {
+              "missing_weekday_proxy_count": 6
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "ACGL",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 88,
+            "expected_weekday_proxy_count": 93,
+            "max_date": "2026-04-07",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.053763,
+            "missing_weekday_proxy_count": 5,
+            "observed_weekday_count": 88,
+            "selection_ranks": {
+              "missing_weekday_ratio": 8,
+              "stale_tail_calendar_days": 7
+            },
+            "stale_tail_calendar_days": 156,
+            "symbol": "HOLX",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 796,
+            "expected_weekday_proxy_count": 828,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2023-07-10",
+            "missing_ratio": 0.038647,
+            "missing_weekday_proxy_count": 32,
+            "observed_weekday_count": 796,
+            "selection_ranks": {
+              "missing_weekday_proxy_count": 7
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "ACN",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 150,
+            "expected_weekday_proxy_count": 159,
+            "max_date": "2026-07-08",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.056604,
+            "missing_weekday_proxy_count": 9,
+            "observed_weekday_count": 150,
+            "selection_ranks": {
+              "missing_weekday_ratio": 7
+            },
+            "stale_tail_calendar_days": 64,
+            "symbol": "SATS",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 251,
+            "expected_weekday_proxy_count": 261,
+            "max_date": "2026-08-12",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-08-13",
+            "missing_ratio": 0.038314,
+            "missing_weekday_proxy_count": 10,
+            "observed_weekday_count": 251,
+            "selection_ranks": {
+              "max_internal_calendar_gap_days": 8
+            },
+            "stale_tail_calendar_days": 29,
+            "symbol": "ABBNY",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 796,
+            "expected_weekday_proxy_count": 828,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2023-07-10",
+            "missing_ratio": 0.038647,
+            "missing_weekday_proxy_count": 32,
+            "observed_weekday_count": 796,
+            "selection_ranks": {
+              "missing_weekday_proxy_count": 8
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "ADBE",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 110,
+            "expected_weekday_proxy_count": 115,
+            "max_date": "2026-05-07",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.043478,
+            "missing_weekday_proxy_count": 5,
+            "observed_weekday_count": 110,
+            "selection_ranks": {
+              "stale_tail_calendar_days": 8
+            },
+            "stale_tail_calendar_days": 126,
+            "symbol": "CTRA",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 136,
+            "expected_weekday_proxy_count": 142,
+            "max_date": "2026-06-15",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.042254,
+            "missing_weekday_proxy_count": 6,
+            "observed_weekday_count": 136,
+            "selection_ranks": {
+              "max_internal_calendar_gap_days": 10,
+              "stale_tail_calendar_days": 9
+            },
+            "stale_tail_calendar_days": 87,
+            "symbol": "ABCB",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 796,
+            "expected_weekday_proxy_count": 828,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2023-07-10",
+            "missing_ratio": 0.038647,
+            "missing_weekday_proxy_count": 32,
+            "observed_weekday_count": 796,
+            "selection_ranks": {
+              "missing_weekday_proxy_count": 9
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "ADI",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 151,
+            "expected_weekday_proxy_count": 159,
+            "max_date": "2026-07-08",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.050314,
+            "missing_weekday_proxy_count": 8,
+            "observed_weekday_count": 151,
+            "selection_ranks": {
+              "missing_weekday_ratio": 9
+            },
+            "stale_tail_calendar_days": 64,
+            "symbol": "CAG",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 136,
+            "expected_weekday_proxy_count": 142,
+            "max_date": "2026-06-15",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.042254,
+            "missing_weekday_proxy_count": 6,
+            "observed_weekday_count": 136,
+            "selection_ranks": {
+              "stale_tail_calendar_days": 10
+            },
+            "stale_tail_calendar_days": 87,
+            "symbol": "ABSI",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 796,
+            "expected_weekday_proxy_count": 828,
+            "max_date": "2026-09-09",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2023-07-10",
+            "missing_ratio": 0.038647,
+            "missing_weekday_proxy_count": 32,
+            "observed_weekday_count": 796,
+            "selection_ranks": {
+              "missing_weekday_proxy_count": 10
+            },
+            "stale_tail_calendar_days": 1,
+            "symbol": "ADM",
+            "weekend_observation_count": 0
+          },
+          {
+            "daily_price_row_count": 151,
+            "expected_weekday_proxy_count": 159,
+            "max_date": "2026-07-08",
+            "max_internal_calendar_gap_days": 4,
+            "min_date": "2025-11-28",
+            "missing_ratio": 0.050314,
+            "missing_weekday_proxy_count": 8,
+            "observed_weekday_count": 151,
+            "selection_ranks": {
+              "missing_weekday_ratio": 10
+            },
+            "stale_tail_calendar_days": 64,
+            "symbol": "CPB",
+            "weekend_observation_count": 0
+          }
+        ],
+        "failure_mode": "long_missing_period_or_suspension",
+        "limitations": [
+          "The proxy includes exchange holidays and cannot distinguish suspensions from ingestion gaps."
+        ],
+        "ranking_dimensions": [
+          "missing_weekday_ratio",
+          "missing_weekday_proxy_count",
+          "max_internal_calendar_gap_days",
+          "stale_tail_calendar_days",
+          "weekend_observation_count"
+        ],
+        "selection_method": "deterministic union of the top 10 candidates per independent missing-weekday, internal-gap, stale-tail, and weekend dimension",
+        "status": "completed_with_weekday_proxy"
+      },
+      {
+        "candidates": [
+          {
+            "negative_volume_rows": 0,
+            "nonpositive_ohlc_rows": 0,
+            "ohlc_bounds_violation_rows": 0,
+            "symbol": "HKHC",
+            "total_flag_count": 11,
+            "zero_volume_rows": 11
+          },
+          {
+            "negative_volume_rows": 0,
+            "nonpositive_ohlc_rows": 0,
+            "ohlc_bounds_violation_rows": 0,
+            "symbol": "SKYT",
+            "total_flag_count": 5,
+            "zero_volume_rows": 5
+          },
+          {
+            "negative_volume_rows": 0,
+            "nonpositive_ohlc_rows": 0,
+            "ohlc_bounds_violation_rows": 0,
+            "symbol": "CTRA",
+            "total_flag_count": 1,
+            "zero_volume_rows": 1
+          },
+          {
+            "negative_volume_rows": 0,
+            "nonpositive_ohlc_rows": 0,
+            "ohlc_bounds_violation_rows": 0,
+            "symbol": "WBA",
+            "total_flag_count": 1,
+            "zero_volume_rows": 1
+          }
+        ],
+        "failure_mode": "ohlcv_integrity",
+        "limitations": [
+          "Passing structural bounds does not establish correct prices or adjustment semantics."
+        ],
+        "selection_method": "rank nonpositive prices, negative volume, and OHLC bound violations",
+        "status": "completed"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "ticker_change",
+        "limitations": [
+          "No supported point-in-time entity/corporate-action ledger was found; current symbols cannot establish historical identity events."
+        ],
+        "selection_method": "requires point-in-time lifecycle evidence",
+        "status": "not_assessable"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "merger_or_acquisition",
+        "limitations": [
+          "No supported point-in-time entity/corporate-action ledger was found; current symbols cannot establish historical identity events."
+        ],
+        "selection_method": "requires point-in-time lifecycle evidence",
+        "status": "not_assessable"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "spin_off",
+        "limitations": [
+          "No supported point-in-time entity/corporate-action ledger was found; current symbols cannot establish historical identity events."
+        ],
+        "selection_method": "requires point-in-time lifecycle evidence",
+        "status": "not_assessable"
+      },
+      {
+        "candidates": [],
+        "failure_mode": "delisting_or_terminal_return",
+        "limitations": [
+          "No supported point-in-time entity/corporate-action ledger was found; current symbols cannot establish historical identity events."
+        ],
+        "selection_method": "requires point-in-time lifecycle evidence",
+        "status": "not_assessable"
+      }
+    ],
+    "daily_price_schema_presence": {
+      "adjustment_semantics_column_present": false,
+      "available_at_column_present": false,
+      "created_at_field_present": true,
+      "date_field_present": true,
+      "entity_lifecycle_table_present": false,
+      "exchange_calendar_table_present": false,
+      "historical_dividend_table_present": false,
+      "provider_column_present": false,
+      "revision_lineage_column_present": false,
+      "terminal_return_table_present": false
+    },
+    "data_eligibility_decisions": [
+      {
+        "availability_confidence": "unknown",
+        "claim_restriction": "Eligibility is a declared-use restriction, not research-input permission. Nonfatal observations do not establish sufficiency; no research input, experiment, or final basket is authorized. No predictive, total-return, historical-universe, confirmatory, or production-readiness claim.",
+        "content_fingerprint": null,
+        "content_fingerprint_scope": "missing_full_data_view_fingerprint",
+        "data_view_id": "stockvis.daily_price:87fdfa18-6779-4bf2-aded-86013d1f8819:exploratory",
+        "decision_scope": "daily_price_price_return_research",
+        "eligibility": "exploratory_only",
+        "eligibility_scope": "declared_use_contract_only_not_sufficiency_or_authorization",
+        "entity_resolution_version": null,
+        "excluded_symbols": [],
+        "extraction_version": "c9bd21effbf0f3b3c728bed97e64f5aca330304c",
+        "input_scope": "listed_representative_symbols_only",
+        "intended_use": "exploratory",
+        "missing_requirements": [
+          "point_in_time_reconstructability",
+          "sufficient_availability_confidence",
+          "content_fingerprint",
+          "sealed_data_view_fingerprint",
+          "daily_price_provider_provenance",
+          "price_adjustment_semantics",
+          "revision_lineage",
+          "entity_resolution_version"
+        ],
+        "observed_content_status": "nonfatal_observed",
+        "observed_nonfatal_symbols": [
+          "SPY",
+          "AAPL",
+          "JPM",
+          "XOM",
+          "WMT",
+          "UNH"
+        ],
+        "permitted_symbols": [],
+        "point_in_time_reconstructable": false,
+        "probe_result_fingerprint": "sha256:d101a0c54eada026e33dc9a423000f023574807fa1514fb58043409631496b64",
+        "reasons": [
+          "daily_price_use_specific_contract_incomplete",
+          "semantic_evidence_not_validated",
+          "research_input_sufficiency_unassessed"
+        ],
+        "research_input_permitted": false,
+        "research_input_sufficiency": "unassessed",
+        "revision_lineage_available": false,
+        "universe_version": "daily_price_validation_basket_v0.1"
+      },
+      {
+        "availability_confidence": "unknown",
+        "claim_restriction": "Eligibility is a declared-use restriction, not research-input permission. Nonfatal observations do not establish sufficiency; no research input, experiment, or final basket is authorized. No predictive, total-return, historical-universe, confirmatory, or production-readiness claim.",
+        "content_fingerprint": null,
+        "content_fingerprint_scope": "missing_full_data_view_fingerprint",
+        "data_view_id": "stockvis.daily_price:87fdfa18-6779-4bf2-aded-86013d1f8819:confirmatory",
+        "decision_scope": "daily_price_price_return_research",
+        "eligibility": "prohibited_for_declared_use",
+        "eligibility_scope": "declared_use_contract_only_not_sufficiency_or_authorization",
+        "entity_resolution_version": null,
+        "excluded_symbols": [],
+        "extraction_version": "c9bd21effbf0f3b3c728bed97e64f5aca330304c",
+        "input_scope": "listed_representative_symbols_only",
+        "intended_use": "confirmatory",
+        "missing_requirements": [
+          "point_in_time_reconstructability",
+          "sufficient_availability_confidence",
+          "content_fingerprint",
+          "sealed_data_view_fingerprint",
+          "daily_price_provider_provenance",
+          "price_adjustment_semantics",
+          "revision_lineage",
+          "entity_resolution_version"
+        ],
+        "observed_content_status": "nonfatal_observed",
+        "observed_nonfatal_symbols": [
+          "SPY",
+          "AAPL",
+          "JPM",
+          "XOM",
+          "WMT",
+          "UNH"
+        ],
+        "permitted_symbols": [],
+        "point_in_time_reconstructable": false,
+        "probe_result_fingerprint": "sha256:d101a0c54eada026e33dc9a423000f023574807fa1514fb58043409631496b64",
+        "reasons": [
+          "declared_use_requires_stronger_data_contract",
+          "daily_price_use_specific_contract_incomplete",
+          "semantic_evidence_not_validated",
+          "research_input_sufficiency_unassessed"
+        ],
+        "research_input_permitted": false,
+        "research_input_sufficiency": "unassessed",
+        "revision_lineage_available": false,
+        "universe_version": "daily_price_validation_basket_v0.1"
+      },
+      {
+        "availability_confidence": "unknown",
+        "claim_restriction": "Eligibility is a declared-use restriction, not research-input permission. Nonfatal observations do not establish sufficiency; no research input, experiment, or final basket is authorized. No predictive, total-return, historical-universe, confirmatory, or production-readiness claim.",
+        "content_fingerprint": null,
+        "content_fingerprint_scope": "missing_full_data_view_fingerprint",
+        "data_view_id": "stockvis.daily_price:87fdfa18-6779-4bf2-aded-86013d1f8819:replication",
+        "decision_scope": "daily_price_price_return_research",
+        "eligibility": "prohibited_for_declared_use",
+        "eligibility_scope": "declared_use_contract_only_not_sufficiency_or_authorization",
+        "entity_resolution_version": null,
+        "excluded_symbols": [],
+        "extraction_version": "c9bd21effbf0f3b3c728bed97e64f5aca330304c",
+        "input_scope": "listed_representative_symbols_only",
+        "intended_use": "replication",
+        "missing_requirements": [
+          "point_in_time_reconstructability",
+          "sufficient_availability_confidence",
+          "content_fingerprint",
+          "sealed_data_view_fingerprint",
+          "daily_price_provider_provenance",
+          "price_adjustment_semantics",
+          "revision_lineage",
+          "entity_resolution_version",
+          "replication_independence_evidence"
+        ],
+        "observed_content_status": "nonfatal_observed",
+        "observed_nonfatal_symbols": [
+          "SPY",
+          "AAPL",
+          "JPM",
+          "XOM",
+          "WMT",
+          "UNH"
+        ],
+        "permitted_symbols": [],
+        "point_in_time_reconstructable": false,
+        "probe_result_fingerprint": "sha256:d101a0c54eada026e33dc9a423000f023574807fa1514fb58043409631496b64",
+        "reasons": [
+          "declared_use_requires_stronger_data_contract",
+          "daily_price_use_specific_contract_incomplete",
+          "semantic_evidence_not_validated",
+          "research_input_sufficiency_unassessed",
+          "replication_independence_unassessed"
+        ],
+        "research_input_permitted": false,
+        "research_input_sufficiency": "unassessed",
+        "revision_lineage_available": false,
+        "universe_version": "daily_price_validation_basket_v0.1"
+      }
+    ],
+    "representative_basket": [
+      {
+        "anomalies": {
+          "negative_volume_rows": 0,
+          "nonpositive_ohlc_rows": 0,
+          "ohlc_bounds_violation_rows": 0,
+          "zero_volume_rows": 0
+        },
+        "asset_type": "ETF",
+        "currency_mismatch_row_count": 0,
+        "daily_price_currencies": [
+          "USD"
+        ],
+        "daily_price_recorded_at_max": "2026-06-16T11:24:49.503334+09:00",
+        "daily_price_recorded_at_min": "2025-11-18T18:10:50.501000+09:00",
+        "daily_price_row_count": 158,
+        "dividend_event_count": 0,
+        "dividend_event_first_date": null,
+        "dividend_event_last_date": null,
+        "dividend_observation_status": "observed",
+        "exchange": null,
+        "industry": "Index Fund",
+        "max_date": "2026-06-15",
+        "min_date": "2025-10-20",
+        "observation_status": "observed",
+        "observed_content_status": "nonfatal_observed",
+        "reason_codes": [
+          "history_sufficiency_threshold_not_precommitted"
+        ],
+        "research_input_sufficiency": "unassessed",
+        "sector": "ETF",
+        "selection_status": "eligible_for_distribution_review",
+        "stock_created_at": "2025-11-18T18:01:18.295000+09:00",
+        "stock_currency": "USD",
+        "stock_exists": true,
+        "stock_split_count": 0,
+        "stock_split_first_date": null,
+        "stock_split_last_date": null,
+        "stock_split_observation_status": "observed",
+        "symbol": "SPY",
+        "weekday_gap_proxy": {
+          "calendar_contract": "weekday_proxy_not_exchange_calendar",
+          "expected_weekdays": 171,
+          "missing_ratio": 0.076023,
+          "missing_weekdays": 13,
+          "observed_weekdays": 158,
+          "weekend_observations": 0
+        }
+      },
+      {
+        "anomalies": {
+          "negative_volume_rows": 0,
+          "nonpositive_ohlc_rows": 0,
+          "ohlc_bounds_violation_rows": 0,
+          "zero_volume_rows": 0
+        },
+        "asset_type": "Common Stock",
+        "currency_mismatch_row_count": 0,
+        "daily_price_currencies": [
+          "USD"
+        ],
+        "daily_price_recorded_at_max": "2026-09-10T07:01:04.234234+09:00",
+        "daily_price_recorded_at_min": "2025-11-21T21:11:14.537000+09:00",
+        "daily_price_row_count": 796,
+        "dividend_event_count": 0,
+        "dividend_event_first_date": null,
+        "dividend_event_last_date": null,
+        "dividend_observation_status": "observed",
+        "exchange": "NASDAQ",
+        "industry": "Consumer Electronics",
+        "max_date": "2026-09-09",
+        "min_date": "2023-07-10",
+        "observation_status": "observed",
+        "observed_content_status": "nonfatal_observed",
+        "reason_codes": [
+          "history_sufficiency_threshold_not_precommitted"
+        ],
+        "research_input_sufficiency": "unassessed",
+        "sector": "TECHNOLOGY",
+        "selection_status": "eligible_for_distribution_review",
+        "stock_created_at": "2025-10-17T21:29:53.007000+09:00",
+        "stock_currency": "USD",
+        "stock_exists": true,
+        "stock_split_count": 5,
+        "stock_split_first_date": "1987-06-16",
+        "stock_split_last_date": "2020-08-31",
+        "stock_split_observation_status": "observed",
+        "symbol": "AAPL",
+        "weekday_gap_proxy": {
+          "calendar_contract": "weekday_proxy_not_exchange_calendar",
+          "expected_weekdays": 828,
+          "missing_ratio": 0.038647,
+          "missing_weekdays": 32,
+          "observed_weekdays": 796,
+          "weekend_observations": 0
+        }
+      },
+      {
+        "anomalies": {
+          "negative_volume_rows": 0,
+          "nonpositive_ohlc_rows": 0,
+          "ohlc_bounds_violation_rows": 0,
+          "zero_volume_rows": 0
+        },
+        "asset_type": null,
+        "currency_mismatch_row_count": 0,
+        "daily_price_currencies": [
+          "USD"
+        ],
+        "daily_price_recorded_at_max": "2026-09-10T07:04:33.008671+09:00",
+        "daily_price_recorded_at_min": "2026-02-14T16:28:28.673167+09:00",
+        "daily_price_row_count": 796,
+        "dividend_event_count": 0,
+        "dividend_event_first_date": null,
+        "dividend_event_last_date": null,
+        "dividend_observation_status": "observed",
+        "exchange": null,
+        "industry": "Banks - Diversified",
+        "max_date": "2026-09-09",
+        "min_date": "2023-07-10",
+        "observation_status": "observed",
+        "observed_content_status": "nonfatal_observed",
+        "reason_codes": [
+          "history_sufficiency_threshold_not_precommitted"
+        ],
+        "research_input_sufficiency": "unassessed",
+        "sector": "Financial Services",
+        "selection_status": "eligible_for_distribution_review",
+        "stock_created_at": "2026-02-14T16:28:28.115127+09:00",
+        "stock_currency": "USD",
+        "stock_exists": true,
+        "stock_split_count": 0,
+        "stock_split_first_date": null,
+        "stock_split_last_date": null,
+        "stock_split_observation_status": "observed",
+        "symbol": "JPM",
+        "weekday_gap_proxy": {
+          "calendar_contract": "weekday_proxy_not_exchange_calendar",
+          "expected_weekdays": 828,
+          "missing_ratio": 0.038647,
+          "missing_weekdays": 32,
+          "observed_weekdays": 796,
+          "weekend_observations": 0
+        }
+      },
+      {
+        "anomalies": {
+          "negative_volume_rows": 0,
+          "nonpositive_ohlc_rows": 0,
+          "ohlc_bounds_violation_rows": 0,
+          "zero_volume_rows": 0
+        },
+        "asset_type": null,
+        "currency_mismatch_row_count": 0,
+        "daily_price_currencies": [
+          "USD"
+        ],
+        "daily_price_recorded_at_max": "2026-09-10T07:07:34.791997+09:00",
+        "daily_price_recorded_at_min": "2026-02-14T16:32:56.843922+09:00",
+        "daily_price_row_count": 796,
+        "dividend_event_count": 0,
+        "dividend_event_first_date": null,
+        "dividend_event_last_date": null,
+        "dividend_observation_status": "observed",
+        "exchange": null,
+        "industry": "Oil & Gas Integrated",
+        "max_date": "2026-09-09",
+        "min_date": "2023-07-10",
+        "observation_status": "observed",
+        "observed_content_status": "nonfatal_observed",
+        "reason_codes": [
+          "history_sufficiency_threshold_not_precommitted"
+        ],
+        "research_input_sufficiency": "unassessed",
+        "sector": "Energy",
+        "selection_status": "eligible_for_distribution_review",
+        "stock_created_at": "2026-02-14T16:32:56.270978+09:00",
+        "stock_currency": "USD",
+        "stock_exists": true,
+        "stock_split_count": 0,
+        "stock_split_first_date": null,
+        "stock_split_last_date": null,
+        "stock_split_observation_status": "observed",
+        "symbol": "XOM",
+        "weekday_gap_proxy": {
+          "calendar_contract": "weekday_proxy_not_exchange_calendar",
+          "expected_weekdays": 828,
+          "missing_ratio": 0.038647,
+          "missing_weekdays": 32,
+          "observed_weekdays": 796,
+          "weekend_observations": 0
+        }
+      },
+      {
+        "anomalies": {
+          "negative_volume_rows": 0,
+          "nonpositive_ohlc_rows": 0,
+          "ohlc_bounds_violation_rows": 0,
+          "zero_volume_rows": 0
+        },
+        "asset_type": null,
+        "currency_mismatch_row_count": 0,
+        "daily_price_currencies": [
+          "USD"
+        ],
+        "daily_price_recorded_at_max": "2026-09-10T07:07:28.769673+09:00",
+        "daily_price_recorded_at_min": "2025-11-23T09:06:39.063000+09:00",
+        "daily_price_row_count": 796,
+        "dividend_event_count": 0,
+        "dividend_event_first_date": null,
+        "dividend_event_last_date": null,
+        "dividend_observation_status": "observed",
+        "exchange": null,
+        "industry": null,
+        "max_date": "2026-09-09",
+        "min_date": "2023-07-10",
+        "observation_status": "observed",
+        "observed_content_status": "nonfatal_observed",
+        "reason_codes": [
+          "sector_or_industry_missing"
+        ],
+        "research_input_sufficiency": "unassessed",
+        "sector": "Consumer Defensive",
+        "selection_status": "deferred",
+        "stock_created_at": "2025-11-19T00:19:30.273000+09:00",
+        "stock_currency": "USD",
+        "stock_exists": true,
+        "stock_split_count": 0,
+        "stock_split_first_date": null,
+        "stock_split_last_date": null,
+        "stock_split_observation_status": "observed",
+        "symbol": "WMT",
+        "weekday_gap_proxy": {
+          "calendar_contract": "weekday_proxy_not_exchange_calendar",
+          "expected_weekdays": 828,
+          "missing_ratio": 0.038647,
+          "missing_weekdays": 32,
+          "observed_weekdays": 796,
+          "weekend_observations": 0
+        }
+      },
+      {
+        "anomalies": {
+          "negative_volume_rows": 0,
+          "nonpositive_ohlc_rows": 0,
+          "ohlc_bounds_violation_rows": 0,
+          "zero_volume_rows": 0
+        },
+        "asset_type": null,
+        "currency_mismatch_row_count": 0,
+        "daily_price_currencies": [
+          "USD"
+        ],
+        "daily_price_recorded_at_max": "2026-09-10T07:07:06.276932+09:00",
+        "daily_price_recorded_at_min": "2026-02-14T16:32:16.136599+09:00",
+        "daily_price_row_count": 796,
+        "dividend_event_count": 1,
+        "dividend_event_first_date": "2026-09-14",
+        "dividend_event_last_date": "2026-09-14",
+        "dividend_observation_status": "observed",
+        "exchange": null,
+        "industry": "Medical - Healthcare Plans",
+        "max_date": "2026-09-09",
+        "min_date": "2023-07-10",
+        "observation_status": "observed",
+        "observed_content_status": "nonfatal_observed",
+        "reason_codes": [
+          "history_sufficiency_threshold_not_precommitted"
+        ],
+        "research_input_sufficiency": "unassessed",
+        "sector": "Healthcare",
+        "selection_status": "eligible_for_distribution_review",
+        "stock_created_at": "2026-02-14T16:32:15.560015+09:00",
+        "stock_currency": "USD",
+        "stock_exists": true,
+        "stock_split_count": 0,
+        "stock_split_first_date": null,
+        "stock_split_last_date": null,
+        "stock_split_observation_status": "observed",
+        "symbol": "UNH",
+        "weekday_gap_proxy": {
+          "calendar_contract": "weekday_proxy_not_exchange_calendar",
+          "expected_weekdays": 828,
+          "missing_ratio": 0.038647,
+          "missing_weekdays": 32,
+          "observed_weekdays": 796,
+          "weekend_observations": 0
+        }
+      }
+    ],
+    "schema_capabilities": {
+      "shared_calendar_event": [
+        "created_at",
+        "date_observed_count",
+        "dividend_amount",
+        "eps_actual",
+        "eps_estimated",
+        "event_date",
+        "event_type",
+        "first_seen_at",
+        "fmp_last_updated",
+        "frequency",
+        "id",
+        "last_seen_at",
+        "payment_date",
+        "record_date",
+        "revenue_actual",
+        "revenue_estimated",
+        "session",
+        "source",
+        "split_denominator",
+        "split_numerator",
+        "status",
+        "symbol",
+        "updated_at"
+      ],
+      "stocks_daily_price": [
+        "close_price",
+        "created_at",
+        "currency",
+        "date",
+        "high_price",
+        "id",
+        "low_price",
+        "open_price",
+        "stock_id",
+        "volume"
+      ],
+      "stocks_stock": [
+        "address",
+        "analyst_rating_buy",
+        "analyst_rating_hold",
+        "analyst_rating_sell",
+        "analyst_rating_strong_buy",
+        "analyst_rating_strong_sell",
+        "analyst_target_price",
+        "asset_type",
+        "beta",
+        "book_value",
+        "change",
+        "change_percent",
+        "cik",
+        "created_at",
+        "currency",
+        "day_200_moving_average",
+        "day_50_moving_average",
+        "description",
+        "diluted_eps_ttm",
+        "dividend_date",
+        "dividend_per_share",
+        "dividend_yield",
+        "ebitda",
+        "eps",
+        "ev_to_ebitda",
+        "ev_to_revenue",
+        "ex_dividend_date",
+        "exchange",
+        "exclude_reason",
+        "fiscal_year_end",
+        "forward_pe",
+        "gross_profit_ttm",
+        "high_price",
+        "industry",
+        "last_api_call",
+        "last_updated",
+        "latest_quarter",
+        "low_price",
+        "market_capitalization",
+        "official_site",
+        "open_price",
+        "operating_margin_ttm",
+        "pe_ratio",
+        "peg_ratio",
+        "previous_close",
+        "price_to_book_ratio",
+        "price_to_sales_ratio_ttm",
+        "profit_margin",
+        "quarterly_earnings_growth_yoy",
+        "quarterly_revenue_growth_yoy",
+        "real_time_price",
+        "return_on_assets_ttm",
+        "return_on_equity_ttm",
+        "revenue_per_share_ttm",
+        "revenue_ttm",
+        "sector",
+        "shares_outstanding",
+        "stock_name",
+        "symbol",
+        "trailing_pe",
+        "universe_excluded",
+        "volume",
+        "week_52_high",
+        "week_52_low"
+      ],
+      "stocks_stock_split": [
+        "created_at",
+        "date",
+        "denominator",
+        "id",
+        "numerator",
+        "source",
+        "split_type",
+        "stock_id"
+      ]
+    },
+    "summary": {
+      "adversarial_failure_modes_assessed": 6,
+      "adversarial_failure_modes_not_assessable": 4,
+      "confirmatory_safe": false,
+      "representative_candidate_count": 6,
+      "representative_candidates_deferred": 1,
+      "representative_stock_rows_found": 6
+    }
+  },
+  "generated_at": "2026-09-10T04:07:57.310598+00:00",
+  "inventory_permission": {
+    "basis": "existing_authorized_access_and_verified_read_only_session",
+    "grants_database_privileges": false,
+    "implies_research_input_eligibility": false,
+    "scope": "inventory_diagnostic_only",
+    "status": "permitted_read_only"
+  },
+  "job_id": "SV-MATH-DP-OBSERVATION-003",
+  "probe": {
+    "calendar_contract": "weekday_proxy_not_exchange_calendar",
+    "database_status": "available",
+    "database_target": "postgresql://localhost:5432/stock_vis",
+    "extraction_version": "c9bd21effbf0f3b3c728bed97e64f5aca330304c",
+    "read_only_evidence": {
+      "client_sql_guard": true,
+      "default_transaction_read_only_requested": true,
+      "rollback_on_exit": true,
+      "transaction_isolation": "repeatable read",
+      "transaction_read_only": true
+    },
+    "read_only_requested": true,
+    "read_only_verified": true,
+    "readiness_result_fingerprint": "sha256:d101a0c54eada026e33dc9a423000f023574807fa1514fb58043409631496b64"
+  },
+  "run_id": "87fdfa18-6779-4bf2-aded-86013d1f8819",
+  "schema_version": "daily-price-readiness-result/0.3",
+  "status": "partial",
+  "uncertainties": [
+    {
+      "code": "weekday_gap_is_not_exchange_calendar_gap",
+      "detail": "Weekday absence includes exchange holidays and is only a proxy; it cannot establish missing trading sessions or suspensions."
+    },
+    {
+      "code": "history_threshold_not_precommitted",
+      "detail": "The authority basket intentionally defers a sufficient-history threshold until the readiness distribution is observed."
+    }
+  ]
+}

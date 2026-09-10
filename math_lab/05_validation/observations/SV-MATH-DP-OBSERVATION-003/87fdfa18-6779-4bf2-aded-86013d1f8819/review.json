@@ -1,0 +1,20 @@
+{
+  "run_id": "87fdfa18-6779-4bf2-aded-86013d1f8819",
+  "input_hashes": {
+    "result.json": "4c967f017bbde23d00c4a437d68b65c271349dd83e090ca902da45080fb45996",
+    "data_gaps.json": "ebdd1f1ab479c693b5a3e18025259ec404221f6ad0dabce94cb543a1fe211778",
+    "agent_report.md": "b4c4ba72837d0caceff3227113aa91f21523b0252b89319e6183d0899b2d335a"
+  },
+  "verdict": "pass",
+  "blockers": [],
+  "limitations": [
+    "Review covers supplied inventory contents only; hashes, underlying rows, execution evidence, and referenced authorities were not independently verified.",
+    "Aggregate fingerprints do not seal or reconstruct the full DailyPrice data view. Availability, provider ancestry, adjustment semantics, revision lineage, and replication independence remain unvalidated.",
+    "Four lifecycle failure modes remain not assessable. Split and dividend discovery has coverage limitations; weekday gaps and short histories are proxies.",
+    "History sufficiency remains unassessed, WMT selection is deferred, and no final research basket is authorized.",
+    "OHLCV candidates contain only zero-volume flags, although the selection-method description omits zero volume; ranking reproducibility is therefore limited."
+  ],
+  "summary": "The supplied artifacts agree on six representative candidates, one deferred candidate, six assessed discovery modes, four unsupported modes, and nine data gaps. Pass denotes inventory consistency only and grants no research-input admission.",
+  "research_input_sufficiency": "unassessed",
+  "research_input_permitted": false
+}

@@ -1,0 +1,20 @@
+{
+  "job_id": "SV-MATH-DP-OBSERVATION-003",
+  "run_id": "87fdfa18-6779-4bf2-aded-86013d1f8819",
+  "base_sha": "c9bd21effbf0f3b3c728bed97e64f5aca330304c",
+  "runner_sha": "aeaf378c4c9469fed89b2e3050d6931520eb4820",
+  "runner_version": "0.1.9-local-observation",
+  "producers": [
+    "mac_local_executor",
+    "codex_reviewer"
+  ],
+  "input_hashes": {
+    "result.json": "4c967f017bbde23d00c4a437d68b65c271349dd83e090ca902da45080fb45996",
+    "data_gaps.json": "ebdd1f1ab479c693b5a3e18025259ec404221f6ad0dabce94cb543a1fe211778",
+    "agent_report.md": "b4c4ba72837d0caceff3227113aa91f21523b0252b89319e6183d0899b2d335a"
+  },
+  "parent_run_id": "5ace7522-6535-4f16-81b0-bbc63b5daea9",
+  "review_status": "passed",
+  "candidate_sha_home": "append_only_ledger",
+  "promotion_state": "waiting_for_push_approval"
+}

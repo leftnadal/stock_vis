@@ -1,0 +1,24 @@
+{
+  "command": [
+    "/Users/byeongjinjeong/Library/Caches/pypoetry/virtualenvs/stock_javis_system-Rk7pP85e-py3.12/bin/python",
+    "-I",
+    "-B",
+    "-c",
+    "import sys; sys.path.insert(0,sys.argv.pop(1)); import pytest; raise SystemExit(pytest.main(sys.argv[1:]))",
+    "/Users/byeongjinjeong/.stockvis-lab-automation/worktrees/SV-MATH-DP-OBSERVATION-003-87fdfa18",
+    "-c",
+    "/dev/null",
+    "--rootdir=.",
+    "--confcutdir=math_lab/runtime",
+    "math_lab/runtime/test_data_eligibility.py",
+    "math_lab/runtime/test_daily_price_readiness.py",
+    "math_lab/runtime/test_daily_price_boundaries.py",
+    "math_lab/runtime/test_daily_price_positive_boundary.py",
+    "-q",
+    "-p",
+    "no:cacheprovider"
+  ],
+  "returncode": 0,
+  "stdout": "....................................................                     [100%]\n52 passed in 0.44s\n",
+  "stderr": ""
+}
