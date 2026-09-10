@@ -51,11 +51,20 @@ class TestRelationLine:
         ))
         assert line == "제휴 관계로 기록됨"
 
-    def test_pending_type_falls_to_none(self):
-        # 레거시 PEER(pending/truth) 등 evidence 아닌 truth 행 → 관계 기록 없음(조용한 실패).
+    def test_legacy_unmapped_pending_falls_to_none(self):
+        # 레거시 PEER(pending/truth)는 RECORDED_SENTENCE 미매핑 → 관계 기록 없음(조용한 실패).
         assert relation_line_for(self._rows(("PEER", "pending", "truth"))) == NONE_LINE
-        # SEC 타입이라도 serving_layer가 evidence 아니면 기록 안 됨.
-        assert relation_line_for(self._rows(("COMPETES_WITH", "pending", "truth"))) == NONE_LINE
+
+    def test_sec_pending_still_recorded(self):
+        # S3-1C 보강 N-3a: SEC 4종이 serving_layer='pending'(부기 공백)이어도 관계는 기록됨.
+        # 판정 축 = relation_type ∈ RECORDED_SENTENCE(원본), pending은 '미분류'이지 '근거 아님'이 아니다.
+        assert relation_line_for(self._rows(("COMPETES_WITH", "pending", "truth"))) == "경쟁 관계로 기록됨"
+        assert relation_line_for(self._rows(("SUPPLIES_TO", "pending", "truth"))) == "공급 관계로 기록됨"
+
+    def test_sec_excluded_is_none(self):
+        # S3-1C 보강 N-3b: excluded는 유일한 거부권(자기루프·수동 정제 보존) → 관계 기록 없음.
+        assert relation_line_for(self._rows(("COMPETES_WITH", "excluded", "truth"))) == NONE_LINE
+        assert relation_line_for(self._rows(("SUPPLIES_TO", "excluded", "truth"))) == NONE_LINE
 
     def test_unmapped_type_falls_to_none(self):
         # D-8: 매핑에 없는 타입(HAS_THEME 등)은 관계 기록 없음.

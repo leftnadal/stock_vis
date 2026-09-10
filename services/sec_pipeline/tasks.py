@@ -408,6 +408,10 @@ def seed_relations_to_chainsight():
             defaults=common,  # 기존 pair: status 무접촉
             create_defaults={
                 **common,
+                # S3-1C 보강 N-2: 신규 SEC 관계는 evidence 계층으로 태어난다(CO_MENTIONED 생성부와
+                # 대칭). 모델 default='pending'이라 미설정 시 관계 줄에서 사라진다. create_defaults만 —
+                # 기존 행의 serving_layer 무접촉(excluded 거부권 보존).
+                "serving_layer": "evidence",
                 "relation_status": (
                     "confirmed" if score >= HIGHSCORE_THRESHOLD else "probable"
                 ),
