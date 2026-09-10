@@ -1,0 +1,24 @@
+test_plain_and_fenced_same_action (test_recovery.ProtocolTests.test_plain_and_fenced_same_action) ... ok
+test_prose_broken_multiple_fences_rejected (test_recovery.ProtocolTests.test_prose_broken_multiple_fences_rejected) ... ok
+test_recover_then_only_five_new_calls_and_no_overwrite (test_recovery.ProtocolTests.test_recover_then_only_five_new_calls_and_no_overwrite) ... Original A recovered from saved response; no model reinvocation.
+hard-003 B completed_pending_semantic_review
+hard-003 C completed_pending_semantic_review
+hard-006 A completed_pending_semantic_review
+hard-006 B completed_pending_semantic_review
+hard-006 C completed_pending_semantic_review
+RESULT_PATH=/tmp/tmpu9__uvqb/continuations/0b5220e04007446695d092f763b72020
+ok
+test_retrieval_fence (test_recovery.ProtocolTests.test_retrieval_fence) ... ok
+test_schema_duplicate_and_nonfinite_rejected (test_recovery.ProtocolTests.test_schema_duplicate_and_nonfinite_rejected) ... ok
+test_B_protocol_mock_not_model_result (test_replay.ReplayChecks.test_B_protocol_mock_not_model_result) ... ok
+test_invalid_source_never_disclosed (test_replay.ReplayChecks.test_invalid_source_never_disclosed) ... ok
+test_six_frozen_conditions (test_replay.ReplayChecks.test_six_frozen_conditions) ... ok
+test_visible_boundaries (test_replay.ReplayChecks.test_visible_boundaries) ... ok
+test_invalid_protocol_still_rejected (test_v012.RecoveryTests.test_invalid_protocol_still_rejected) ... ok
+test_offline_two_recoveries_four_calls_preservation_and_guard (test_v012.RecoveryTests.test_offline_two_recoveries_four_calls_preservation_and_guard) ... ok
+test_preserve_structured_and_string_changes (test_v012.RecoveryTests.test_preserve_structured_and_string_changes) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.035s
+
+OK
