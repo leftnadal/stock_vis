@@ -1,0 +1,126 @@
+{
+  "assessment_status": "working_non_blinded_semantic_review",
+  "assessment_target_commit": "7d4ec68a8256bbfaa61c0924b25a0b69bc6566ae",
+  "batch_id": "41ea310a478340c19430a11bcf0bcdc1",
+  "case_id": "hard-006",
+  "comparison_limit": "single exposed calibration pair; historical-context content and prompt-length burden are not separated",
+  "integrity": {
+    "artifact_sha256_files_checked": 8,
+    "artifact_sha256_files_failed": 0,
+    "credential_material_check": "passed_by_launcher",
+    "evidence_documents_identical": true,
+    "evidence_document_count_each_arm": 17,
+    "frozen_summary_identical": true,
+    "generation_config_identical": true,
+    "historical_artifacts_modified": false,
+    "independent_variable_observed": "two historical candidate_output documents present versus absent",
+    "model_invocations": 2,
+    "requested_model_identity_matched": true,
+    "system_prompt_identical": true
+  },
+  "original": {
+    "condition": "historical candidate/critique present",
+    "execution": {
+      "completion_tokens": 8192,
+      "latency_seconds": 53.59800462424755,
+      "output_budget_fully_used": true,
+      "prompt_tokens": 14387,
+      "protocol_completion": "incomplete",
+      "protocol_failure_reason": "unterminated final JSON string",
+      "provider_finish_state": "stop",
+      "transport_status": "response_received"
+    },
+    "profile": {
+      "appropriate_abstention_unassessed": "unassessed_no_final_artifact",
+      "correct_content_preserved": "unassessed_no_final_artifact",
+      "evidence_retrieved_correctly": "not_applicable_full_context_no_retrieval",
+      "evidence_used_correctly": "unassessed_no_final_artifact",
+      "execution_failure_truncation": "present",
+      "existing_error_repaired": "unassessed_no_final_artifact",
+      "final_conclusion_scope_calibration": "unassessed_no_final_artifact",
+      "introduced_error": "unassessed_no_final_artifact",
+      "material_condition_lost": "unassessed_no_final_artifact",
+      "material_condition_preserved": "unassessed_no_final_artifact",
+      "unsupported_assertion_added": "unassessed_no_final_artifact",
+      "unsupported_strengthening": "unassessed_no_final_artifact"
+    },
+    "partial_output_observation": "The truncated JSON began a structured final and mentioned E2, E6, E9 and the E10 energization issue, but it is not scored as a semantic result."
+  },
+  "sanitized": {
+    "condition": "historical candidate/critique absent",
+    "execution": {
+      "completion_tokens": 2085,
+      "latency_seconds": 16.399222374893725,
+      "output_budget_fully_used": false,
+      "prompt_tokens": 4903,
+      "protocol_completion": "complete",
+      "provider_finish_state": "stop",
+      "transport_status": "response_received"
+    },
+    "profile": {
+      "appropriate_abstention_unassessed": {
+        "assessment": "present",
+        "warrant": ["Leaves project amounts, customer allocation, mix and early-shipment applicability unresolved."]
+      },
+      "correct_content_preserved": {
+        "assessment": "present",
+        "warrant": ["Preserves E2 26%, E6 72% with caveat, E9/E10 timing, E11 exception, and E14 contract risk."]
+      },
+      "evidence_retrieved_correctly": {
+        "assessment": "not_applicable",
+        "warrant": ["Both arms received full evidence and available_sources was empty."]
+      },
+      "evidence_used_correctly": {
+        "assessment": "partial",
+        "warrant": ["Most cited evidence is used consistently.", "E8, E13 and E17 content appears in limitations but their source IDs are omitted.", "E5 supplier allocation is grouped with customer-side allocation."]
+      },
+      "execution_failure_truncation": {
+        "assessment": "absent",
+        "warrant": ["Valid final JSON completed below the output budget."]
+      },
+      "existing_error_repaired": {
+        "assessment": "present",
+        "warrant": ["Keeps Unsupported but removes the frozen summary's stronger claim that 28% growth is unlikely."]
+      },
+      "final_conclusion_scope_calibration": {
+        "assessment": "present_with_omission",
+        "warrant": ["Uses Unsupported rather than Contradicted or low-probability language.", "Revenue-recognition heterogeneity from E12 is missing."]
+      },
+      "introduced_error": {
+        "assessment": "present_low_severity",
+        "warrant": ["The customer-by-customer allocation statement cites E5, which concerns supplier capacity allocation to LambdaGrid, not LambdaGrid allocation to its customers."]
+      },
+      "material_condition_lost": {
+        "assessment": "present",
+        "warrant": ["E12's distinction between shipment/inspection recognition for standard equipment and installation/customer-approval conditions for customized modules is omitted.", "E13 mix uncertainty is listed but not connected to the revenue-timing inference."]
+      },
+      "material_condition_preserved": {
+        "assessment": "partial",
+        "warrant": ["E9 installation scheduling, E10 energization, E11 pre-energization shipment possibility, and E13 amount-mix uncertainty are mentioned."]
+      },
+      "unsupported_assertion_added": {
+        "assessment": "present_low_severity",
+        "warrant": ["Customer-by-customer allocation wording is more specific than E4/E5 directly establish; E17 is the direct inventory reference but is absent from used_source_ids."]
+      },
+      "unsupported_strengthening": {
+        "assessment": "absent_in_final_conclusion",
+        "warrant": ["The conclusion does not repeat the unsupported 'unlikely' strengthening."]
+      }
+    }
+  },
+  "paired_observation": {
+    "completion_token_difference_original_minus_sanitized": 6107,
+    "latency_difference_seconds_original_minus_sanitized": 37.198782249353825,
+    "prompt_token_difference_original_minus_sanitized": 9484,
+    "protocol_outcome": "original_incomplete_sanitized_complete",
+    "what_it_supports": "For this one exposed case and fixed request configuration, removing the two historical documents coincided with protocol completion and a scoped usable answer.",
+    "what_it_does_not_support": "It does not identify whether semantic contamination, context length, or their interaction caused the difference, and does not validate a permanent evidence-handoff architecture."
+  },
+  "review_limitations": [
+    "The semantic assessment was performed by Work and was not blinded or independently replicated.",
+    "One paired run cannot establish generalization or stable stochastic behavior.",
+    "Provider enforcement of the requested seed is not verified.",
+    "Actual provider cost is unavailable.",
+    "The original arm has no final artifact, so semantic net-effect comparison is asymmetric."
+  ]
+}
