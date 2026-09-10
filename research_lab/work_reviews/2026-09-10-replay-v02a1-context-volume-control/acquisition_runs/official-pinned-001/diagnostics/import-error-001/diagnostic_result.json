@@ -1,0 +1,86 @@
+{
+  "asset_integrity": "passed",
+  "candidate_missing_module": "jinja2",
+  "candidate_module_importable": false,
+  "diagnostic": "Replay v0.2A.1 chat-template ImportError no-network diagnostic",
+  "environment": "/Users/byeongjinjeong/Developer/stockvis_research_runtime/.experiments/replay-v02a1-official-pinned-001/venv",
+  "exception_message": "apply_chat_template requires jinja2 to be installed. Please install it using `pip install jinja2`.",
+  "exception_type": "ImportError",
+  "executed_at": "2026-09-10T07:43:35.816562+00:00",
+  "immutable_revision": "dc4d348443bc740c68e2d77492492c11606384d5",
+  "installed_packages": [
+    "annotated-doc==0.0.5",
+    "anyio==4.15.1",
+    "certifi==2026.7.22",
+    "click==8.5.0",
+    "filelock==3.32.6",
+    "fsspec==2026.7.0",
+    "h11==0.16.0",
+    "hf-xet==1.6.0",
+    "httpcore==1.0.9",
+    "httpx==0.28.1",
+    "huggingface_hub==1.30.0",
+    "idna==3.19",
+    "markdown-it-py==4.2.0",
+    "mdurl==0.1.2",
+    "numpy==2.5.3",
+    "packaging==26.3",
+    "pip==24.0",
+    "Pygments==2.21.0",
+    "PyYAML==6.0.3",
+    "regex==2026.9.10",
+    "rich==15.0.0",
+    "safetensors==0.8.0",
+    "shellingham==1.5.4",
+    "tokenizers==0.23.2",
+    "tqdm==4.70.0",
+    "transformers==5.16.1",
+    "typer==0.27.2",
+    "typing_extensions==4.16.0"
+  ],
+  "network_attempt_count": 0,
+  "network_attempts": [],
+  "scope": {
+    "historical_count_gate_rerun": false,
+    "historical_request_used": false,
+    "network_allowed": false,
+    "package_installation_allowed": false,
+    "provider_or_model_invocations": 0,
+    "tokenizer_assets_modified": false
+  },
+  "snapshot": "/Users/byeongjinjeong/Developer/stockvis_research_runtime/.experiments/replay-v02a1-official-pinned-001/tokenizer_snapshot",
+  "status": "diagnosed_import_failure",
+  "tokenizer": {
+    "class": "Qwen2Tokenizer",
+    "is_fast": true,
+    "tokenizers_version": "0.23.2",
+    "transformers_version": "5.16.1"
+  },
+  "traceback_frames": [
+    {
+      "file": "/Users/byeongjinjeong/Developer/stockvis_research_runtime/evidence-handoff-replay-v01/research_lab/work_reviews/2026-09-10-replay-v02a1-context-volume-control/diagnose_chat_template_import.py",
+      "function": "main",
+      "line": 122
+    },
+    {
+      "file": "<experiment_environment>/lib/python3.12/site-packages/transformers/tokenization_utils_base.py",
+      "function": "apply_chat_template",
+      "line": 3108
+    },
+    {
+      "file": "<experiment_environment>/lib/python3.12/site-packages/transformers/utils/chat_template_utils.py",
+      "function": "render_jinja_template",
+      "line": 514
+    },
+    {
+      "file": "<experiment_environment>/lib/python3.12/site-packages/transformers/utils/chat_template_utils.py",
+      "function": "_compile_jinja_template",
+      "line": 421
+    },
+    {
+      "file": "<experiment_environment>/lib/python3.12/site-packages/transformers/utils/chat_template_utils.py",
+      "function": "_cached_compile_jinja_template",
+      "line": 427
+    }
+  ]
+}

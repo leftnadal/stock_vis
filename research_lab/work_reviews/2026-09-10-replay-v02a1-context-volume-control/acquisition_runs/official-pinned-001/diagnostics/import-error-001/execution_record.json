@@ -1,0 +1,8 @@
+{
+  "historical_artifacts_modified": false,
+  "historical_count_gate_reruns": 0,
+  "network_attempt_count": 0,
+  "package_installations": 0,
+  "provider_or_model_invocations": 0,
+  "status": "diagnosed_import_failure"
+}
