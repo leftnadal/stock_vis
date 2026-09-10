@@ -299,6 +299,23 @@ def _enrich_titles(cards):
     return cards
 
 
+def _enrich_relation_lines(cards):
+    """표시 카드에 관계 종류 한 줄(D-S3-8) 부착 — serving_layer 축. 일괄 조회(N+1 금지)."""
+    from apps.chain_sight.services.relation_lookup import (
+        lookup_pairs,
+        relation_line_for,
+        relation_recorded,
+    )
+
+    pairs = [(c["symbol_a"], c["symbol_b"]) for c in cards]
+    rowmap = lookup_pairs(pairs)
+    for c in cards:
+        rows = rowmap.get(frozenset((c["symbol_a"], c["symbol_b"])), [])
+        c["relation_line"] = relation_line_for(rows)
+        c["relation_recorded"] = relation_recorded(rows)
+    return cards
+
+
 def _occ_ordinal(occ):
     """occurred_on(iso) → 정수 서수(desc 정렬용). 없으면 0(가장 과거)."""
     if not occ:
@@ -342,6 +359,7 @@ def build_market_story_feed(now=None, limit=FEED_MAX_DEFAULT):
     ordered = sorted(sec + spike + steady, key=_sort_key)
     cards = ordered[:limit]
     _enrich_titles(cards)  # 표시 카드만 제목·evidence 조회(A-3·A-6)
+    _enrich_relation_lines(cards)  # 관계 종류 한 줄(D-S3-8·serving_layer 축·일괄 조회)
 
     by_type = {
         "new_sec": sum(1 for c in cards if c["type"] == "new_sec"),

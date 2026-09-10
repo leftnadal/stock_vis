@@ -253,9 +253,11 @@ def build_backend_report(today: date) -> Dict[str, Any]:
 def _build_tldr_backend(health, llm, audits) -> List[str]:
     tldr = []
     # Health 요약
+    # collect_system_health()가 내보내는 실키를 그대로 재사용 — 단일 출처.
+    # (구 키 celery_beat_running/neo4j_reachable는 health dict에 없어 항상 False→"DOWN" 고착이었다.)
     workers_ok = health.get("celery_worker_count", 0) >= 1
-    beat_ok = health.get("celery_beat_running", False)
-    neo4j_ok = health.get("neo4j_reachable", False)
+    beat_ok = health.get("celery_beat_alive", False)
+    neo4j_ok = health.get("neo4j_alive", False)
     h_emoji = "✅" if (workers_ok and beat_ok and neo4j_ok) else "⚠️"
     tldr.append(
         f"{h_emoji} System: worker={health.get('celery_worker_count', '?')} "

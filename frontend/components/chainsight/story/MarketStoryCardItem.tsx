@@ -109,6 +109,22 @@ export default function MarketStoryCardItem({ card }: { card: MarketStoryCard })
         <p className="text-[11px] text-gray-400 dark:text-gray-500">근거 {evidenceCount}</p>
       )}
 
+      {/* D-S3-8 관계 종류 한 줄(serving_layer 축). 등급 단어 금지. 기록 없음이 가장 조용.
+          색은 사건성 배지(amber/blue)와 충돌하지 않게 중립 그레이 2단. */}
+      {card.relation_line && (
+        <p
+          data-testid="relation-line"
+          data-recorded={card.relation_recorded ? 'true' : 'false'}
+          className={
+            card.relation_recorded
+              ? 'text-[11px] font-medium text-gray-600 dark:text-gray-300'
+              : 'text-[11px] text-gray-400 dark:text-gray-500'
+          }
+        >
+          {card.relation_line}
+        </p>
+      )}
+
       {coMention && (
         <p className="text-[11px] text-gray-400 dark:text-gray-500">관계 아님 · 동시 언급</p>
       )}

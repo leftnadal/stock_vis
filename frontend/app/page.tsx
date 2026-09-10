@@ -5,6 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useEODDashboard } from '@/hooks/useEODDashboard';
 import { useConfluenceMap } from '@/components/eod/useConfluenceMap';
 import { DataFreshnessBadge } from '@/components/eod/DataFreshnessBadge';
+import { DashboardTabs, type DashTab } from '@/components/eod/DashboardTabs';
 import { MarketSummaryBar } from '@/components/eod/MarketSummaryBar';
 import { SignalFilterTabs } from '@/components/eod/SignalFilterTabs';
 import { SignalCardGrid } from '@/components/eod/SignalCardGrid';
@@ -40,6 +41,10 @@ function HomeContent() {
     ? (categoryParam as SignalCategory | 'all')
     : 'all';
 
+  // URL에서 activeTab 읽기 (?tab=discover|market, 기본 discover · ?category=와 공존)
+  const tabParam = searchParams.get('tab') ?? 'discover';
+  const activeTab: DashTab = tabParam === 'market' ? 'market' : 'discover';
+
   const [selectedCard, setSelectedCard] = useState<SignalCard | null>(null);
 
   const handleCategoryChange = useCallback((category: SignalCategory | 'all') => {
@@ -48,6 +53,17 @@ function HomeContent() {
       params.delete('category');
     } else {
       params.set('category', category);
+    }
+    const qs = params.toString();
+    router.replace(pathname + (qs ? '?' + qs : ''), { scroll: false });
+  }, [searchParams, router, pathname]);
+
+  const handleTabChange = useCallback((tab: DashTab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === 'discover') {
+      params.delete('tab');
+    } else {
+      params.set('tab', tab);
     }
     const qs = params.toString();
     router.replace(pathname + (qs ? '?' + qs : ''), { scroll: false });
@@ -83,55 +99,65 @@ function HomeContent() {
   return (
     <div className="min-h-screen pb-20 md:pb-0">
       <div className="max-w-6xl mx-auto px-4 py-4">
-        {/* Level 1: 데이터 신선도 */}
-        <DataFreshnessBadge
-          tradingDate={data.trading_date}
-          generatedAt={data.generated_at}
-          isStale={data.is_stale}
-        />
+        {/* DASH-TAB: [발견][시장] 탭 줄 + 우측 슬롯 = 데이터 신선도(S2 전환은 슬라이스 2) */}
+        <DashboardTabs activeTab={activeTab} onTabChange={handleTabChange}>
+          <DataFreshnessBadge
+            tradingDate={data.trading_date}
+            generatedAt={data.generated_at}
+            isStale={data.is_stale}
+          />
+        </DashboardTabs>
 
-        {/* DSS-QUADRANT 섹터 사분면 (QUAD-IMPL-1, D-DSS-QUAD-PLACE 최상단 섹션) — fail-quiet */}
-        {quadrant.data && (
-          <div className="mt-4">
-            <SectorQuadrant data={quadrant.data} />
-          </div>
+        {activeTab === 'discover' && (
+          <>
+            {/* Level 2: 시장 요약 */}
+            <MarketSummaryBar summary={data.market_summary} />
+
+            {/* Level 2.5: 추천 캐러셀 (하위호환 — recommendations 부재 시 생략) */}
+            <RecommendationCarousel
+              recommendations={data.recommendations}
+              tradingDate={data.trading_date}
+              confluenceMap={confluenceMap}
+            />
+
+            {/* Level 3: 카테고리 필터 */}
+            <SignalFilterTabs
+              cards={data.signal_cards}
+              activeCategory={activeCategory}
+              onCategoryChange={handleCategoryChange}
+            />
+
+            {/* Level 4: 시그널 카드 그리드 */}
+            <SignalCardGrid
+              cards={filteredCards}
+              onCardClick={(card) => setSelectedCard(card)}
+              onCategoryChange={handleCategoryChange}
+            />
+          </>
         )}
 
-        {/* Level 1.5: 추천 커버리지 스트립 (STRIP-REHOME, D-DASH-SURFACE-UNIFY) — fail-quiet, 본체 무영향 */}
-        <CoverageStrip />
+        {activeTab === 'market' && (
+          <>
+            {/* DSS-QUADRANT 섹터 사분면 — 폭 축소 감싸기(max-w-[420px]) · fail-quiet */}
+            {quadrant.data && (
+              <div className="max-w-[420px]">
+                <SectorQuadrant data={quadrant.data} />
+              </div>
+            )}
 
-        {/* Level 2: 시장 요약 */}
-        <MarketSummaryBar summary={data.market_summary} />
+            {/* Level 2.3: 크레딧 매크로 스트립 (실패·빈응답 시 자체 비표시) */}
+            <MacroStrip />
 
-        {/* Level 2.3: 크레딧 매크로 스트립 (실패·빈응답 시 자체 비표시) */}
-        <MacroStrip />
+            {/* Level 2.35: 이벤트 캘린더 스트립 (EVT-IMPL-4, 실패·빈응답 시 자체 비표시) */}
+            <EventStrip />
 
-        {/* Level 2.35: 이벤트 캘린더 스트립 (EVT-IMPL-4, 실패·빈응답 시 자체 비표시) */}
-        <EventStrip />
+            {/* Level 2.4: 뉴스 축 스트립 S1 (실패·빈응답 시 자체 비표시) */}
+            <NewsStrip />
 
-        {/* Level 2.4: 뉴스 축 스트립 S1 (실패·빈응답 시 자체 비표시) */}
-        <NewsStrip />
-
-        {/* Level 2.5: 추천 캐러셀 (하위호환 — recommendations 부재 시 생략) */}
-        <RecommendationCarousel
-          recommendations={data.recommendations}
-          tradingDate={data.trading_date}
-          confluenceMap={confluenceMap}
-        />
-
-        {/* Level 3: 카테고리 필터 */}
-        <SignalFilterTabs
-          cards={data.signal_cards}
-          activeCategory={activeCategory}
-          onCategoryChange={handleCategoryChange}
-        />
-
-        {/* Level 4: 시그널 카드 그리드 */}
-        <SignalCardGrid
-          cards={filteredCards}
-          onCardClick={(card) => setSelectedCard(card)}
-          onCategoryChange={handleCategoryChange}
-        />
+            {/* Level 1.5: 추천 커버리지 스트립 (STRIP-REHOME) — fail-quiet, 본체 무영향 */}
+            <CoverageStrip />
+          </>
+        )}
       </div>
 
       {/* 시그널 상세 시트 */}

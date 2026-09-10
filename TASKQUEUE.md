@@ -5,6 +5,17 @@
 
 ---
 
+## MGMT-LEDGER-2 등재 (2026-09-08, 등재만 · 구현 금지) [ops][mgmt]
+
+> mgmt 배치 등재. ①③④=관찰/프로브(도메인·디렉터 판정), ②=상신 필요, ⑤=T3·T4 실효 조건. 구현은 각 소관 트랙.
+
+- 🆕 **EOD-ISSTALE-DEF** (①·todo·도메인 이관) — 베이커 `is_stale` 플래그 정의 프로브. 거래일 전진에도 지속 점등(08-27~ 관측·dogfood `eod.is_stale` WARN 재발). 플래그 산정 기준이 거래일 갱신을 반영하는지 정의 검토 → EOD/대시보드 도메인 트랙 소관.
+- 🆕 **LOG-ROTATE** (②·상신 필요·@infra) — `~/Library/Logs/stockvis` 대형 로그 로테이션 도입(worker-error ~327MB · neo4j-error ~531MB). **시스템 설정(launchd/newsyslog) 동반 → 상신 필요 항목**(자기 집행 금지).
+- 🆕 **LOG-FORMAT-DATE** (③·todo) — nightly 로그 본문 타임스탬프에 **날짜 포함**(현재 `[HH:MM:SS]`만, 날짜는 파일명에만). 0-3(a) 판별: health json은 mtime이 자기 날짜(9/4~9/8 각 05:40) → "매일 실행" 확정으로 catch-up 기각 가능했으나, **로그 본문만으로는 날짜 판별 불가**(mtime 의존) → 자기서술 로그 위해 등재.
+- 🆕 **NIGHTLY-AUDIT-MISS** (④·발동·디렉터 판정) — 0-3(b) 확정: tier3 감사 산출물 **09-04~ 매일 부재**(마지막 성공 09-03 `reports/9월/3일`). 로그는 존재하나 즉시 **HALT**: "전용 worktree에 미커밋 변경 존재 — 직전 run 커밋/push 실패 잔재 보호. 격리·커밋 중단"(launchd 23:00 발화는 확인 = 스케줄 미스 아님). 원인 = nightly repo worktree(`~/stock-vis-nightly/repo`)에 미커밋 `?? frontend/docs/` 잔재 → 격리 자기보호가 매일 중단. cf. LLM-CREDIT-OUTAGE 관찰 C-1(동일 부재 언급). **★복구 완료(2026-09-10, 디렉터 "남은 항목 작업" 지시)**: stray `frontend/docs/nightly_auto_system/`(잘못된 경로 감사 산출물·정상=`docs/`·untracked·gitignore 아님)를 **비파괴 move-aside**(백업 `~/stock-vis-nightly/stray_frontend_docs_backup_20260910_152027`) → nightly repo worktree **clean 확인**. 데몬 재시작 불요 — 다음 23:00 run이 격리 브랜치 생성·자가 정상화. **잔여 관찰**: 재발 시 근본(감사 스크립트가 `frontend/docs/`로 쓰는 경로 버그 OR gitignore 갭)은 도메인 트랙 소관.
+- 🆕 **REPORT-FIX-REALIZE** (⑤·검증 대기) — T3(REPORT-TLDR-SYSLINE)·T4(DOGFOOD-EOD-LAG-TRADINGDAYS) **착지 ≠ 실효**. 실효 검증 = **다음 `sv sync`(worker_sync) 후 아침 메일 2종**(@backend 06:15 agent report의 System 줄 = 실제 beat/neo4j 반영 / dogfood 06:20 report의 `eod.trading_date` = 주말·휴장 개재에도 ok). **활성화≠배포** — 유닛 테스트 통과는 착지이며, 자연 발화가 실효 게이트. MIG-BUNDLE-1 배포창(관문②) 동반 랜딩으로 참조.
+
+
 ## CS-S3 트랙 — "이야기 리포트" (S3-PRE 등재 재landing + S3-1 착지, 2026-09-07) [chainsight][frontend]
 
 > D-S3-1~5 + CS-S3-1 착지 결정(DECISIONS 2026-09-07). R2-S1/S2 아크 연속. S3-PRE 등재분이 main 미랜딩이라 S3-1과 함께 통합.
@@ -14,7 +25,9 @@
 | CS-S3-PRE | — | 데이터·구조 전제 측정(P1~P9) + DECISIONS 5건 + 사이징 | R2-S2 | ✅ **done (2026-09-03, 측정 전용)** |
 | CS-S3-1 | M | 묶음(union-find)·제목 인용·8-K 템플릿·story_id 슬러그·헤더 정직화·정렬(사건성 1차)·응답 캐시·window_days·evidence 스키마. FE 카드/헤더/가이드 겹침 | CS-S3-PRE | ✅ **LANDED+DEPLOYED (main `5e4e70ea`·커밋 A~H). BE 817·vitest 19·tsc0·ruff0·eslint0. worker_sync 3트리 재기동+FE prod 리빌드·:3000 200·라이브 API 검증. 픽셀 스샷=browse 데몬 이슈로 미수행(API 갈음)** |
 | CS-S3-1B | S | D-S3-7 배경 접기(FE 전용): weekly_active 기본 접힘·구분선→접힘 줄·펼치면 줄 목록(카드 아님)·조용한 날 peek 3+"오늘은 조용합니다"·펼침 비저장·상수 FOLD_STEADY_BY_DEFAULT/QUIET_DAY_PEEK. BE 무변경 | CS-S3-1 | ✅ **LANDED+DEPLOYED (main `3a0c649b`·FE `129a9e3d`+K `255646bc`+docs). vitest chainsight 312·tsc0·eslint0. web-only 배포(next build+web-frontend 재기동·:3000 200·BE 무재기동)** |
-| CS-S3-2 | M | 사슬 대조(§3). **RelationConfidence 쌍 조회 서비스 신설**(P4 진입점 미발견·지연 1.02ms→배치 불요) + 신뢰도 4밴드(0.35/0.60/0.85). **evidence[] 스키마 = D-S3-EVIDENCE-SCHEMA(§1 입력 확정)**. `hidden` 두 갈래 판정(previous_status: 미승격 vs weak감쇠·D-RC-DECAY-SEMANTIC) — STEP 0에서 previous_status 분포만 계수 | CS-S3-1 | 🟢 **착수 가능** |
+| CS-S3-1C | M | D-S3-8 관계 종류 한 줄(BE+FE): serving_layer 축(evidence&truth=기록됨/context=제외/그외=관계 기록 없음)·`relation_lookup` 쌍 조회 서비스(공용·N+1 금지)·등급 단어 금지 잠금(D-1). BE+FE | CS-S3-1 | ✅ **done (커밋 BE `76d1abd3`+FE `4d7f0708`·docs). pytest 836·vitest 317·tsc0·ruff0·eslint0. ★배포 후보(병진 승인 대기)** |
+| CS-S3-1C-보강 | M | 판정을 캐시 아닌 원본으로(D-S3-8 축 REFINED): `relation_line_for` 축 `serving_layer=='evidence'`→`relation_type ∈ RECORDED_SENTENCE` AND `truth` AND `!='excluded'`·seed create_defaults에 `serving_layer='evidence'`(출혈 수리). BE only | CS-S3-1C | ✅ **done (커밋 `0b3c193a`·docs). pytest chainsight+architecture+sec_pipeline 861·마이그0. ★배포 대기(병진 승인)·유보=기존 pending 백필(prod write)** |
+| CS-S3-2 | M | 사슬 대조(§3). **쌍 조회 서비스 = `relation_lookup.lookup_pairs` 신설 완료(S3-1C)** → 재사용. serving_layer 축(D-S3-8) 재사용. 신뢰도 4밴드(0.35/0.60/0.85). **evidence[] 스키마 = D-S3-EVIDENCE-SCHEMA(§1 입력)**. `hidden` 두 갈래(previous_status) — **M 계측: 상위30에 hidden 0**(현 표본 미발생) | CS-S3-1 | 🟢 **착수 가능(쌍 조회 선행 완료)** |
 | CS-S3-3 | S | 시계열(§2). read-time 일별 재집계(P3: NewsEntity.published_at ~6개월 보존→물질화 확장 불요) | CS-S3-1 | 🆕 todo |
 | CS-S3-4 | L | 해석(§4)·규칙(①②③⑤⑥ 결정론+④ LLM shared 래퍼)·리포트 페이지(`/chainsight/story/:id`)·AI 의견란(접힘)·8-K SEC 원문 링크(카드 비-링크라 여기서 수용) | CS-S3-2, CS-S3-3 | 🆕 todo |
 | CS-S3-5 | M | 추적·무시 연결(story_id 앵커) + 마인드맵 다중강조 딥링크(P8 단일 `?symbol=`만) | CS-S3-4 | 🆕 todo |
@@ -123,15 +136,27 @@
 | SCAN-B2-TECH-BE | ② 기술축 베이커 보강 **(선행·초저비용)** — 캘큘레이터 기계산 `rsi_14·high_52w·dist_52w·sma_50/200`를 tagger 고정 키셋 드롭 **해제** + baker `_build_preview_stock` 서피스. 재계산 0. **shared 위임** | platform (shared) | RECON-VALUATION-R1(done) | ✅ **착지(LAND-SCAN-B2TECH, origin/main `1c338dac`, 08-26)** | D-SCAN-B2TECH-CONTRACT. `technical{rsi/rsi_state/dist_52w_high_pct/ma_state}`·pytest 181·makemigrations 무변. **차기 야간 bake부터 산출(prod bake 미실행)**. |
 | SCAN-B2-FUND-BE | ② 펀더축 베이커 보강 **(후행·중비용)** — statement enrichment(baker preload 패턴)·**TTM dedupe(period_type)**·밸류=market_cap÷TTM·퀄리티=ROE/margin/debt/current·**sector 중앙값 집계(n·폴백 표기)**. 정칙 ⑶강화·⑷·⑺. **shared 위임** | platform (shared) | SCAN-B2-TECH-BE(done) | 🆕 **설계 대기·후행 유지(폐기 아님, MGMT-BATCH-40 재편)** | D-SCAN-B2-DERIVE. **SCAN-UX-2 후행** — 밸류축은 스토리 프리셋(㉱)에 후속 결합. 입력=사용자 화면 소감 + payload 실측 가드. **STEP 0 payload 실측 가드 필수**(D-SCAN-R1-CORRECTION 관찰 ⑵·TECH 이미 +26%)·초과 시 symbol-ref 축약 편입 상신. |
 | SCAN-B2-FE | ② 축 칩 점등 (기술 칩 1차) | @frontend (dashboard) | SCAN-B2-TECH-BE(done) | ✅ **착지+배포 완료 (LAND-SCAN-B2FE `418b2a8e` 08-27 · DEPLOY-EXEC-2 `9460430f` 08-28) · ⑦b 육안 검증 완결(MGMT-BATCH-40)** | D-SCAN-B2TECH-CONTRACT enum 맵. 번들 마커 6종+baked 402/403 확증·점등 조건 성립. **스캐너 아크 ①FE(B1·B2-TECH·B2-FE) 완결·라이브**·08-31 사용자 스크린샷 2매 화면 실재 확인(필터 바·칩 전종·C2 정직성·C3 안내). cf. D-SCAN-DEPLOY-CORR. |
-| SCAN-UX-2 | ⑦b 소감 구조화 반영 **(신설·선행·범위 확장 MGMT-BATCH-41)** — ㉮고정영역 컴팩트化(가시 종목 ↑)·㉯연속 상승/하락 방향 분리(`signal_direction` bull160/bear102/neu2)·㉰테마 포함 사유 즉답(`signal_value` 기보유)·㉱스토리 프리셋(목업 동반 결정) + SCAN-FIX-1(strip 라벨) + **⑵성능 수리(key remount 제거·React.memo·useMemo)** + **⑴거래대금 임계 재설계(설계 사안: 상향 vs 분위수 vs 제거)** 편입 | @frontend (dashboard) | D-SCAN-UX2-FEEDBACK·D-SCAN-R1-OBS(판정) | 🟢 **설계 턴 개시 가능(디렉터 스레드 대기·BATCH-46: NEWSFIX 완결로 선행 정리 소진)** | ㉮㉯㉰=FE 공짜 필드(베이커 무접촉·저비용)·㉱=목업 결정 후. 설계 입력=RECON-SCANDIAG-R1 판정(⑴⑵ 이관). |
+| SCAN-UX-2 | ⑦b 소감 구조화 반영 **(신설·선행·범위 확장 MGMT-BATCH-41)** — ㉮고정영역 컴팩트化(가시 종목 ↑)·㉯연속 상승/하락 방향 분리(`signal_direction` — **분포는 payload 참조**, 장부 수치 미기재[3세대 낡음 폐기, B7])·㉰테마 포함 사유 즉답(`signal_value` 기보유)·㉱스토리 프리셋(목업 동반 결정) + SCAN-FIX-1(strip 라벨) + **⑵성능 수리(key remount 제거·React.memo·useMemo)** + **⑴거래대금 임계 재설계(설계 사안: 상향 vs 분위수 vs 제거)** 편입 | @frontend (dashboard) | D-SCAN-UX2-FEEDBACK·D-SCAN-R1-OBS·D-SCAN-REC-JOIN-J2·D-SCAN-PAYLOAD-OVERAGE | 🟢 **설계 턴 마감·슬라이스 1 착지 (MGMT-BATCH-b48, 3사이클 8결정)** | **8결정**(L3·Q3+Q2·S2·D3·N2·R3·P3·F5+F6, F7 후속 층 예약). **슬라이스 1 LAND=DASH-TAB** [발견]/[시장] 탭 골격(origin/main `006d48cf`·종목 시작 667px@1440×900·회귀 0·vitest 67→72). 조인=J2(FE ticker→preview_stocks.sector·실패 시 정칙 ⑴ 생략). 잔여 슬라이스=컴팩트·방향·프리셋·성능·임계 재설계. |
 | RECON-SCANDIAG-R1 | ⑦b 관찰·이상 3건 진단(**읽기 전용**) — ⑴거래대금 필터·⑵필터 지연·⑶coverage audit | 읽기 전용 | D-SCAN-R1-OBS | ✅ **done·판정 종결(MGMT-BATCH-41)** | ⑴배선 정상·임계 설계 문제(유니버스 min $53.8M>$50M·시총 $50B+만 변별)→SCAN-UX-2 이관 · ⑵key remount+memo 부재→SCAN-UX-2 이관 · ⑶audit 0·0·0=**정상**(창 이동·w7 34/0/34·w90 114/12/102·조치 불요). cf. D-SCAN-R1-OBS 판정 종결. |
 | SCAN-STORY-LLM | 종목 서사 3층 — ①사실 층 → ②서사 층(리스크 서술) → ③story_tag. **착수 A(템플릿)** → B 계층 확장. LLM 층=shared LLMClient 래퍼+circuit breaker+템플릿 폴백·**상위 합류 한정** | @frontend + @rag-llm + platform | D-SCAN-STORY-3LAYER · **NEWS-DEPLOY-EXEC(선행·카드 실행)** | 🆕 **todo(카드 실행 완료 후)** | 서사 층=실뉴스 의존 → NEWSFIX-SYNC-BE 착지(`b731d7b4`)됐으나 **prod 점등=NEWS-DEPLOY-EXEC 카드 실행 완료**가 선행(StockNews 물질화 실제 발생 후). 서사 본문=per-stock JSON(행 클릭)·행엔 story_tag만(payload ×4 회피). story_tag=SCAN-UX-2 ㉱ 재료. |
 | RECON-NEWSMATCH-R1 | **NEWS-MATCH 승격 1단계** — 스캐너 실뉴스 매칭 0건(08-24) 원인 진단(**읽기 전용**) | 읽기 전용 | D-NEWSMATCH-PROMOTE | ✅ **done·판정(MGMT-BATCH-41 in-session)** | **근인=⒜source absent+⒠이원화**: enricher가 `StockNews`(0행·죽은 테이블) 조회→100% profile 폴백. 실뉴스는 `NewsEntity`(587k) 실재·매칭 로직 무결. 추천카드 다운스트림 오염. **수리 3후보 OPEN**(⑴enricher→NewsEntity 재배선[소·@backend] ⑵sync beat[중] ⑶모델통합[대]). cf. D-NEWSMATCH-PROMOTE 판정. |
 | NEWSFIX-BE (seam) | enricher `NewsSource` 주입 seam(shared) — 미래 NewsEntity 주입 하네스·SCAN-STORY-LLM 진입점 | @backend (shared) | D-NEWSMATCH-FIX-PATH | ✅ **착지 (LAND-NEWSFIX-BE `cee78451`, 09-03)** | rebase `614f19db`→`cee78451`(충돌 0·전진분 seam 파일 무접촉)·pytest stocks 209→225(+16)·sync/경계 회귀 공존·행위 무변(기본 StockNewsSource=현행 조회)·makemig no-op·health ❌0. |
 | NEWSFIX-SYNC-BE | **NEWS-MATCH 수리 확정 경로(V2 ⑵)** — 앱측 sync beat: `NewsEntity`→`StockNews` 주기 물질화(멱등·max_retries=3). enricher 무접촉 | @backend/news (services.news) | D-NEWSMATCH-FIX-PATH-V2·D-OWN-NEWS | ✅ **착지 (LAND-NEWSFIX-SYNC `b731d7b4`, 09-02)** | pytest 242→251·makemig no-op·회귀 260 green. **common-bugs 부여 완료 = #128**(MGMT-BATCH-45). ⚠ prod 무변(StockNews 0행·beat enabled=False) — 점등=NEWS-DEPLOY-EXEC 카드. |
-| NEWS-DEPLOY-EXEC | **배포 카드(Gate 4·사용자 수동)** — NEWSFIX-SYNC 점등: ① `backfill_news_stocknews --apply`(StockNews 물질화) ② `register_newsfix_sync_beat --apply`→`PeriodicTask.enabled=True`+beat 재시작 ③ 차기 bake(18:30 ET) 후 효과 검증 | 병진(수동) | NEWSFIX-SYNC-BE(done) | 🆕 **카드 발급됨·실행 대기 (BATCH-46 0.5 실측: 미실행 확인 — StockNews 0행·newsfix beat 미등록)** | **18:30 ET bake 전 ①~⑤ 완료 시 당일 반영**. **효과 3종 검증**(카드 실행+차기 bake 후 최종·PART B): ⓐ스캐너 `news_context`(profile 폴백 이탈·symbol/industry 매칭 복원) ⓑ추천 카드(다운스트림 자동 치유) ⓒ뉴스 존재 칩(0렌더→점등). beat 활성·backfill=자기 집행 금지·병진. |
+| NEWS-DEPLOY-EXEC | **배포 카드(Gate 4·사용자 수동)** — NEWSFIX-SYNC 점등: ① `backfill_news_stocknews --apply`(StockNews 물질화) ② `register_newsfix_sync_beat --apply`→`PeriodicTask.enabled=True`+beat 재시작 ③ 차기 bake(18:30 ET) 후 효과 검증 | 병진(수동) | NEWSFIX-SYNC-BE(done) | ✅ **done (집행 완료·PART B 실측 확증, MGMT-BATCH-b48 종결·#128 근인 종결)** | 집행 후 실측(DASH-TAB PART B, 09-04~08): StockNews 물질화 라이브(84,356→92,351)·newsfix beat `enabled=True` total_run **3**(created 82,555/81,508/77,683·17:30 ET=익일 06:30 KST)·bake dashboard.json `news_context` **실뉴스 100%**(symbol_today 83%/symbol_7d 17%·profile 폴백 **0%**)·추천 카드 다운스트림 자동 치유. **#128 근인(죽은 StockNews 0행) 종결**(원천 물질화로 해소, b46 미전달분 승계). **BF-1 종결**=아래 SCAN 주석. |
 | SCAN-B3 | ③ 관계 강도·발급 이력 — **착수 전 별도 설계 사이클**(chain_sight/platform 위임) | chain_sight/platform | 별도 설계 | 🆕 **todo(설계 선행)** | 관계 축 강도 우선(정칙 ⑹). |
 | SIGNAL-HITRATE | **(예약·착수 아님)** 신호/합류 발생 후 N일 수익률 추적 — Phase 5 캘리브레이션 정합. "배지가 자기 성적표를 갖게 한다." | 미배정 | 예약 | 🔭 **예약(착수 전)** | Phase 5 정합. |
+
+## MGMT-BATCH-b48 위임 등재 — SCAN-UX-2 설계 턴 + 대시보드 recon 파생 (2026-09-10)
+
+| 태스크 | 내용 | 담당 | 선행 | 상태 | 비고 |
+|--------|------|------|------|------|------|
+| QUAD-TRAJECTORY | 섹터 사분면 **시간 궤적**(스냅샷 이동 경로 표시) | chain_sight | DSS-QUADRANT | 🆕 **todo(설계 선행)** | [시장] 탭 사분면 확장. |
+| QUAD-LLM-SUMMARY | 섹터 사분면 **LLM 요약**(사분면 배치의 서사) | chain_sight/baker | DSS-QUADRANT | 🆕 **todo** | shared LLM 래퍼·상위 한정. |
+| REC-SCORE-SCALE-REDESIGN | **추천 점수 눈금·tiebreak 재설계** — composite_score 85.7% ±1.0 포화→알파벳 폴백(#C9 recon). tiebreak(거래대금·신호수·뉴스방향) 정의 | baker | DASH-TAB recon | 🆕 **todo(설계)** | ⚠ **R3(J1 baker 주입)와 충돌 시 정책 재결정 명시** — J2 채택은 눈금 미변경 전제, 눈금 재설계 시 J1 재검토(D-SCAN-REC-JOIN-J2). |
+| BAKER-ISSTALE-REDEF | **baker `is_stale` 의미 재정의** — `generated_at.date()`(UTC) vs `date.today()`(KST 서버)→bake 07:30 KST 상시 True(C-7 recon). trading_date 기준 or tz 통일 | backend | DASH-TAB recon | 🆕 **todo** | 상시 stale 배지 오표시 수리. |
+| REC-POPULATION-RECONSIDER | **F9 모집단 재고** — 추천/신호 모집단이 전량 대형주(EODSignal min $7.03B)·유니버스 min $53.8M과 괴리. 필터·눈금이 작동할 모집단 재정의 | baker·유니버스 | DASH-TAB recon | 🆕 **todo(설계)** | SCAN-UX-2 ⑴임계 재설계와 연동. |
+| PAYLOAD-SYMBOL-REF | **cards payload symbol-ref 축약**(D-SCAN-B2-DERIVE) — cards 393KB gz>~310KB 초과 확정(D-SCAN-PAYLOAD-OVERAGE). 보류 해제 | dashboard/shared | D-SCAN-PAYLOAD-OVERAGE | 🆕 **todo** | lazy fetch라 드로어 1회·초기 로드 무영향. |
+| OWNERSHIP-MAP-APPENDIX | **소유권 지도 부록 갱신** — dashboard/baker/chain_sight 신규 위임 반영 | mgmt | — | 🆕 **todo(차기 mgmt)** | b48 위임 7건 반영. |
 
 ## NEO4J-CLOSE-1 후속 (2026-08-20, sync 재활성화·트랙 종결 후)
 
@@ -1531,11 +1556,12 @@
 - 상태: 💤 등재(저우선). 방치 무해(dangling ref)이나 census 위생용.
 
 ## MGMT-BATCH-B — 브랜치·worktree 분류 보고 (2026-09-04) [harness][ops]
-- **상태: ✅ 분류 보고 착지 · 병진 수동 삭제 대기** (보고서 = `docs/mgmt/MGMT-BATCH-B_classification.md`). 삭제·정리 0건 집행(D-BRANCH-DELETE-MANUAL).
+- **상태: ✅ 집행 완료 (MGMT-BATCH-B-EXEC, 2026-09-04~10)** (보고서 = `docs/mgmt/MGMT-BATCH-B_classification.md` §8). 단계별 승인(A/B[제외 sv-dash-s0]/C/D[3분할]/E) 하 CC 삭제 집행 = D-BRANCH-DELETE-DELEGATE-1.
 - 분류(스냅샷 `1d528a6e`·전수 225 브랜치): 즉시삭제 159 / 즉시삭제(wt선행) 42 / 보류 8 / 검토필요 15 / 유지 1. worktree 61: 즉시정리 43 / 보류 12 / 유지 6. 원격 삭제 후보 5(전부 MERGED).
 - **검토필요 16건**(§6 Q1~Q16): 오늘 활성(hub-recon·design-inspector·evt-8 외 드리프트분)·squash-merge(cn-repair-land·`-d` 거부→`-D` 필요)·아크 미상 다수·메인 트리 stale 처분(Q16). **삭제 실행 전제 = 모든 CC 세션 종료 + 활성 목록 재측정**(라이브 드리프트 1d528a6e→04ec8bf7 관측).
 - 명령 초안(실행 금지) = scratchpad `cmd_A_worktree.txt`(43)/`cmd_B1_branch_noWT.txt`(159)/`cmd_B2_branch_wt.txt`(42)/`cmd_C_remote.txt`(5).
-- **EXEC(MGMT-BATCH-B-EXEC, 09-04~09) 진행**: 단계 A(메인 트리 main 복귀·sess-main-integrate detach) · B(worktree 40 제거) · C(브랜치 -d 200) · D(브랜치 7 삭제) 집행. 게이트 정련 = D-GATE-SCOPE-1(범위=삭제 후보 집합). 삭제 로그 = `docs/mgmt/MGMT-BATCH-B_delete_log.txt`.
+- **EXEC 완료(MGMT-BATCH-B-EXEC, 09-04~10)**: A(메인 트리 main 복귀·sess-main-integrate detach) · B(worktree **40** 제거·sv-dash-s0 제외) · C(브랜치 `-d` **200**·거부 0) · D(브랜치 **7** 삭제: 즉시-D 3 + 이식후-D 4·이식 4줄·42줄 철회) · E(원격 **5** 삭제). 게이트 정련 = D-GATE-SCOPE-1. bundle 2종 보존. 삭제 로그 = `docs/mgmt/MGMT-BATCH-B_delete_log.txt`(C 200 + D/E).
+- **잔여 = MGMT-BATCH-C 후보 (3덩이)**: ⓐ **동결 유지분** — 보류 8·검토필요 타 프로젝트 몫(Q1·2·7·8·11·12·13·14)·`sv-dash-s0`(HEAD 재정렬 이력=관리중, 보류 이관). ⓑ **원격 잔여 `nightly-20260618/19`** — 그래프상 NOT-MERGED(ahead=1)이나 12파일 전부 main 동일(단계 D 실측)·로컬 -D 커밋(b77635b8/bf613df7) 복구 좌표 역할 → 보존·다음 배치 별도 판단. ⓒ **보고서 이후 신규 유입** — 09-10 기준 원격 feature/research-*·math-lab·lab-automation 등 + 로컬/worktree 신규 다수(다세션 09-04~10) → 다음 배치 새 스냅샷 대상.
 
 ### sess-r2pre 흡수 — FE 미해결 todo 2건 (MGMT-BATCH-B 단계D, 삭제 전 이식) [frontend][infra]
 > 출처: `monorepo/sess-r2pre`(`9bc85fff`, 2026-08-31 R2-S1 배포서 발견). 삭제 브랜치의 유일 미이식분(main 미추적·미해결 확인). 원본 좌표 = `~/stockvis-refs-20260907-0948.bundle`.
@@ -1645,6 +1671,7 @@
 - ✅ **CS-UNIVERSE-EXCLUDE-FLAG** (B) — Stock.universe_excluded(stocks 0017)+데이터 승격(0018·OKLL/IREG/GEVG) + mindmap_views 전환 + 상수 제거. 검증: 행위보존 754==754.
 - ✅ **CS-STORY-ACTIVITY-CACHE** (C) — SymbolStoryActivity(chainsight 0035)+물질화 태스크·커맨드+캐시우선 서빙+전역조회. 검증: 31,978행/35.75초·전역조회 0.7ms·캐시 3.9ms vs 라이브 55ms.
 - 🔴 **[MIG-BUNDLE-1 관문②]** 병진 잔여 — `register_chainsight_beats`(chainsight-materialize-story-activity ET 12:00 등록) + **worker 재시작**([[lesson_celery_task_registration]]).
+  - 🆕 **동반 랜딩 (MGMT-LEDGER-2 ⑤·REPORT-FIX-REALIZE)** — T3 TL;DR System 줄(`agent_reports.py`) + T4 dogfood EOD 지연 산식(`check_quant.py`) 수정분이 다음 `sv sync`에 편승. 실효 검증 = 아침 메일 2종(@backend agent report System 줄 · dogfood `eod.trading_date`). 착지≠실효.
 - 🟢 **S2 착수 준비 완료** — 캐시·전역조회·(-activity_ratio) 인덱스 = R2-S2 전역 활동 뷰 소스 완비.
 - ✅ **[EVT-4B] 완료** — CORR-4(거시 event_time UTC 해석·경계 보정) + FE-TUNE-1(T2 거시 접기·세션 빈칸·서프라이즈 200%). BE `da3a871c`+FE `31bf7791`(로컬 sess-evt-6). 0-3 UTC 게이트 PASS. **push 후 :3000 재빌드 필요(사용자 지시)** — 재빌드 전까지 화면 미반영.
 - ✅ **[EVT-IMPL-4-SHOT] 완료** — 증적 = 2026-08-31 디렉터 채팅 첨부 5장·시각 계약 판정 통과.
@@ -1694,15 +1721,34 @@
 
 ## D1-SCOREBOARD 후속 (D1-CLOSE-LEDGER 2026-09-02 — D1 종결)
 
-- 🕒 **SCB-CONTEXT-LAYER** — 채점 카드에 애널리스트 논거·현재 상황 비교 맥락 추가(병진 09-02 소감: "가격만 나오니 그렇구나 싶다"). **선행 필수: 재료 실측 recon**(컨센서스 이력·news·rag_analysis 등 실재 여부 read) — **실측 전 설계 금지**(cf. #128 죽은 테이블 교훈 — 원천 생존 검사가 사양). recon GREEN 후 설계 슬라이스 발행.
+- 🕒 **SCB-CONTEXT-LAYER** — 채점 카드에 애널리스트 논거·현재 상황 비교 맥락 추가(병진 09-02 소감: "가격만 나오니 그렇구나 싶다"). **✅ recon 완료(2026-09-10, SCB-CONTEXT-RECON·보고서 `docs/mgmt/SCB-CONTEXT-RECON_report.md`) · 설계 슬라이스 발행 대기.** 요지: **맥락 축 GREEN**(NewsEntity 614k·StockNews 98k 부활[#128 반전·beat ON]·좌표쿼리 sub-second·주입지점 E3 AnalysisContext budget 7000) / **논거 텍스트 RED**(grades_historical 100%채움이나 등급 카운트 추이일 뿐·FMP grades-historical numeric-only 확증·논거 텍스트 엔드포인트 미구현). rag_analysis 휴면(RED)·Neo4j/RC 14,072 생존(AMBER). 디렉터 결정 = 논거 축 (a)카운트추이 대체 (b)신규 FMP수집 (c)news 우회 택1. ⚠ stale 문서: StockNews 0행·beat enabled=False 기록·cost_ledger 로깅 경로.
 - 💤 **SCB-DERIVED-VISIBILITY** — SMR·XE 표시 방식 결정(현행 제외 유지 vs "채점 불가/데이터 부재" 행 표시). DailyPrice 0이라 파생 spot 불가 → 현재 렌더 9종에서 구조적 제외. 트리거 = SCB-CONTEXT-LAYER 설계 시 동반 재평가(맥락 층에서 "데이터 부재" 표기 방식 함께 결정).
 ## AGENT-S2 (2026-09-03)
 
 - 🟡 **AGENT-S2 야간 도그푸딩 2단계(루브릭 채점)** (@infra) — **구현·랜딩 완료 · `sv sync` 상신 대기**. 상신 `scratchpad/AGENT-S2_상신_20260903.md`. 신설 `collect_rendered.py`(Playwright 렌더 수집)·`score_rubric.py`(claude -p 1회 일괄 채점)·`render_screens.mjs` + `report_mail.py` 루브릭 섹션 + `run_dogfood.sh` 2단계 삽입. **plist 무변경**(같은 05:20 잡). 유닛 28 + 회귀 179 passed(선존 2건 = `test_targets.py`, 무변경 트리 동일). **수동 실증**: 렌더 5/5(인증) · 채점 평균 2.8/5 무효 0 · **인용 5/5 실제 화면 텍스트 일치** · 메일 실발송 1통. **묶음 권고**: `OPS-HC-WIRE` 상신과 함께 `sv sync` 1회.
-- 🟡 **GUIDE-ANCHOR-DRIFT** (@frontend) — **원인 확정 2026-09-04(AGENT-S2.1 ③), 코드 드리프트 아님**. 앵커 7건 모두 코드에 존재하며 DOM 부재는 두 부류: ⑴ **빈 상태 조건부 4건** — `monitor.scope-chips`·`monitor.list`(`monitors.length > 0`)·`monitor.status-segment`(`closedCount > 0`)·`portfolio.charts`(`portfolios.length > 0`) → **계정이 채워지면 자연 해소**, 조치 불요. ⑵ **route 불일치 3건** — `chainsight.event-grid`·`card-metrics`·`entrypoints`는 `EventBoard.tsx`에 있는데 `/chainsight`는 **`MarketStoryFeed`를 렌더**한다(EventBoard는 `/chainsight/events`로 이동). → **가이드 데이터가 화면 개편을 못 따라간 것**. 앵커를 `/chainsight/events`로 옮길지 `MarketStoryFeed`에 새로 부착할지 **화면 소유자 판단**(도메인 코드 무접촉).
+- 🟡 **GUIDE-ANCHOR-DRIFT** (@frontend) — **원인 확정 2026-09-04(AGENT-S2.1 ③), 코드 드리프트 아님**. 앵커 7건 모두 코드에 존재하며 DOM 부재는 두 부류: ⑴ **빈 상태 조건부 4건** — `monitor.scope-chips`·`monitor.list`(`monitors.length > 0`)·`monitor.status-segment`(`closedCount > 0`)·`portfolio.charts`(`portfolios.length > 0`) → **계정이 채워지면 자연 해소**, 조치 불요. ⑵ **route 불일치 3건** — `chainsight.event-grid`·`card-metrics`·`entrypoints`는 `EventBoard.tsx`에 있는데 `/chainsight`는 **`MarketStoryFeed`를 렌더**한다(EventBoard는 `/chainsight/events`로 이동). → **가이드 데이터가 화면 개편을 못 따라간 것**. **→ ⑵ RESOLVED 2026-09-07 (GUIDE-CS-GUARD-1)**: `chainsight.main` route를 `/chainsight/events`로 임시 이설 + 앵커↔라우트 동거 정적 가드 신설(재발 차단) + 야간 메일 앵커 누락 노출. 정문 문구는 2단계 소관([[D-GUIDE-CS-REFRESH]]). **⑴ 빈 상태 조건부 4건은 여전히 열림**(계정 충족 시 자연 해소·조치 불요).
 - ✅ **AGENT-S2-EMPTY-ACCOUNT** — **해소 2026-09-04(결정 ⒝ 채택, AGENT-S2.1 ②)**. 빈 상태 감지 시 `coreQuestion` 대신 **"빈 상태 안내가 충분한가"** 기준으로 채점하고, 메일 `[빈 상태]` 라벨 + **평균 별도 트랙** + 최저 화면 선정에서 제외. 효과: 같은 렌더로 평균 **1.4/5 → 본 4.0/5**(빈 상태 2건 4.5/5 분리). 표본 데이터 주입(⒜) 불필요.
 - 💤 **AGENT-S3 관찰 후보 + 성적 원장** (후보 등재만 — **구현 금지**) — 종목 추천·성적 원장. **착수 전 RC v3.0 분포 재측정 선행 필수**(눈금 [0,100]→[0,1] 전환 후 분포를 모르는 채로 추천 기준을 세울 수 없다).
 
 ## AGENT-S2.1 (2026-09-04)
 
 - 🟡 **AGENT-S2.1** (@infra) — **구현·랜딩 완료 · `sv sync` 상신 대기**. ① launchd env 로드 결함 수정(`.env` 화이트리스트 주입, `env -i` 재현으로 원인 확정·수정 검증) ② 빈 상태 채점 분기 ③ 앵커 원인 확정. 유닛 39 + 회귀 190 passed(선존 2건) · ruff 0 · health ❌0. 수동 실증: `env -i` 인증 렌더 5/5 · 본 평균 4.0/5 · 메일 실발송(라벨 확인). **마이그레이션 0건**. ★09-05 05:20 발화 전 `sv sync` 필요 — 안 하면 또 미인증 1.4/5가 발송된다.
+
+## GUIDE-CS-REFRESH (2026-09-07, worktree sv-guide-csg1)
+
+> 결정 = [[DECISIONS]] D-GUIDE-CS-REFRESH (ⓑ 재작성·2단계 분할). 1단계 = GUIDE-CS-GUARD-1.
+
+- ✅ **GUIDE-CS-GUARD-1** (@frontend) — 앵커↔라우트 동거 정적 가드 + 야간 앵커 누락 노출 + 정문 임시 이설. 화면 문구·컴포넌트 무접촉(`components/`·`app/` diff 0줄). vitest 1276 passed(신규 +7) · pytest dogfood/architecture 96 passed. 마이그레이션 0건. **서빙 반영: 다음 세션 sync 자동**(테스트·야간 스크립트 한정, FE 런타임 무영향 — `lib/guide/chainsight.ts` 이설은 `?` 버튼 위치를 바꾸므로 web 리빌드 시 반영).
+- 🔵 **GUIDE-CS-REFRESH 2단계** (@frontend) — 정문(`/chainsight`)용 `chainsight.feed` 가이드 신규 등재(문구·앵커 작성). **트리거: `monorepo/sess-s3s1`(묶음 카드·부제 정직화) main 머지.** 착수 시 화면 재측정 후 문구 작성 → 병진 검수 → confirmed. 등재 후 `chainsight.main`의 임시 이설 주석을 정규 상태로 정리.
+  - **하위 조건**: `chainsight.backbone` 앵커 4곳(`BackboneView.tsx` 3 + 주석 1)도 **함께 등재**하고 `guideAnchors.test.ts`의 `PENDING_ANCHORS`를 **비운다**([[D-GUIDE-ORPHAN-BACKBONE]] 만료 조건). **기한 2026-09-30** — 미이행 시 `PENDING_ANCHORS의 유예 기한이 지나지 않았다` 테스트가 자동 RED(코드 변경 없이 날짜만으로 터진다).
+  - **DoD 메모(2단계 지시서 작성 시 옮겨 쓸 것)**: **"allowlist가 비었는가"** — `PENDING_ANCHORS`가 `new Set()`이면 통과. 비우지 않으면 `PENDING_ANCHORS는 죽은 항목을 남기지 않는다` 테스트가 등재 완료를 감지해 RED로 알린다(방치 자동 차단).
+- 🔵 **GUIDE-COUPDATE-DOD** (@qa, 별건 소형) — 화면 개편 지시서 템플릿의 DoD에 **"이 화면에 가이드 데이터가 있으면 같이 갱신했는가"** 한 줄 추가. 근거: 09-02 랜딩 역전이 가이드를 남긴 채 지나갔고, 08-31 RC-C-1도 같은 부류(아래 GUIDE-ORPHAN-BACKBONE).
+- ✅ **GUIDE-ORPHAN-BACKBONE** (@frontend, **처분 완료 2026-09-07 = ⓒ allowlist**, [[D-GUIDE-ORPHAN-BACKBONE]] · GUIDE-CS-GUARD-1B) — `chainsight.backbone` 앵커가 `components/chainsight/BackboneView.tsx`(3곳)에 있으나 가이드 데이터에 미등재 → `guideAnchors.test.ts` "고아 앵커 금지"가 **origin/main에서 이미 RED**(도입 `3e7b15c3`, 2026-08-31 RC-C-1 backbone FE). GUIDE-CS-GUARD-1 스코프 밖(가이드 문구 작성 = 2단계 소관, 화면 컴포넌트 = 무접촉)이라 **미해소로 남김**. 처분 선택지: ⑴ `/chainsight/backbone` 가이드 화면 신규 등재(2단계와 묶음) ⑵ 앵커 제거 ⑶ 고아 허용 allowlist 등재. **가드가 제 일을 한 사례 — 08-31부터 지금까지 RED가 방치돼 있었다는 것 자체가 별건 관찰 대상**(vitest 전체 게이트가 랜딩 전에 안 돌고 있었을 가능성).
+  **→ RESOLVED 2026-09-07 (GUIDE-CS-GUARD-1B)**: ⓒ 채택 — `PENDING_ANCHORS` allowlist로 유예하되 **죽은 allowlist 금지 테스트**를 함께 세워 만료를 강제한다(등재 완료·소스 삭제 두 방향 모두 RED). 앵커·화면 컴포넌트 무접촉. 만료 = 2단계 등재 시 목록 비우기.
+
+## GUIDE-ORPHAN-DASHTABS (2026-09-10 등재)
+
+- 🔴 **GUIDE-ORPHAN-DASHTABS** (@frontend — **소유: dashboard 앱 트랙**) — `dashboard.tabs` 앵커(`components/eod/DashboardTabs.tsx:28`, `006d48cf` DASH-TAB 09-09)가 가이드 데이터 미등재 = 고아. **기한 2026-09-30**까지 ⑴ `lib/guide/dashboard.ts`에 등재(문구 작성) 또는 ⑵ `data-guide` 속성 제거 중 하나. **미이행 시 `guideAnchors.test.ts`의 기한 테스트가 자동 RED**가 되어 전 랜딩을 막는다.
+  - **ops는 문구를 쓰지 않는다**(소유 경계) — GUIDE-CS-GUARD-1D는 유예만 등록했고 `dashboard.ts`를 건드리지 않았다.
+  - 기한 연장이 필요하면 **DECISIONS.md에 근거를 남긴 뒤** `until`을 갱신한다. 코드에서 조용히 날짜만 바꾸는 것은 금지 — 그 순간 구조가 장식이 된다.
+  - 재발 맥락: `chainsight.backbone`(08-31)과 동일 패턴이 9일 만에 재발. 근본 처방은 게이트(OPS-FE-GATE-0 측정 완료) + [[GUIDE-COUPDATE-DOD]](지시서 템플릿 DoD).

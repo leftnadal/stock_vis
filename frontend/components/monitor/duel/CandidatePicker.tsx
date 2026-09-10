@@ -2,7 +2,7 @@
 
 // 후보 선택 — 전 종목 검색(shared.stocks.Stock)으로 후보 심볼을 지정한다(SWAP-P1).
 // BE 계약(SwapHoldLog.candidate_ref = 심볼)에 FE를 정합시킨다 — 감시 미등록 종목도 후보 가능.
-// 검색 API = stockService.searchStocks(/stocks/api/search/?q=), 디바운스/외부클릭 UX는 AddStockModal 선례.
+// 검색 API = stockService.searchStocks(/stocks/search/?q=), 디바운스/외부클릭 UX는 AddStockModal 선례.
 import { useEffect, useRef, useState } from 'react'
 
 import { stockService } from '@/services/stock'
