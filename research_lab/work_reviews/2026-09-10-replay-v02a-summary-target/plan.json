@@ -1,0 +1,89 @@
+{
+  "calibration_only": true,
+  "case": "hard-006",
+  "config": {
+    "max_calls_per_run": 3,
+    "max_tokens": 8192,
+    "model": "Qwen/Qwen3.5-122B-A10B",
+    "reasoning": {
+      "enabled": true
+    },
+    "retry_count": 0,
+    "seed": 20260909,
+    "temperature": 0.6,
+    "timeout_seconds": 420,
+    "top_p": 0.95
+  },
+  "evaluation_target": {
+    "identity_note": "Identical frozen v0.1 summary in both arms; not a reconstructed historical final answer.",
+    "kind": "frozen_summary",
+    "sha256": "7a1445a90167d33a7711f69660810bee3535a343c8fa19131929fc8a30167f79"
+  },
+  "experiment": "Research Evidence Handoff Replay v0.2A",
+  "independent_variable": "historical candidate/critique context presence",
+  "interpretation_limits": [
+    "Exposed calibration case; not held-out evidence.",
+    "No permanent architecture, role, memory, model residency or methodology inference.",
+    "Historical v0.1 C failure is a comparator, not a rerun target.",
+    "This experiment isolates historical-context presence, not evidence selection."
+  ],
+  "purpose": "summary-target full-context contamination isolation",
+  "runs": [
+    {
+      "condition": "original",
+      "evidence_document_sha256": [
+        "15a8db3253eb85d9a732d323c2c44c6bd8b1b8269d1b972887aa8d87decc69cc",
+        "1f96075d68a0965fe55cb7fcd193037fc88f78f6e78500c471126837b55cc5f6",
+        "7a36e1f1041bf336811f2bb60c1c5f418b711e74f5cae713d68a928eb051e068",
+        "49d06beca427ce9e6f57e4b1f6433ca2103dc851a6d94e81a270218edbf63abc",
+        "f2068922fd1b850c3457c2e0dcfc8a8fa7913e62df41fb3ea4ef7846c03f5ed9",
+        "80a9e1d4a3425c52fe1ef5531f375f2ab61b35ee49b931b0cb0d0f8bc3b3bcde",
+        "394c5b191b56ffae2c05eba16292f374c8bccd74e09db8eb91415f815c175566",
+        "da7764213386396e302b658fe7f57b5aec29091ec8e6688cbaf231c306cfb26a",
+        "cbb56f7528ee213a5e9032b4cd0f9014e5893d9f2225dc867833a4588478add1",
+        "602bb95cde91d9c36e0a340c267d15875dcd991816f5cec870082a6f68eab30a",
+        "b5ca8a7b8cbba42884753959895b6ab8a8af983d875891f36721bf9aa882cf92",
+        "67841c6f33c0095ceb093bf56e8d77c968659b7ed7b7693ca2cda2e85c2fc094",
+        "219bc1a056b60c9af3a6be0fe158dfc96aa75e060c5137e48ed80852d971cdbc",
+        "b3f6a19b1f3ad78837201478ea88fedfd534523aa1459119fb12db435c1aa980",
+        "102668b0605fee587831a157817320f71eaebb9614fb2927e7be5fbefbb3b070",
+        "420e0fcf44eebabb4b2296ff09587aee5aed02010225fa08494aff1b3ef83d78",
+        "444647498bfbb81c8cd723905f5bcdb7183a86187a6bfc4b0cca4ca2a49b5862"
+      ],
+      "historical_context_sha256": [
+        "96385736ebc3a4c7453ded250a9c05e4ef818d3dacffcd399a0b0bb5d51ed1d2",
+        "2d24e49c4d18a35c252541310d86c93f31275e195c02e9c9a0d99a4631955a86"
+      ],
+      "input_sha256": "13ca0a87a5550a054fca4216e71ed5089f0eb9ba6cc9863445df7a3d2d889e3a",
+      "run_id": "7d7d0d48e6de4c328ff5ff71d600c23c",
+      "summary_sha256": "7a1445a90167d33a7711f69660810bee3535a343c8fa19131929fc8a30167f79"
+    },
+    {
+      "condition": "sanitized",
+      "evidence_document_sha256": [
+        "15a8db3253eb85d9a732d323c2c44c6bd8b1b8269d1b972887aa8d87decc69cc",
+        "1f96075d68a0965fe55cb7fcd193037fc88f78f6e78500c471126837b55cc5f6",
+        "7a36e1f1041bf336811f2bb60c1c5f418b711e74f5cae713d68a928eb051e068",
+        "49d06beca427ce9e6f57e4b1f6433ca2103dc851a6d94e81a270218edbf63abc",
+        "f2068922fd1b850c3457c2e0dcfc8a8fa7913e62df41fb3ea4ef7846c03f5ed9",
+        "80a9e1d4a3425c52fe1ef5531f375f2ab61b35ee49b931b0cb0d0f8bc3b3bcde",
+        "394c5b191b56ffae2c05eba16292f374c8bccd74e09db8eb91415f815c175566",
+        "da7764213386396e302b658fe7f57b5aec29091ec8e6688cbaf231c306cfb26a",
+        "cbb56f7528ee213a5e9032b4cd0f9014e5893d9f2225dc867833a4588478add1",
+        "602bb95cde91d9c36e0a340c267d15875dcd991816f5cec870082a6f68eab30a",
+        "b5ca8a7b8cbba42884753959895b6ab8a8af983d875891f36721bf9aa882cf92",
+        "67841c6f33c0095ceb093bf56e8d77c968659b7ed7b7693ca2cda2e85c2fc094",
+        "219bc1a056b60c9af3a6be0fe158dfc96aa75e060c5137e48ed80852d971cdbc",
+        "b3f6a19b1f3ad78837201478ea88fedfd534523aa1459119fb12db435c1aa980",
+        "102668b0605fee587831a157817320f71eaebb9614fb2927e7be5fbefbb3b070",
+        "420e0fcf44eebabb4b2296ff09587aee5aed02010225fa08494aff1b3ef83d78",
+        "444647498bfbb81c8cd723905f5bcdb7183a86187a6bfc4b0cca4ca2a49b5862"
+      ],
+      "historical_context_sha256": [],
+      "input_sha256": "e43a921f47ea412a62d4247622a3860fe3fe3df9b2f69782931b1e4663323b09",
+      "run_id": "aadf9a4e2c884b1387fb6e83fa8a35ef",
+      "summary_sha256": "7a1445a90167d33a7711f69660810bee3535a343c8fa19131929fc8a30167f79"
+    }
+  ],
+  "version": "0.2.0"
+}
