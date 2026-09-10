@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -123,6 +124,7 @@ def inspect_tokenized(result: Any) -> dict[str, Any]:
 
 
 def diagnose(tokenizer: Any, source_root: Path, tokenizer_identity: dict[str, Any]) -> dict[str, Any]:
+    started_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
     rows: dict[str, Any] = {}
     for label, filename in SOURCE_NAMES.items():
         source = source_root / filename
@@ -208,6 +210,9 @@ def diagnose(tokenizer: Any, source_root: Path, tokenizer_identity: dict[str, An
     return {
         "experiment": "Research Evidence Handoff Replay v0.2A.1",
         "diagnostic": "raw-rendering-and-token-accounting-001",
+        "execution_started_at": started_at,
+        "execution_finished_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "diagnostic_execution_count": 1,
         "status": "diagnostic_completed",
         "outcome": outcome,
         "tokenizer_identity": tokenizer_identity,
