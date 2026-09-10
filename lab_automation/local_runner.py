@@ -383,6 +383,9 @@ def execute_job(
     dry_run: bool = True,
 ) -> int:
     job, raw = _read_job(job_path)
+    if raw.get("execution_mode") is not None:
+        from lab_automation.local_observation import execute
+        return execute(repo, job_path, worktree_root, state_root, dry_run=dry_run)
     _validate_job(job)
     run_id = str(uuid4())
     candidate_branch = _candidate_branch(job.job_id, run_id)

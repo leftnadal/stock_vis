@@ -1,0 +1,24 @@
+{
+  "base_sha": "c9bd21effbf0f3b3c728bed97e64f5aca330304c",
+  "authority_refs": [
+    "math_lab/00_foundation/foundation_ko.md",
+    "math_lab/01_operating_system/operating_model_ko.md",
+    "math_lab/02_methodology/research_methodology_ko.md",
+    "math_lab/05_validation/daily_price_validation_basket_v0_1_ko.md"
+  ],
+  "files": {
+    "math_lab/runtime/test_daily_price_boundaries.py": "698c81ce8223cf5e60402528fde7dd0f20e1a539edab8e5c7bb946be6c643cbf",
+    "math_lab/runtime/test_daily_price_positive_boundary.py": "f5f0058f8f150ed94bc946f59a02b955f96b2fa8585f04e4364d0af52832aed0",
+    "math_lab/runtime/data_eligibility.py": "8aa761038f65b5d46402d030ef558b30928c9c21ae0acd99d54f7cb283f8ce56",
+    "math_lab/runtime/daily_price_probe.py": "829be20bf6857b6667506aa58c033f13702d590a398da3a46526406d708366bb",
+    "math_lab/runtime/__init__.py": "f8e7da343639dd0899d03f3c69467f678249da3b86938bb3b884754f2a5242ff",
+    "math_lab/runtime/test_daily_price_readiness.py": "fade0af62fa0046303719db5dff63c1dc4c6a003dfff8d945f5a0b53f007452e",
+    "math_lab/runtime/daily_price_readiness.py": "6ebce85b570ac175a9b00fe57747045f5edb0abfabb6c94aa9f4d3b9fa43c92b",
+    "math_lab/runtime/error_redaction.py": "22bc7ae0ebea3e9e33ddaf5ed98e03686b6b0aedb7a56d44b4cb5972e0493367",
+    "math_lab/runtime/test_data_eligibility.py": "acfa5d770fd70add5d0017dbcd24795016f6594ebee49a22929f5b4b14c0e634",
+    "math_lab/00_foundation/foundation_ko.md": "ab263992eec67a2f082aab4bf7849d68b9e6433b8a19eabb58b1b2435b872fb4",
+    "math_lab/01_operating_system/operating_model_ko.md": "4a57f1dba7797c54aaae25ccf75cd720b88170f44e96c47dc43894db79a72c8a",
+    "math_lab/02_methodology/research_methodology_ko.md": "0b1e72ac5cb8137d5aade6c69e3e49a8a335518d6b0cd59d405a9bbc7bbfccaa",
+    "math_lab/05_validation/daily_price_validation_basket_v0_1_ko.md": "a7712c6b2cc434bec42ccbd1c03959535f27d1284edacc46ca670aae4a9e0905"
+  }
+}
