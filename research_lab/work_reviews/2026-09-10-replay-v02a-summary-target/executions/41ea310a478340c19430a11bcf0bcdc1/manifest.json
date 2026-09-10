@@ -1,0 +1,23 @@
+{
+  "batch_id": "41ea310a478340c19430a11bcf0bcdc1",
+  "experiment": "Research Evidence Handoff Replay v0.2A",
+  "finished_at": "2026-09-10T02:53:57.604019+00:00",
+  "harness_version": "0.2.0",
+  "model_invocations": 2,
+  "results": [
+    {
+      "condition": "original",
+      "protocol_completion": "incomplete",
+      "run_id": "7d7d0d48e6de4c328ff5ff71d600c23c",
+      "semantic_review": "unassessed"
+    },
+    {
+      "condition": "sanitized",
+      "protocol_completion": "complete",
+      "run_id": "aadf9a4e2c884b1387fb6e83fa8a35ef",
+      "semantic_review": "pending"
+    }
+  ],
+  "started_at": "2026-09-10T02:52:47.581447+00:00",
+  "status": "execution_finished_pending_review"
+}
