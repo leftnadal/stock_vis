@@ -1726,8 +1726,15 @@
 
 - ✅ **GUIDE-CS-GUARD-1** (@frontend) — 앵커↔라우트 동거 정적 가드 + 야간 앵커 누락 노출 + 정문 임시 이설. 화면 문구·컴포넌트 무접촉(`components/`·`app/` diff 0줄). vitest 1276 passed(신규 +7) · pytest dogfood/architecture 96 passed. 마이그레이션 0건. **서빙 반영: 다음 세션 sync 자동**(테스트·야간 스크립트 한정, FE 런타임 무영향 — `lib/guide/chainsight.ts` 이설은 `?` 버튼 위치를 바꾸므로 web 리빌드 시 반영).
 - 🔵 **GUIDE-CS-REFRESH 2단계** (@frontend) — 정문(`/chainsight`)용 `chainsight.feed` 가이드 신규 등재(문구·앵커 작성). **트리거: `monorepo/sess-s3s1`(묶음 카드·부제 정직화) main 머지.** 착수 시 화면 재측정 후 문구 작성 → 병진 검수 → confirmed. 등재 후 `chainsight.main`의 임시 이설 주석을 정규 상태로 정리.
-  - **하위 조건**: `chainsight.backbone` 앵커 4곳(`BackboneView.tsx` 3 + 주석 1)도 **함께 등재**하고 `guideAnchors.test.ts`의 `PENDING_ANCHORS`를 **비운다**([[D-GUIDE-ORPHAN-BACKBONE]] 만료 조건).
+  - **하위 조건**: `chainsight.backbone` 앵커 4곳(`BackboneView.tsx` 3 + 주석 1)도 **함께 등재**하고 `guideAnchors.test.ts`의 `PENDING_ANCHORS`를 **비운다**([[D-GUIDE-ORPHAN-BACKBONE]] 만료 조건). **기한 2026-09-30** — 미이행 시 `PENDING_ANCHORS의 유예 기한이 지나지 않았다` 테스트가 자동 RED(코드 변경 없이 날짜만으로 터진다).
   - **DoD 메모(2단계 지시서 작성 시 옮겨 쓸 것)**: **"allowlist가 비었는가"** — `PENDING_ANCHORS`가 `new Set()`이면 통과. 비우지 않으면 `PENDING_ANCHORS는 죽은 항목을 남기지 않는다` 테스트가 등재 완료를 감지해 RED로 알린다(방치 자동 차단).
 - 🔵 **GUIDE-COUPDATE-DOD** (@qa, 별건 소형) — 화면 개편 지시서 템플릿의 DoD에 **"이 화면에 가이드 데이터가 있으면 같이 갱신했는가"** 한 줄 추가. 근거: 09-02 랜딩 역전이 가이드를 남긴 채 지나갔고, 08-31 RC-C-1도 같은 부류(아래 GUIDE-ORPHAN-BACKBONE).
 - ✅ **GUIDE-ORPHAN-BACKBONE** (@frontend, **처분 완료 2026-09-07 = ⓒ allowlist**, [[D-GUIDE-ORPHAN-BACKBONE]] · GUIDE-CS-GUARD-1B) — `chainsight.backbone` 앵커가 `components/chainsight/BackboneView.tsx`(3곳)에 있으나 가이드 데이터에 미등재 → `guideAnchors.test.ts` "고아 앵커 금지"가 **origin/main에서 이미 RED**(도입 `3e7b15c3`, 2026-08-31 RC-C-1 backbone FE). GUIDE-CS-GUARD-1 스코프 밖(가이드 문구 작성 = 2단계 소관, 화면 컴포넌트 = 무접촉)이라 **미해소로 남김**. 처분 선택지: ⑴ `/chainsight/backbone` 가이드 화면 신규 등재(2단계와 묶음) ⑵ 앵커 제거 ⑶ 고아 허용 allowlist 등재. **가드가 제 일을 한 사례 — 08-31부터 지금까지 RED가 방치돼 있었다는 것 자체가 별건 관찰 대상**(vitest 전체 게이트가 랜딩 전에 안 돌고 있었을 가능성).
   **→ RESOLVED 2026-09-07 (GUIDE-CS-GUARD-1B)**: ⓒ 채택 — `PENDING_ANCHORS` allowlist로 유예하되 **죽은 allowlist 금지 테스트**를 함께 세워 만료를 강제한다(등재 완료·소스 삭제 두 방향 모두 RED). 앵커·화면 컴포넌트 무접촉. 만료 = 2단계 등재 시 목록 비우기.
+
+## GUIDE-ORPHAN-DASHTABS (2026-09-10 등재)
+
+- 🔴 **GUIDE-ORPHAN-DASHTABS** (@frontend — **소유: dashboard 앱 트랙**) — `dashboard.tabs` 앵커(`components/eod/DashboardTabs.tsx:28`, `006d48cf` DASH-TAB 09-09)가 가이드 데이터 미등재 = 고아. **기한 2026-09-30**까지 ⑴ `lib/guide/dashboard.ts`에 등재(문구 작성) 또는 ⑵ `data-guide` 속성 제거 중 하나. **미이행 시 `guideAnchors.test.ts`의 기한 테스트가 자동 RED**가 되어 전 랜딩을 막는다.
+  - **ops는 문구를 쓰지 않는다**(소유 경계) — GUIDE-CS-GUARD-1D는 유예만 등록했고 `dashboard.ts`를 건드리지 않았다.
+  - 기한 연장이 필요하면 **DECISIONS.md에 근거를 남긴 뒤** `until`을 갱신한다. 코드에서 조용히 날짜만 바꾸는 것은 금지 — 그 순간 구조가 장식이 된다.
+  - 재발 맥락: `chainsight.backbone`(08-31)과 동일 패턴이 9일 만에 재발. 근본 처방은 게이트(OPS-FE-GATE-0 측정 완료) + [[GUIDE-COUPDATE-DOD]](지시서 템플릿 DoD).
