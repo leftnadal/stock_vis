@@ -1896,7 +1896,7 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **규율**: EOD(하루 지연) 데이터의 "당일" 지표는 **오늘 날짜가 아니라 데이터가 실재하는 최신 거래일**로 기준일을 잡는다 — 그리고 그 최신일을 **캘린더 산술(주말·공휴일 −N일)로 추정하지 말고 실데이터에서 조회**(`DailyPrice.filter(date__lte=today).aggregate(Max('date'))`, #117류 함정 회피). compute·store 기준일은 **동일 as_of로 일원화**(누적 지표 AD-line 연속성). 소비처는 실데이터(총합>0) 우선 + `as_of_date` 노출로 "빈 결측"을 실데이터로 오인 렌더하지 않는다. (구현 `apps/market_pulse/calculators/breadth.py`·`api/views/overview.py`, D-BREADTH-ASOF.)
 
 
-## launchd 환경에는 셸의 `.env`가 없다 — 수동 성공 ≠ 자동 성공 (채번 후보, AGENT-S2.1 2026-09-04) `[infra][process]`
+## launchd 환경에는 셸의 `.env`가 없다 — 수동 성공 ≠ 자동 성공 (#133, AGENT-S2.1 발견 2026-09-04, 채번 MGMT-BATCH-b48) `[infra][process]`
 
 **증상**: 수동 실행은 인증 성공하는데 launchd 자동 발화만 미인증으로 돌아 결과가 왜곡된다(도그푸딩 루브릭 평균 1.4/5 오발송).
 
@@ -1946,3 +1946,30 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 - **worktree 이름 ≠ 부착 브랜치**: `sv-agent-s1` worktree의 부착 브랜치는 `sess-agent-s1`이 아니라 `monorepo/sess-close-0831`. 삭제 결과표는 반드시 **경로↔브랜치 쌍**으로 기록(축약 금지).
 - **시각 기반 활성 게이트는 worktree-per-세션 병렬 환경에서 구조적 통과 불가**: 관측 활동 간격 7~30분이라 'repo 전체 60분 게이트'는 상시 실패. 해법 = 게이트 범위를 삭제 후보 집합으로 좁힘(D-GATE-SCOPE-1) + ㉠㉡㉢ 대체 측정.
 이중 LLM 공급자는 별개 실패 도메인 — 한쪽 크레딧 충전이 다른 쪽 quota를 살리지 못한다. 소진 증상 = 해당 경로 분석률 0% 고착이며, 타 경로 잔불(소량 호출·과금)로 부분 회복 오인 가능. 감시·비용 표기는 공급자별 분리(anthropic/gemini 각각). 실증: 09-01~ 양사 동시 소진, 충전 대상 오인으로 회복 지연(LLM-CREDIT-OUTAGE).
+## LLM fill이 null 응답을 "채워짐"으로 계수 — 침묵 결측 (#134, DASH-TAB recon 발견 2026-09-08, 채번 MGMT-BATCH-b48) `[dashboard][backend][llm][architecture]`
+
+**증상**: 라이브 dashboard.json 추천 10건 전부 `perspectives.fundamental=null`인데, `pipeline_meta.llm_fill = {ok:true, attempted:10, filled:10, failed:[]}`로 보고. 성공 계수와 실제 산출이 어긋난다(technical·news_context는 10/10 채워짐, fundamental만 0/10).
+
+**원인**: `_fill_recommendations_llm`(`eod_json_baker.py`)가 LLM 호출의 **성공/예외 여부만** `filled`로 계수하고, 응답 3키(thesis/perspectives/risk) 중 **개별 키가 null로 돌아온 것을 결측으로 잡지 않는다**. LLM이 fundamental 근거를 못 만들어 null을 반환해도 "10/10 filled"로 통과 → 화면엔 fundamental 절이 조용히 비고, 계측은 정상으로 보인다. #128 계열(매칭·호출은 무결이나 산출이 죽는 침묵 실패).
+
+**해결**: ⑴ `llm_fill` 계수를 **키 단위 비어있음 감지**로 강화 — 반환된 각 perspective 키가 truthy인지 검사해 `filled_by_key`(예: `{technical:10, fundamental:0, news_context:10}`)로 노출. ⑵ fundamental 0충전의 근인 = **fundamental 원천 미배선**(재무 근거 데이터가 프롬프트에 주입되지 않음) → 원천 배선은 위임(baker/rag-llm). ⑶ 회귀 게이트 = fundamental 충전율이 0으로 떨어지면 경보.
+
+**교훈**: "ok=true·filled=N"은 **호출 성공**일 뿐 **산출 완성**이 아니다. 산출물의 키 단위 실재를 계측해야 침묵 결측이 드러난다.
+
+## `health_check.py` "실행 트리 정합"이 ahead를 "뒤처짐"으로 오문구 (#135, DASH-TAB LAND 발견 2026-09-09, 채번 MGMT-BATCH-b48) `[harness][process]`
+
+**증상**: 세션 브랜치가 origin/main보다 **1 커밋 ahead**(랜딩 직전 정상 상태)인데 health_check가 "실행 트리가 origin/main **뒤처짐** — 구버전 항목 누락 가능(#47)"으로 WARN. ahead와 behind가 뒤섞여 판정이 흐려진다.
+
+**원인**: `scripts/health_check.py:798` `classify_tree_alignment`가 `head == origin` 여부만 보고 `!=`이면 무조건 "뒤처짐" 문구를 낸다(ahead/behind 미구분). REPO_ROOT HEAD가 origin/main보다 앞선 경우(세션 브랜치·미push)에도 "뒤처짐"으로 표기.
+
+**영향/무해성**: 판정(WARN)은 맞으나 **문구가 방향을 틀리게** 서술. LAND 세션에서 이 WARN은 세션 브랜치 아티팩트이며 **push와 함께 자동 소멸**(HEAD==origin/main → OK 복귀). 실증: DASH-TAB rebase 중 16✅/⚠2 → push 후 17✅/⚠1(기준선 동일).
+
+**해결(사소·위임)**: `merge-base --is-ancestor`로 ahead/behind를 구분해 문구 분기("origin/main보다 N 앞섬(세션 브랜치·랜딩 전 정상)" vs "뒤처짐(#47 구버전)"). 규율: **LAND 세션은 이 WARN 하나로 판정을 멈추지 않는다**(push 후 8번 확인으로 종결).
+
+## Next.js 16 metadata `themeColor`/`viewport` deprecation (#136, DASH-TAB-VERIFY 발견 2026-09-09, 채번 MGMT-BATCH-b48) `[frontend][dashboard][chore]`
+
+**증상**: dev 서버 로그에 반복 경고 — "Unsupported metadata viewport/themeColor is configured in metadata export … Please move it to viewport export instead."
+
+**원인**: Next.js 16이 `themeColor`·`viewport`를 `metadata` export에서 분리된 `generateViewport`/`viewport` export로 이관 요구. 현행 dashboard 레이아웃이 구식 `metadata` 위치 유지.
+
+**해결(사소)**: `app/layout` 계열에서 `themeColor`·`viewport`를 `export const viewport` 로 이동. 기능 영향 0(경고만)·위임(dashboard/frontend chore).
