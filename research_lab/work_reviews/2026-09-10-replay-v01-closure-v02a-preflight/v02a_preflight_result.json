@@ -1,0 +1,53 @@
+{
+  "blocker": "candidate_answer_not_separable_from_reasoning_like_historical_output",
+  "candidate_target_audit": {
+    "explicit_final_answer_markers": 0,
+    "fragment_characters": 26732,
+    "source_ends_without_final_answer": true,
+    "starts_with_reasoning_marker": true
+  },
+  "case": "hard-006",
+  "decision_needed": [
+    "Use the frozen summary as the evaluation target and treat both historical candidate outputs only as removable context",
+    "Use a provenance-linked excerpt from the critic's corrected research result as a new derived candidate target",
+    "Supply a separately attested historical final candidate answer if one exists"
+  ],
+  "experiment": "Research Evidence Handoff Replay v0.2A",
+  "model_invocations": 0,
+  "planned_independent_variable": "historical_context_sanitization",
+  "preservation_checks": {
+    "candidate_answer_sha256": "6ee3d8e3b006987decfec58e78a56d5fc9a39f3f89ae705d87d9bbca8fe6ab47",
+    "candidate_source_id": "428c01c2bc7343f299088eccb8ab09d3",
+    "candidate_source_sha256": "6ee3d8e3b006987decfec58e78a56d5fc9a39f3f89ae705d87d9bbca8fe6ab47",
+    "evidence_bodies_planned_byte_equivalent": true,
+    "evidence_document_count": 17,
+    "evidence_document_hashes": {
+      "46916bd7ec4842f5a57848bc9010399a": "867f7e62577496f5f4db6f86d19d7e69ff2d4ed6d17144cae10b7c1d71b635a9",
+      "57918877f1eb47738c976e5907e01c99": "a9e3783bdba15638079d88b8d3fc9d19a0264cd1a0aebc0eba6a9959c6fa99fe",
+      "666543b3b5f34e22ad615384c47dbd3f": "e016f479ef386c53933021dd3b04e7492e885c13f8f64fc5c7cb66e11dd4b160",
+      "68b4dd34a77c4b169f8bb14c93a0af6d": "f8830fc85b2d6f2e836332e71f0b3393b1623da1cf64ae55cdb49d027cd2a8ae",
+      "6bb7471010394d959f1050e402cfe3fc": "e4547bf91ff295674d8d88e2d201f49c85d35e396820faa973d0f6c418a954b4",
+      "6d2f197bd30a47ff9c75accfef403b3f": "4f375a0df0727f66da083df43274742a735a5d0ded5de363c957aab6f1df1ae1",
+      "9db76a6b48484ae287344dbca9bc54ac": "e435c09cf480ee43d6e7bdf99c2b33f00ead20d97fadf15c24662a7627989536",
+      "cb70324f415d4a18bac4338d8ada7b8f": "86caf3c7887fc23c0b79927e5f7f76db4aa95cc2fb86092bd780a0af67105597",
+      "cfccf3902828409989d7e048118c5b8a": "2609ab46f19b021bcb4adc3d6fe099599c272da80f9c4395362637911da280d9",
+      "da4da9ed7ada44ac9e8dccba0054b7bd": "aa83eddeb830959713a792fac60fbc81a577d79bca394135d24de53493dadb44",
+      "da6ea963f3e448348caab135978db967": "8e28a742b8e237d4dfca8fcd223a9a7b3f1f56e679faf06df5f092bd0806e18c",
+      "dd1e5b0f6c1d484491ef3fc7c87f5e7e": "68b90a4ac95428baeb4545e3843c1f537d9d0230a75301509615c5477724b4d8",
+      "f0d00b81febd4a41a414d665154cfba0": "9f0cfea9d292601d446c36cfd7451eb987dced6bd15f415fd9e33afb31b345ef",
+      "f229cd10512e40569637a63916f85ded": "f9b295ea524616c6c4a4131d7d471d793c74ae7253fae6485bf183109511dbd3",
+      "f27e72c5b888483c8e4f9f013d301319": "055b16b6cf5c23eeb10fd318aa7508614294e7a7697d850fa339dcd8d70be1d5",
+      "fbb0fae3d87c423d82d750739bdc51a3": "80ce4512c68cb88b52e6b04aea006b82b8ed7d7809f9d4ed303614e780d1f9dd",
+      "fd24bba42e594493859fa6c93b89dec8": "13680ec86f5a08ef3e2bb4076d40a9b818db2a64894c3b042809006b58ad355d"
+    },
+    "frozen_source_sha256": "0312c835fca6b8615b49c38914d5b316108660208c5ffbb6e90444b51763eb6f"
+  },
+  "research_question": "Does removal of historical instruction/reasoning residue change protocol completion and semantic behavior under full evidence context?",
+  "safety": {
+    "historical_artifact_modified": false,
+    "provider_called": false,
+    "sanitized_input_created": false
+  },
+  "status": "blocked_before_model_invocation",
+  "why_blocked": "Removing the entire primary fragment would violate candidate-answer identity preservation; extracting or synthesizing a target would change more than the approved sanitization variable."
+}

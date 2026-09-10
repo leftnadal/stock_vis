@@ -1,0 +1,10 @@
+test_retrieve_is_not_final_completion (test_completion_contract.CompletionContractTests.test_retrieve_is_not_final_completion) ... ok
+test_stop_with_final_is_protocol_complete (test_completion_contract.CompletionContractTests.test_stop_with_final_is_protocol_complete) ... ok
+test_stop_without_final_is_protocol_failure (test_completion_contract.CompletionContractTests.test_stop_without_final_is_protocol_failure) ... ok
+test_transport_and_model_are_separate (test_completion_contract.CompletionContractTests.test_transport_and_model_are_separate) ... ok
+test_blocks_without_creating_sanitized_input (test_v02a_preflight.PreflightTests.test_blocks_without_creating_sanitized_input) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK
