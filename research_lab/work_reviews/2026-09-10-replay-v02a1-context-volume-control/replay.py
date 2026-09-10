@@ -14,7 +14,8 @@ import provider_adapter as provider
 from completion_contract import classify_response
 from replay_protocol import parse_action
 
-ROOT = Path(__file__).resolve().parent
+SCRIPT_ROOT = Path(__file__).resolve().parent
+ROOT = Path(os.environ.get("REPLAY_EXPERIMENT_ROOT", SCRIPT_ROOT)).resolve()
 
 
 def dump(value):
@@ -34,7 +35,7 @@ def execute():
     plan = json.loads((ROOT / "plan.json").read_text())
     token = os.environ.get("DEEPINFRA_TOKEN") or os.environ.get("DEEP_INFRA_API_KEY")
     if not token:
-        token = provider.token_from_file(ROOT.parents[3] / ".env")
+        token = provider.token_from_file(SCRIPT_ROOT.parents[3] / ".env")
     token = provider.valid_token(token)
     out = ROOT / "executions" / uuid.uuid4().hex
     out.mkdir(parents=True, exist_ok=False)
