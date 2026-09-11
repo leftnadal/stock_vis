@@ -1,0 +1,169 @@
+{
+  "alternative_tokenizer_search": false,
+  "corrected_exact_count_gate": "not_rerun",
+  "diagnostic": "raw-rendering-and-token-accounting-001",
+  "diagnostic_execution_count": 1,
+  "execution_finished_at": "2026-09-11T00:03:43.510652+00:00",
+  "execution_started_at": "2026-09-11T00:03:43.458453+00:00",
+  "experiment": "Research Evidence Handoff Replay v0.2A.1",
+  "fixed_experimental_arms_generated": 0,
+  "historical_artifacts_modified": false,
+  "input_normalization_performed": false,
+  "interpretation_boundary": {
+    "count_equality_proves_internal_normalization": false,
+    "local_count_proves_provider_accounting": false,
+    "rendered_success_proves_provider_equivalence": false
+  },
+  "model_provider_invocations": 0,
+  "network_attempts": 0,
+  "observations": {
+    "original": {
+      "error": null,
+      "provider_reference_tokens": 14387,
+      "rendering": {
+        "bytes": 42490,
+        "characters": 38398,
+        "full_body_included": false,
+        "messages": {
+          "system": {
+            "content_characters": 542,
+            "content_sha256": "edce94adaa427d7c20cd8f72d12403b9e784cbd0e17528f09ae795e1df638fe5",
+            "first_marker": {
+              "characters": 96,
+              "present": true,
+              "sha256": "673b8e950ec59492513238a6a54ceb87c008e94829d49e7be97513fcf9ea9137"
+            },
+            "full_content_present": true,
+            "last_marker": {
+              "characters": 96,
+              "present": true,
+              "sha256": "ee66ac478c9ac2a12fe5cdc337b986fa713da622839454a7bfd6ffe049282ea1"
+            }
+          },
+          "user": {
+            "content_characters": 37769,
+            "content_sha256": "724550fc77fbfdbe4514c8520f633709b97ec72aa95c27b15600dead4158927b",
+            "first_marker": {
+              "characters": 96,
+              "present": true,
+              "sha256": "ae3109434241f478398f4c8c9f2b80c543326976cefdbf6dd5f60ee34687512a"
+            },
+            "full_content_present": false,
+            "last_marker": {
+              "characters": 96,
+              "present": false,
+              "sha256": "92b474f5371805f192727aed58db8563b81f1c7fe04a066aad24cd9a0c1f76d0"
+            }
+          }
+        },
+        "python_type": "builtins.str",
+        "sha256": "08e8e4db58437ebf1b5f11ea48e1523ba7c16c5044a7fa2f6fcc256a58fa7773"
+      },
+      "source": {
+        "bytes": 44633,
+        "path": "source_snapshot/v02a-original-visible.json",
+        "sha256": "13ca0a87a5550a054fca4216e71ed5089f0eb9ba6cc9863445df7a3d2d889e3a"
+      },
+      "token_accounting": {
+        "actual_token_sequence_length": 14387,
+        "count_status": "single_flat_sequence",
+        "input_ids_present": true,
+        "input_ids_shape": [
+          14387
+        ],
+        "input_ids_type": "builtins.list",
+        "is_dict": false,
+        "is_list": false,
+        "keys": [
+          "attention_mask",
+          "input_ids"
+        ],
+        "python_type": "transformers.tokenization_utils_base.BatchEncoding",
+        "top_level_len": 2,
+        "top_level_len_differs_from_actual": true
+      }
+    },
+    "short": {
+      "error": null,
+      "provider_reference_tokens": 4903,
+      "rendering": {
+        "bytes": 11924,
+        "characters": 9010,
+        "full_body_included": false,
+        "messages": {
+          "system": {
+            "content_characters": 542,
+            "content_sha256": "edce94adaa427d7c20cd8f72d12403b9e784cbd0e17528f09ae795e1df638fe5",
+            "first_marker": {
+              "characters": 96,
+              "present": true,
+              "sha256": "673b8e950ec59492513238a6a54ceb87c008e94829d49e7be97513fcf9ea9137"
+            },
+            "full_content_present": true,
+            "last_marker": {
+              "characters": 96,
+              "present": true,
+              "sha256": "ee66ac478c9ac2a12fe5cdc337b986fa713da622839454a7bfd6ffe049282ea1"
+            }
+          },
+          "user": {
+            "content_characters": 8381,
+            "content_sha256": "da478aa4bb6b2864a60120978144b02b0aebcc9cdb35cb0afc06f49573b1e57d",
+            "first_marker": {
+              "characters": 96,
+              "present": true,
+              "sha256": "ae3109434241f478398f4c8c9f2b80c543326976cefdbf6dd5f60ee34687512a"
+            },
+            "full_content_present": false,
+            "last_marker": {
+              "characters": 96,
+              "present": false,
+              "sha256": "92b474f5371805f192727aed58db8563b81f1c7fe04a066aad24cd9a0c1f76d0"
+            }
+          }
+        },
+        "python_type": "builtins.str",
+        "sha256": "4bff77e5c62f892eea8264d3d9760ea0330d46a9c55aed13058b3c0ffeb53134"
+      },
+      "source": {
+        "bytes": 12755,
+        "path": "source_snapshot/v02a-sanitized-visible.json",
+        "sha256": "e43a921f47ea412a62d4247622a3860fe3fe3df9b2f69782931b1e4663323b09"
+      },
+      "token_accounting": {
+        "actual_token_sequence_length": 4903,
+        "count_status": "single_flat_sequence",
+        "input_ids_present": true,
+        "input_ids_shape": [
+          4903
+        ],
+        "input_ids_type": "builtins.list",
+        "is_dict": false,
+        "is_list": false,
+        "keys": [
+          "attention_mask",
+          "input_ids"
+        ],
+        "python_type": "transformers.tokenization_utils_base.BatchEncoding",
+        "top_level_len": 2,
+        "top_level_len_differs_from_actual": true
+      }
+    }
+  },
+  "outcome": "B_historical_string_body_not_fully_rendered",
+  "runtime": {
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "python": "3.12.2 (v3.12.2:6abddd9f6a, Feb  6 2024, 17:02:06) [Clang 13.0.0 (clang-1300.0.29.30)]"
+  },
+  "status": "diagnostic_completed",
+  "tokenizer_identity": {
+    "backend_tokenizer_sha256": "ffb7a28b27dabcc333662fd3e0b0005d9e79a1c22e31453ab5a3017fbd5f25c0",
+    "local_files_only": true,
+    "name_or_path": "/Users/byeongjinjeong/Developer/stockvis_research_runtime/.experiments/replay-v02a1-official-pinned-001/tokenizer_snapshot",
+    "tokenizer_class": "Qwen2Tokenizer",
+    "tokenizers_version": "0.23.2",
+    "transformers_version": "5.16.1",
+    "trust_remote_code": false,
+    "vocab_size": 248044
+  }
+}

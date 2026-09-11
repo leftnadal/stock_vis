@@ -1,0 +1,9 @@
+{
+  "fixed_experimental_arms_generated": 0,
+  "historical_artifacts_modified": false,
+  "model_provider_invocations": 0,
+  "network_attempts": 0,
+  "outcome": "B_historical_string_body_not_fully_rendered",
+  "publication_performed": false,
+  "status": "completed_no_network_no_model_diagnostic"
+}
