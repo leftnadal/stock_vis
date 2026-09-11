@@ -1,0 +1,221 @@
+Deleted branch monorepo/nightly-20260620 (was 1b28b0c9).
+Deleted branch monorepo/nightly-20260621 (was 1b28b0c9).
+Deleted branch monorepo/nightly-20260622 (was 1b28b0c9).
+Deleted branch monorepo/nightly-20260623 (was 39801b90).
+Deleted branch monorepo/nightly-20260624 (was f5a6dd82).
+Deleted branch monorepo/nightly-20260625 (was 07df1a09).
+Deleted branch monorepo/nightly-20260626 (was 70e9ba61).
+Deleted branch monorepo/nightly-20260627 (was fe0241c7).
+Deleted branch monorepo/nightly-20260628 (was 20f0e6d3).
+Deleted branch monorepo/nightly-20260629 (was 6c49ff8e).
+Deleted branch monorepo/nightly-20260630 (was 4986afad).
+Deleted branch monorepo/nightly-20260701 (was 3d670edb).
+Deleted branch monorepo/nightly-20260702 (was af080070).
+Deleted branch monorepo/nightly-20260703 (was 47c36b4a).
+Deleted branch monorepo/nightly-20260704 (was 230b7856).
+Deleted branch monorepo/nightly-20260705 (was 8c1c1658).
+Deleted branch monorepo/nightly-20260706 (was 3a4706f6).
+Deleted branch monorepo/nightly-20260707 (was 96ae7b5c).
+Deleted branch monorepo/nightly-20260708 (was 32c2390f).
+Deleted branch monorepo/nightly-20260709 (was b7c9f45a).
+Deleted branch monorepo/nightly-20260710 (was b45ee1f2).
+Deleted branch monorepo/nightly-20260711 (was f1adf91e).
+Deleted branch monorepo/nightly-20260712 (was 3b506128).
+Deleted branch monorepo/nightly-20260713 (was 7b7927ed).
+Deleted branch monorepo/nightly-20260714 (was a95c9c05).
+Deleted branch monorepo/nightly-20260715 (was 60138653).
+Deleted branch monorepo/nightly-20260716 (was aafdd97f).
+Deleted branch monorepo/nightly-20260717 (was 5ac55ee3).
+Deleted branch monorepo/nightly-20260718 (was 39c20c3f).
+Deleted branch monorepo/nightly-20260719 (was e5ee0041).
+Deleted branch monorepo/nightly-20260720 (was 3fa59b68).
+Deleted branch monorepo/nightly-20260721 (was 1cd94603).
+Deleted branch monorepo/nightly-20260723 (was 9f2e6c51).
+Deleted branch monorepo/nightly-20260724 (was b0075839).
+Deleted branch monorepo/nightly-20260725 (was 49905bff).
+Deleted branch monorepo/nightly-20260726 (was 49905bff).
+Deleted branch monorepo/nightly-20260727 (was ca062581).
+Deleted branch monorepo/nightly-20260728 (was 362f3e92).
+Deleted branch monorepo/nightly-20260729 (was 6917c0f5).
+Deleted branch monorepo/nightly-20260730 (was 8a59a8ba).
+Deleted branch monorepo/nightly-20260731 (was 106e201c).
+Deleted branch monorepo/nightly-20260801 (was e42d1641).
+Deleted branch monorepo/nightly-20260802 (was e42d1641).
+Deleted branch monorepo/nightly-20260803 (was 34a171dd).
+Deleted branch monorepo/nightly-20260804 (was e68acdec).
+Deleted branch monorepo/nightly-20260805 (was a472f405).
+Deleted branch monorepo/nightly-20260806 (was 3c36ee07).
+Deleted branch monorepo/nightly-20260807 (was 8a41c842).
+Deleted branch monorepo/nightly-20260808 (was d067a1fa).
+Deleted branch monorepo/nightly-20260809 (was d067a1fa).
+Deleted branch monorepo/nightly-20260810 (was c916b32e).
+Deleted branch monorepo/nightly-20260811 (was 627095ea).
+Deleted branch monorepo/nightly-20260812 (was c7020c96).
+Deleted branch monorepo/nightly-20260813 (was e8d8682b).
+Deleted branch monorepo/nightly-20260814 (was 94a5c260).
+Deleted branch monorepo/nightly-20260815 (was 94a5c260).
+Deleted branch monorepo/nightly-20260816 (was 2a4166e0).
+Deleted branch monorepo/nightly-20260817 (was 2a4166e0).
+Deleted branch monorepo/nightly-20260818 (was 24043cd4).
+Deleted branch monorepo/nightly-20260819 (was bb3a69d2).
+Deleted branch monorepo/nightly-20260820 (was f494f6ef).
+Deleted branch monorepo/nightly-20260821 (was 4a1adb5a).
+Deleted branch monorepo/nightly-20260822 (was 9f341243).
+Deleted branch monorepo/nightly-20260823 (was 9f341243).
+Deleted branch monorepo/nightly-20260824 (was f40ba682).
+Deleted branch monorepo/nightly-20260825 (was 274f3d76).
+Deleted branch monorepo/nightly-20260826 (was b67b1478).
+Deleted branch monorepo/nightly-20260827 (was 7617cb49).
+Deleted branch monorepo/nightly-20260828 (was 1177e0ce).
+Deleted branch monorepo/nightly-20260829 (was 9bf6f019).
+Deleted branch monorepo/nightly-20260830 (was 9bf6f019).
+Deleted branch monorepo/nightly-20260831 (was 9caf9e37).
+Deleted branch monorepo/nightly-20260901 (was 9990a201).
+Deleted branch monorepo/nightly-20260902 (was eb3cdd85).
+Deleted branch monorepo/nightly-audit-20260602 (was 732b3638).
+Deleted branch monorepo/nightly-reports (was 49989945).
+Deleted branch monorepo/sess-16-graph-grounding (was c3bc5ae4).
+Deleted branch monorepo/sess-17-ego-api (was 913af06d).
+Deleted branch monorepo/sess-20-2-card-drilldown (was 1cd94603).
+Deleted branch monorepo/sess-20-leaderboard (was dd62238b).
+Deleted branch monorepo/sess-20d-diag (was 4f346c88).
+Deleted branch monorepo/sess-20e-ego-repair (was e5ee0041).
+Deleted branch monorepo/sess-20f-confidence-diag (was 1dc5ae72).
+Deleted branch monorepo/sess-A-spy-restore (was 92e7f221).
+Deleted branch monorepo/sess-B-analog-card (was 04e88aba).
+Deleted branch monorepo/sess-C-core-l2 (was a71efc97).
+Deleted branch monorepo/sess-CN-news-backfill (was 4a2b0515).
+Deleted branch monorepo/sess-agent-s1 (was 2a216559).
+Deleted branch monorepo/sess-agent-s1-land (was 60309f8b).
+Deleted branch monorepo/sess-agent-s2 (was ffb0a91e).
+Deleted branch monorepo/sess-b1-s1 (was 8efdebbe).
+Deleted branch monorepo/sess-b1-s1-fix (was 6241db6a).
+Deleted branch monorepo/sess-b1-s2 (was 97f11d23).
+Deleted branch monorepo/sess-b1-step0 (was 5b4d7ea7).
+Deleted branch monorepo/sess-boundary-llm (was 50bb9055).
+Deleted branch monorepo/sess-boundary-llm-closeout (was fb0ef055).
+Deleted branch monorepo/sess-boundary-llm-core (was 31ec554f).
+Deleted branch monorepo/sess-cd-read (was d6bce7f8).
+Deleted branch monorepo/sess-cd-stab-aprime (was c72c60d9).
+Deleted branch monorepo/sess-close-0831 (was 8cfbcabb).
+Deleted branch monorepo/sess-coach-fe-recon (was 255fa1b9).
+Deleted branch monorepo/sess-coach-scb (was 82843eea).
+Deleted branch monorepo/sess-d1-close (was eb3cdd85).
+Deleted branch monorepo/sess-dash-s3 (was 6b1eab97).
+Deleted branch monorepo/sess-decreg-0827 (was cff5a7a9).
+Deleted branch monorepo/sess-eodsig-deploy (was e95b4378).
+Deleted branch monorepo/sess-eodsig-obs (was d0114efc).
+Deleted branch monorepo/sess-eventgroup-window (was fc97683b).
+Deleted branch monorepo/sess-evt-0 (was b671605d).
+Deleted branch monorepo/sess-evt-1 (was a7659757).
+Deleted branch monorepo/sess-evt-4 (was 7ef8aa69).
+Deleted branch monorepo/sess-evt-6 (was ebb9044f).
+Deleted branch monorepo/sess-evt-7 (was 12321a5d).
+Deleted branch monorepo/sess-evt-corr3 (was ab590ef9).
+Deleted branch monorepo/sess-evt-corr3b (was aa8b6830).
+Deleted branch monorepo/sess-fe-dead-8000 (was 9f03a304).
+Deleted branch monorepo/sess-fmp-testdebt (was 5d1048e1).
+Deleted branch monorepo/sess-forward-survey (was fcfa8b81).
+Deleted branch monorepo/sess-fred-backfill (was cf82fe99).
+Deleted branch monorepo/sess-guide-s1 (was ba22f3b7).
+Deleted branch monorepo/sess-health-blocked-build (was a4d529fc).
+Deleted branch monorepo/sess-impr-close (was 7a5bc03c).
+Deleted branch monorepo/sess-impr-diag (was 0cc6fb6e).
+Deleted branch monorepo/sess-impr-s3-fix (was 761d298f).
+Deleted branch monorepo/sess-iron-latest-date (was ee851f7c).
+Deleted branch monorepo/sess-market_pulse (was 662fdc4c).
+Deleted branch monorepo/sess-mgmt-b40 (was 70d6deec).
+Deleted branch monorepo/sess-mgmt-b41 (was 1eb116c2).
+Deleted branch monorepo/sess-mgmt-b42 (was 0dc96c6a).
+Deleted branch monorepo/sess-mgmt-b43 (was 988a1816).
+Deleted branch monorepo/sess-mgmt-b45 (was c4060ab2).
+Deleted branch monorepo/sess-mgmt-b46 (was d389e5b8).
+Deleted branch monorepo/sess-mgmt-batch10 (was ee6404a7).
+Deleted branch monorepo/sess-mgmt-batch11 (was 5ac55ee3).
+Deleted branch monorepo/sess-mgmt-batch12 (was 3a101eb5).
+Deleted branch monorepo/sess-mgmt-batch5 (was de9d9693).
+Deleted branch monorepo/sess-mgmt-batch9 (was 294fd521).
+Deleted branch monorepo/sess-mgmt-btriage1 (was 7abf8671).
+Deleted branch monorepo/sess-mgmt-cleanup-script (was 7a5f8b38).
+Deleted branch monorepo/sess-mgmt-coach-ckpt (was 2a97cfc2).
+Deleted branch monorepo/sess-mgmt-d2destale (was bcccdb10).
+Deleted branch monorepo/sess-mgmt-flush (was cf82fe99).
+Deleted branch monorepo/sess-mgmt-flush3 (was b8b15cbd).
+Deleted branch monorepo/sess-mgmt-harden (was 4ce46edc).
+Deleted branch monorepo/sess-mgmt-kl-close (was fc608a36).
+Deleted branch monorepo/sess-mgmt-ledger (was cdbf79e2).
+Deleted branch monorepo/sess-mgmt-ledger-s3 (was 3062bb0f).
+Deleted branch monorepo/sess-mgmt-nt7-close (was f483634c).
+Deleted branch monorepo/sess-mgmt-p2d1 (was 66fe5a2c).
+Deleted branch monorepo/sess-mgmt-p2s2reg (was bb91c98a).
+Deleted branch monorepo/sess-mgmt-phase1-catalog (was 0b8399a6).
+Deleted branch monorepo/sess-mgmt-phase1-close (was 4106b4b1).
+Deleted branch monorepo/sess-mgmt-split-close (was 26076cb9).
+Deleted branch monorepo/sess-mgmt-v1-decision (was 85557e61).
+Deleted branch monorepo/sess-mgmt-v2 (was f892d90f).
+Deleted branch monorepo/sess-mgmt-xapp-rule (was 079f233e).
+Deleted branch monorepo/sess-mig-bundle-1 (was fb01d3f9).
+Deleted branch monorepo/sess-mon-timing-p1 (was ac95f90c).
+Deleted branch monorepo/sess-mon-timing-p2 (was 9cf7cc46).
+Deleted branch monorepo/sess-mon-timing-p25 (was 8f3eb580).
+Deleted branch monorepo/sess-mp-phase1-cleanup (was ef9d064e).
+Deleted branch monorepo/sess-mp-vixstale (was 20f0e6d3).
+Deleted branch monorepo/sess-mp-vixstale-step0 (was fe0241c7).
+Deleted branch monorepo/sess-mps1-stress-engine (was e42ba9ab).
+Deleted branch monorepo/sess-mps2-stress-card (was 934428f9).
+Deleted branch monorepo/sess-news-av-broad (was 71c6b969).
+Deleted branch monorepo/sess-newsfix-be (was cee78451).
+Deleted branch monorepo/sess-newsfix-sync (was b731d7b4).
+Deleted branch monorepo/sess-ops-guard-s1 (was 874bcdc9).
+Deleted branch monorepo/sess-ops-hc-wire (was b2de174b).
+Deleted branch monorepo/sess-ops-pgbackup (was 3b978123).
+Deleted branch monorepo/sess-ops-watchdog-web (was f8d3fea5).
+Deleted branch monorepo/sess-pf-test (was 44146ac9).
+Deleted branch monorepo/sess-platform-ingest-isolate (was 238c4104).
+Deleted branch monorepo/sess-platform-s2 (was 5bea38fe).
+Deleted branch monorepo/sess-quad-impl1 (was 01759f34).
+Deleted branch monorepo/sess-r2s2 (was a3e55b03).
+Deleted branch monorepo/sess-rc-a0-recon (was d6365630).
+Deleted branch monorepo/sess-rca1-lesson (was 833e05b8).
+Deleted branch monorepo/sess-regen-v2 (was 27ba0518).
+Deleted branch monorepo/sess-rehome-graph-code (was 0fd70eaa).
+Deleted branch monorepo/sess-s2b1 (was afc8246b).
+Deleted branch monorepo/sess-s2b1-be (was 5c539714).
+Deleted branch monorepo/sess-s2b1-fe (was 05e0e85c).
+Deleted branch monorepo/sess-s2b1-shared (was 30f038b1).
+Deleted branch monorepo/sess-s4 (was f6d1a8d4).
+Deleted branch monorepo/sess-scan-b1 (was 73d7f38b).
+Deleted branch monorepo/sess-scan-b2fe (was 418b2a8e).
+Deleted branch monorepo/sess-scan-b2tech (was 1c338dac).
+Deleted branch monorepo/sess-sector-hist-be (was 1f932916).
+Deleted branch monorepo/sess-shared-p2impr-s1 (was 1729ca1f).
+Deleted branch monorepo/sess-split-deploy (was ceeba0bf).
+Deleted branch monorepo/sess-split-guard (was 528c1571).
+Deleted branch monorepo/sess-swap-close (was d6365630).
+Deleted branch monorepo/sess-ux-census (was ffbe5997).
+Deleted branch monorepo/sess-ux-s1 (was 05e633a5).
+Deleted branch monorepo/sess-ux-s2 (was 75eaadb6).
+Deleted branch monorepo/sess-ux-s3 (was 6d358e87).
+Deleted branch monorepo/sess-ux-s4-timeline (was 2fe53001).
+Deleted branch monorepo/sess-ux-s5-flowbands (was 51303f1b).
+
+=== §8-3 단계 D — 브랜치 7건 삭제 (즉시-D 3 + 이식후-D 4) ===
+Deleted branch monorepo/nightly-20260618 (was b77635b8). (pre-hash=b77635b87b7dd32f046bea522c58b0ff31c3e904)
+Deleted branch monorepo/nightly-20260619 (was bf613df7). (pre-hash=bf613df7cae3337e2543289f61a144675d0bd117)
+Deleted branch monorepo/sess-eodsig-freshgate (was d1a2b43e). (pre-hash=d1a2b43e539a8f636e99123bb174b89ae3df1a44)
+Deleted branch monorepo/sess-r2pre (was 9bc85fff). (pre-hash=9bc85fff34099eb1ec4d38be63c88829174812fe)
+Deleted branch monorepo/sess-mgmt (was 5a4ce8e9). (pre-hash=5a4ce8e9c7eb013b8718e9443f9c15024d4ef410)
+Deleted branch monorepo/sess-cn-repair-land (was f72c0c3a). (pre-hash=f72c0c3aebe53bf762aafd306545ae770359c74b)
+Deleted branch monorepo/sess-hold-p1 (was b8d767aa). (pre-hash=b8d767aa1df03bcabdae779a09845ede385023ad)
+
+=== §8-4 단계 E — 원격 5건 삭제 (각 ahead=0 재확인) ===
+DELETED monorepo/sess-mgmt-b46 (ahead=0) :: To https://github.com/leftnadal/stock_vis.git
+ - [deleted]           monorepo/sess-mgmt-b46
+DELETED monorepo/sess-newsfix-be (ahead=0) :: To https://github.com/leftnadal/stock_vis.git
+ - [deleted]           monorepo/sess-newsfix-be
+DELETED monorepo/sess-r2s2 (ahead=0) :: To https://github.com/leftnadal/stock_vis.git
+ - [deleted]           monorepo/sess-r2s2
+DELETED monorepo/sess-mgmt-b45 (ahead=0) :: To https://github.com/leftnadal/stock_vis.git
+ - [deleted]           monorepo/sess-mgmt-b45
+DELETED monorepo/sess-newsfix-sync (ahead=0) :: To https://github.com/leftnadal/stock_vis.git
+ - [deleted]           monorepo/sess-newsfix-sync

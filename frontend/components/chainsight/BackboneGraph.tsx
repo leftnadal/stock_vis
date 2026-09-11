@@ -54,6 +54,10 @@ const CATEGORY_COLOR: Record<string, string> = {
   market: '#F0883E',
 };
 
+// 클릭 히트영역 최소 폭 — 커스텀 linkCanvasObject를 쓰면 pointer 영역이 사라지므로
+// linkPointerAreaPaint에서 얇은 엣지도 잡히게 폭을 넓힌다(선례 nodePointerAreaPaint).
+const HIT_WIDTH = 6;
+
 export default function BackboneGraph({
   topSymbols,
   edges,
@@ -137,6 +141,25 @@ export default function BackboneGraph({
     [selectedEdgeKey],
   );
 
+  // 클릭 히트영역 — 섀도 캔버스에 각 링크 고유 color로 선을 칠한다. 커스텀
+  // linkCanvasObject 사용 시 이게 없으면 onLinkClick이 발화하지 않는다(히트 판정 사망).
+  // 히트 폭 = max(link.width, HIT_WIDTH)로 얇은 엣지도 잡는다. 시각 paintLink 무영향.
+  const paintLinkPointerArea = useCallback(
+    (link: BackboneLink, color: string, ctx: CanvasRenderingContext2D) => {
+      const src = link.source as unknown as { x: number; y: number };
+      const tgt = link.target as unknown as { x: number; y: number };
+      if (!src?.x || !tgt?.x) return;
+      ctx.beginPath();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(link.width, HIT_WIDTH);
+      ctx.moveTo(src.x, src.y);
+      ctx.lineTo(tgt.x, tgt.y);
+      ctx.stroke();
+    },
+    [],
+  );
+
   return (
     <ForceGraph2D
       ref={graphRef as MutableRefObject<unknown>}
@@ -146,6 +169,7 @@ export default function BackboneGraph({
       nodeId="id"
       nodeCanvasObject={paintNode}
       linkCanvasObject={paintLink}
+      linkPointerAreaPaint={paintLinkPointerArea}
       onLinkClick={(link: BackboneLink) => onEdgeSelect(link.edge)}
       cooldownTicks={100}
       warmupTicks={50}

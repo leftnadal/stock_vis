@@ -8,6 +8,49 @@
 
 ---
 
+## [2026-09-10] D-BRANCH-DELETE-DELEGATE-1 — 단계별 승인 게이트 하 CC 삭제 집행 위임 [harness][ops][governance]
+**결정**: D-BRANCH-DELETE-MANUAL("삭제는 병진 수동")의 **정련**. 다음 4조건이 모두 충족된 경우에 한해 CC가 브랜치·worktree·원격 삭제를 **집행**한다 — ⑴ 분류 보고서가 main에 착지됨 ⑵ 전 ref `git bundle` 백업 + `verify` 통과 ⑶ 사용자가 세션 안에서 단계별 승인 토큰(`승인 A`~`E`)을 직접 입력 ⑷ 사후 재측정 보고. `-D`(강제)는 **줄 단위 실측으로 미이식 0이 확인된 건**에만(명시 목록 아님 — 실측이 목록을 갱신). **자가 `-D` 전환 금지**(`-d` 거부 = 건너뜀·기록이 기본, `-D`는 별도 승인·실측 근거 필요).
+**Why**: worktree-per-세션 병렬 환경에서 "후보만 보고" 고정은 누적 적체(225브랜치·61worktree)를 낳는다. 백업+단계 승인+사후측정의 3중 방어가 파괴성을 상쇄하면 위임이 안전·효율적. 집행 증거 = MGMT-BATCH-B-EXEC(2026-09-04~10): A(메인 트리 main 복귀)·B(worktree 40 제거·sv-dash-s0 제외)·C(브랜치 -d 200)·D(브랜치 7 삭제·이식 4줄·42줄 철회)·E(원격 5 삭제). bundle 2종 = `~/stockvis-refs-20260904-1119.bundle`·`~/stockvis-refs-20260907-0948.bundle`.
+**How to apply**: MGMT 계열 청소 세션 한정. D-GATE-SCOPE-1·D-BRANCH-DELETE-MANUAL과 묶어 적용. 보고서 §8에 단계별 승인 시각·건수·건너뜀 기록.
+
+## [2026-09-10] D-GATE-SCOPE-1 — 60분 활성 게이트 범위 = 삭제 후보 집합 [harness][ops]
+**결정**: 활성 세션 게이트의 판정 범위를 'repo 전체'에서 **'삭제 후보 집합'**으로 정련. 판정 = 후보 집합 안에서 (60분 내 커밋한 부착 브랜치) 또는 (최근 트리 활동)이 하나라도 있으면 HALT. 후보 밖 활성 세션은 판정 대상 아님. 필수 절차 승격(각 단계 직전): ㉠ 후보 내 60분 커밋(0이어야 진행) · ㉡ 후보 트리 `.git/worktrees/<name>/HEAD` mtime 전수 → 최근 활동분 · ㉢ ㉡ 적발분 후보 제외·보류 이관(규칙 5).
+**Why**: 게이트 목적은 '사용 중인 대상을 지우지 않는다'이고 규칙5(보고서∩재측정)·MERGED/조상 실측·--force 금지가 이미 담당. 시각 기준은 대리지표일 뿐이며 worktree-per-세션 병렬 환경에서 구조적 통과 불가(관측 활동 간격 7~30분). **완화가 아니라 대상 정정** — ㉠㉡㉢ 대체 측정을 필수로 승격. 적용: sv-dash-s0(HEAD 재정렬 이력 적발→보류)·sess-dual-obs1/s3s1(후보 밖 활성→판정 무관).
+**How to apply**: D-BRANCH-DELETE-DELEGATE-1과 묶음. MGMT 청소 세션 한정.
+
+## [2026-09-09] MGMT-BATCH-B 단계D — sess-hold-p1 삭제 조건 기록 [harness][ops]
+**결정**: `monorepo/sess-hold-p1`(`b8d767aa`) 삭제 — 내용 51파일은 `monorepo/sess-signal-fwd-recon`(`cca67275`)에 보존됨(조상 관계 확인). 그 브랜치 처분(MGMT-BATCH-B §6 Q16·chain_sight 판단) 시 hold-p1 내용 보존 여부를 재확인할 것. 원본 좌표 백업 = `~/stockvis-refs-20260907-0948.bundle`.
+**Why**: hold-p1은 origin/main 미머지이나 tip이 signal-fwd-recon의 조상이라 내용 유실 0. signal-fwd-recon이 삭제되기 전까지 hold-p1 내용은 보존되며, 그 시점에 이 각주가 재확인 트리거가 된다.
+
+## [2026-09-07] D-DIRECTOR-READ — 디렉터의 worktree 읽기전용 직접 열람 [harness][process]
+
+**결정**: 디렉터(채팅 Claude)가 worktree를 **읽기 전용으로 직접 읽는다**(파일 read + diff). 쓰기·git 쓰기 계열·스크립트 실행·배포·prod DB는 종전대로 전부 CC 병진 손. 디렉터 측정값에는 읽은 시각·기준 커밋을 병기하고, CC가 STEP 0에서 다르면 HALT.
+**Why**: 아크 중 디렉터 오류 2건(FE 배포 경로·A-5 정렬 키)이 "디렉터가 사실을 못 봐서" 발생, CC HALT로 한 왕복 뒤 잡힘 → 왕복 앞당김. 가중합(합 1.00): 지시서정확 0.30/왕복절감 0.25/경계보존 0.20/병진부담 0.15/사고리스크 0.10 → A(무접근)3.20·**B(읽기전용)4.55**·C 3.75(마진 0.80). **한계**: 레포는 `~/Desktop/stock_vis`(접근 없음) → 커밋 해시·브랜치 대조는 CC STEP 0 몫.
+
+## [2026-09-07] S3 이야기 리포트 아크 — CS-S3-1 착지 + 아크 결정 재등재 [chainsight][frontend]
+
+> S3-PRE(측정 세션)의 D-S3-1~5 등재분이 main 미랜딩(stranded)이라 CS-S3-1 착지와 함께 재등재. R2-S1(D-CS-STORY-SOURCE)·R2-S2 아크 연속.
+
+**아크 결정(S3-PRE 2026-09-03 확정)**:
+- **D-S3-1 리포트 구조**: 이야기 = 브리프 카드(피드) + 6절 리포트(①무슨 일·②흐름·③사슬 대조·④해석·⑤지켜볼 것·⑥닿는 사슬).
+- **D-S3-2 해석 = H(인용 게이트 하이브리드)**: ①②③⑤⑥ 결정론·④만 LLM 1단락(shared 래퍼 경유·문장마다 근거 번호·폐기율>30% health WARN).
+- **D-S3-3 AI 의견란 = 기본 접힘**(미확인 문장만·§4 검증 0이면 숨김·비저장).
+- **D-S3-4 리포트 라우트 = `/chainsight/story/:id`**(이야기 id 앵커).
+- **D-S3-5 슬라이스 순서**: PRE→S3-1→S3-2(사슬 대조)→S3-3(시계열)→S3-4(해석·리포트·의견란)→S3-5(추적/무시). 가설 원장 = 신규 테이블(B안)·MIG 관문·병진.
+
+**CS-S3-1 착지 결정(2026-09-07)**:
+- **D-S3-SORT 정렬 = 사건성 asc → occurred_on desc → max_mentions desc**(D-DIRECTOR-READ 발견 1). **Why**: occurred_on 1차면 최신 weekly_active(잔잔한 배경)가 과거 사건(8-K·급등) 위로 와 사건이 매몰 → 스모크 ⑵/⑷·피드 목적 붕괴. 라이브에서 8-K@08-19·급등@08-21이 weekly@최근 밑 30위 밖 매몰 확인 후 정정.
+- **D-S3-6 헤더 창 표기 = B안(카드가 자기 창을 말함)**(병진 확정 2026-09-04·가중합 4.72·마진 1.11 = 자동 결정 구간). **Why**: 피드에 단일 창이 없다(daily_spike 14·new_sec 30·weekly_active 7 상이) → **헤더 단일 표기는 과대·과소 표기**가 된다. **How**: 헤더는 창 미주장(제목 "오늘 시장의 이야기"·부제 "오늘 새로 온 것 {n} · 전체 {N}"), 창은 카드별 **`window_label`**(상수 파생·하드코딩 금지: new_sec `f"{NEW_SEC_DAYS}일 내 신규 공시"`·daily_spike `f"{DAILY_SPIKE_DAYS}일 중 이 하루"`·weekly_active `f"최근 {WEEKLY_ACTIVE_WINDOW_DAYS}일 활동"`). 사건→배경 전환 구분선 "여기부터 잔잔한 흐름"(앞에 사건 카드 있을 때만). 상수 변경 시 문구 추종(회귀 테스트 `test_window_label_derives_from_constant`). **창 라벨은 캐시가 아니라 쿼리로 보장한다**(H·2026-09-07): weekly_active 쿼리에 `last_co_mention_date__gte = now - WEEKLY_ACTIVE_WINDOW_DAYS` — materialize(ET 12:00) 지연 시 창 밖 캐시 행이 "최근 7일 활동" 라벨로 오노출되는 것을 차단(`test_weekly_active_excludes_stale_cache_rows`).
+- **D-S3-EVIDENCE-SCHEMA (A-6)**: 카드 `evidence[] = {kind:"article"|"8k", ref, title, url, date}`. **S3-2 §1의 입력 스키마 — 여기서 고정**. 근거 없으면 `title:null`(정직 표기·인용만·LLM 0).
+- **D-S3-STORYID = 결정론 슬러그** `blake2b(f"{type}:{'-'.join(sorted(members))}:{occurred_on}", digest_size=5)`(10-hex)·저장 없음·`story_key` 원문 병기(S3-4 라우트/추적 앵커).
+- **D-S3-FEED-CACHE**: 피드 응답을 (limit, ET 날짜) 키로 캐시(TTL 900s). STEP0-2 NewsEntity 재조회 p95 368ms(콜드) → 표시 카드 제목·evidence 조회 비용 응답 단위 흡수(#15 키 일관).
+- **소스 재조회(A-1)**: CoMentionEdge에 기사 링크 없음(P1) → `story_source.articles_for_pair`가 ChainNewsEvent 직결 제목 → NewsEntity 교집합으로 (쌍,날짜) 복원. 발행시각 창 = ±1일 UTC-aware(naive 창의 TIME_ZONE 클리핑 회피).
+- **D-S3-7 배경 접기(FE 전용·S3-1B·2026-09-07)**: weekly_active(배경)는 **기본 접힘**, 사건 카드(new_sec·daily_spike)는 항상 펴짐. **Why**: 아침 첫 화면의 조용함이 목적 — 배경 28장이 사건을 덮으면 안 된다. **How**: D-S3-6의 구분선 "여기부터 잔잔한 흐름" → **접힘 줄** "이번 주 꾸준한 흐름 {m}쌍 · 펼치기 ▸"로 대체(D-S3-6 구분선 부분 SUPERSEDED). 펼치면 **카드 반복 금지** — 조밀한 줄 목록 `[종목쌍][언급 수][마지막 날짜]`(SteadyFold·카드 컴포넌트 미사용·한 줄 ≤카드 1/3). 펼침 상태 **비저장**(localStorage/쿠키 금지·매일 접힌 채 열림). **조용한 날**(사건 0): 배경 상위 `QUIET_DAY_PEEK`장 카드 + "오늘은 조용합니다 — 이번 주 흐름만 보여드립니다" + 나머지 접힘(빈 화면 금지). 상수 `FOLD_STEADY_BY_DEFAULT`·`QUIET_DAY_PEEK=3`(도그푸딩=상수 변경). 헤더 부제 D-S3-6 잠금(배경 수는 부제 아닌 접힘 줄이 말함). BE 무변경. 커밋 `129a9e3d`.
+- **D-S3-8 관계 종류 한 줄(BE+FE·S3-1C·2026-09-09)**: 카드에 관계 종류 한 줄(`relation_line`). **판정 축 = `serving_layer`**(손 매핑 우선순위 아님·병진 확정). **Why**: STEP 0 실측 HALT — 손 우선순위(기록됨>같은업종>없음)면 PEER_OF 편재(9,365행)로 78% 쌍이 "같은 업종"이 됨. PEER_OF/PRICE_CORRELATED는 `serving_layer='context'`(맥락이지 근거 아님) → 관계 줄에서 뺀다(마인드맵·§6에선 그대로 씀). **How**: evidence 계층 & truth 카테고리(SEC 4종+ACQUIRED·HELD_BY_SAME_FUND)만 "…관계로 기록됨"(타입별 문구·상수 `RECORDED_SENTENCE`), context 계층은 미표시, 그 외(CO_MENTIONED=evidence/market·미매핑·무행)=**"관계 기록 없음"**(조용한 실패). **등급(relation_status)은 판정에 안 쓴다**(stale이든 confirmed든 "기록됨"). 서비스 `relation_lookup.lookup_pairs`(무방향 일괄·N+1 금지·1쿼리·공용=§3 재사용). **잠금**: D-1 등급 단어 노출 금지(★)·D-7 context 타입 문자열 금지·D-8 미매핑=관계 기록 없음. STEP0: SEC 4종=evidence/truth(일부 pending·excluded)·CO_MENTIONED=evidence/market·PEER_OF=context·레거시 PEER=pending(→없음). 라이브 32쌍=기록됨 2(경쟁1·제휴1)·없음 30(디렉터 예상 3/29과 1쌍差=COMPETES 한 쌍 serving_layer=pending·축이 정확히 거름·HALT 아님). 마이그 0. 커밋 BE `76d1abd3`·FE `4d7f0708`. ★배포 후보.
+- **D-S3-8 보강 — 판정 축을 캐시 아닌 원본으로(S3-1C·2026-09-10, D-S3-8 축 REFINED)**: `relation_line_for` 판정 축을 `serving_layer=='evidence'` → **`relation_type ∈ RECORDED_SENTENCE` AND `category=='truth'` AND `serving_layer != 'excluded'`**로 교체. **Why**: serving_layer는 매핑표의 **캐시**다(D-S3-6 H와 같은 교훈: 캐시가 아니라 원본으로 판정한다). 백필은 일회성이고 `seed_relations_to_chainsight`는 serving_layer를 세팅하지 않아(CO_MENTIONED 생성부와 비대칭) 새 SEC 관계가 전부 `pending`으로 태어나 관계 줄에서 사라졌다. pending(미분류)은 "근거 아님"이 아니라 "아직 분류 안 됨"이므로 침묵의 근거가 될 수 없다. **소속은 매핑표(타입)가 정하고, excluded가 유일한 거부권**(자기루프·수동 정제 보존). context 제외는 유지 — PEER_OF는 RECORDED_SENTENCE 미매핑이라 자동으로 걸러짐(D-7 그대로 통과). **How**: (N-2 출혈 수리) `seed_relations_to_chainsight` **create_defaults만** `serving_layer='evidence'` 추가(기존 행 무접촉·excluded 보존). **잠금**: SEC+pending→기록됨(N-3a)·SEC+excluded→없음(N-3b)·seed 신규=evidence(N-3c)·seed 기존 serving_layer 무접촉·D-1/D-7/D-8 유지. **재계측(N-4·읽기전용)**: SEC4종(COMPETES/SUPPLIES/PARTNER/DEPENDS) 396행 = evidence 361·pending **19(4.8%<10%)**·excluded 16 → 구 축에서 19행이 잘못 묻혀 있었다. 라이브 30카드 = 기록됨 1(제휴)·없음 29(오늘 상위 스파이크 쌍과 pending SEC 쌍 미교집합). 마이그 0·외부콜 0·LLM 0·prod write 0. 커밋 `0b3c193a`. ★배포 대기(N-5 병진 승인). **유보**: 기존 pending 행 DB 백필(`backfill_serving_layer --apply`)=prod write→병진 GO 게이트(N-1이 화면을 이미 정상화하므로 비급).
+
+**How to apply**: BE `apps/chain_sight/services/{story_source,market_story_feed}.py`·`api/feed_views.py`. FE `components/chainsight/story/*`·`types/chainsight.ts`. 커밋 A `ceb270e2`(BE)·B `ceb3e050`(FE). 마이그 0·외부콜 0·prod write 0·LLM 0. cf. [[project_r2s2_market_story_feed]]·D-CS-STORY-SOURCE.
+
 ## [2026-08-31] D-DSS-BEAT-1 — DSS 주간 적재 자동화 (beat 태스크 + 2단 스위치) [theme-heat][dss][infra]
 
 > 출처: 지시서 DSS-BEAT-1(병진 승인 08-31). 구현 = §A~§D.
@@ -368,6 +411,8 @@
 **결정(보류)**: ε 노이즈 임계 도입 여부는 정상 주간 WoW 6쌍 누적 시 Δ분포 재산출 후 판정(08-14 이상 주간 오염 표본 배제). 초판 = 임계 없음(D-DSS-SIGNAL 2-A 유지).
 
 **Why**: DSS-IMPL-1 Slice 4 Δ분포는 08-14 near-flat 주간(FMP 컨센서스 무변동, flat 498)이 0비율 44.1%를 편향 오염 → ε 임계를 지금 고정하면 오염 표본에 맞춤. 정상 분포 6쌍 확보 후 p90(1.4%)~p99(8.4%) 재확인이 건전한 재료.
+
+**부기(2026-09-08, 디렉터 비준 09-07)**: 정의 개정 — 첫 회차(07-17) 종단 쌍은 전주 부재로 축퇴 판정 지표가 구조적으로 없음 → 판정불가·영구 제외. 클린쌍 정본 = 4(종단 07-31·08-07·08-28·09-04), 6/6 성숙 = 09-18(12회차 후).
 
 ## [2026-08-19] D-DSS-TAU — BREADTH_TAU 확정 보류 (사분면 UX 결정 사이클과 결합) [theme-heat][dss]
 
@@ -3616,6 +3661,7 @@ thesis/      — ✅ 제거됨 (D-MONITOR-REBUILD, apps/monitor 편입, 2026-07-
 **잔여(별 트랙)**: ① dated 브랜치 누적 정리 — `TASKQUEUE.md NIGHTLY-BRANCH-GC`. ② hook hardening(`scripts/hooks`+`core.hooksPath`) — MAIN-SYNC-FIX 트랙 유지(이번 범위 밖). ③ launchd 재가동(`launchctl load`)은 **사용자 수동 승인** 대기(수정 중 unload 상태).
 
 **📎 참조**: `~/stock-vis-nightly/run_tier3_audits.sh`(백업 `.bak-20260617`), `TASKQUEUE.md MAIN-SYNC-FIX`·`NIGHTLY-BRANCH-GC`, DECISIONS `a84388f`(6/2 브랜치 정책).
+> ※ `a84388f`(2026-06-02 MAIN-DRIFT-732B363 = C 격리 + 야간 자동화 브랜치 정책 **원본** 결정)는 MGMT-BATCH-B 단계 D의 `monorepo/sess-mgmt` 삭제로 repo 내 미도달이 됨. **실질 정책은 위 2026-06-18 항목이 대체·최신**. 원본 좌표 = `~/stockvis-refs-20260907-0948.bundle`(`a84388f6`). (MGMT-BATCH-B 단계D 각주, 2026-09-09)
 
 ---
 
@@ -7479,6 +7525,7 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **슬라이스 순서(기본안)**: **S1 신뢰 수리**(Breadth 날짜·Anomaly 정직화·금은 배선) → S2 네비+번역층 → S3 시계열 → S4 AI요약+무버스. 근거 = 신뢰(데이터 정직) 선행이 없으면 번역층·시계열이 거짓 위에 쌓임.
 - **자동 결정 5건(근거)**: ① 시계열 1차 대상 = Part B (가)그룹만(당장 가능·신규수집 0), (나)(다)는 데이터 트랙 분리 ② 기간 프리셋 최대 1Y(다년은 SPY만) ③ 공포탐욕 = VIXCLS+T10Y2Y 소급 결정론(비저장이나 재계산 가능) ④ AI요약 = BriefingLog 재사용(신규 훅 0) ⑤ GLD·SLV = 배선 수리(402 반증·대체 소스 불요).
 - **본 세션 = S1만.** S2~S4는 각 별도 사이클/지시서.
+- **[2026-09-07 S2 정정] (c)계층·fallback 실태**: 홈 4카드는 LLM `senses` 봉투로 (c) 문구를 **이미 부분 구현**(translationSelector→SenseNote). S2 = ⑴ 미적용 표면(거시 허브·로테이션) 정적 문장 확장 ⑵ `senses` 부재 시 fallback 보강. **AUTO-1 재정의(D-MACRO-SENSE-STATIC)**: "SenseNote 슬롯 채우기"가 아니라 **"카드당 의미 문장 1개 보장"** — regime·concentration은 인라인 의미문을 상시 렌더하므로 fallback 미적용(중복 0), **breadth·sector만** 정적 fallback(의도 충족·구현 대상 2카드, 스펙 트림 아님).
 
 ## [2026-09-03] D-BREADTH-ASOF — Breadth 기준일 = 데이터 최신 거래일(캘린더 산술 금지) [backend][market_pulse]
 
@@ -7530,3 +7577,128 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **공유 데이터**: 밴드·타임라인 모두 `useChainFeed(symbol)` 동일 키 → TanStack 캐시 공유(중복 fetch 0). BE·API·파라미터 무변.
 
 **Why**: 9/3 실화면 피드백 — 이벤트 섹션이 일지·시나리오 아래로 매몰돼 "다음 어닝 D-N"이 첫 화면에서 안 보임. P1은 위젯만 상단으로 올려 첫 화면 가시성을 확보하면서(가중합 최고 4.50) 관제 흐름·컴포넌트 소유권을 건드리지 않는다(P2=두 섹션 통째 이동은 이웃 많은 시드에서 사다리/신호를 스크롤 밖으로 밀어냄, P3=소유권 침범). 附加 원칙 보존이 P1 채택의 핵심.
+
+## [2026-09-07] D-GUIDE-CS-REFRESH — Chain Sight 정문 가이드 재작성(2단계 분할) + 앵커↔라우트 동거 가드 [frontend][process][chain_sight]
+
+> 트랙: GUIDE-CS-REFRESH. 선행 원인 확정 = [[D-AGENT-S2.1]] ③(chainsight 3건 = 화면 개편 route 불일치). 이 결정이 그 처분이다.
+
+- **결정: ⓑ 정문 문구 재작성, 2단계 분할.**
+  - **1단계**(GUIDE-CS-GUARD-1, 이 커밋): 정적 가드 확장 + 야간 앵커 누락 노출 + `chainsight.main` 라우트를 `/chainsight/events`로 **임시 이설**. 화면 문구(coreQuestion·learnings·regions.desc)·화면 컴포넌트 **무접촉**.
+  - **2단계**: `monorepo/sess-s3s1`(묶음 카드·부제 정직화) main 머지 후, 정문(`/chainsight`)용 `chainsight.feed` 화면을 문구·앵커까지 신규 작성 → 병진 검수 → confirmed.
+- **대안 가중합**: ⓐ 6.35 / **ⓑ 7.10** / ⓒ 6.90. 가중치 = 이해가치 .30 · 측정신뢰 .25 · 재작업위험 .20 · 유지보수 .15 · 구현비용 .10 (합 1.00).
+- **마진 0.20 < 0.40 → 타이브레이커 명시**: *강등된 화면에는 검수 의무를 새로 만들지 않는다.* 성적 원장 착수(2026-09-08) 시점에 평균에 새 화면을 끼우면 첫 추세선이 흔들린다.
+- **정량 관측은 끊지 않는다**: 정문 `/chainsight`는 `EXTRA_ROUTES`("chainsight.feed")로 남겨 루브릭 대상이 아니어도 셸·에러 마커 점검을 계속한다.
+
+**Why (교훈 — 계약 테스트의 사각지대)**: 전역 존재 검증은 화면 개편 drift를 못 잡는다. 기존 `guideAnchors.test.ts`는 앵커가 **레포 어딘가의 소스에 있으면** 통과했고, 세 앵커가 `EventBoard.tsx`에 살아 있었으므로 2026-09-02 랜딩 역전 내내 GREEN이었다 — 정작 정문의 배지는 0개였다(09-04 야간 렌더 실증 `anchor_chars: 0`). **계약 테스트는 선언과 사용처가 같은 문맥에 있는지까지 봐야 한다.** 그래서 1단계는 문구가 아니라 **가드**를 먼저 고친다: 라우트의 모듈 그래프(page + 조상 layout에서 로컬 import 재귀)를 따라가 선언 앵커의 도달 가능성을 단언한다. 같은 이유로 `guideData.test.ts`의 "실재 라우트" 판정도 *가이드 등재 라우트 집합*이라는 근사를 버리고 `app/`의 page 파일(실물)을 본다 — 근사는 가이드 없는 실재 화면을 가리킬 때 거짓 실패한다(이번 이설에서 실증).
+
+**한계와 보완**: 정적 가드는 조건부 렌더(빈 상태 분기 안의 앵커)와 인증 리다이렉트를 못 본다 — [[D-AGENT-S2.1]] ③의 monitor·portfolio 4건이 그 부류다. 그래서 야간 메일의 루브릭 점수 **바로 아래**에 앵커 누락 한 줄을 세운다(누락 0건이면 출력 없음 — 무변화 침묵). **역할 분담: 정적 가드 = CI에서 미리 "라우트가 그 컴포넌트를 import하는가", 야간 노출 = 실제 DOM에서 사후 "정말 렌더됐는가".** 09-04 실데이터 적용 시 5화면 전부 누락으로 찍힌다 — 그날 점수 1/5·1/5·3/5·1/5·1/5가 전부 앵커가 아닌 전체 본문 기반이었음이 메일에서 바로 읽힌다.
+
+## [2026-09-07] D-GUIDE-ORPHAN-BACKBONE — 고아 앵커 처분 = allowlist + 만료 강제 테스트 [frontend][process][chain_sight]
+
+> 트랙: GUIDE-CS-GUARD-1B. 대상 = `chainsight.backbone`(`BackboneView.tsx` 3곳). 발견 = [[D-GUIDE-CS-REFRESH]] 1단계 실행 중 origin/main 선행 RED 실측.
+
+- **결정: ⓒ allowlist(`PENDING_ANCHORS`) + 죽은 allowlist 금지 테스트.** 앵커도 화면 컴포넌트도 건드리지 않고, `guideAnchors.test.ts`의 고아 판정에서만 제외한다.
+- **대안 가중합**: ⓐ 지금 가이드 문구 작성 7.40 / ⓑ 앵커 제거 7.80 / **ⓒ allowlist 8.10**. 가중치 = 즉시GREEN .30 · 의도보존 .25 · 방치위험 .25 · 비용 .20 (합 1.00).
+- **마진 0.30 < 0.40 → 타이브레이커 명시**: *만료 조건이 실재한다.* GUIDE-CS-REFRESH 2단계가 이미 예약돼 있고(트리거 = `sess-s3s1` 머지), 그 슬라이스가 backbone 문구를 쓰는 자연스러운 자리다. 만료가 예약되지 않은 allowlist였다면 ⓑ(앵커 제거)가 이겼다.
+- **ⓑ를 택하지 않은 이유**: `3e7b15c3`이 앵커를 심은 것은 *의도*였다(주석 `data-guide="chainsight.backbone" 루트 앵커(콘텐츠는 GUIDE 트랙 등재 — 3-3)`). 앵커를 지우면 그 의도가 소멸하고 2단계에서 다시 심어야 한다 — 되돌릴 일을 하는 셈이다.
+- **ⓐ를 택하지 않은 이유**: 문구 작성은 병진 검수를 요구하고(`reviewStatus: confirmed` 전환), 2026-09-08 성적 원장 착수 시점에 검수 대상 화면을 늘린다. [[D-GUIDE-CS-REFRESH]]의 타이브레이커("강등된 화면에는 검수 의무를 새로 만들지 않는다")와 같은 이유로 기각.
+
+**Why (allowlist는 유예이지 면제가 아니다)**: 예외 목록의 실패 양식은 *방치*다 — 등재를 마치고 목록에서 빼는 것을 잊으면, 가드는 그 앵커에 영영 눈을 감는다. 그래서 목록이 **스스로 만료를 주장하게** 만든다: `PENDING_ANCHORS`의 원소가 ⑴ 가이드 데이터에 등재 완료됐거나 ⑵ 소스에서 사라졌으면 테스트가 RED가 되고, 실패 메시지가 "PENDING_ANCHORS에서 제거하세요"라고 말한다. 두 방향 모두 반사실로 실증했다. 이 구조가 없으면 allowlist는 가드에 뚫은 영구 구멍이고, 그것이 정확히 이번에 고친 병(전역 존재 검증의 사각지대)의 재발이다.
+
+**부수 관찰(별건)**: 이 RED는 2026-08-31 `3e7b15c3`부터 09-07까지 **7일간 origin/main에 방치**돼 있었다. 가드가 있어도 랜딩 전에 전체 스위트를 돌리지 않으면 잡히지 않는다 — vitest 전체 게이트의 실행 시점을 별건으로 점검할 여지.
+## [2026-09-07] D-MP2-SUBNAV — Market Pulse v2 전역 헤더 서브탭 (A) [frontend][market_pulse]
+
+> HUB-V02-S2. 병진 승인(2026-09-04 허브 v0.2 사이클 S2). 화면 간 왕복 동선.
+
+- **결정 = (A) 전역 헤더 서브탭.** 가중합 A 4.19 / B 페이지 인라인 4.08 / C 허브 탭바 확장 3.48 (w: 왕복 체감 0.30·구현/회귀 0.20·리스크 0.20·유지보수 0.15·확장 0.15 = 1.00). 마진 0.11 < 0.40 → **타이브레이커**: ① MySubNav 선례로 새 패턴 발명 0 ② 서브페이지 증가 예정(무버스·이벤트)으로 확장 축 실발생.
+- **구현**: `MarketPulseSubNav.tsx`(MySubNav 동형·border-b-2 active·"준비 중" 비활성) + `isMarketPulseV2Page` 순수 함수(**v1 `/market-pulse` 미포획** = base 정확일치·`base+'/'` 접두만). Header `{isMarketPulseV2Page && <MarketPulseSubNav/>}`(My와 경로 상호배타). 탭: 개요(정확일치)·거시 근거·로테이션·무버스(비활성). **fetch 0**(Link만·배지/프리페치 금지). 허브 "← Market Pulse" 링크 제거(중복).
+
+**Why**: 병진 검수 원인은 문구가 아니라 화면 왕복 동선 부재도 포함. MySubNav 선례 재사용으로 새 네비 패턴 발명 0·회귀 최소. v1 미포획이 핵심 안전 경계.
+
+## [2026-09-07] D-MACRO-SENSE-STATIC — 거시 밴드 문장 = 정적 결정론 확장 (ⓐ) [frontend][market_pulse]
+
+> HUB-V02-S2. 병진 승인. "이 지표가 투자 행동에 어떤 의미인지 감이 안 옴"의 결정론 해소.
+
+- **결정 = (ⓐ) 정적 결정론 확장.** 가중합 ⓐ 4.35 / ⓒ 하이브리드 4.22 / ⓑ senses 봉투 확장 3.52 (w: 의미 전달 0.30·비용 0.20·리스크 0.20·유지보수 0.15·확장 0.15). 마진 0.13 → **타이브레이커**: ⓒ = ⓐ + S4이고 AI 요약은 이미 S4 몫 → S2는 ⓐ, S4에서 요약을 얹어 (c)계층 완성. **ⓑ 기각**: 허브 진입당 호출 1→2·문구 회귀 고정 불가·LLM 실패일 문장 소실.
+- **구현**: `macroMeaning.ts`(순수함수 4종 — fearGreed 심리3×변동성2·yieldCurve status5·economy 물가3+고용3·globalIndices 4지수 부호). 임계 = 백엔드 앵커(VIX_RULES·YIELD_CURVE_RULES·fed_target=2.0·breakeven 87k) — 재분류 0. 결측 → "판정 불가 — 입력 데이터 대기"(AUTO-2, 가짜 정상 금지). 허브 위젯 아래 SenseNote 형제(위젯 파일 diff 0).
+- **AUTO-1 = 홈 정적 fallback = "카드당 의미 문장 1개 보장"**(디렉터 확정, 2026-09-07). LLM `senses` 부재 시 정적 문장 대체 → **breadth·sector만**(인라인 의미문 없는 카드). regime·concentration은 인라인 의미문 상시 렌더 → fallback 미적용(**중복 0**, 스펙 트림 아님·의도 충족). breadth 정적 = 밴드 동어반복 금지 → **댐핑 적용 여부 + 상승/하락 실수치** 서술(화면에 없는 정보). sector 정적 = SectorHeatmap 내부(sectorFlow 재사용 in/out → sectorSentence, 새 판정 0). LLM 있는 날 렌더 IDENTICAL.
+- **폐기 지표(등재)**: 신규 실업수당 260k(실측 203k라 미발동 + NFP와 모순 문장) · DXY ±0.5%(실측 `dxy: null` 영구 미발동 → DATA-GAP-DXY). 미국 4지수는 `change` 부호만(`change_percent` 실 payload null). 해외지수·DXY는 문장에서 언급 금지(DATA-GAP-GLOBALIDX).
+
+**Why**: 문구 회귀 고정(golden)과 LLM 실패일 소실 방지가 정적의 강점. AUTO-1을 "슬롯 채우기"에서 "카드당 의미문 1개 보장"으로 재정의해 인라인 의미문 있는 카드의 중복을 원천 차단.
+## [2026-09-07] D-AGENT-SHOT-1 — 야간 렌더러 온디맨드화 (신규 인증 표면 0·산출물 경로 분리) [ops][infra]
+
+> 트랙: AGENT-SHOT-1. 야간 도그푸딩(run_dogfood.sh) 렌더 경로 재사용으로 임의 화면 온디맨드 캡처.
+
+- **재사용**: `scripts/shot.sh` → `auto_agent_system/dogfood/shot.py` → 기존 `collect_rendered.run_render(screens)`(인증·Playwright) 그대로 호출. **신규 인증 코드 0** — `dogfood_env()` `.env` 명시 로드(S2.1)와 `render_screens.mjs` `login()`(API POST + localStorage) 재사용. 사용자 override는 `DOGFOOD_USER/PASSWORD` env(기존 경로·신규 코드 아님).
+- **PNG 능력 추가(env-gated)**: 야간 렌더러는 **스크린샷을 안 찍고 innerText만 추출**(실측). `render_screens.mjs`에 `DOGFOOD_SHOT_DIR` 설정 시에만 `page.screenshot({fullPage})` + 로딩 소멸 대기(`불러오는 중`/스켈레톤 폴링) 추가. **야간은 env 미설정 → 무영향**(행위보존: collect_rendered 5/5 인증 동일·스크린샷 0).
+- **산출물 분리**: `stock-vis-nightly/adhoc/<YYYYMMDD_HHMM>/`(PNG + 텍스트 + meta.json{URL·authenticated·web_tree_hash·ts}). `rendered_/quant_/rubric_` 파일명 규칙·야간 05:20 경로·launchd plist **무접촉**.
+- **채점 분리**: `--no-score` 기본(캡처 전용) → LLM 비용 0. 렌더·채점은 별도 `python -m` 모듈이라 서비스 개작 없이 분리(HALT 조건 미해당).
+- **인앱 브라우저 경로 불가(확정)**: 클로드 인앱 패널이 :3000 외 오리진 XHR을 `ERR_BLOCKED_BY_CLIENT`로 차단(09-07 포트 3종 프로브 확증) → 재시도 금지. 온디맨드 캡처는 이 헤드리스 경로가 정본.
+
+**Why**: 디렉터가 특정 화면(예: EVT-CHAIN-1B 밴드)을 즉시 눈으로 판정하려면 야간 배치를 기다리거나 인앱 브라우저(구조적 불가)에 의존해야 했다. 야간 렌더러는 이미 라이브 :3000 + 실 로그인으로 실화면을 읽으므로, 인증·렌더를 재사용하고 스크린샷만 env-gated로 얹으면 신규 인증 표면 0·야간 행위보존으로 온디맨드 캡처가 성립한다.
+
+**종결(디렉터 처분 2026-09-08)**: DoD 충족 → AGENT-SHOT-1 종결. 첫 사용 사례 대상은 dogfood_agent 가시 화면(`/monitor` 목록 풀페이지·`adhoc/20260908_1124/adhoc_monitor.png`·authenticated=true)으로 교체(도구 사용례 문서화). IONQ(df008c88) 캡처는 보류(교차사용자 경계 = D-AUTO-NO-PERSONAL-CREDS).
+
+## [2026-09-08] D-AUTO-NO-PERSONAL-CREDS — 자동화가 사용자 개인 자격증명을 요구하면 "범위 설계 반려" [ops][process][security]
+
+> 트랙: AGENT-SHOT-1 상신 판정. 디렉터 처분(2026-09-08).
+
+- **규약**: 자동화/에이전트가 **사용자 개인 계정 비밀번호**를 요구해야 동작한다면, 그것은 상신(승인 요청) 대상이 아니라 **"범위 설계 반려"** 사유다 — 개인 자격증명은 전달 경로 자체가 기록으로 남으므로 요구·중계하지 않는다. 대안: 전용 에이전트 계정(dogfood_agent) 사용 or 대상 화면 교체 or 소유자 세션 밖 렌더 포기.
+- **적용례**: AGENT-SHOT-1이 goid545 소유 모니터(IONQ)를 렌더하려면 goid545 비밀번호가 필요 → 옵션 거부. dogfood_agent 가시 화면으로 대상 교체.
+- **교차사용자 404 = 결함 아님**: dogfood_agent가 타 사용자 모니터 조회 시 "찾을 수 없는 모니터" = **계정 경계 정상 작동의 실측 증거**(재조사 불요).
+
+**Why**: 개인 비밀번호를 채팅/스크립트로 요구하면 그 자체가 자격증명 노출 경로가 된다(마스킹해도 전달 시점에 기록). 자동화 설계는 전용 계정·공개 대상으로 성립해야 하며, 개인 세션 의존은 설계 결함으로 되돌린다.
+
+### [2026-09-10] D-GUIDE-ORPHAN-BACKBONE 애든덤 — 유예를 기한부로 승격 (GUIDE-CS-GUARD-1D)
+
+- **계기**: 1C 흡수에서 신규 고아 `dashboard.tabs`(DASH-TAB 09-09)가 나타났다. 원 결정의 타이브레이커는 *"만료 조건이 실재한다(2단계가 예약돼 있다)"*였는데, `dashboard.tabs`에는 **예약된 슬라이스가 없다** — 실행자 지적이 정확했고, 같은 근거로 항목을 늘릴 수 없었다.
+- **결정: ⓑ 기한부 allowlist.** 항목을 늘리는 대신 **목록의 형태를 바꾼다.** `Set<string>` → `Record<string, {until, why}>`. 유예가 예약 슬라이스의 존재에 기대지 않고 **목록 자신이 기한을 강제**한다. `chainsight.backbone`도 같이 승격 — 그러지 않으면 규약이 항목마다 달라진다.
+- **가중합**: ⓐ 그대로 랜딩(RED 유지) 7.10 / **ⓑ 기한부 allowlist 8.95** / ⓒ 무기한 allowlist 확장 6.20 / ⓓ 랜딩 보류 5.80. 가중치 = RED종료 .25 · 규약일관 .25 · 소유경계 .20 · 재발방지 .15 · 비용 .15 (합 1.00). **마진 1.85 > 1 → 자동 결정.**
+- **테스트 3건이 목록을 지킨다**: ⑴ 고아 판정에서 유예 제외 ⑵ **기한 만료 금지**(`until < 오늘`이면 RED) ⑶ 죽은 항목 금지(등재 완료·소스 소멸). 세 건 모두 반사실로 실증했다.
+- **소유 경계**: ops는 유예만 등록하고 **문구는 쓰지 않는다.** `dashboard.tabs`의 등재/제거는 dashboard 앱 트랙 소관(TASKQUEUE GUIDE-ORPHAN-DASHTABS, 기한 2026-09-30).
+
+**Why**: 무기한 allowlist(ⓒ)는 "언젠가 치우자"를 코드에 새기는 것이고, 그 언젠가는 오지 않는다 — 이 트랙이 고친 원 병이 정확히 그것이었다(`chainsight.backbone` 10일 방치). 예약 슬라이스에 만료를 위탁하는 원 방식은 슬라이스가 있는 항목에만 통하므로 규약으로서 불완전했다. 기한을 목록 안에 박으면 **유예의 비용이 시간에 비례해 드러나고**, 연장하려면 DECISIONS에 근거를 남겨야 하므로 침묵 연장이 불가능해진다.
+
+**감수한 단점**: 코드 변경 없이 날짜만으로 RED가 되는 테스트다(빌드 재현성을 시간에 결합). 일반적으로 안티패턴이며 주석에 그렇게 명시했다. 여기서는 **의도된 트립와이어**이고, 그래서 실패 메시지가 사유(`why`)와 세 가지 해결 경로를 스스로 출력한다.
+## [2026-09-10] D-VERIFY-ORIGIN-SPLIT — 검증 지시서는 같은-오리진 항목과 백엔드-API 항목을 미리 가른다 [process][frontend][harness]
+
+> 트랙: DASH-TAB-VERIFY 실측 교훈. MGMT-BATCH-b48.
+
+- **규율**: UI 검증 지시서는 검증 항목을 **⑴ 같은 오리진(정적 파일·SSR)으로 확인 가능** vs **⑵ 백엔드 API 크로스 오리진 의존**으로 **미리 갈라 적는다**. 브라우저는 크로스 오리진 localhost(예: :3100 FE → :18765 API)를 CORS로 차단하므로, dev 오리진에서 API 구동 섹션은 fail-quiet(빈 표시)돼 육안 불가.
+- **실증(DASH-TAB-VERIFY)**: :3100 dev에서 [발견] 탭(dashboard.json=같은 오리진 심링크)은 완전 렌더됐으나, [시장] 탭(사분면·매크로·이벤트·뉴스=:18765 API)은 `CORS_ALLOWED_ORIGINS`가 :3000만 허용해 전부 차단 → "사분면 높이 축소" 육안 불가.
+- **적용**: 지시서 DoD에 "이 오리진에서 확인 가능 항목" 명시. API 의존 항목은 (a) 프록시·같은 오리진 서빙 or (b) CORS 임시 허용(서비스 재기동=승인) or (c) 별 오리금(:3000 배포 후) 중 택일을 사전 지정.
+
+## [2026-09-10] D-DEPLOY-TEE-LOG — 배포/관리 커맨드는 `2>&1 | tee <log>`로 stdout 영속 [ops][process]
+
+> 트랙: BF-1 종결 교훈. MGMT-BATCH-b48.
+
+- **규율**: 배포 카드·관리 커맨드(`manage.py *_apply` 등)는 **`2>&1 | tee ~/Library/Logs/stockvis/<cmd>_<ts>.log`로 stdout을 파일 영속**한다. 터미널 stdout만으로 실행하면 세션 종료 후 수치가 영구 소실된다.
+- **실증(BF-1)**: `backfill_news_stocknews --apply`의 `created` 수치가 어느 로그에도 남지 않아 **영구 미확정**으로 종결(beat `[stock_news_sync]`의 created는 celery 로그에 있어 대체 확보). 결함 아님·수치만 미확정.
+
+## [2026-09-10] D-NUMBERING-ORDER — common-bugs 번호 = 등재 순서(발견 순서 아님)·발견일 병기·예약 건너뜀 [harness][process]
+
+> 트랙: MGMT-BATCH-b48 채번 충돌 정정(디렉터 처분).
+
+- **규율**: common-bugs `#NN`은 **등재(부여) 순서**이지 발견 순서가 아니다. 각 엔트리에 **발견일을 병기**해 연대 정보를 보존한다(예: "#131, … 발견 2026-09-08, 채번 b48"). 예약분(선행 배치가 "후보 #NN"으로 찜한 번호)은 배치 엔트리에 명시하고, **다음 배치는 그 번호를 건너뛴다**(침범 시 renumber 불가·공개 repo).
+- **실증(이중 충돌)**: ⑴ b47이 #130을 launchd/.env 후보로 예약. ⑵ b48 편집 중 병렬 **MGMT-LEDGER-2**(`6bc5172d`)가 origin/main에 **#130~132를 먼저 착지**(dispatch규율·일련번호금지·크레딧소진). rebase가 텍스트 무충돌로 병합해 **번호 중복(#130~132 각 2회)** 발생 → 디렉터 처분으로 b48 전건을 **#133~136으로 순차 밀기**(launchd #133·llm_fill #134·health_check #135·metadata #136·순서 유지). **교훈**: 텍스트 무충돌 rebase도 의미 충돌(중복 번호)을 낼 수 있다 → push 전 번호 유일성 grep 필수.
+
+## [2026-09-10] D-NUMBERING-MEASURE-QUEUE — 채번 실측 = "max+1"이 아니라 대기열 전수 [harness][process]
+
+> 트랙: MGMT-BATCH-b48. D-INSTR-BATCH-NUM-MEASURED 보강.
+
+- **규율**: 채번 실측은 **`max+1`만 읽지 말고 미채번 후보 대기열 전수**(common-bugs "채번 후보/대기" 엔트리 + PROGRESS 예약분)를 본다. `max+1`만 보면 연대상 앞선 미채번 후보를 지나쳐 번호를 배정하는 오류가 난다.
+- **실증(이 충돌의 근인)**: b48 지시서가 max+1(#130)만 읽고 미채번 대기열(launchd/.env·DUAL-OBS-1·COPYFIX·S2-GUARDFIX)을 누락 → #130 배정 충돌 → 디렉터 정정.
+
+## [2026-09-10] D-SCAN-REC-JOIN-J2 — 추천 payload 섹터/재무 조인은 FE가 preview_stocks로, 실패 시 정칙 ⑴ 생략 [dashboard][frontend]
+
+> 트랙: SCAN-UX-2 설계 턴 F 결정. MGMT-BATCH-b48. 가중합 J2 8.30 vs J3 8.00(마진 0.30).
+
+- **결정(J2 채택)**: 추천 카드가 섹터 칩("추천 N/10")·재무 위계를 붙일 때, **FE가 `ticker`→`preview_stocks.sector`(및 technical)로 조인**한다. 조인 실패(해당 종목이 preview에 없음)면 **정칙 ⑴로 그 절만 조용히 생략**(N/A 배지 금지).
+- **타이브레이커**: J2=J3 근접(0.30) → **payload를 늘리지 않는 쪽**이 예산 초과 중인 현재에 정합(추천 payload에 sector·재무 미포함 실측=DASH-TAB recon). **J1(baker가 rec에 sector/technical 주입)은 추천 점수 눈금 재설계와 함께** 재검토(payload 증분 동반이라 눈금 트랙에 종속).
+
+## [2026-09-10] D-SCAN-PAYLOAD-OVERAGE — cards payload 예산 초과 확정·symbol-ref 축약 보류 해제 [dashboard][scanner]
+
+> 트랙: SCAN-UX-2 B 정정. MGMT-BATCH-b48. cf. DECISIONS payload 예산 문언(⑵ "cards gzip 246→~310KB").
+
+- **정정(초과 확정)**: 예산 원문 대상 = **cards gzip**("246→~310KB"). 실측 cards **393KB gz > ~310KB** → **초과 확정**. 단 cards/*.json은 **lazy fetch**(카드 드로어 첫 열림 1회, 초기 로드 아님)이므로 초기 로드 예산엔 무영향·드로어 UX만 대상.
+- **처분**: **symbol-ref 축약(D-SCAN-B2-DERIVE 기등재 완화책) 보류 해제·상신** — SCAN-UX-2 사이클 1의 보류를 연다. TASKQUEUE 위임(dashboard/shared).

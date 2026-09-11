@@ -7,7 +7,12 @@ import type { GuideScreen } from './types';
 export const CHAINSIGHT_GUIDE: GuideScreen[] = [
   {
     id: 'chainsight.main',
-    route: '/chainsight',
+    // ⏳ 임시 이설 (GUIDE-CS-GUARD-1, 2026-09-07 · D-GUIDE-CS-REFRESH 1단계)
+    //    2026-09-02 랜딩 역전으로 정문(/chainsight)이 "오늘 시장의 이야기" 피드로 바뀌면서
+    //    아래 문구·앵커가 정문과 어긋났다(배지 0개). 문구를 그대로 둔 채 라우트만 실제
+    //    설명 대상인 이벤트 보드로 옮긴다 — 이제 title과 사실이 일치한다.
+    //    2단계 예약: sess-s3s1 머지 후 정문용 `chainsight.feed` 화면을 신규 등재한다.
+    route: '/chainsight/events',
     title: 'Chain Sight — 이벤트 보드',
     flowStage: 2,
     coreQuestion: '한 종목의 움직임이 어디까지 번지고 있으며, 그 연결을 얼마나 믿어도 되나?',

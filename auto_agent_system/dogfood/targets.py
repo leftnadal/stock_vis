@@ -21,6 +21,10 @@ GUIDE_DIR = REPO_ROOT / "frontend" / "lib" / "guide"
 EXTRA_ROUTES = [
     ("guide.hub", "/guide", "사용 가이드 허브"),
     ("auth.login", "/login", "로그인"),
+    # 정문. 2026-09-02 랜딩 역전으로 이야기 피드가 됐고, chainsight.main 가이드는
+    # 실제 설명 대상인 /chainsight/events로 임시 이설했다(GUIDE-CS-GUARD-1).
+    # 루브릭 대상은 아니지만(정문용 가이드는 2단계에서 등재) 정량 관측은 끊지 않는다.
+    ("chainsight.feed", "/chainsight", "오늘 시장의 이야기(정량 관측)"),
 ]
 
 # 라우트별 SSR 셸 마커(있어야 정상) — 데이터는 클라이언트 렌더라 셸만 검사한다.
@@ -28,6 +32,7 @@ SHELL_MARKERS = {
     "/": ["Stock-Vis"],
     "/market-pulse-v2": ["Market Pulse v2"],
     "/chainsight": ["Stock-Vis"],
+    "/chainsight/events": ["Stock-Vis"],
     "/monitor": ["Stock-Vis"],
     "/portfolio": ["Stock-Vis"],
     "/guide": ["사용 가이드", "서비스 플로우"],

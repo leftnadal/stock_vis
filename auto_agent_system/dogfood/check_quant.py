@@ -22,7 +22,12 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .market_calendar import holiday_name, is_trading_day, target_session_date
+from .market_calendar import (
+    holiday_name,
+    is_trading_day,
+    previous_trading_day,
+    target_session_date,
+)
 from .targets import (
     API_TARGETS,
     DASHBOARD_JSON_PATH,
@@ -39,7 +44,7 @@ OUT_DIR = Path(os.getenv("DOGFOOD_OUT_DIR", str(Path.home() / "stock-vis-nightly
 ROUTE_TIMEOUT_S = 15
 SLOW_ROUTE_MS = 3000          # 이보다 느리면 warn (사람이 느린 걸 알아채는 대략의 선)
 MIN_HTML_BYTES = 5000         # 셸조차 안 나온 빈 응답 감지
-MAX_FRESHNESS_LAG_DAYS = 1    # 대상 세션 대비 며칠까지 허용
+# EOD 신선도는 달력일이 아니라 거래일 기준(previous_trading_day) — MAX_FRESHNESS_LAG_DAYS 폐기.
 
 OK, WARN, FAIL = "ok", "warn", "fail"
 
@@ -137,11 +142,14 @@ def check_freshness(session: date) -> dict[str, Any]:
     if trading is None:
         out["eod.trading_date"] = _item(FAIL, raw_date, "YYYY-MM-DD", "trading_date 부재/형식 오류")
     else:
-        lag = (session - trading).days
-        status = OK if lag <= MAX_FRESHNESS_LAG_DAYS else FAIL
+        # 달력일이 아니라 거래일 기준 — 주말·휴장이 개재해도 거짓 FAIL이 나지 않는다.
+        # 방금 닫힌 세션은 아직 미베이크가 정상이므로, 대상 세션의 직전 거래일 이상이면 ok.
+        prev = previous_trading_day(session)
+        status = OK if trading >= prev else FAIL
         out["eod.trading_date"] = _item(
-            status, str(trading), f"대상 세션 {session} (지연 <= {MAX_FRESHNESS_LAG_DAYS}일)",
-            f"EOD 최신 거래일 {trading} / 대상 세션 {session} — 지연 {lag}일",
+            status, str(trading), f"대상 세션 {session} 직전 거래일 {prev} 이상",
+            f"EOD 최신 거래일 {trading} / 대상 세션 {session}(직전 거래일 {prev}) — "
+            + ("거래일 기준 신선" if status == OK else "거래일 기준 지연"),
         )
 
     out["eod.is_stale"] = _item(

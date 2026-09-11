@@ -224,26 +224,62 @@ const BREADTH_ORDER: BreadthBand[] = [
  * 엇갈림 댐핑: 내부신호(신고저 우위·AD추세)가 등락방향과 강하게 반대면 1단계 중립쪽 이동
  * (강세인데 신저가 우위+AD↓ → 한 단계 ↓ / 약세인데 신고가 우위+AD↑ → 한 단계 ↑).
  */
-export function breadthBand(
+/**
+ * 등락비율 → 밴드 인덱스(pre=댐핑 전, post=댐핑 후). 데이터 없음 → null.
+ * breadthBand·breadthStaticSentence 공용 단일소스(임계=BREADTH_THRESHOLDS, 판정 로직 1곳).
+ */
+function breadthIndices(
   i: BreadthInputs | null | undefined,
-): { band: BreadthBand; tone: string } | null {
+): { pre: number; post: number } | null {
   if (!i) return null
   const tot = (i.advance ?? 0) + (i.decline ?? 0)
   if (tot <= 0) return null
   const ratio = i.advance / tot
   const t = BREADTH_THRESHOLDS
-  let idx: number // 0=broad_weakness … 4=broad_strength
-  if (ratio >= t.broad) idx = 4
-  else if (ratio >= t.lean) idx = 3
-  else if (ratio > 1 - t.lean) idx = 2 // (0.40, 0.60)
-  else if (ratio > 1 - t.broad) idx = 1 // (0.30, 0.40]
-  else idx = 0 // ≤ 0.30
+  let pre: number // 0=broad_weakness … 4=broad_strength
+  if (ratio >= t.broad) pre = 4
+  else if (ratio >= t.lean) pre = 3
+  else if (ratio > 1 - t.lean) pre = 2 // (0.40, 0.60)
+  else if (ratio > 1 - t.broad) pre = 1 // (0.30, 0.40]
+  else pre = 0 // ≤ 0.30
 
   const hlBias = Math.sign((i.new_high_52w ?? 0) - (i.new_low_52w ?? 0))
   const adTrend = Math.sign(i.ad_line_change ?? 0)
-  if (idx >= 3 && hlBias < 0 && adTrend < 0) idx -= 1 // 강세인데 내부 약함 → 댐핑
-  if (idx <= 1 && hlBias > 0 && adTrend > 0) idx += 1 // 약세인데 내부 강함 → 댐핑
+  let post = pre
+  if (pre >= 3 && hlBias < 0 && adTrend < 0) post = pre - 1 // 강세인데 내부 약함 → 댐핑
+  if (pre <= 1 && hlBias > 0 && adTrend > 0) post = pre + 1 // 약세인데 내부 강함 → 댐핑
+  return { pre, post }
+}
 
-  const band = BREADTH_ORDER[idx]
+export function breadthBand(
+  i: BreadthInputs | null | undefined,
+): { band: BreadthBand; tone: string } | null {
+  const idx = breadthIndices(i)
+  if (!idx) return null
+  const band = BREADTH_ORDER[idx.post]
   return { band, tone: BREADTH_TONE[band] }
+}
+
+/**
+ * HUB-V02-S2 (AUTO-1) — breadth 정적 fallback. **밴드 칩과 동어반복 금지**(디렉터 보강 2):
+ *   화면에 없는 정보를 말한다 = ⑴ 댐핑 적용 여부(표면 밴드 ≠ 최종 밴드) ⑵ 상승/하락 실수치.
+ *   댐핑 = breadthBand의 '엇갈림 댐핑'이 실제로 한 단계 옮겼는지(pre≠post).
+ *   데이터 없음(advance+decline≤0) → null(미렌더).
+ */
+export function breadthStaticSentence(i: BreadthInputs | null | undefined): string | null {
+  const idx = breadthIndices(i)
+  if (!idx || !i) return null
+  const a = i.advance
+  const d = i.decline
+  if (idx.post < idx.pre) {
+    return `표면은 상승 우위지만 신저가가 더 많고 AD선이 내려, 강도를 한 단계 낮춰 읽었습니다(상승 ${a}·하락 ${d}).`
+  }
+  if (idx.post > idx.pre) {
+    return `표면은 하락 우위지만 신고가가 더 많고 AD선이 올라, 강도를 한 단계 올려 읽었습니다(상승 ${a}·하락 ${d}).`
+  }
+  if (idx.post >= 4) return `상승 ${a} 대 하락 ${d}로 오르는 쪽이 뚜렷이 넓습니다.`
+  if (idx.post === 3) return `상승 ${a} 대 하락 ${d}로 오르는 쪽이 다소 넓습니다.`
+  if (idx.post === 2) return `상승 ${a} 대 하락 ${d}로 팽팽합니다.`
+  if (idx.post === 1) return `상승 ${a} 대 하락 ${d}로 내리는 쪽이 다소 넓습니다.`
+  return `상승 ${a} 대 하락 ${d}로 내리는 쪽이 뚜렷이 넓습니다.`
 }

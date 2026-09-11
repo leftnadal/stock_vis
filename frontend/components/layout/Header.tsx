@@ -9,6 +9,7 @@ import { Search, TrendingUp } from 'lucide-react';
 import { AlertBell } from '@/components/layout/AlertBell';
 import { AvatarMenu } from '@/components/layout/AvatarMenu';
 import { MySubNav, isMyPage } from '@/components/layout/MySubNav';
+import { MarketPulseSubNav, isMarketPulseV2Page } from '@/components/layout/MarketPulseSubNav';
 
 // 전역 내비 6칸 (MON-P3-S3): Dashboard · Market Pulse · Chain Sight · News · Screener · My.
 // 포트폴리오·마이페이지는 top nav에서 제거 → My 서브탭·아바타로 이동.
@@ -103,6 +104,8 @@ export default function Header() {
 
       {/* My 영역 서브탭 (M-3) — My 페이지에서만 표시 */}
       {isMyPage(pathname) && <MySubNav />}
+      {/* Market Pulse v2 서브탭 (HUB-V02-S2) — v2 표면에서만. My와 경로 상호배타. */}
+      {isMarketPulseV2Page(pathname) && <MarketPulseSubNav />}
     </header>
   );
 }

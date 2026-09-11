@@ -17,6 +17,14 @@ import FearGreedGauge from '@/components/macro/FearGreedGauge'
 import YieldCurveChart from '@/components/macro/YieldCurveChart'
 import EconomicIndicators from '@/components/macro/EconomicIndicators'
 import GlobalMarketsCard from '@/components/macro/GlobalMarketsCard'
+import { SenseNote } from '../cards/SenseNote'
+import { STALE_TONE } from '../components/StatusBanner'
+import {
+  fearGreedSentence,
+  yieldCurveSentence,
+  economySentence,
+  globalIndicesSentence,
+} from '../macroMeaning'
 
 // 거시 집계는 장외(KST)엔 콜드 캐시라 라이브 집계가 느릴 수 있어 허브만 타임아웃을 건다.
 // (BE는 SWR로 stale 즉시 응답 — D-SUBPAGES-SWR. FE는 그 대기가 길어질 때의 안전판.)
@@ -70,14 +78,12 @@ function MacroHubInner() {
 
   const header = (
     <header className="px-2 pt-4">
-      <Link href="/market-pulse-v2" className="text-xs text-slate-500 hover:text-slate-800">
-        ← Market Pulse
-      </Link>
+      {/* HUB-V02-S2: 전역 헤더 서브탭이 화면 이동을 담당 → 페이지 내 "← Market Pulse" 중복 제거 */}
       <div className="mt-1 flex items-center gap-2">
         <h1 className="text-2xl font-bold text-slate-900">거시 근거</h1>
         {isStale && (
           <span
-            className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700"
+            className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${STALE_TONE}`}
             title="자동 갱신 중 — 마지막 성공 데이터를 표시합니다"
           >
             {ageMin}분 전 데이터
@@ -128,7 +134,7 @@ function MacroHubInner() {
           <p className="text-slate-500">불러오는 중…</p>
         ) : isError || !data ? (
           <div
-            className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+            className={`rounded-md border px-4 py-3 text-sm ${STALE_TONE}`}
             role="status"
           >
             <p>거시 데이터를 준비 중입니다 — 잠시 후 자동으로 다시 시도합니다.</p>
@@ -148,11 +154,14 @@ function MacroHubInner() {
                 {show('sentiment', activeTab) && (
                   <div data-guide="marketPulse.macro.sentiment">
                     <FearGreedGauge data={data.fear_greed} />
+                    {/* HUB-V02-S2: 국면 연결 한 줄(위젯 형제·위젯 파일 무수정). 룰 문장과 중복 금지 층. */}
+                    <SenseNote sense={fearGreedSentence(data.fear_greed)} />
                   </div>
                 )}
                 {show('rates', activeTab) && (
                   <div data-guide="marketPulse.macro.rates">
                     <YieldCurveChart data={data.interest_rates} />
+                    <SenseNote sense={yieldCurveSentence(data.interest_rates)} />
                   </div>
                 )}
               </section>
@@ -161,12 +170,14 @@ function MacroHubInner() {
             {show('economy', activeTab) && (
               <section data-guide="marketPulse.macro.economy">
                 <EconomicIndicators data={data.economy} />
+                <SenseNote sense={economySentence(data.economy)} />
               </section>
             )}
             {/* 글로벌(전폭) */}
             {show('global', activeTab) && (
               <section data-guide="marketPulse.macro.global">
                 <GlobalMarketsCard data={data.global_markets} />
+                <SenseNote sense={globalIndicesSentence(data.global_markets.indices)} />
               </section>
             )}
           </div>

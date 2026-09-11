@@ -15,7 +15,8 @@ import { useCardDetail } from '@/hooks/useMarketPulseV2'
 import { useMarketPulseI18n } from '@/lib/i18n/marketPulse'
 import type { SectorDetail } from '@/lib/api/marketPulseV2'
 import { RRGChart } from '../details/RRGChart'
-import { CD_STATE_ORDER, cdStateDotFill, cdStateLabel } from '../sectorColor'
+import { CD_STATE_ORDER, cdStateDotFill, cdStateLabel, rotationSentence } from '../sectorColor'
+import { SenseNote } from '../cards/SenseNote'
 
 function RotationInner() {
   // ⚠ 변수명 searchParams 금지(Turbopack 충돌) — params 사용.
@@ -55,6 +56,8 @@ function RotationInner() {
         <p data-testid="rrg-unavailable" className="text-sm text-slate-500">회전 맵 데이터가 아직 준비되지 않았습니다.</p>
       ) : (
         <>
+          {/* HUB-V02-S2: RRG 한 줄(cd_state 집계·재분류 0). null(과반 결측)이면 미렌더. */}
+          <SenseNote sense={rotationSentence(payload.sectors ?? [])} />
           <RRGChart payload={payload} labels={labels} fromSymbol={fromSymbol} onFocusChange={handleFocusChange} />
           <ul data-testid="rrg-legend" className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
             {CD_STATE_ORDER.map((state) => (

@@ -136,3 +136,63 @@ def test_malformed_report_file_is_skipped(tmp_path):
     (tmp_path / "quant_notadate.json").write_text("{}", encoding="utf-8")
     history = rm.load_reports(tmp_path)
     assert [d.isoformat() for d, _ in history] == ["2026-08-26"]
+
+
+# ── 앵커 누락 노출 (GUIDE-CS-GUARD-1) ────────────────────────────────────
+def _rubric(scores):
+    return {"average": 3.0, "authenticated": True, "scores": scores}
+
+
+def _rendered(screens):
+    return {"date": "2026-09-07", "screens": screens}
+
+
+def test_anchor_gap_line_names_screen_and_ratio():
+    rendered = _rendered(
+        [
+            {
+                "id": "chainsight.main",
+                "regions": [{"anchor": "a"}, {"anchor": "b"}, {"anchor": "c"}],
+                "missing_anchors": ["a", "b", "c"],
+            },
+            {
+                "id": "monitor.main",
+                "regions": [{"anchor": "x"}, {"anchor": "y"}],
+                "missing_anchors": ["x"],
+            },
+        ]
+    )
+    line = "\n".join(rm.render_anchor_gap_line(rendered))
+    assert "chainsight.main 3/3" in line
+    assert "monitor.main 1/2" in line
+    assert "전체 본문으로 채점" in line
+
+
+def test_anchor_gap_line_is_silent_when_nothing_missing():
+    """누락 0건이면 줄 자체가 없다 — 무변화 침묵 규율."""
+    rendered = _rendered([{"id": "monitor.main", "regions": [{"anchor": "x"}], "missing_anchors": []}])
+    assert rm.render_anchor_gap_line(rendered) == []
+    assert rm.render_anchor_gap_line(None) == []
+
+
+def test_rubric_section_shows_anchor_gap_under_scores():
+    rubric = _rubric([{"id": "chainsight.main", "title": "Chain Sight", "score": 2}])
+    rendered = _rendered(
+        [{"id": "chainsight.main", "regions": [{"anchor": "a"}], "missing_anchors": ["a"]}]
+    )
+    lines = rm.render_rubric_section(rubric, rendered=rendered)
+    score_at = next(i for i, line in enumerate(lines) if "2/5" in line)
+    gap_at = next(i for i, line in enumerate(lines) if "앵커 누락" in line)
+    assert gap_at > score_at, "앵커 누락 줄은 점수 아래에 온다"
+
+
+def test_rubric_section_without_rendered_is_unchanged():
+    """렌더 산출물이 없어도 기존 섹션은 그대로 나온다(행위보존)."""
+    rubric = _rubric([{"id": "monitor.main", "title": "Monitor", "score": 4}])
+    assert "앵커 누락" not in "\n".join(rm.render_rubric_section(rubric))
+
+
+def test_load_rendered_returns_none_when_absent_or_malformed(tmp_path):
+    assert rm.load_rendered(tmp_path, date(2026, 9, 7)) is None
+    (tmp_path / "rendered_20260907.json").write_text("{ not json", encoding="utf-8")
+    assert rm.load_rendered(tmp_path, date(2026, 9, 7)) is None

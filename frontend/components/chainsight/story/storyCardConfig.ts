@@ -10,6 +10,14 @@
 import type { MarketStoryCard, MarketStoryCardType } from '@/types/chainsight';
 import { relationTypeLabel } from '../mindmapConfig';
 
+/**
+ * D-S3-7 배경 접기 상수(도그푸딩 피드백은 상수 변경으로 대응).
+ * FOLD_STEADY_BY_DEFAULT: weekly_active(steady) 기본 접힘 — 아침 첫 화면의 조용함이 목적.
+ * QUIET_DAY_PEEK: 사건 0장인 날 카드로 펴 보이는 배경 상위 수(빈 화면 금지·조용함을 말함).
+ */
+export const FOLD_STEADY_BY_DEFAULT = true;
+export const QUIET_DAY_PEEK = 3;
+
 /** 카드 유형 → 배지 문구. */
 export const STORY_CARD_LABEL: Record<MarketStoryCardType, string> = {
   new_sec: '신규 연결 · 8-K',
@@ -30,9 +38,15 @@ export function newSecRelationLabel(relationType: string | undefined): string {
   return relationTypeLabel(relationType);
 }
 
-/** 카드 클릭 시 딥링크 대상 — 페어의 symbol_a로 마인드맵 카드 포커스. */
+/** 카드 클릭 시 딥링크 대상 — 페어의 symbol_a로 마인드맵 카드 포커스(기존 동작 보존, B-3). */
 export function storyCardDeepLink(card: MarketStoryCard): string {
   return `/chainsight/mindmap?symbol=${encodeURIComponent(card.symbol_a.toUpperCase())}`;
+}
+
+/** 멤버 라인 표시 — 묶음이면 members(정렬), 아니면 페어. " · "로 결합. */
+export function membersDisplay(card: MarketStoryCard): string {
+  const members = card.members && card.members.length ? card.members : [card.symbol_a, card.symbol_b];
+  return members.join(' · ');
 }
 
 /** 규칙 3(신뢰 위계): co_mention 카드에만 "관계 아님" 캡션 — sec_evidence는 표시 안 함. */

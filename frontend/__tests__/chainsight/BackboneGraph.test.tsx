@@ -91,4 +91,35 @@ describe('BackboneGraph', () => {
     expect(edgeKey({ symbol_a: 'B', symbol_b: 'A' })).toBe('A|B');
     expect(edgeKey({ symbol_a: 'A', symbol_b: 'B' })).toBe('A|B');
   });
+
+  // RC-C1-HITAREA 회귀: 커스텀 linkCanvasObject를 쓰면 linkPointerAreaPaint가
+  // 없을 때 onLinkClick 히트 판정이 죽는다. prop 전달 여부 + 히트영역 페인트 검증.
+  it('linkPointerAreaPaint 를 함수로 ForceGraph2D 에 전달한다', () => {
+    const MockForceGraph = mockFG();
+    render(
+      <BackboneGraph {...baseProps} edges={[edge('A', 'B', 0.9)]} ForceGraph2D={MockForceGraph} />,
+    );
+    const props = MockForceGraph.mock.calls[0][0] as Record<string, unknown>;
+    expect(typeof props.linkPointerAreaPaint).toBe('function');
+  });
+
+  it('linkPointerAreaPaint 가 주어진 color 로 stroke 하고 lineWidth >= 히트폭(6)이다', () => {
+    const MockForceGraph = mockFG();
+    render(
+      <BackboneGraph {...baseProps} edges={[edge('A', 'B', 0.9)]} ForceGraph2D={MockForceGraph} />,
+    );
+    const props = MockForceGraph.mock.calls[0][0] as Record<string, unknown>;
+    const paint = props.linkPointerAreaPaint as (l: unknown, color: string, ctx: unknown) => void;
+    const ctx = {
+      beginPath: vi.fn(), setLineDash: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), stroke: vi.fn(),
+      strokeStyle: '', lineWidth: 0,
+    };
+    // 얇은 엣지(width 1) → 히트폭으로 넓혀져야 클릭이 잡힌다.
+    // 비영 좌표(paintLink와 동일 !src?.x 가드가 x=0을 falsy 처리 — 실 그래프엔 x=0 희소)
+    const thinLink = { source: { x: 10, y: 20 }, target: { x: 110, y: 20 }, width: 1, edge: edge('A', 'B', 0.9) };
+    paint(thinLink, '#a1b2c3', ctx);
+    expect(ctx.strokeStyle).toBe('#a1b2c3');
+    expect(ctx.lineWidth).toBeGreaterThanOrEqual(6);
+    expect(ctx.stroke).toHaveBeenCalled();
+  });
 });

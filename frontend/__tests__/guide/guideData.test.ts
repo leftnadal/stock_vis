@@ -1,7 +1,24 @@
 // 가이드 데이터 계약 — 에이전트 루브릭 단일 출처의 무결성 (D-GUIDE-TRACK)
+import { statSync } from 'node:fs'
+import path from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import { GUIDE_SCREENS, getGuideById, getGuideForRoute } from '@/lib/guide'
+
+const APP_DIR = path.resolve(__dirname, '../../app')
+
+/** 라우트에 실제 page 파일이 있는가. 가이드 등재 여부와 무관한 "실물" 판정. */
+function routeExists(route: string): boolean {
+  const dir = path.join(APP_DIR, ...route.split('/').filter(Boolean))
+  return ['page.tsx', 'page.ts'].some((f) => {
+    try {
+      return statSync(path.join(dir, f)).isFile()
+    } catch {
+      return false
+    }
+  })
+}
 
 describe('GUIDE_SCREENS 계약', () => {
   it('id·route가 중복되지 않는다', () => {
@@ -32,10 +49,20 @@ describe('GUIDE_SCREENS 계약', () => {
     }
   })
 
+  // 판정 근거 = app/ 의 page 파일(실물). 가이드 등재 라우트 집합으로 근사하면,
+  // 가이드가 없는 실재 화면을 가리킬 때 거짓 실패한다 — /chainsight 임시 이설
+  // (GUIDE-CS-GUARD-1)에서 실증됐다. 이 파일 전체가 "선언 ↔ 실물" 계약이므로 실물을 본다.
   it('nextAction.route는 실재 라우트를 가리킨다', () => {
-    const known = new Set([...GUIDE_SCREENS.map((s) => s.route), '/guide'])
     for (const s of GUIDE_SCREENS) {
-      if (s.nextAction) expect(known.has(s.nextAction.route), `${s.id} → ${s.nextAction.route}`).toBe(true)
+      if (s.nextAction) {
+        expect(routeExists(s.nextAction.route), `${s.id} → ${s.nextAction.route}`).toBe(true)
+      }
+    }
+  })
+
+  it('화면 자신의 route도 실재한다', () => {
+    for (const s of GUIDE_SCREENS) {
+      expect(routeExists(s.route), `${s.id} → ${s.route}`).toBe(true)
     }
   })
 

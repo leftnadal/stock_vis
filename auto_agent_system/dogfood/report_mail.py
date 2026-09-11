@@ -146,6 +146,49 @@ def load_rubric(out_dir: Path, day: date | None = None) -> dict[str, Any] | None
     return data if isinstance(data, dict) else None
 
 
+def load_rendered(out_dir: Path, day: date | None = None) -> dict[str, Any] | None:
+    """오늘자 렌더 수집 결과. 루브릭 점수의 "재료"가 무엇이었는지를 담고 있다."""
+    target = day or date.today()
+    path = out_dir / f"rendered_{target:%Y%m%d}.json"
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def render_anchor_gap_line(rendered: dict[str, Any] | None) -> list[str]:
+    """앵커 누락 한 줄 — 그 점수가 무엇을 보고 매겨졌는지의 신뢰도 표시.
+
+    가이드 앵커를 못 찾은 화면은 앵커 텍스트가 아니라 `fallback_text`(전체 본문)로
+    채점된다. 즉 점수는 나오지만 "가이드가 가리킨 영역"을 본 점수가 아니다.
+    2026-09-04 실측: 정문 개편으로 chainsight 3/3 누락 — 점수만 보면 알 수 없었다.
+
+    정적 가드(`frontend/__tests__/guide/guideAnchors.test.ts`)와 역할 분담:
+    가드는 CI에서 "라우트가 그 컴포넌트를 import하는가"를 미리 잡고, 이 줄은 실제 DOM에서
+    "정말 렌더됐는가"를 사후에 잡는다. 조건부 렌더·인증 리다이렉트는 가드가 못 본다.
+
+    누락 0건이면 빈 리스트 — 무변화 침묵 규율(매일 오는 메일이 길면 안 읽힌다).
+    """
+    if not rendered:
+        return []
+    gaps = []
+    for screen in rendered.get("screens") or []:
+        missing = screen.get("missing_anchors") or []
+        if not missing:
+            continue
+        total = len(screen.get("regions") or []) or len(missing)
+        gaps.append(f"{screen.get('id') or screen.get('route')} {len(missing)}/{total}")
+    if not gaps:
+        return []
+    return [
+        f"  ⚠ 앵커 누락 — {' · '.join(gaps)}"
+        " (해당 화면은 앵커가 아니라 전체 본문으로 채점됨)"
+    ]
+
+
 def _delta_mark(delta: int | None) -> str:
     if delta is None:
         return "  "
@@ -156,7 +199,11 @@ def _delta_mark(delta: int | None) -> str:
     return " ="
 
 
-def render_rubric_section(rubric: dict[str, Any] | None, reason: str = "") -> list[str]:
+def render_rubric_section(
+    rubric: dict[str, Any] | None,
+    reason: str = "",
+    rendered: dict[str, Any] | None = None,
+) -> list[str]:
     """루브릭 섹션. 산출물이 없으면 사유 한 줄만 남긴다(행위보존)."""
     if rubric is None:
         return ["■ 루브릭 채점", f"  · 측정 불가({reason or '산출물 없음'})", ""]
@@ -174,6 +221,9 @@ def render_rubric_section(rubric: dict[str, Any] | None, reason: str = "") -> li
         # 빈 상태 화면은 기준이 다르다("안내가 충분한가") → 라벨로 구분해 오해를 막는다.
         label = " [빈 상태]" if row.get("empty_state") else ""
         lines.append(f"  · {title}{label} — {row.get('score')}/5 {_delta_mark(row.get('delta'))}")
+
+    # 점수 바로 아래 — 점수를 읽는 사람이 그 점수의 신뢰도를 같이 보게.
+    lines += render_anchor_gap_line(rendered)
 
     empty_avg = rubric.get("empty_average")
     if empty_avg is not None:
@@ -210,6 +260,7 @@ def render_body(
     groups: dict[str, Any],
     rubric: dict[str, Any] | None = None,
     rubric_skip_reason: str = "",
+    rendered: dict[str, Any] | None = None,
 ) -> str:
     parts: list[str] = list(_summary_lines(report, groups))
     body = ["\n".join(parts), ""]
@@ -239,7 +290,7 @@ def render_body(
             body.append(f"  {check.get('status', '?'):>4}  {key:<34} {check.get('note', '')}")
         body.append("")
 
-    body += render_rubric_section(rubric, rubric_skip_reason)
+    body += render_rubric_section(rubric, rubric_skip_reason, rendered)
 
     body.append(FOOTER)
     return "\n".join(body)
@@ -268,10 +319,11 @@ def build_mail(out_dir: Path | None = None) -> tuple[str, str, dict[str, Any]]:
     groups = classify(history)
     d = out_dir or OUT_DIR
     rubric = load_rubric(d)
+    rendered = load_rendered(d)
     reason = "" if rubric else "2단계 산출물 없음(렌더/채점 실패 또는 미실행)"
     return (
         render_subject(report, rubric),
-        render_body(report, groups, rubric, reason),
+        render_body(report, groups, rubric, reason, rendered),
         groups,
     )
 
