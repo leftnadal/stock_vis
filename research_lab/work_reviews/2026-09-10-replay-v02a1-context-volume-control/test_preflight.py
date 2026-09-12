@@ -18,7 +18,19 @@ class FakeTokenizer:
         return range(5000 + characters)
 
 
+class FakeBatchEncoding(dict):
+    pass
+
+
 class PreflightTests(unittest.TestCase):
+    def test_prompt_tokens_uses_input_ids_not_mapping_key_count(self):
+        tokenizer = mock.Mock()
+        tokenizer.apply_chat_template.return_value = FakeBatchEncoding(
+            input_ids=list(range(4903)), attention_mask=list(range(4903)),
+        )
+        self.assertEqual(preflight.prompt_tokens(tokenizer, []), 4903)
+        self.assertEqual(len(tokenizer.apply_chat_template.return_value), 2)
+
     def test_opaque_control_is_deterministic_hex(self):
         first = preflight.control_items(257)
         self.assertEqual(first, preflight.control_items(257))
