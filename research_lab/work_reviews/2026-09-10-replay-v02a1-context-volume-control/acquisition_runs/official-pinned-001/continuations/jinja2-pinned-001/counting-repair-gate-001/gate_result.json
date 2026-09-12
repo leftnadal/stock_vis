@@ -1,0 +1,48 @@
+{
+  "counting_repair": "use actual input_ids sequence length instead of BatchEncoding key count",
+  "exact_count_gate_execution_count": 1,
+  "execution_finished_at": "2026-09-12T11:29:20.725776+00:00",
+  "execution_started_at": "2026-09-12T11:29:20.677887+00:00",
+  "experiment": "Research Evidence Handoff Replay v0.2A.1",
+  "historical_artifacts_modified": false,
+  "input_normalization_performed": false,
+  "lineage": "counting-repair-gate-001",
+  "model_visible_arms_generated": 0,
+  "network_attempts": 0,
+  "provider_model_invocations": 0,
+  "reference_counts": {
+    "original": {
+      "actual_input_ids_length": 14387,
+      "exact_match": true,
+      "legacy_top_level_len": 2,
+      "provider_reference_tokens": 14387,
+      "source_path": "source_snapshot/v02a-original-visible.json",
+      "source_sha256": "13ca0a87a5550a054fca4216e71ed5089f0eb9ba6cc9863445df7a3d2d889e3a"
+    },
+    "short": {
+      "actual_input_ids_length": 4903,
+      "exact_match": true,
+      "legacy_top_level_len": 2,
+      "provider_reference_tokens": 4903,
+      "source_path": "source_snapshot/v02a-sanitized-visible.json",
+      "source_sha256": "e43a921f47ea412a62d4247622a3860fe3fe3df9b2f69782931b1e4663323b09"
+    }
+  },
+  "runtime": {
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "python": "3.12.2 (v3.12.2:6abddd9f6a, Feb  6 2024, 17:02:06) [Clang 13.0.0 (clang-1300.0.29.30)]"
+  },
+  "status": "exact_count_gate_passed",
+  "tokenizer_identity": {
+    "backend_tokenizer_sha256": "ffb7a28b27dabcc333662fd3e0b0005d9e79a1c22e31453ab5a3017fbd5f25c0",
+    "immutable_revision": "dc4d348443bc740c68e2d77492492c11606384d5",
+    "local_files_only": true,
+    "name_or_path": "/Users/byeongjinjeong/Developer/stockvis_research_runtime/.experiments/replay-v02a1-official-pinned-001/tokenizer_snapshot",
+    "tokenizer_class": "Qwen2Tokenizer",
+    "tokenizers_version": "0.23.2",
+    "transformers_version": "5.16.1",
+    "trust_remote_code": false,
+    "vocab_size": 248044
+  },
+  "tokenizer_or_template_changed": false
+}
