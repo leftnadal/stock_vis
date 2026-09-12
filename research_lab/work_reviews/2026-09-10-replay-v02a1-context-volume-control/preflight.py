@@ -74,13 +74,31 @@ def load_local_tokenizer():
     return tokenizer, identity
 
 
+def prompt_tokens_from_result(tokens) -> int:
+    token_ids = tokens["input_ids"] if hasattr(tokens, "keys") and "input_ids" in tokens else tokens
+    if hasattr(token_ids, "shape"):
+        shape = tuple(int(item) for item in token_ids.shape)
+        if len(shape) == 1:
+            return shape[0]
+        if len(shape) == 2 and shape[0] == 1:
+            return shape[1]
+        raise ValueError("ambiguous_token_sequence_shape")
+    if not isinstance(token_ids, (list, tuple, range)):
+        raise ValueError("unsupported_token_sequence_type")
+    if token_ids and isinstance(token_ids[0], (list, tuple, range)):
+        if len(token_ids) != 1:
+            raise ValueError("ambiguous_multiple_token_sequences")
+        return len(token_ids[0])
+    return len(token_ids)
+
+
 def prompt_tokens(tokenizer, messages) -> int:
     tokens = tokenizer.apply_chat_template(
         messages,
         tokenize=True,
         add_generation_prompt=True,
     )
-    return len(tokens)
+    return prompt_tokens_from_result(tokens)
 
 
 def opaque_stream(characters: int) -> str:
