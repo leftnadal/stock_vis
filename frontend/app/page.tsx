@@ -6,7 +6,14 @@ import { useEODDashboard } from '@/hooks/useEODDashboard';
 import { useConfluenceMap } from '@/components/eod/useConfluenceMap';
 import { DataFreshnessBadge } from '@/components/eod/DataFreshnessBadge';
 import { DashboardTabs, type DashTab } from '@/components/eod/DashboardTabs';
-import { MarketSummaryBar } from '@/components/eod/MarketSummaryBar';
+import {
+  MarketSummaryBar,
+  countDirections,
+  countUniqueSymbols,
+  filterCardsByDirection,
+  type DirectionFilter,
+} from '@/components/eod/MarketSummaryBar';
+import { SectorChipLine } from '@/components/eod/SectorChipLine';
 import { SignalFilterTabs } from '@/components/eod/SignalFilterTabs';
 import { SignalCardGrid } from '@/components/eod/SignalCardGrid';
 import { SignalDetailSheet } from '@/components/eod/SignalDetailSheet';
@@ -23,6 +30,8 @@ import type { SignalCategory, SignalCard } from '@/types/eod';
 const VALID_CATEGORIES: Set<string> = new Set([
   'all', 'momentum', 'volume', 'breakout', 'reversal', 'relation', 'technical',
 ]);
+
+const VALID_DIRECTIONS: Set<string> = new Set(['bull', 'bear', 'neutral']);
 
 function HomeContent() {
   const { data, isLoading, error } = useEODDashboard();
@@ -45,6 +54,12 @@ function HomeContent() {
   const tabParam = searchParams.get('tab') ?? 'discover';
   const activeTab: DashTab = tabParam === 'market' ? 'market' : 'discover';
 
+  // URL에서 activeDirection 읽기 (?direction=bull|bear|neutral · ?category=·?tab= 과 공존)
+  const directionParam = searchParams.get('direction') ?? 'all';
+  const activeDirection: DirectionFilter = VALID_DIRECTIONS.has(directionParam)
+    ? (directionParam as DirectionFilter)
+    : 'all';
+
   const [selectedCard, setSelectedCard] = useState<SignalCard | null>(null);
 
   const handleCategoryChange = useCallback((category: SignalCategory | 'all') => {
@@ -53,6 +68,17 @@ function HomeContent() {
       params.delete('category');
     } else {
       params.set('category', category);
+    }
+    const qs = params.toString();
+    router.replace(pathname + (qs ? '?' + qs : ''), { scroll: false });
+  }, [searchParams, router, pathname]);
+
+  const handleDirectionChange = useCallback((direction: DirectionFilter) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (direction === 'all') {
+      params.delete('direction');
+    } else {
+      params.set('direction', direction);
     }
     const qs = params.toString();
     router.replace(pathname + (qs ? '?' + qs : ''), { scroll: false });
@@ -96,6 +122,11 @@ function HomeContent() {
     ? data.signal_cards
     : data.signal_cards.filter((card) => card.category === activeCategory);
 
+  // 세그먼트 수치 = 지금 보이는 모집단에서 센다(= 클릭 후 그리드 결과와 항상 일치).
+  const directionCounts = countDirections(filteredCards);
+  const uniqueStockCount = countUniqueSymbols(filteredCards);
+  const gridCards = filterCardsByDirection(filteredCards, activeDirection);
+
   return (
     <div className="min-h-screen pb-20 md:pb-0">
       <div className="max-w-6xl mx-auto px-4 py-4">
@@ -111,7 +142,20 @@ function HomeContent() {
         {activeTab === 'discover' && (
           <>
             {/* Level 2: 시장 요약 */}
-            <MarketSummaryBar summary={data.market_summary} />
+            <MarketSummaryBar
+              summary={data.market_summary}
+              activeDirection={activeDirection}
+              onDirectionChange={handleDirectionChange}
+              directionCounts={directionCounts}
+              uniqueStockCount={uniqueStockCount}
+            />
+
+            {/* Q3: 섹터 사분면 한 줄 요약 → [시장] 탭 (데이터 없으면 자체 생략) */}
+            <SectorChipLine
+              recommendations={data.recommendations}
+              cards={data.signal_cards}
+              onViewMarket={() => handleTabChange('market')}
+            />
 
             {/* Level 2.5: 추천 캐러셀 (하위호환 — recommendations 부재 시 생략) */}
             <RecommendationCarousel
@@ -129,7 +173,7 @@ function HomeContent() {
 
             {/* Level 4: 시그널 카드 그리드 */}
             <SignalCardGrid
-              cards={filteredCards}
+              cards={gridCards}
               onCardClick={(card) => setSelectedCard(card)}
               onCategoryChange={handleCategoryChange}
             />
