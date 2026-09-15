@@ -1,0 +1,13 @@
+{
+  "actual_cost_usd": null,
+  "batch_id": "33d5bf9a24bd4d70a0bd1ca50721cfee",
+  "credential_material_check": "passed",
+  "execution_returncode": 0,
+  "historical_artifacts_modified": false,
+  "model_invocation_limit": 2,
+  "model_invocations": 2,
+  "preflight_commit": "52973d80d47737fdf6a55bae7915b14e2603c7ab",
+  "retries": 0,
+  "selective_rerun": false,
+  "status": "execution_finished_pending_review"
+}

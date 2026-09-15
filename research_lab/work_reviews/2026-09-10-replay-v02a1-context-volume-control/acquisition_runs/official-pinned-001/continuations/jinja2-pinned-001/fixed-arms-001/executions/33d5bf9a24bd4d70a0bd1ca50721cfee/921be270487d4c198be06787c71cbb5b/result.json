@@ -1,0 +1,70 @@
+{
+  "actual_cost_usd": null,
+  "case_id": "hard-006",
+  "completion": {
+    "model_identity_match": true,
+    "output_budget_fully_used": false,
+    "protocol_completion": "complete",
+    "protocol_failure_reason": null,
+    "provider_finish_state": "stop",
+    "provider_status": "complete",
+    "reasoning_like_visible_content": false,
+    "response_wrapping": "plain_json",
+    "semantic_review_state": "pending_semantic_review",
+    "transport_status": "response_received",
+    "visible_content_state": "present"
+  },
+  "condition": "S-long-control",
+  "execution_timestamp": "2026-09-15T03:55:59.865757+00:00",
+  "final_output": {
+    "action": "final",
+    "answer": "람다그리드의 향후 12개월 28% 이상 매출 성장 주장은 제공된 증거(E1~E17)에 따라 '지원되지 않음(Unsupported)'으로 평가된다. 28% 성장 목표는 검토 대상 전제이나 문서 내 명시적 근거는 없다. 주요 근거는 다음과 같다: 1) AI 수주잔고의 31%를 차지하는 LG-4/4B 프로젝트는 전력 인가 후 설치 일정이 확정되며(E9), 인가 예상 시점이 15~21개월 뒤로 12개월 매출 인식에 지연 위험이 있다(E10). 2) 표준 장비 조기 출하 가능성은 있으나 LG-4 적용 여부 및 금액 비중이 공개되지 않아 불확실성이 남아있다(E11, E13). 3) 과거 수주 전환율 72%는 8개 분기 평균이며 현재 AI 프로젝트 구성이 과거와 동일한지 검증되지 않았다(E6). 4) 기존 비AI 계약 중 매출 9%에 해당하는 계약이 7개월 후 종료되며 갱신 여부가 미정이다(E14). 따라서 12개월 내 28% 성장 달성은 낮은 가능성으로 판단되나, 표준 장비 매출 인식 시점 및 계약 갱신 여부에 따라 변동 가능성이 있다.",
+    "changes": [
+      "원 요약의 '과거 12개월 수주 전환율'을 증거 E6에 따라 '과거 8개 분기 평균'으로 수정함.",
+      "28% 성장 주장이 문서 내 명시적 근거가 아닌 검토 전제임을 명시하여 사실 관계 명확화.",
+      "LG-4/4B 프로젝트의 전력 인가 지연(15~21개월)이 매출 인식에 미치는 영향(E9, E10)을 구체화.",
+      "표준 장비 조기 출하 가능성과 LG-4 적용 불확실성(E11, E13)을 구분하여 기술.",
+      "비AI 계약 종료 및 갱신 위험(E14)을 성장 전망의 하방 리스크로 포함."
+    ],
+    "limitations": [
+      "LG-4/4B 프로젝트 내 표준 장비와 맞춤형 모듈의 금액 비중이 공개되지 않아 조기 매출 인식 가능 물량 불확실함(E13).",
+      "전력 인가 전 출하 가능 여부가 LG-4 프로젝트에 적용되는지 확인되지 않음(E11).",
+      "7개월 후 종료되는 비AI 계약의 갱신 가능성이 미정으로 유지됨(E14).",
+      "주요 고객 설비투자 확대 계획 중 람다그리드 확정 공급 비중이 공개되지 않아 수주 전환 예측 불가(E4).",
+      "경쟁사 매출 증가율과 비교 가능성(지역, 제품, 단계)이 제공되지 않아 시장 상황 직접 비교 제한(E7).",
+      "추가 조사 가능 항목(E17)에 명시된 프로젝트별 12개월 출하 예정액 등 구체적 데이터는 현재 확보되지 않음."
+    ],
+    "used_source_ids": [
+      "fbb0fae3d87c423d82d750739bdc51a3",
+      "9db76a6b48484ae287344dbca9bc54ac",
+      "cfccf3902828409989d7e048118c5b8a",
+      "cb70324f415d4a18bac4338d8ada7b8f",
+      "57918877f1eb47738c976e5907e01c99",
+      "dd1e5b0f6c1d484491ef3fc7c87f5e7e",
+      "6d2f197bd30a47ff9c75accfef403b3f",
+      "f0d00b81febd4a41a414d665154cfba0",
+      "f229cd10512e40569637a63916f85ded",
+      "da6ea963f3e448348caab135978db967",
+      "da4da9ed7ada44ac9e8dccba0054b7bd",
+      "666543b3b5f34e22ad615384c47dbd3f",
+      "46916bd7ec4842f5a57848bc9010399a",
+      "f27e72c5b888483c8e4f9f013d301319",
+      "6bb7471010394d959f1050e402cfe3fc",
+      "68b4dd34a77c4b169f8bb14c93a0af6d",
+      "fd24bba42e594493859fa6c93b89dec8"
+    ]
+  },
+  "input_sha256": "e8505c722bf59d7be82c8b2aa684e5a7a6545e2d68cfb304f30bdb8fa9ad8e1e",
+  "latency_seconds": 72.85970570798963,
+  "local_preflight_prompt_tokens": 14387,
+  "prompt_token_accounting_match": true,
+  "provider_reported_prompt_tokens": 14387,
+  "returned_model": "Qwen/Qwen3.5-122B-A10B",
+  "run_id": "921be270487d4c198be06787c71cbb5b",
+  "semantic_review": "pending",
+  "usage": {
+    "completion_tokens": 4720,
+    "prompt_tokens": 14387,
+    "total_tokens": 19107
+  }
+}

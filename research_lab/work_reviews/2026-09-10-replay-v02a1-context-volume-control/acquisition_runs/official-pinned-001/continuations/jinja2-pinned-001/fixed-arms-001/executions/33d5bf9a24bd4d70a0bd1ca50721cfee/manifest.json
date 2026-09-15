@@ -1,0 +1,27 @@
+{
+  "batch_id": "33d5bf9a24bd4d70a0bd1ca50721cfee",
+  "experiment": "Research Evidence Handoff Replay v0.2A.1",
+  "finished_at": "2026-09-15T03:55:59.868894+00:00",
+  "harness_version": "0.2.1-counting-repair-1",
+  "model_invocation_limit": 2,
+  "model_invocations": 2,
+  "results": [
+    {
+      "condition": "S-short",
+      "prompt_token_accounting_match": true,
+      "protocol_completion": "complete",
+      "run_id": "27ed2dfbde1e4ea9a6da51d4450b779a",
+      "semantic_review": "pending"
+    },
+    {
+      "condition": "S-long-control",
+      "prompt_token_accounting_match": true,
+      "protocol_completion": "complete",
+      "run_id": "921be270487d4c198be06787c71cbb5b",
+      "semantic_review": "pending"
+    }
+  ],
+  "retries": 0,
+  "started_at": "2026-09-15T03:53:08.480593+00:00",
+  "status": "execution_finished_pending_review"
+}

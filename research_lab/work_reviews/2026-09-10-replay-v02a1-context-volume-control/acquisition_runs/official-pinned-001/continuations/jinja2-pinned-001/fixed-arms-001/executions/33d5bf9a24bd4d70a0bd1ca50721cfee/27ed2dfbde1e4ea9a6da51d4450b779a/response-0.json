@@ -1,0 +1,15 @@
+{
+  "answer": "{\n  \"action\": \"final\",\n  \"answer\": \"람다그리드의 향후 12 개월 28% 이상 매출 성장 주장은 Unsupported 로 평가된다. 최근 분기 AI 매출 비중은 26% 이다 (E2). 과거 8 개기 평균 수주 전환율은 72% 이나, 현재 AI 프로젝트 구성이 과거 평균과 동일한지 검증되지 않았다 (E6). AI 수주잔고의 31% 를 차지하는 LG-4/4B 는 동일 캠퍼스 단계별 발주이며, 현장 전력 인가 이후 설치 일정이 확정된다 (E9). 인가 예상 시점은 15~21 개월 뒤로 12 개월 목표 기간을 초과한다 (E10). 비AI 사업 중 기존 통신 인프라 계약 하나는 7 개월 뒤 종료되며 매출의 9% 를 차지하고 갱신 여부는 미정이다 (E14). 표준 장비는 인가 전 출하 가능하나 적용 물량과 비중은 공개되지 않아 불확실성이 존재한다 (E11, E13). 따라서 12 개월 내 28% 성장 달성 가능성은 낮으나, 표준 장비 조기 출하 규모와 계약 갱신 여부는 unassessed 로 남긴다.\",\n  \"used_source_ids\": [\n    \"fbb0fae3d87c423d82d750739bdc51a3\",\n    \"9db76a6b48484ae287344dbca9bc54ac\",\n    \"dd1e5b0f6c1d484491ef3fc7c87f5e7e\",\n    \"f229cd10512e40569637a63916f85ded\",\n    \"da6ea963f3e448348caab135978db967\",\n    \"da4da9ed7ada44ac9e8dccba0054b7bd\",\n    \"666543b3b5f34e22ad615384c47dbd3f\",\n    \"46916bd7ec4842f5a57848bc9010399a\",\n    \"f27e72c5b888483c8e4f9f013d301319\",\n    \"cb70324f415d4a18bac4338d8ada7b8f\",\n    \"fd24bba42e594493859fa6c93b89dec8\"\n  ],\n  \"changes\": [\n    \"과거 12 개월 수주 전환율 평균을 과거 8 개기 평균으로 수정 (E6)\",\n    \"LG-4/4B 가 동일 캠퍼스 단계별 발주임을 명시 (E9)\",\n    \"전력 인가 시점이 12 개월 목표 기간을 초과함을 명시 (E10)\",\n    \"표준 장비 조기 출하 가능성과 불확실성 명확화 (E11, E13)\",\n    \"고객별 실제 배정량 미확보 사실을 반영 (E4)\"\n  ],\n  \"limitations\": [\n    \"표준 장비 조기 출하 물량 및 적용 프로젝트 미공개 (E11)\",\n    \"LG-4 계열 표준/맞춤 모듈 금액 비중 미공개 (E13)\",\n    \"비AI 계약 갱신 가능성 미정 (E14)\",\n    \"고객별 실제 배정량 미공개 (E4)\",\n    \"AI 프로젝트 구성이 과거 평균과 동일한지 검증되지 않음 (E6)\"\n  ]\n}",
+  "finish_reason": "stop",
+  "model_matches_request": true,
+  "reasoning_trace_saved": false,
+  "response_id": "chatcmpl-RAWp3hz7JOfmc8rpAwt0sRlG",
+  "returned_model": "Qwen/Qwen3.5-122B-A10B",
+  "status": "complete",
+  "system_fingerprint": "",
+  "usage": {
+    "completion_tokens": 6196,
+    "prompt_tokens": 4940,
+    "total_tokens": 11136
+  }
+}
