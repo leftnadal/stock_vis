@@ -2010,3 +2010,13 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **해결**: ⑴ 절대경로·원격추적에 의존하는 git 상태(worktree 등록, origin/* 해시, ahead/behind)는 **실행 기기에서 측정한 값만** 판정 근거로 삼는다. ⑵ 지시서는 그런 값을 단정하지 말고 "실측해 보고, 다르면 HALT"로 위임한다(이번 STEP 0 설계가 실제로 두 오류를 잡았다). ⑶ 인용할 값은 복합 출력의 첫 줄에서 추론하지 말고 **그 값만 찍는 명령으로 직접 지목**한다(`git rev-parse origin/main`).
 
 **교훈**: STEP 0를 "판정 금지·수치만"으로 분리한 설계가 옳았다. 기준과 실측이 다를 때 HALT하는 규율이 없었다면 잘못된 목표 커밋으로 배포가 진행됐을 것이다.
+
+## `worker_sync.sh`는 default worker/beat만 재기동 — 별도 큐 워커(`-Q neo4j`)는 구코드를 계속 들고 돈다 (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[deploy][infra][celery][harness]`
+
+**증상**: `sv sync`(=`scripts/worker_sync.sh`)로 런타임 3종을 `2eca515d`로 정렬하고 celery worker·beat·daphne를 재기동한 뒤에도, `com.stockvis.celery-worker-neo4j`(PID 3464)만 **09-12 기동분 그대로**였다. cwd는 이미 새 코드로 바뀐 `sv-worker-runtime`인데, 프로세스는 3일 전 import한 모듈을 메모리에 들고 있다 — **파일과 메모리가 어긋난 상태**.
+
+**원인**: `worker_sync.sh`의 worker 단계가 재기동하는 launchd 잡이 `com.stockvis.celery-worker`·`com.stockvis.celery-beat` 둘뿐이다. 별도 큐 워커(`-Q neo4j --pool=solo`)는 **같은 트리에서 돌지만 다른 잡**이라 스크립트 범위 밖이다. re-detach는 트리 단위라 조용히 성공하므로, 로그에 아무 경고도 남지 않는다.
+
+**해결**: 배포 시 워커 재기동 대상을 **잡 단위로 열거**한다 — `launchctl list | grep stockvis` 로 celery 계열 잡을 전수 확인하고, `worker_sync.sh`가 건드리지 않는 잡(`celery-worker-neo4j` 등)은 `launchctl kickstart -k gui/$(id -u)/<잡>`로 별도 재기동한다. 완주 검증 = 해당 큐로 태스크 1건 발사 후 SUCCESS 확인(예: `health_check_neo4j` → `{status: healthy, connected: true}`). 근본 수리는 `worker_sync.sh`에 큐 워커 잡 목록을 추가하는 것(별건).
+
+**교훈**: 이 아크에서 **세 번째** "동기화가 안 나르는 것"이다 — ⑴ FE prod 빌드([[lesson_worker_sync_excludes_fe_prod_build]]) ⑵ 배포 범위 산정(현 런타임 대비) ⑶ 별도 큐 워커. 공통 구조는 **"트리를 옮기는 일"과 "그 코드를 실제로 들고 도는 프로세스를 갈아끼우는 일"이 분리돼 있고, 후자는 목록으로 관리되지 않는다**는 것. 동기화 도구의 이름(`worker_sync`)이 범위를 보장한다고 읽지 말 것.
