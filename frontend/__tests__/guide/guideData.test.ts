@@ -69,8 +69,13 @@ describe('GUIDE_SCREENS 계약', () => {
   it('검수 대기 draft는 allowlist에 한함 (미추적 draft 잔류 금지)', () => {
     // 병진 검수 대기 중인 신규 가이드만 draft 허용(검수 후 confirmed 전환·별건).
     // stray draft(추적 안 된 미검수)는 여전히 실패시켜 게이트 유지.
-    // MP2-SUBPAGES S1(2026-08-31): marketPulse.macro = 허브 가이드, 병진 검수 대기.
-    const PENDING_REVIEW = new Set<string>(['marketPulse.macro'])
+    // GUIDE-MACRO-REVIEW(2026-09-15): marketPulse.macro 검수 완료·confirmed 전환 → 대기 0.
+    // ※ dogfood 쪽 confirmed 단언은 GUIDE-CS-GUARD-1(113b48a3)에서 draft 허용으로 완화됐다
+    //   (draft 화면도 등재 가능·채점 선별은 rubric_targets 몫). 따라서 **이 allowlist가
+    //   repo에 남은 유일한 draft 게이트**다. 새 draft를 여기 넣을 때는 GUIDE-CS-GUARD-1D의
+    //   기한부 패턴(guideAnchors.test.ts PENDING_ANCHORS)을 따를지 먼저 판단한다
+    //   — 형태 통일은 두 번째 draft가 실제로 생길 때(선제 추상화 금지).
+    const PENDING_REVIEW = new Set<string>([])
     const drafts = GUIDE_SCREENS.filter((s) => s.reviewStatus !== 'confirmed').map((s) => s.id)
     const untracked = drafts.filter((id) => !PENDING_REVIEW.has(id))
     expect(untracked, `미추적 draft 잔류: ${untracked.join(', ')}`).toEqual([])

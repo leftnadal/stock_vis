@@ -7702,3 +7702,42 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 
 - **정정(초과 확정)**: 예산 원문 대상 = **cards gzip**("246→~310KB"). 실측 cards **393KB gz > ~310KB** → **초과 확정**. 단 cards/*.json은 **lazy fetch**(카드 드로어 첫 열림 1회, 초기 로드 아님)이므로 초기 로드 예산엔 무영향·드로어 UX만 대상.
 - **처분**: **symbol-ref 축약(D-SCAN-B2-DERIVE 기등재 완화책) 보류 해제·상신** — SCAN-UX-2 사이클 1의 보류를 연다. TASKQUEUE 위임(dashboard/shared).
+
+## [2026-09-15] D-GUIDE-MACRO-CQ — 거시 허브 coreQuestion = (B) 이어붙이기 [frontend][market_pulse][guide]
+
+> 트랙: GUIDE-MACRO-REVIEW. 가중합 B 4.50 / A 4.20 / C 3.10 (마진 0.30).
+
+- **결정(B 채택)**: `marketPulse.macro`의 coreQuestion을 기존 문장 뒤에 **덧대어** 확장한다 — "…는 무엇인가" → "…는 무엇이고, **그것이 지금 국면에 어떤 뜻인가**".
+- **타이브레이커**: coreQuestion은 화면이 답하는 질문이고, HUB-V02-S2(SenseNote 정적 번역층) 이후 그 답은 **값과 뜻 둘 다**다. B는 A 문장을 버리지 않고 덧대므로 **과거 채점 점수의 연속성이 끊기지 않는다**(같은 질문의 확장으로 읽힌다).
+
+## [2026-09-15] D-GUIDE-MACRO-GLOBAL — 글로벌 카드 데이터 공백 = (ⓐ) 문구만 정직화 [frontend][market_pulse][guide]
+
+> 트랙: GUIDE-MACRO-REVIEW. 가중합 ⓐ 4.20 / ⓑ 3.90 / ⓒ 2.80 (마진 0.30).
+
+- **결정(ⓐ 채택)**: 해외 지수(FTSE·닛케이·항셍) 미수집과 DXY 부재를 **가이드 문구에서 사실대로 말한다**. 위젯 코드는 건드리지 않는다.
+- **타이브레이커**: ⓑ(위젯에서 빈 칸 처리)가 이기는 칸은 **이미 등재된 별건**(`DATA-GAP-GLOBALIDX`) 몫이다. 가이드 슬라이스가 위젯 코드를 건드리면 HUB-V02-S2가 지킨 **"위젯 파일 diff 0"이 깨지고**, 그 전례가 다음 세션의 근거가 된다.
+- **부기**: 가이드는 문구로만 정직화했다. 빈 칸 자체의 UI 정직화는 `DATA-GAP-GLOBALIDX` 트랙 몫으로 남는다.
+
+## [2026-09-15] D-GUIDE-MACRO-NAV — 전역 서브탭 설명 = (가) 문구 흡수·region 4 유지 [frontend][market_pulse][guide]
+
+> 트랙: GUIDE-MACRO-REVIEW. 가중합 가 4.40 / 나 4.30 / 다 3.15 (마진 0.10).
+
+- **결정(가 채택)**: S2가 올린 상단 서브탭을 **별도 region으로 세우지 않고** `learnings` 문구에 흡수한다. region은 심리·금리·지표·글로벌 **4개 그대로**.
+- **타이브레이커**: 앵커는 **영역에 붙는 번호**인데 탭바는 **영역을 고르는 도구**다 — 층위가 다르다. 앞에 넣으면 기존 배지 번호가 전부 밀리고(과거 스크린샷·채점 이력과 어긋남), 뒤에 넣으면 화면 최상단 요소에 5번이 붙는다(번호 순서와 시선 순서가 역전).
+
+## [2026-09-15] D-GUIDE-MACRO-AUTO — GUIDE-MACRO-REVIEW 자동 결정 3건 [frontend][guide][process]
+
+> 트랙: GUIDE-MACRO-REVIEW. 별도 저울질 없이 규율에서 따라오는 건.
+
+- **AUTO-1(allowlist 동시 제거)**: confirmed 전환과 **같은 커밋에서** `guideData.test.ts`의 `PENDING_REVIEW`를 비운다. 죽은 allowlist를 남기면 다음 draft가 거기 숨는다.
+- **AUTO-2(문구에 수치·연도 금지)**: 가이드 문구에 실측 수치·연도 리터럴을 쓰지 않는다. 값은 SenseNote가 그때그때 계산해 넣는 몫이고, 문구에 박으면 데이터가 움직일 때 조용히 거짓이 된다.
+- **AUTO-3(nextAction 라벨만 교정)**: `nextAction.label`은 근거→판단의 흐름을 말하도록 바꾸되 `route`는 불변(`/market-pulse-v2`).
+
+### [2026-09-15] GUIDE-MACRO-REVIEW 애든덤 A — Part 3(dogfood 기대 route 집합) 폐기
+
+- **처분**: 원안 Part 3을 **집행하지 않는다**. `tests/dogfood/` 전체 무접촉.
+- **사유 ⑴ 목적 선행 완료**: 허브 라우트 추가는 `113b48a3`(GUIDE-CS-GUARD-1 S1+S3, 09-07 작성)에서 이미 끝났다 — `test_targets.py`의 기대 집합에 `/market-pulse-v2/macro`가 들어 있다.
+- **사유 ⑵ 원안이 회귀를 만든다**: 원안 블록은 `/chainsight/events` 자리에 `/chainsight`를 써서 **GUIDE-CS-GUARD-1 S3의 정문 임시 이설을 되돌린다**. 같은 파일의 `by_id["chainsight.main"].route == "/chainsight/events"` 단언과 정면 충돌해 **dogfood 0 → 1 RED 순증**이 된다.
+- **사유 ⑶ 권한**: 타 트랙이 소유한 이설을 이 슬라이스가 되돌릴 권한이 없다.
+- **경위**: 디렉터 09-10 측정은 **그 시점 정확**했다(`113b48a3`은 당시 `monorepo/sess-guide-csg1`에 머물러 main에 없었고, `0bfd185e` 머지로 뒤늦게 착지). main이 지시서 작성과 실행 사이에 밑에서 움직인 경우다. 실행자 STEP 0의 **숫자로 된 HALT 조건**(dogfood 실패 2건)이 착수 전에 잡았다.
+- **파생 규율**: 원안 §4가 주장한 "dogfood RED 2→0"은 **이 슬라이스의 공로가 아니다**. 원장에 그렇게 적지 않는다. 이 슬라이스의 실효는 ⑴ 가이드 문구의 화면 정합 ⑵ `rubric_targets()` 5→6 편입, 둘뿐이다.
