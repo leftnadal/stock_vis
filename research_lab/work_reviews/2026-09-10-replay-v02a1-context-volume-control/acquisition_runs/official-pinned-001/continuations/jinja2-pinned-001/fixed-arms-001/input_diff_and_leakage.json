@@ -1,0 +1,13 @@
+{
+  "available_sources_identical": true,
+  "evidence_count_each_arm": 17,
+  "evidence_identical_and_ordered": true,
+  "historical_candidate_critique_absent": true,
+  "long_control_hex_only": true,
+  "only_differing_user_body_field": "context_volume_control",
+  "protected_expectations_absent": true,
+  "short_control_empty": true,
+  "status": "passed",
+  "summary_identical": true,
+  "system_prompt_identical": true
+}

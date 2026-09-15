@@ -1,0 +1,27 @@
+{
+  "control_payload_characters": 9994,
+  "control_payload_sha256": "b87218349588cb317519f8b4534de7f866895d2fd401eb0f74eb273df8b62582",
+  "input_normalization_performed": false,
+  "input_sha256": {
+    "S-long-control": "e8505c722bf59d7be82c8b2aa684e5a7a6545e2d68cfb304f30bdb8fa9ad8e1e",
+    "S-short": "ac31ab930c1099a8daab468d773c27b2d73d498a95510fd0033ec2dcf421a6ec"
+  },
+  "long_control_input_tokens": 14387,
+  "model_visible_arms_generated": 2,
+  "prior_gate_reexecuted": false,
+  "prior_gate_sha256": "c987d15a2c038f9ede8af146667010d4e5a4185f1f14ab824e8ca4aacd93f5a0",
+  "prior_gate_status": "exact_count_gate_passed",
+  "provider_model_invocations": 0,
+  "short_input_tokens": 4940,
+  "status": "ready_for_two_fixed_calls",
+  "tokenizer_identity": {
+    "backend_tokenizer_sha256": "ffb7a28b27dabcc333662fd3e0b0005d9e79a1c22e31453ab5a3017fbd5f25c0",
+    "immutable_revision": "dc4d348443bc740c68e2d77492492c11606384d5",
+    "local_files_only": true,
+    "tokenizer_class": "Qwen2Tokenizer",
+    "tokenizers_version": "0.23.2",
+    "transformers_version": "5.16.1",
+    "trust_remote_code": false
+  },
+  "tokenizer_or_template_changed": false
+}
