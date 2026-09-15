@@ -1982,3 +1982,31 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **원인**: Next.js 16이 `themeColor`·`viewport`를 `metadata` export에서 분리된 `generateViewport`/`viewport` export로 이관 요구. 현행 dashboard 레이아웃이 구식 `metadata` 위치 유지.
 
 **해결(사소)**: `app/layout` 계열에서 `themeColor`·`viewport`를 `export const viewport` 로 이동. 기능 영향 0(경고만)·위임(dashboard/frontend chore).
+
+## 배포 범위는 "직전 보고의 델타"가 아니라 "현 런타임 커밋 대비 처음 나가는 것 전부" (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[deploy][harness][process]`
+
+**증상**: S3-1C 한 건을 배포한다고 알고 착수했으나, 실제 런타임(worker/api `5e4e70ea`, 09-07) 대비 delta는 비-머지 40커밋이었다. BE는 `chain_sight` 2파일 외에 `packages/shared/metrics/agent_reports.py`·`services/sec_pipeline/tasks.py`·`auto_agent_system/dogfood/` 5건이 함께 나갔다. 특히 `tasks.py` 변경은 **Celery 워커 재기동 요건**이라 누락 시 구코드가 계속 돈다.
+
+**원인**: 배포 범위를 "이번 세션이 만든 커밋"(= 직전 보고의 델타)으로 세는 습관. 런타임 트리는 여러 세션의 랜딩을 건너뛴 채 뒤처져 있으므로, 세션 델타와 배포 델타는 **다른 축**이다.
+
+**해결**: 배포 전 반드시 `git diff --name-status <런타임HEAD>..<목표커밋>`를 **경로 필터 없이** 1회 실행해 머지 diff를 직접 본다. 앱별로 묶어 BE/FE를 나누고, ⑴ `*/tasks.py` 포함 여부(워커 재기동) ⑵ `migrations/` 포함 여부 ⑶ `frontend/` 앱코드 포함 여부(=prod 리빌드 필수)를 각각 확인한다. 런타임 트리가 3종(worker/api/web)이고 **각자 다른 커밋에 있을 수 있으므로**, FE 델타는 web 런타임 HEAD 기준으로 따로 센다(이번엔 web이 `1efd410c`로 더 앞서 있어, FE 신규 배포분은 4파일뿐이었다).
+
+**교훈**: [[lesson_worker_sync_excludes_fe_prod_build]]의 짝. 그쪽이 "무엇을 나르지 않는가"라면, 이쪽은 "무엇을 나를 차례인가"를 잘못 센 경우다. 범위 산정과 도구 한계는 별개의 실패 지점이다.
+
+## 수치를 인용할 때 "어느 축·어느 행의 값인가"를 매번 명시한다 (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[harness][process]`
+
+**증상**: M-T3의 `PEER_OF 9`를 "쌍 수"로 읽어 우선순위를 잘못 정했다. 같은 세션에서 재발 — 지시서의 "SEC 4종 pending 19행"을 그대로 대조하려 하자 실측은 SEC 4종 pending **13행**, 전체 pending **21행**이었고, 정작 19는 `backfill_serving_layer` dry-run이 보고하는 **"pending→evidence로 전환될 행 수"**였다(전환 후 pending 21→2). 세 값이 전부 다른 축인데 같은 이름("pending 19")으로 오갔다.
+
+**원인**: 수치가 축(what is counted)·모집단(which rows)·시점(before/after) 없이 단독으로 유통되면, 받는 쪽이 자기 맥락의 축에 끼워 맞춘다. 숫자가 우연히 그럴듯하면 오독이 검출되지 않는다.
+
+**해결**: 인용 형식을 `값 [축] [모집단] [시점]`으로 고정한다. 예: "19 = pending→evidence 전환 예정 행 수(RelationConfidence 전체, 백필 전)". 대조할 때는 **상대의 숫자를 재현하는 쿼리를 먼저 지목**하고(어느 테이블·어느 필터), 값이 어긋나면 축부터 의심한다 — 값이 아니라.
+
+## 디렉터 read-only는 마운트 너머를 보므로, 절대경로 의존 git 상태를 디렉터가 판정하지 않는다 (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[harness][process][git]`
+
+**증상**: 지시서가 "런타임 worktree 3개 = prunable"을 기정사실로 주고 복구 절차를 예고했으나, 실기기 실측은 prunable **0건**(3종 모두 정상 detached HEAD)이었다. 같은 지시서가 `origin/main = 2eca515d`로 단정했으나 실측은 `50d37950`이었다(로컬 main이 ahead 4, `rev-list --left-right`의 좌우를 거꾸로 읽음).
+
+**원인**: `git worktree list`의 prunable 판정은 **등록된 절대경로의 실재 여부**로 결정된다. 마운트를 통해 보는 환경에서는 그 경로가 없으므로 전부 prunable로 보인다 — 환경 아티팩트이지 저장소 상태가 아니다. 마찬가지로 `origin/main`은 fetch 시점에 따라 관측자마다 다르다.
+
+**해결**: ⑴ 절대경로·원격추적에 의존하는 git 상태(worktree 등록, origin/* 해시, ahead/behind)는 **실행 기기에서 측정한 값만** 판정 근거로 삼는다. ⑵ 지시서는 그런 값을 단정하지 말고 "실측해 보고, 다르면 HALT"로 위임한다(이번 STEP 0 설계가 실제로 두 오류를 잡았다). ⑶ 인용할 값은 복합 출력의 첫 줄에서 추론하지 말고 **그 값만 찍는 명령으로 직접 지목**한다(`git rev-parse origin/main`).
+
+**교훈**: STEP 0를 "판정 금지·수치만"으로 분리한 설계가 옳았다. 기준과 실측이 다를 때 HALT하는 규율이 없었다면 잘못된 목표 커밋으로 배포가 진행됐을 것이다.
