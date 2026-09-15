@@ -16,6 +16,21 @@
 - 🆕 **REPORT-FIX-REALIZE** (⑤·검증 대기) — T3(REPORT-TLDR-SYSLINE)·T4(DOGFOOD-EOD-LAG-TRADINGDAYS) **착지 ≠ 실효**. 실효 검증 = **다음 `sv sync`(worker_sync) 후 아침 메일 2종**(@backend 06:15 agent report의 System 줄 = 실제 beat/neo4j 반영 / dogfood 06:20 report의 `eod.trading_date` = 주말·휴장 개재에도 ok). **활성화≠배포** — 유닛 테스트 통과는 착지이며, 자연 발화가 실효 게이트. MIG-BUNDLE-1 배포창(관문②) 동반 랜딩으로 참조.
 
 
+## ⚠️ RC-C1-HITAREA-LIVE — backbone 엣지 클릭 라이브 재검 (이관 등재, CS-RESUME-DEPLOY 2026-09-15) [chainsight][frontend][qa] — RC-C1 트랙 소관
+
+> **경고 이관이지 잔무 이관이 아니다.** 이 트랙이 반드시 알아야 할 사실:
+> `linkPointerAreaPaint`+`HIT_WIDTH=6` 수리는 **배포 완료**(main `2eca515d`·web 빌드 `WmN891Ly6yxeNCnwve5Zq`)이고
+> vitest(BackboneGraph+MarketStoryFeed) **26/26 GREEN**이다. 그러나 **라이브 육안 확인은 5회 시도 전부 실패**했다(원인 미규명).
+> 즉 **"배선 확증 ≠ 히트영역 확증"** — 현재 테스트는 `onLinkClick`이 `onEdgeSelect`로 연결됐는지만 검증하며,
+> **히트영역 회귀를 잡지 못한다**. 테스트가 GREEN인 것이 기능이 동작한다는 증거가 아닌 상태다.
+
+- **RC-C1-LIVE-1** (todo) — `:3000/chainsight/backbone`에서 엣지 클릭 → `[data-testid=backbone-evidence-bar]` 출현 확인.
+  시도 기록: 픽셀 추정 3회 + 캔버스 픽셀 스캔(링크색 검출 후 최원거리 지점) 2회 모두 미발화.
+  **좌표계 주의**: 스크린샷 좌표 = CSS × **1.034**(viewport 1512 ↔ shot 1564), 캔버스 `dpr=2`.
+  이 매핑은 노드 적중(GPC)으로 **검증됨** → 매핑 오류는 배제. 합성 MouseEvent(mousemove→click) 디스패치도 미발화.
+  남은 가설: ⑴ force-graph 히트 판정이 노드 우선이라 짧은 엣지가 가려짐 ⑵ `link.edge` undefined → `setSelectedEdge(undefined)`로 바가 안 뜸 ⑶ 섀도 캔버스 갱신 타이밍.
+- **RC-C1-LIVE-2** (todo·RC-C1-LIVE-1 의존) — 원인 규명 후 **히트영역 자체를 잡는 회귀 테스트** 추가(현 vitest는 배선만 검증).
+
 ## CS-S3 트랙 — "이야기 리포트" (S3-PRE 등재 재landing + S3-1 착지, 2026-09-07) [chainsight][frontend]
 
 > D-S3-1~5 + CS-S3-1 착지 결정(DECISIONS 2026-09-07). R2-S1/S2 아크 연속. S3-PRE 등재분이 main 미랜딩이라 S3-1과 함께 통합.
@@ -25,8 +40,8 @@
 | CS-S3-PRE | — | 데이터·구조 전제 측정(P1~P9) + DECISIONS 5건 + 사이징 | R2-S2 | ✅ **done (2026-09-03, 측정 전용)** |
 | CS-S3-1 | M | 묶음(union-find)·제목 인용·8-K 템플릿·story_id 슬러그·헤더 정직화·정렬(사건성 1차)·응답 캐시·window_days·evidence 스키마. FE 카드/헤더/가이드 겹침 | CS-S3-PRE | ✅ **LANDED+DEPLOYED (main `5e4e70ea`·커밋 A~H). BE 817·vitest 19·tsc0·ruff0·eslint0. worker_sync 3트리 재기동+FE prod 리빌드·:3000 200·라이브 API 검증. 픽셀 스샷=browse 데몬 이슈로 미수행(API 갈음)** |
 | CS-S3-1B | S | D-S3-7 배경 접기(FE 전용): weekly_active 기본 접힘·구분선→접힘 줄·펼치면 줄 목록(카드 아님)·조용한 날 peek 3+"오늘은 조용합니다"·펼침 비저장·상수 FOLD_STEADY_BY_DEFAULT/QUIET_DAY_PEEK. BE 무변경 | CS-S3-1 | ✅ **LANDED+DEPLOYED (main `3a0c649b`·FE `129a9e3d`+K `255646bc`+docs). vitest chainsight 312·tsc0·eslint0. web-only 배포(next build+web-frontend 재기동·:3000 200·BE 무재기동)** |
-| CS-S3-1C | M | D-S3-8 관계 종류 한 줄(BE+FE): serving_layer 축(evidence&truth=기록됨/context=제외/그외=관계 기록 없음)·`relation_lookup` 쌍 조회 서비스(공용·N+1 금지)·등급 단어 금지 잠금(D-1). BE+FE | CS-S3-1 | ✅ **done (커밋 BE `76d1abd3`+FE `4d7f0708`·docs). pytest 836·vitest 317·tsc0·ruff0·eslint0. ★배포 후보(병진 승인 대기)** |
-| CS-S3-1C-보강 | M | 판정을 캐시 아닌 원본으로(D-S3-8 축 REFINED): `relation_line_for` 축 `serving_layer=='evidence'`→`relation_type ∈ RECORDED_SENTENCE` AND `truth` AND `!='excluded'`·seed create_defaults에 `serving_layer='evidence'`(출혈 수리). BE only | CS-S3-1C | ✅ **done (커밋 `0b3c193a`·docs). pytest chainsight+architecture+sec_pipeline 861·마이그0. ★배포 대기(병진 승인)·유보=기존 pending 백필(prod write)** |
+| CS-S3-1C | M | D-S3-8 관계 종류 한 줄(BE+FE): serving_layer 축(evidence&truth=기록됨/context=제외/그외=관계 기록 없음)·`relation_lookup` 쌍 조회 서비스(공용·N+1 금지)·등급 단어 금지 잠금(D-1). BE+FE | CS-S3-1 | ✅ **LANDED+DEPLOYED (2026-09-15, main `2eca515d`·런타임 3종 정렬+web prod 리빌드 `WmN891Ly6yxeNCnwve5Zq`). 라이브 확인: feed 200·30/30 카드 relation_line·화면 렌더(제휴4·공급1·없음25)·등급 단어 0·'같은 업종' 0** |
+| CS-S3-1C-보강 | M | 판정을 캐시 아닌 원본으로(D-S3-8 축 REFINED): `relation_line_for` 축 `serving_layer=='evidence'`→`relation_type ∈ RECORDED_SENTENCE` AND `truth` AND `!='excluded'`·seed create_defaults에 `serving_layer='evidence'`(출혈 수리). BE only | CS-S3-1C | ✅ **LANDED+DEPLOYED (2026-09-15, main `2eca515d`). pending 백필 집행 완료: `backfill_serving_layer --apply` → pending 21→2(잔여=PEER hidden 2)·evidence 4,981→5,000(+19)·SEC4종 pending 13→0. 마인드맵 AMCR 0→9·KLAC 3→4·WDC 3→4** |
 | CS-S3-2 | M | 사슬 대조(§3). **쌍 조회 서비스 = `relation_lookup.lookup_pairs` 신설 완료(S3-1C)** → 재사용. serving_layer 축(D-S3-8) 재사용. 신뢰도 4밴드(0.35/0.60/0.85). **evidence[] 스키마 = D-S3-EVIDENCE-SCHEMA(§1 입력)**. `hidden` 두 갈래(previous_status) — **M 계측: 상위30에 hidden 0**(현 표본 미발생) | CS-S3-1 | 🟢 **착수 가능(쌍 조회 선행 완료)** |
 | CS-S3-3 | S | 시계열(§2). read-time 일별 재집계(P3: NewsEntity.published_at ~6개월 보존→물질화 확장 불요) | CS-S3-1 | 🆕 todo |
 | CS-S3-4 | L | 해석(§4)·규칙(①②③⑤⑥ 결정론+④ LLM shared 래퍼)·리포트 페이지(`/chainsight/story/:id`)·AI 의견란(접힘)·8-K SEC 원문 링크(카드 비-링크라 여기서 수용) | CS-S3-2, CS-S3-3 | 🆕 todo |
