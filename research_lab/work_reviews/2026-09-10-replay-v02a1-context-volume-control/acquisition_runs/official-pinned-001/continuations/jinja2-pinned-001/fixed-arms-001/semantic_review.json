@@ -1,0 +1,59 @@
+{
+  "schema_version": "0.1-working",
+  "evaluation_target": {
+    "experiment": "Research Evidence Handoff Replay v0.2A.1",
+    "case_id": "hard-006",
+    "batch_id": "33d5bf9a24bd4d70a0bd1ca50721cfee",
+    "execution_commit": "d4050de5e050e1c5f8312785da8b02f836281d3f"
+  },
+  "integrity": {
+    "model_invocations": 2,
+    "retries": 0,
+    "selective_rerun": false,
+    "historical_artifacts_modified": false,
+    "credential_material_check": "passed",
+    "S-short": {"local_prompt_tokens": 4940, "provider_prompt_tokens": 4940, "protocol_completion": "complete", "model_identity_match": true},
+    "S-long-control": {"local_prompt_tokens": 14387, "provider_prompt_tokens": 14387, "protocol_completion": "complete", "model_identity_match": true},
+    "actual_cost_usd": null
+  },
+  "arms": {
+    "S-short": {
+      "existing_error_repaired": {"status": "supported", "warrant": ["E6 period corrected from the frozen summary's past-12-month wording to an average over eight past quarters."]},
+      "correct_content_preserved": {"status": "supported", "warrant": ["E2, E6, E9, E10, E11/E13 uncertainty, and E14 downside condition retained."]},
+      "introduced_factual_error": {"status": "not_identified", "warrant": ["No direct contradiction with E1-E17 was identified in the final artifact."]},
+      "unsupported_strengthening": {"status": "present", "warrant": ["Unsupported was strengthened to 달성 가능성은 낮다 without calibrated probability evidence."]},
+      "material_condition_preserved": {"status": "partial", "warrant": ["Early shipment and unknown mix were mentioned, but E12 recognition conditions were not explicitly connected to the final conclusion."]},
+      "evidence_used_correctly": {"status": "partial", "warrant": ["Core evidence was directionally consistent; used_source_ids listed 11 sources, including sources not clearly linked to final reasoning."]},
+      "appropriate_abstention_unassessed": {"status": "partial", "warrant": ["Unknowns were retained, but the final answer still assigned low likelihood."]},
+      "final_conclusion_scope_calibration": {"status": "unsupported", "warrant": ["Unsupported is warranted; low likelihood is not."]},
+      "execution_failure_truncation": {"status": "absent", "warrant": ["Valid final JSON; protocol complete; output budget not exhausted."]}
+    },
+    "S-long-control": {
+      "existing_error_repaired": {"status": "supported", "warrant": ["E6 period corrected from the frozen summary's past-12-month wording to an average over eight past quarters."]},
+      "correct_content_preserved": {"status": "supported", "warrant": ["E6, E9/E10, E11/E13 uncertainty, E14 downside, and further-data limitations retained."]},
+      "introduced_factual_error": {"status": "not_identified", "warrant": ["No direct contradiction with E1-E17 was identified in the final artifact."]},
+      "unsupported_strengthening": {"status": "present", "warrant": ["Unsupported was strengthened to 낮은 가능성 without calibrated probability evidence."]},
+      "material_condition_preserved": {"status": "partial", "warrant": ["Unknown mix was noted, but E12 standard/custom recognition boundary did not adequately constrain the conclusion."]},
+      "evidence_used_correctly": {"status": "partial", "warrant": ["Core citations were directionally correct; used_source_ids declared all 17 sources rather than demonstrable use."]},
+      "appropriate_abstention_unassessed": {"status": "partial", "warrant": ["Limitations were extensive, but the final low-likelihood statement overreached them."]},
+      "final_conclusion_scope_calibration": {"status": "unsupported", "warrant": ["Unsupported is warranted; low likelihood is not."]},
+      "execution_failure_truncation": {"status": "absent", "warrant": ["Valid final JSON; protocol complete; output budget not exhausted."]}
+    }
+  },
+  "cross_arm": {
+    "opaque_control_used_as_evidence": "not_identified",
+    "shared_material_failure": "Both arms retained unsupported strengthening and incomplete E12/E13 constraint propagation.",
+    "evidence_volume_effect": "unassessed",
+    "warrant": [
+      "One stochastic run per arm does not establish a general causal effect.",
+      "S-long-control did not remove the shared semantic failure.",
+      "S-short latency was 98.516 seconds and S-long-control latency was 72.860 seconds; this pair does not establish monotonic latency scaling."
+    ]
+  },
+  "interpretation_boundary": [
+    "Exact local/provider token agreement supports counting repair and fixed-input integrity.",
+    "Protocol completion does not imply semantic correctness.",
+    "This exposed calibration pair does not validate a permanent evidence-handoff architecture.",
+    "No model, agent-topology, memory, or methodology adoption is supported."
+  ]
+}
