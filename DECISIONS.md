@@ -8,6 +8,65 @@
 
 ---
 
+## [2026-09-16] D-ASOF-POPULATION — 앵커 as_of 계약 검증 모집단 = "동결 목록에 없는 모든 앵커" [dss][harness]
+
+> 출처: 처분 DSS-ASOF-1 HALT해제 ① (자동 결정). 구현 = `packages/shared/market_week.py:ANCHOR_EXEMPTIONS`.
+
+**결정**: `as_of_week` 계약의 검증 모집단은 **동결 목록에 없는 모든 앵커**로 한다. `health_check._BOUNDARY_KNOWN_VIOLATIONS`와 동형 패턴(코드 상수 + 항목별 1줄 근거 + 회귀 테스트 고정).
+
+초기 동결 4건:
+- `("SymbolDemandSignal", 2026-07-24/07-31/08-07)` — 2026-08-16 일괄백필. 실행시각(08-15 21:01 ET)이 데이터 내용과 무관한 소급 적재.
+- `("EstimateSnapshot", 2026-07-29)` — 수요일 임시수집. 주간 마감일이 아니므로 앵커 쪽이 주간 라벨이 아니다.
+
+**Why**: `as_of_week`는 **자동 주간 발화에만** 적용 가능하다 — 사람이 만든 소급/임시 적재는 실행 시각이 데이터 내용과 무관해 관측시각 기반 추론이 **원리적으로 불가능**하다. 직전 세션 전수검사 불일치 6건 중 5건이 이 성격이었고(백필 3 + 임시수집 1 + 09-12 1), 규칙이 아니라 **모집단이 오염**돼 있었다. 자동 발화 12건은 규칙을 100% 복원했다.
+
+**How to apply**: `is_anchor_exempt(model_label, anchor)` / `find_anchor_violations(...)`. 전수검사 = `scripts/asof_anchor_sweep.py`(read-only). 회귀 = `tests/unit/shared/test_anchor_contract.py`. 🔴 **동결 목록에 항목을 추가하는 것은 사람의 결정이지 테스트를 통과시키는 수단이 아니다** — 이 문장을 테스트 헤더에 박제했다. cf. D-FIRING-WATCH-DECOUPLE·D-DSS-W11-RESCUE.
+
+## [2026-09-16] D-FIRING-WATCH-DECOUPLE — 발화 계약 감시를 as_of에서 분리 [ops][harness][dss]
+
+> 출처: 처분 DSS-ASOF-1 HALT해제 ② (자동 결정). 구현 = `scripts/health_check.py` 검증 19·20.
+
+**결정**: 주간 발화 감시(H-1 `주간 발화 계약`)는 `as_of_week`를 **쓰지 않는다**. "직전 금요일(ET) 앵커의 DB 행이 존재하는가"만 묻고, 직전 금요일 산술은 인라인 중복 정의한다. 임계 = 마감 후 **+48h WARN / +96h ERROR**. 추가로 `SymbolDemandSignal`의 **유효신호 0(전건 excluded)** 은 행 존재와 무관하게 **ERROR**.
+H-2 `서비스 재기동 폭풍` = launchd 관리 서비스 24h 재기동 **>20 WARN / >200 ERROR**.
+
+**Why**:
+- **분리 근거**: 감시가 라벨 교정 로직에 의존하면 백필이 감시를 통과시켜 버린다(감시가 감시 대상에 의존하는 순환). 발화 감시는 *의미론*이 아니라 *사실*을 물어야 한다. 부수 효과로 `DSS-ASOF-2` 배포창에 게이트가 인질로 잡히지 않는다.
+- **+48h 근거**: 주간 잡의 하루 밀림은 catch-up으로 회복된다(09-12→09-13 실제 사례). 즉시 ERROR는 경보 피로다. +96h = 회복 창을 두 번 놓친 상태.
+- **유효신호 0 조항**: 2026-09-12가 정확히 그 상태였다 — 행 502건이 있었으나 전건 `missing_prev`로 유효분모 0. **행 존재만 보는 감시는 이것을 놓친다.**
+- **>20/>200 근거**: 정상 재기동은 일 0~3회. 09-12 사건은 **3,276회**. 두 자릿수 임계면 오탐 없이 폭풍을 잡는다.
+- **last_run_at 금지**: 등재 원칙 *"last_run_at은 증거가 아니다 — DB 행이 증거다"*.
+
+**How to apply**: 계수 소스는 실측 확정한 로그 배너 4종(celery-beat `beat: Starting...` / celery-worker·neo4j `<name>@<host> ready.` / daphne `Listening on TCP address`). **web-frontend는 배너 미확정이라 제외**(측정 장치 오탐을 늘리지 않는다). 로그 꼬리 4MB만 읽는다(384MB+ 전수 스캔 회피) — 과소 계수 조건을 경보 문구에 병기. 역케이스 = `tests/ops/test_weekly_firing_contract.py`.
+
+## [2026-09-16] D-DSS-W11-RESCUE — 09-11 앵커 백필로 10회차 구조 [dss][data]
+
+> 출처: 처분 DSS-ASOF-1 HALT해제 ③ (**병진 결정**). 상신 = `scratchpad/DSS-W11-BACKFILL_상신_20260915.md`.
+
+**결정**: 2026-09-12(토) `EstimateSnapshot` 1005행을 **09-11 앵커로 복제**하고(이동 아님) `load_dss_week --anchor 2026-09-11`로 DSS를 재적재한다. 09-12 앵커 행은 **삭제하지 않는다**(유효신호 0이라 무해·사건 흔적 보존).
+
+| 옵션 | 설명 | 가중합 |
+|---|---|---|
+| **ⓐ CC 준비 + 병진 집행** | dry-run·상신까지 CC, `--execute`는 사람 | **4.32** ← 병진 선택 |
+| ⓑ CC 집행(위임) | 명시 위임 문구 하에 CC가 `--execute` | **4.40** ← 디렉터 추천 |
+| ⓒ 결번 수용 | 백필 없이 10회차 포기 | 2.85 |
+
+**마진 = 0.08** (ⓑ−ⓐ). 디렉터 추천은 ⓑ였으나 **병진이 ⓐ를 선택**했고 그대로 집행한다 — 마진이 0.1 미만이라 선택 역전의 실익이 없고, prod DB 쓰기의 최종 책임은 사람에게 있다는 규율이 우선한다. (선례 `D-HC-NIGHTLY-WIRE`와 동형 기록.)
+
+**Why**: G-2 증거 게이트가 09-12 수집분 = 09-11 마감 컨센서스임을 확증했다(개정 폭이 클린 7일 pooled 대비 변경률 0.960x·|Δ|중앙 0.367x·전 분위 부풀림 0; 부분집합 논증 — 8일 창은 7일 창을 포함하므로 더 작을 수 없다; 토요일은 미국장 휴장이라 새 리비전 발생 불가). 복제 후 예측 `flat_ratio` **41.07%**(임계 90%) · `missing_prev` **0** · 유효분모 487 → 클린 쌍 4 → **5**.
+🔴 **A 없이 B 단독 실행 금지** — 09-14의 "무효·유해" 판정은 *09-11 스냅샷 0행* 전제 위에 있었다.
+
+**How to apply**: `manage.py backfill_snapshot_anchor --from 2026-09-12 --to 2026-09-11 [--execute]`(기본 dry-run). 가드 = 대상 앵커 비어있지 않으면 거부·`--from/--to` 외 무접촉·`SymbolDemandSignal` 미복제·`created_at` 원본 유지(bulk_update로 auto_now_add 우회). 집행 후 동결 목록에 `("EstimateSnapshot", 2026-09-11)` **추가 금지** — 백필분은 관측시각이 원본이라 규칙을 지킨다.
+
+## [2026-09-16] D-DSS-ASOF-LAYER — as_of를 적재 레이어로 승격(DSS-ASOF-2, Phase 1) [dss][harness]
+
+> 출처: 처분 DSS-ASOF-1 HALT해제 ④. **이번 세션은 재료 수집만**(구현 금지) — 배포창 편승.
+
+**결정**: 적재 시점에 `anchor = as_of_week(관측시각)`으로 기록하도록 승격한다. 결번·드리프트가 원천 소멸한다. 착수 = `sv sync` 배포창 편승.
+
+**Why**: 읽는 쪽 교정(DSS-ASOF-1)은 이미 적재된 행의 **내용**을 바꾸지 못한다 — 09-12 앵커 502행이 전건 `missing_prev`인 것이 그 증거다. 관측일과 대상일을 같은 필드에 담는 구조 자체를 고쳐야 재발이 끝난다.
+
+**How to apply**: 변경 지점 2곳뿐 — `apps/chain_sight/tasks/estimate_tasks.py:40` `snapshot_date = timezone.now().date()`(⚠️ 현재 **UTC 날짜**다. 20:00 ET 이후 실행 시 하루 앞선 날짜가 박히는 잠재 결함 — 함께 수리) · `apps/chain_sight/tasks/dss_tasks.py:34` `et_today`. 가드(`최신 스냅샷 앵커 ≠ et_today`)도 as_of 기반으로 전환하면 09-12형 skip이 사라진다. **마이그레이션 불요**(값 의미만 바뀜·`unique_together` 불변: `(symbol, snapshot_date, fiscal_year)` / `(symbol, anchor_date)`). **행위보존 증명** = 자동발화 12건에 신·구 로직을 모두 적용해 동일 앵커 산출 확인(이미 `scripts/asof_anchor_sweep.py`가 그 모집단을 출력한다).
+
 ## [2026-09-10] D-BRANCH-DELETE-DELEGATE-1 — 단계별 승인 게이트 하 CC 삭제 집행 위임 [harness][ops][governance]
 **결정**: D-BRANCH-DELETE-MANUAL("삭제는 병진 수동")의 **정련**. 다음 4조건이 모두 충족된 경우에 한해 CC가 브랜치·worktree·원격 삭제를 **집행**한다 — ⑴ 분류 보고서가 main에 착지됨 ⑵ 전 ref `git bundle` 백업 + `verify` 통과 ⑶ 사용자가 세션 안에서 단계별 승인 토큰(`승인 A`~`E`)을 직접 입력 ⑷ 사후 재측정 보고. `-D`(강제)는 **줄 단위 실측으로 미이식 0이 확인된 건**에만(명시 목록 아님 — 실측이 목록을 갱신). **자가 `-D` 전환 금지**(`-d` 거부 = 건너뜀·기록이 기본, `-D`는 별도 승인·실측 근거 필요).
 **Why**: worktree-per-세션 병렬 환경에서 "후보만 보고" 고정은 누적 적체(225브랜치·61worktree)를 낳는다. 백업+단계 승인+사후측정의 3중 방어가 파괴성을 상쇄하면 위임이 안전·효율적. 집행 증거 = MGMT-BATCH-B-EXEC(2026-09-04~10): A(메인 트리 main 복귀)·B(worktree 40 제거·sv-dash-s0 제외)·C(브랜치 -d 200)·D(브랜치 7 삭제·이식 4줄·42줄 철회)·E(원격 5 삭제). bundle 2종 = `~/stockvis-refs-20260904-1119.bundle`·`~/stockvis-refs-20260907-0948.bundle`.

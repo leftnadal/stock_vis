@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
+from typing import Iterable
 from zoneinfo import ZoneInfo
 
 ET = ZoneInfo("America/New_York")
@@ -53,3 +54,51 @@ def as_of_week(observed_at_et: datetime) -> date:
         friday -= timedelta(days=7)
 
     return friday
+
+
+# ────────────────────────── 앵커 as_of 계약 검증 (D-ASOF-POPULATION) ──────────────────────────
+#
+# 검증 모집단 = "동결 목록에 없는 모든 앵커". health_check `_BOUNDARY_KNOWN_VIOLATIONS`와 동형.
+#
+# 🔴 동결 목록에 항목을 추가하는 것은 **사람의 결정**이지 테스트를 통과시키는 수단이 아니다.
+#    as_of_week 규칙은 자동 주간 발화에만 적용 가능하다. 사람이 만든 소급/임시 적재는 실행 시각이
+#    데이터 내용과 무관하므로 관측시각 기반 추론이 **원리적으로 불가능**하다 — 그것이 동결 사유다.
+#
+# 키 = (모델 레이블, 앵커). 값 = 동결 근거 1줄.
+ANCHOR_EXEMPTIONS: dict[tuple[str, date], str] = {
+    # ── 2026-08-16 일괄백필 3건: 사람이 만든 소급 적재 (created_at 08-15 21:01 ET 동일) ──
+    ("SymbolDemandSignal", date(2026, 7, 24)):
+        "2026-08-16 일괄백필 — 실행시각이 데이터 내용과 무관(소급 적재)",
+    ("SymbolDemandSignal", date(2026, 7, 31)):
+        "2026-08-16 일괄백필 — 실행시각이 데이터 내용과 무관(소급 적재)",
+    ("SymbolDemandSignal", date(2026, 8, 7)):
+        "2026-08-16 일괄백필 — 실행시각이 데이터 내용과 무관(소급 적재)",
+    # ── 임시수집 1건: 수요일 수집이라 주간 마감 라벨이 아니다 ──
+    ("EstimateSnapshot", date(2026, 7, 29)):
+        "2026-07-29(수) 임시수집 — 주간 마감일이 아님(앵커 쪽이 주간 라벨이 아니다)",
+    # ── (§3 백필 집행 후) 2026-09-11 항목을 여기에 추가한다. 집행 전에는 넣지 않는다. ──
+}
+
+
+def is_anchor_exempt(model_label: str, anchor: date) -> bool:
+    """해당 (모델, 앵커)가 동결 목록에 있는가."""
+    return (model_label, anchor) in ANCHOR_EXEMPTIONS
+
+
+def find_anchor_violations(
+    model_label: str, rows: "Iterable[tuple[date, datetime]]"
+) -> list[tuple[date, datetime, date]]:
+    """
+    동결 목록 제외 후 `as_of_week(관측시각) != 앵커`인 행을 돌려준다.
+
+    rows = (앵커, 그 앵커의 최초 관측시각) 튜플들. 반환 = (앵커, 관측시각, 산출된 as_of).
+    빈 리스트 = 계약 준수.
+    """
+    out = []
+    for anchor, observed_at in rows:
+        if is_anchor_exempt(model_label, anchor):
+            continue
+        got = as_of_week(observed_at)
+        if got != anchor:
+            out.append((anchor, observed_at, got))
+    return out

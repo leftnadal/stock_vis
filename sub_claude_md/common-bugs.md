@@ -2020,3 +2020,38 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **해결**: 배포 시 워커 재기동 대상을 **잡 단위로 열거**한다 — `launchctl list | grep stockvis` 로 celery 계열 잡을 전수 확인하고, `worker_sync.sh`가 건드리지 않는 잡(`celery-worker-neo4j` 등)은 `launchctl kickstart -k gui/$(id -u)/<잡>`로 별도 재기동한다. 완주 검증 = 해당 큐로 태스크 1건 발사 후 SUCCESS 확인(예: `health_check_neo4j` → `{status: healthy, connected: true}`). 근본 수리는 `worker_sync.sh`에 큐 워커 잡 목록을 추가하는 것(별건).
 
 **교훈**: 이 아크에서 **세 번째** "동기화가 안 나르는 것"이다 — ⑴ FE prod 빌드([[lesson_worker_sync_excludes_fe_prod_build]]) ⑵ 배포 범위 산정(현 런타임 대비) ⑶ 별도 큐 워커. 공통 구조는 **"트리를 옮기는 일"과 "그 코드를 실제로 들고 도는 프로세스를 갈아끼우는 일"이 분리돼 있고, 후자는 목록으로 관리되지 않는다**는 것. 동기화 도구의 이름(`worker_sync`)이 범위를 보장한다고 읽지 말 것.
+
+## 관측일과 대상일을 같은 필드에 담으면, 실행이 밀리는 순간 원장이 조용히 거짓말을 한다 (채번 후보, DSS-ASOF-1-R2 2026-09-16) `[dss][data][harness][ops]`
+
+**증상**: 2026-09-11(금) 예정이던 `EstimateSnapshot` 수집이 beat 크래시루프로 밀려 09-12(토)에 실행됐다. 앵커 필드(`snapshot_date`)가 **실행일**을 받으므로 09-12로 기록됐고, 데이터 내용은 09-11 마감 컨센서스 그대로였다. 아무 에러도 나지 않았다.
+
+**파급 (조인 규칙이 정확일자라서 연쇄한다)**
+- DSS: `prev = anchor − 7일` → 09-12 − 7 = 09-05(스냅샷 없음) → **502행 전건 `missing_prev`**. 행은 있으나 유효신호 0.
+- C8: `eps_diff_at`이 `anchor−56` 또는 `anchor−63` 정확일자 → 09-12 − 56 = 07-18 ✗ / −63 = 07-11 ✗ → 전건 `c8_leg_missing`. (anchor가 09-11이었다면 −56 = 07-17 ✓로 성립했다.)
+- 감시 공백: 프로세스 생존 점검은 3일 내내 ✅였다. **생존과 발화는 다른 사실이다.**
+
+**해결**
+1. 읽는 쪽 = `packages/shared/market_week.as_of_week(관측시각 ET) -> date` — 가장 최근 완료된 주간 마감(금 16:00 ET) 반환. 자동 발화 12건을 100% 복원.
+2. 감시 = health `주간 발화 계약` — 직전 금요일 앵커의 **DB 행 존재** + **유효신호 0 여부**(행 존재만 보면 이 사건을 놓친다). `as_of`·`last_run_at` 미사용.
+3. 근본 = 적재 시점에 `anchor = as_of_week(관측시각)`으로 기록(`D-DSS-ASOF-LAYER`). 읽는 쪽 교정은 **이미 적재된 행의 내용을 바꾸지 못한다**.
+
+**함정**: `as_of` 규칙은 **자동 발화에만** 쓸 수 있다. 사람이 만든 백필·임시수집은 실행시각이 내용과 무관해 추론이 원리적으로 불가능하다 → 동결 목록으로 분리(`D-ASOF-POPULATION`).
+
+cf. `D-DSS-ANCHOR-SEMANTICS`·`D-FIRING-WATCH-DECOUPLE`·`D-DSS-W11-RESCUE`
+
+## 조인 규칙을 코드로 확인하지 않고 "합리적인 쪽"으로 가정하면, 그 위에 세운 결정 전체가 조용히 무너진다 (채번 후보, DSS-ASOF-1-R2 2026-09-16) `[harness][process][data]`
+
+**증상**: "09-12 앵커에 502행이 적재됐다"는 사실만 보고 *데이터가 하루 밀렸을 뿐 쓸 수 있다*고 가정한 채 처분을 설계했다. 실제로는 `WOW_LAG_DAYS = 7` **정확일자** 조회라 `prev = 09-05`가 부재했고 **502행 전건이 `missing_prev`** 였다 — 유효신호 0. 같은 가정 위에 있던 후속 지시서의 "판정 레이어 배선" 단계는 무력했고 폐기됐다.
+
+**왜 놓쳤나**: 행수(502)가 정상 회차(501)와 비슷해 보였다. **행수는 유효성의 증거가 아니다.**
+
+**해결**: 앵커·lag·조인 키를 쓰는 결정은 착수 전에 **코드 좌표를 인용**해 고정한다.
+```
+demand_signal.py:91   prev = anchor - timedelta(days=WOW_LAG_DAYS)   # WOW_LAG_DAYS = 7, 폴백 없음
+estimate_revision.py:58  lags = (LAG_PRIMARY_DAYS, LAG_FALLBACK_DAYS)  # 56 → 63 OR 폴백
+```
+같은 결번이라도 **DSS는 자가 복구되지 않고**(단일 lag) **C8은 복구된다**(56/63 OR) — 코드를 보지 않으면 뒤집어 판단한다.
+
+**검증 습관**: 적재 결과는 행수가 아니라 **유효분모**(`excluded=False` 수)로 본다. 그것이 health `주간 발화 계약`의 유효신호 0 조항이 된 근거다.
+
+cf. `D-DSS-W11-RESCUE`·`D-FIRING-WATCH-DECOUPLE`

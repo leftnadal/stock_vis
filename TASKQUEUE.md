@@ -52,6 +52,35 @@
 - D-DSS-BEAT-1. celery `chainsight-load-dss-weekly`(Fri 19:00 ET·default 큐) + 폴백 command `load_dss_week`. **2단 스위치**: PeriodicTask enabled=False 등재 → §D 워커 재시작+검증 후 enable.
 - **가동 완료(2026-08-31)**: §C push 착지(origin/main `64c5b622`) → 병진 `sv sync`(worker 트리 `835da979` re-detach + celery-worker/beat 재기동·inspect ping ✓) → CC 검증 2종 통과(트리 조상 `64c5b622` 포함 · `inspect registered`에 chainsight-load-dss-weekly) → **PeriodicTask id=143 enabled=True**. **다음 발화 = 09-04(금) 19:00 ET**. 관측 = DSS-BEAT-OBS-1. 폴백(미발화 시) = 착지 트리 `manage.py load_dss_week`.
 
+## ✅ DSS-ASOF-1 — 관측일/대상일 분리(as_of) + 발화 계약 감시 (완료, DSS-ASOF-1-R2 2026-09-16) [dss][harness][ops]
+- **STEP 1 as_of**: `packages/shared/market_week.as_of_week()` — 주간 마감(금 16:00 ET) 기준 "가장 최근 완료된 마감". 표준 라이브러리만·`apps` import 0·shared 경계 우회 0. 자동 발화 **12/12 복원**.
+- **STEP 2 증거 게이트 G-2 PASS**: G-1 불가(FMP 리비전 타임스탬프 부재 — `estimate_service.py` docstring 명시). 09-04→09-12 개정 폭이 클린 7일 pooled 대비 변경률 **0.960x**·|Δ|중앙 **0.367x**·p75/p90 모두 이하 = **전 분위 부풀림 0** → 내용상 7일 창 확증.
+- **§1 D-ASOF-POPULATION**: 동결 4건(백필 3 + 임시수집 1) 코드 상수화 + 회귀 테스트. 동결 제외 후 위반 **2건 잔존(둘 다 09-12)** → **⚠️ 디렉터 안건**(아래 DSS-ASOF-EXEMPT-0912).
+- **§2 D-FIRING-WATCH-DECOUPLE**: health 신규 2항목 — `주간 발화 계약`(직전 금요일 DB 행 + **유효신호 0 → ERROR**, as_of·last_run_at 미사용, +48h/+96h) · `서비스 재기동 폭풍`(24h >20/>200, 계수 소스 4종 실측 확정·web-frontend 제외). 기존 항목 **출력 diff 0**. 역케이스 12 passed.
+- 게이트: pytest `tests/unit/shared` + `tests/ops` **130 passed** · health ✅17/⚠1/❌2(신규 ERROR = 09-12 유효신호 0 = 진짜 조건).
+
+## ⚠️ DSS-ASOF-EXEMPT-0912 — 09-12 앵커 동결 여부 (디렉터 안건, DSS-ASOF-1-R2 2026-09-16) [dss][harness] — 디렉터 판정 대기
+- **사실**: 동결 4건 제외 후 `asof_anchor_sweep` 위반 **2건**(EstimateSnapshot 09-12 · SymbolDemandSignal 09-12). 지시서 §1-2 기대는 0건 → HALT 조건 충족.
+- **구조**: `D-DSS-W11-RESCUE` §3-4가 "09-12 앵커 행은 삭제하지 않는다"로 확정했으므로 두 행은 **영구 잔존** → 위반도 영구 잔존한다. 지시서 동결 초기 목록 4건에 09-12가 빠져 있다.
+- **CC 미집행 근거**: §1-3 *"동결 목록에 항목을 추가하는 것은 사람의 결정이지 테스트를 통과시키는 수단이 아니다"* → 자기 추가 금지. 상신만.
+- **선택지**: ⒜ 09-12 2건을 동결 추가(근거=본 사건의 드리프트·흔적 보존 결정) / ⒝ sweep을 "신규 앵커만" 보도록 범위 축소 / ⒞ 09-12 행 삭제(§3-4 결정 번복).
+- **머지 보류**: 지시서 "§1·§2까지 게이트 통과 시 머지"에 따라 **main 머지·push 미집행**. §2는 독립 완료 상태로 대기.
+
+## DSS-ASOF-2 — as_of 적재 레이어 승격 (Phase 1 승격·배포창 편승, DSS-ASOF-1-R2 2026-09-16) [dss][infra] — `sv sync` 창 대기
+- 결정 = `D-DSS-ASOF-LAYER`. 변경 지점 **2곳뿐**: `apps/chain_sight/tasks/estimate_tasks.py:40`(⚠️ 현재 `timezone.now().date()` = **UTC 날짜**. 20:00 ET 이후 실행 시 하루 앞선 날짜가 박히는 잠재 결함 동반 수리) · `apps/chain_sight/tasks/dss_tasks.py:34` `et_today`.
+- 가드(`최신 스냅샷 앵커 ≠ et_today`)도 as_of 기반 전환 시 09-12형 skip 소멸. **마이그레이션 불요**(값 의미만 변경·`unique_together` 불변).
+- 행위보존 증명 = 자동발화 12건에 신·구 로직 동일 앵커 산출 확인(`scripts/asof_anchor_sweep.py`가 모집단 출력).
+
+## 🔴 DSS-LEDGER-IMMUTABLE — EstimateSnapshot upsert로 인한 관측 소급 소멸 (신규 최우선 후보, DSS-ASOF-1-R2 2026-09-16) [dss][data] — 등재만
+- **사실**: `EstimateSnapshot`은 append-only가 **아니다** — `estimate_service.snapshot_symbol()`이 `update_or_create` upsert다. 과거 앵커를 재수집하면 그 시점 관측이 **조용히 덮어써진다**(복구 불가).
+- 대조: `SymbolDemandSignal`은 append-only이나 그마저 **관례**(`store_for_anchor` 사전존재 skip)이며 모델 제약·save 오버라이드는 없다.
+- 백필 명령이 "대상 앵커 비어있지 않으면 거부" 가드를 둔 근거가 이것이다. 근본 수리 = 제약/불변 원장 전환. **구현 별건**.
+
+## DSS-ASOF-CAL — 주간 마감 = 금요일 고정(휴장 주 미처리) (잔여 등재, DSS-ASOF-1-R2 2026-09-16) [dss][shared] — 등재만
+- `as_of_week`는 주간 마감을 **금요일 고정**으로 본다. 미국장 휴장 주(예: Good Friday)에는 실제 마감이 목요일이라 그 주를 정확히 라벨하지 못한다.
+- 거래일 캘린더가 `packages/shared`에 **없다** — `apps/credit_signals/trading_calendar.py`에만 존재(NYSE 휴일 2025~2028 + `is/next/previous_trading_day`, 원본 미러 = `services/news/services/ml_label_collector.py`). 해당 파일 자체가 이미 `[보류 큐] 캘린더 유틸 shared 통합`을 명시.
+- 이번 범위에서 shared 승격하지 않음(범위 확대·경계 리스크). 승격 시 `as_of_week`의 "금요일"을 "그 주의 마지막 거래일"로 일반화.
+
 ## ✅ DSS-BEAT-OBS-1 — 09-04 첫 자동 발화 검증 (종결, DUAL-OBS-1 2026-09-07) [theme-heat][dss]
 - 09-04(금) 발화 후: SymbolDemandSignal anchor 09-04 신규 행 수·Score 11행(**DB 행 증거·last_run_at 불인정**) / flat_ratio 판정(§2) / arrow 상태 / 클린 쌍 5/6 갱신(ε는 09-11 6/6에 개시).
 - **검증 결과(2026-09-07·DB 행 증거)**: SymbolDemandSignal anchor 09-04 **501행** + ThemeDemandScore **11행**, Signal created_at **09-04 19:04 ET**(beat 19:00 ET 첫 자동 발화 성공·가드 skip 없음). invariant PASS(합=n·breadth∈[-1,1]·유효분모>0). **flat_ratio 42.15%(정상<60)**. **arrow_suppressed=False**(curr 42.15%·prev 08-28 52.85%). 오프셋 = 스냅샷 완료 16:40 ET → DSS 19:04 ET = **+2h24m ≥2h ✅**. **클린 WoW 쌍 = 4**(pair-based 양끝 비축퇴: 07-31·08-07·08-28·09-04 clean / 08-14 self-축퇴·08-21 prev-축퇴 오염 제외 / 07-24 prev-미평가 판정부재). 직전 단순 anchor 카운트=6/7. **6/6 성숙 ≈ 09-18**(직전 예상 09-11은 5/6 가정분·실측 4 클린이라 +1주). DSS-BEAT 자동화 정상 가동 확인.
