@@ -29,6 +29,11 @@ from django.apps import apps
 from django.db.models import F, Q
 from django.utils import timezone
 
+from apps.chain_sight.services.title_gate import (
+    build_name_index,
+    covered_members,
+    title_mentions_member,
+)
 from apps.chain_sight.services.story_source import (
     articles_for_pair,
     eight_k_title,
@@ -275,17 +280,61 @@ def _new_sec_cards(now, since30):
 def _enrich_titles(cards):
     """표시 카드(co_mention)에 근거 기사 제목·evidence 부착(A-3·A-6). 인용만·LLM 0.
 
-    표시 대상(limit 이후)만 조회 → 조회 비용 bounded. 8-K 는 이미 템플릿 제목 보유.
+    표시 대상(limit 이후)만 조회 → 조회 비용 bounded. 8-K 는 이미 템플릿 제목 보유
+    (D-S3-9 게이트 대상 아님 — 템플릿은 공시 사실이라 인용 적중을 따지지 않는다).
+
+    D-S3-9(CS-S3-1D):
+      A. 커버리지 — 묶음 카드는 pairs[] 전 쌍을 조회해 기사 합집합을 만들고(seed 쌍만
+         보면 members 일부만 설명된다), 카드 멤버를 많이 덮는 순으로 **카드 단위 재정렬**
+         한다(articles_for_pair 내부 정렬은 '쌍 기준'이라 묶음에는 부족).
+      B. 제목 적중 게이트 — 제목이 members 중 하나를 말하는 기사만 제목으로 인용한다.
+         전부 탈락이면 title=None. **evidence 는 게이트와 무관하게 유지**(B-3).
+      C. 빈 상태 두 갈래 — evidence 가 아예 없는 것과, 있는데 멤버를 다룬 제목이 없는
+         것은 다른 사실이다. title_state 로 구분해 보낸다(FE 문구 분기).
     """
-    for c in cards:
-        if c["type"] not in ("daily_spike", "weekly_active"):
-            continue
-        if not c["occurred_on"]:
-            continue
-        arts = articles_for_pair(
-            c["symbol_a"], c["symbol_b"], c["occurred_on"], limit=_EVIDENCE_MAX
+    targets = [
+        c for c in cards
+        if c["type"] in ("daily_spike", "weekly_active") and c["occurred_on"]
+    ]
+    if not targets:
+        return cards
+
+    # 사전 일괄 로드(전 카드 멤버 합집합) — 카드마다 조회하지 않는다(N+1 금지).
+    all_members = {m for c in targets for m in (c.get("members") or [])}
+    name_index = build_name_index(all_members)
+
+    for c in targets:
+        members = c.get("members") or [c["symbol_a"], c["symbol_b"]]
+        # A-1: 묶음이면 전 쌍, 아니면 현행대로 단일 쌍.
+        pairs = c.get("pairs") if c.get("is_group") else None
+        if not pairs:
+            pairs = [{"symbol_a": c["symbol_a"], "symbol_b": c["symbol_b"]}]
+
+        merged = {}
+        for p in pairs:
+            for a in articles_for_pair(
+                p["symbol_a"], p["symbol_b"], c["occurred_on"], limit=_EVIDENCE_MAX
+            ):
+                merged.setdefault(a["id"], a)  # id 기준 dedup
+        arts = list(merged.values())
+
+        # A-2: 멤버 커버리지 → 최신순으로 카드 단위 재정렬.
+        arts.sort(
+            key=lambda a: (len(covered_members(a, members)), a["published_at"] or ""),
+            reverse=True,
         )
-        c["title"] = arts[0]["title"] if arts else None
+        arts = arts[:_EVIDENCE_MAX]
+
+        # B-1/B-2: 제목 적중 게이트. 통과한 기사만 제목 후보(정렬 순서 유지).
+        titled = next(
+            (a for a in arts if title_mentions_member(a["title"], members, name_index)),
+            None,
+        )
+        c["title"] = titled["title"] if titled else None
+        # A-3: 선택된 기사가 덮는 멤버(화면 표기용). 제목이 없으면 빈 목록.
+        c["covered_members"] = covered_members(titled, members) if titled else []
+
+        # B-3: evidence 는 버리지 않는다.
         c["evidence"] = [
             {
                 "kind": "article",
@@ -296,6 +345,13 @@ def _enrich_titles(cards):
             }
             for a in arts
         ]
+        # C-1: 빈 상태 두 갈래.
+        if c["title"]:
+            c["title_state"] = "quoted"
+        elif c["evidence"]:
+            c["title_state"] = "no_member_article"
+        else:
+            c["title_state"] = "no_article"
     return cards
 
 
