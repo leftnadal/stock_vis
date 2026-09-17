@@ -11,6 +11,20 @@ from apps.monitor.models import Claim
 # 접근 버퍼: 진입가 위 이 비율까지는 아직 "접근"(진입 여지). 상수(D-TIMING-DECISIONS-5 ③-B).
 APPROACH_BUFFER = Decimal("0.03")
 
+# ── 손절 접근 손잡이 3종 (D-NEAR-STOP-BUFFER 안 C: 변동성 비례 + 바닥값) ──────────
+# 실효 버퍼 = max(NEAR_STOP_BUFFER, NEAR_STOP_MULTIPLIER × median|일간 변동률| 20거래일).
+# 계산은 DB가 필요하므로 scenario.near_stop_buffer()가 맡는다 — 이 모듈은 순수 유지
+# (D-HOLD-DECISIONS 2의 전제). 여기에는 손잡이만 둔다.
+#
+# 바닥값 5%: 익절 접근(NEAR_TARGET_BUFFER 3%)보다 넓다. 손절은 늦게 알면 되돌릴 수 없다.
+# 데이터가 부족하면(20거래일 미달) 이 값이 그대로 폴백이 된다.
+NEAR_STOP_BUFFER = Decimal("0.05")
+# 변동성 배수 — median 일간 변동률의 몇 배를 밴드로 볼 것인가.
+NEAR_STOP_MULTIPLIER = 2
+# 재발화 창(일) — 밴드 안에 머무는 동안 이 간격으로 재확인 경고를 낸다.
+# 메일 1회 실패가 영구 침묵이 되지 않게 하는 이중화(near_stop은 인앱 표면이 없다).
+NEAR_STOP_RECHECK_DAYS = 5
+
 PriceZone = Claim.PriceZone
 
 
@@ -69,12 +83,6 @@ def zone_anchor(claim):
     if claim.scenario_type == Claim.ScenarioType.HOLD:
         return claim.purchase_price
     return claim.entry_price
-
-
-# 손절 접근 경고 임계 (3-A) — close ≤ stop×(1+이 값)이면 손절 접근.
-# 저장 zone(resolve_zone) 무관 — NEAR_TARGET_BUFFER(익절 접근)의 손절 쪽 대응물.
-# 익절 3%보다 넓게 잡는다: 손절은 늦게 알면 되돌릴 수 없다.
-NEAR_STOP_BUFFER = Decimal("0.05")
 
 
 def is_near_stop(close, stop, buffer=NEAR_STOP_BUFFER):

@@ -16,6 +16,9 @@ from apps.monitor.services.closure import (
     propose_verdict,
 )
 from apps.monitor.services.price_zone import (
+    NEAR_STOP_BUFFER,
+    NEAR_STOP_MULTIPLIER,
+    NEAR_STOP_RECHECK_DAYS,
     is_immediate_zone_alert,
     is_near_stop,
     resolve_zone,
@@ -42,6 +45,43 @@ def latest_close(symbol, as_of=None):
         dq = dq.filter(date__lte=as_of)
     row = dq.order_by("-date").values_list("close_price", flat=True).first()
     return float(row) if row is not None else None
+
+
+# 변동성 산출 창(거래일). 손잡이 3종(price_zone)과 달리 계산 세부라 여기 둔다.
+NEAR_STOP_WINDOW = 20
+
+
+def near_stop_buffer(symbol, as_of=None):
+    """손절 접근 밴드 = max(바닥값, 배수 × median|일간 변동률| 최근 20거래일).
+
+    데이터 20행 미만이면 바닥값(NEAR_STOP_BUFFER) 반환 — 폴백.
+    price_zone은 순수 유지(D-HOLD-DECISIONS 2 전제)라 DB 조회는 이 모듈에만 둔다.
+
+    변동성 비례인 이유: 고정 밴드는 저변동 종목에서 너무 늦고(손절을 그냥 통과),
+    고변동 종목에서 너무 잦다(매일 경고). 바닥값은 저변동 쪽 하한만 지킨다.
+    """
+    import statistics
+
+    from packages.shared.stocks.models import DailyPrice
+
+    q = DailyPrice.objects.filter(stock__symbol=symbol.upper())
+    if as_of:
+        q = q.filter(date__lte=as_of)
+    rows = list(
+        q.order_by("-date").values_list("close_price", flat=True)[: NEAR_STOP_WINDOW + 1]
+    )
+    if len(rows) < NEAR_STOP_WINDOW + 1:
+        return NEAR_STOP_BUFFER
+
+    closes = [float(c) for c in reversed(rows)]
+    rets = [
+        abs(cur - prev) / prev
+        for prev, cur in zip(closes, closes[1:])
+        if prev
+    ]
+    if len(rets) < NEAR_STOP_WINDOW:
+        return NEAR_STOP_BUFFER
+    return max(float(NEAR_STOP_BUFFER), NEAR_STOP_MULTIPLIER * statistics.median(rets))
 
 
 def process_claim_scenario(claim, close, as_of):
@@ -86,8 +126,20 @@ def process_claim_scenario(claim, close, as_of):
     # hold 모드에서 매입가 아래는 전부 ENTRY 한 칸이라 zone 전이로는 손절 접근을 잡을 수 없다.
     # 손절선을 "넘은 뒤"(EXITED) 알리면 이미 늦으므로 넘기 전에 한 번 알린다.
     if claim.stop_price is not None and close is not None:
-        near = is_near_stop(close, claim.stop_price)
-        if near and claim.near_stop_notified_at is None:
+        buf = near_stop_buffer(claim.monitor.target_ref, as_of)
+        near = is_near_stop(close, claim.stop_price, buf)
+        notified = claim.near_stop_notified_at
+        # 재발화 창: 밴드 안에 계속 머물면 N일마다 재확인. 메일 1회 실패가 영구 침묵이
+        # 되지 않게 하는 유일한 이중화다 — near_stop은 인앱 표면(3-B)이 아직 없고,
+        # claim.save()는 pipeline.py:154에서 먼저 커밋되므로 send_digest 실패를 모른다.
+        # 비교는 UTC date끼리다: notified=timezone.now()(UTC), as_of=et_today()이고
+        # beat는 22:45 UTC(=18:45 ET)에 도므로 두 날짜가 같은 날을 가리킨다.
+        # localtime()으로 바꾸면 KST가 되어 하루 밀린다 — 바꾸지 말 것.
+        is_recheck = bool(
+            notified is not None
+            and (as_of - notified.date()).days >= NEAR_STOP_RECHECK_DAYS
+        )
+        if near and (notified is None or is_recheck):
             stop_f = float(claim.stop_price)
             claim.near_stop_notified_at = timezone.now()
             update_fields.append("near_stop_notified_at")
@@ -99,10 +151,12 @@ def process_claim_scenario(claim, close, as_of):
                 "close": close,
                 "stop": stop_f,
                 "to_stop_pct": (stop_f - close) / close * 100.0,
+                "band_pct": float(buf) * 100.0,
+                "recheck": is_recheck,
                 "immediate": True,
             })
-        elif not near and claim.near_stop_notified_at is not None:
-            # 밴드 밖으로 회복(또는 이탈 확정) → 가드 해제. 재진입하면 다시 1회 발화한다.
+        elif not near and notified is not None:
+            # 밴드 밖으로 회복(또는 이탈 확정) → 가드 해제. 재진입하면 다시 최초 발화한다.
             claim.near_stop_notified_at = None
             update_fields.append("near_stop_notified_at")
 

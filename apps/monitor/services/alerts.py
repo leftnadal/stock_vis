@@ -176,6 +176,8 @@ def build_digest(as_of, new_close_monitor_ids=None, scenario_events=None):
             "close": e.get("close"),
             "stop": e.get("stop"),
             "to_stop_pct": e.get("to_stop_pct"),
+            "band_pct": e.get("band_pct"),
+            "recheck": bool(e.get("recheck")),
         }
         for e in events if e["type"] == "near_stop"
     ]
@@ -195,6 +197,15 @@ def build_digest(as_of, new_close_monitor_ids=None, scenario_events=None):
         "near_stops": near_stops,
         "has_content": has_content,
     }
+
+
+def _near_stop_suffix(r):
+    """손절 접근 행의 꼬리표 — 밴드% (+재확인). 텍스트·HTML 공용(문구 드리프트 방지)."""
+    band = r.get("band_pct")
+    parts = [f"밴드 {band:.1f}%"] if band is not None else []
+    if r.get("recheck"):
+        parts.append("재확인")
+    return f" ({' · '.join(parts)})" if parts else ""
 
 
 def render_digest_subject(digest):
@@ -230,7 +241,8 @@ def render_digest_text(digest):
         for r in digest["near_stops"]:
             lines.append(
                 f"  - {r['monitor_name']} [{r['target_ref']}]: "
-                f"종가 {r['close']} / 손절 {r['stop']} — 손절까지 {r['to_stop_pct']:+.1f}%"
+                f"종가 {r['close']} / 손절 {r['stop']} — "
+                f"손절까지 {r['to_stop_pct']:+.1f}%{_near_stop_suffix(r)}"
             )
         lines.append("")
     if digest.get("zone_immediate"):
@@ -314,6 +326,7 @@ def render_digest_html(digest):
                     f"<span style=\"color:#888\">[{r['target_ref']}]</span> — "
                     f"종가 {r['close']} / 손절 {r['stop']} — "
                     f"손절까지 <strong>{r['to_stop_pct']:+.1f}%</strong>"
+                    f"<span style=\"color:#888\">{_near_stop_suffix(r)}</span>"
                 )
             elif kind == "expiry":
                 body = (

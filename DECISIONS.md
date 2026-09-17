@@ -7759,3 +7759,26 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **배선**: `build_digest`의 `has_content`에 `near_stops` 포함 — **다른 변동이 0건이어도 손절 접근만으로 메일이 나간다**. 제목·텍스트·HTML 렌더러 전부 최상단 배치(가장 급한 신호).
 
 **게이트**: 신규 테스트 20, monitor 스위트 **355 passed**(회귀 0). 마이그 0012 = nullable additive. **적용 순서 = migrate 먼저 → 코드 배포**(구 코드는 신규 컬럼 무시, 역호환). API 무노출(`ClaimSerializer.fields` 명시 목록) — contracts 변경 없음.
+
+### 애든덤 ADDENDUM-MON-ALERT-DOWN-3A-0917-A — 안 C(변동성 비례) 복원 + 재발화 창
+
+**정정**: 위 D-NEAR-STOP-BUFFER 본문은 **안 B(고정 5%)**로 구현돼 있었다. 승인된 것은 **안 C(변동성 비례)**다. 단 원 지시서의 바닥값 3%는 디렉터 오류이며 **5%가 옳다**(손절은 되돌릴 수 없으므로 익절 3%보다 넓어야 한다) — 5%를 바닥값으로 채택.
+
+**변경**: 실효 밴드 = `max(NEAR_STOP_BUFFER, NEAR_STOP_MULTIPLIER × median|일간 변동률| 20거래일)`. 손잡이 3종(`NEAR_STOP_BUFFER=0.05` / `NEAR_STOP_MULTIPLIER=2` / `NEAR_STOP_RECHECK_DAYS=5`)은 `price_zone` 상단 집결, **계산은 `scenario.near_stop_buffer()`**(DB 조회가 필요하므로 — `price_zone` 순수성이 D-HOLD-DECISIONS 2의 전제다). 데이터 20거래일 미달 시 바닥값 폴백. `is_near_stop` 시그니처·본문 무변경.
+
+**재발화 창(신규 축)**: `claim.save(near_stop_notified_at)`는 `pipeline.py:154`에서 **먼저 커밋**되고 `send_digest`는 그 뒤에 돌며 `alerts.py`의 `except`가 실패를 삼킨다 → **메일 1회 실패 = 가드만 남고 경고 영구 침묵**. near_stop은 인앱 표면(3-B)이 없어 이중화가 0인 유일한 신호다. 밴드 안에 머무는 동안 5일 간격 재확인(`recheck=True`)으로 이를 덮는다. 밴드 이탈 시 `None` 복귀(최초 발화로 리셋)는 기존 유지. 날짜 비교는 **UTC date끼리**다 — `notified=timezone.now()`(UTC)·`as_of=et_today()`이고 beat가 22:45 UTC(=18:45 ET)에 도므로 같은 날을 가리킨다. `localtime()`으로 바꾸면 KST가 되어 하루 밀린다.
+
+**E-6 실측 — 이 변경은 현 포트폴리오에서 발화 집합을 바꾸지 않는다**:
+
+| 심볼 | 손절까지(09-15) | median 일간변동률 | 밴드 | A안(5%) | 수정본 |
+|---|---|---|---|---|---|
+| TLN | -3.9% | 1.594% | 5.00%(바닥) | 발화 | 발화 |
+| GEV | -7.3% | 2.123% | 5.00%(바닥) | — | — |
+| IONQ | -8.0% | 3.537% | **7.07%** | — | — (0.93%p 미달) |
+| IREN | -42.3% | 4.262% | **8.52%** | — | — |
+| PLTR | -41.3% | 2.208% | 5.00%(바닥) | — | — |
+| GOOGL | -15.5% | 1.197% | 5.00%(바닥) | — | — |
+
+실측 median이 1.2~4.3%라 `2×median`이 2.4~8.5%이고 **6종 중 4종이 바닥값에 걸린다 — 배수 2에서는 바닥값이 지배**한다. 09-16 기준도 동일(양쪽 발화 0). 애든덤 D-7의 예시 스텁(GEV 4.5%·IONQ 6.0%·IREN 5.5%)은 실측보다 1.4~2배 높아 3종 발화를 가정했으나 실측은 1종이다. **IONQ 편입에 필요한 배수 ≈ 2.3, GEV까지 ≈ 3.5** — 손잡이 값만 바꾸면 되는 사안이라 별도 지시 대기(이 애든덤은 배수 2 그대로 집행).
+
+**게이트**: E-1 monitor **374 passed**(기준선 355 + 신규 19, 회귀 0 — 공유 `test_stock_vis` 경합 탓에 격리 DB로 측정) · E-2 기존 20개 diff 0 · E-3 `price_zone` DB 참조 0건 · E-4 evidence 0건 · E-5 마이그 추가 0(`No changes detected`) · E-6 상기. **마이그레이션 없음 — 0012 그대로.**
