@@ -1983,6 +1983,29 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 
 **해결(사소)**: `app/layout` 계열에서 `themeColor`·`viewport`를 `export const viewport` 로 이동. 기능 영향 0(경고만)·위임(dashboard/frontend chore).
 
+## 수치형 HALT 조건은 "스냅샷 수치 이월 금지"와 충돌한다 — HALT는 메커니즘·불변식에 걸고 관측치에 걸지 않는다 (채번 후보, RC-D-0 2026-09-07) `[harness][process]`
+
+**증상**: RC-D-0 지시서 STEP 3-4가 "델타가 −166이 아니면 HALT"라는 **과거 스냅샷 수치**를 HALT 조건으로 박아둠. 실측 −167 → 형식상 HALT 성립. 그러나 메커니즘(무향 collapse 시 다관계·왕복 중복 흡수)은 정상 재현이었고 차이 1은 **관측 사이 데이터 성장분**(입력 2,365→2,418행).
+
+**원인**: 하네스 상시 규율 "스냅샷 수치는 기록 시점 실측이며 **이월 금지**, 다음 세션 STEP 0 재실측이 정본"과, 지시서의 "수치 일치 = HALT 게이트"가 **정면 충돌**. 재실측이 정본이라면 과거 수치와의 불일치는 애초에 HALT 신호가 될 수 없다.
+
+**해결**: HALT 조건은 **불변식·메커니즘**으로 쓴다 — "델타 = −166" (X) → "무향 collapse 델타가 (왕복 양방향 + 동방향 다관계) 합으로 **정확히 설명되지 않으면** HALT" (O). 수치는 참고값으로만 병기하고 "기록 시점·재실측이 정본"을 명시. 수치형 게이트가 꼭 필요하면 허용 오차(데이터 성장분)를 함께 정의한다. cf. 관련 = 기록 시점 실측 이월 금지 규율.
+
+## `git log` 기본 날짜는 author date다 — 랜딩 순서·전진 판정에는 commit date(`%cd`)를 쓴다 (채번 후보, RC-D-0 2026-09-07) `[git][harness][process]`
+
+**증상**: 디렉터 STEP 0에서 main 히스토리를 `git log` 기본 출력으로 읽어 **main이 되감긴 것처럼** 오경보. 실제 되감김 0건.
+
+**원인**: `git log`의 기본 표시 날짜는 **author date(`%ad`)** = 커밋이 *처음 작성된* 시각. 역머지·rebase·cherry-pick·장기 브랜치는 author date를 보존하므로, author date 순서는 **main에 착지한 순서와 무관**하게 뒤섞인다. 랜딩 순서를 결정하는 것은 **commit date(`%cd`)**다.
+
+**해결**: 랜딩 순서·전진/되감김 판정은 항상 `git log --format='%h %cd %s' --date=iso` (또는 `--date-order`)로 읽는다. 되감김 의심 시 판정 근거는 날짜가 아니라 **조상 관계**다 — `git merge-base --is-ancestor <old> <new>`가 참이면 되감김이 아니다. 원격 ref가 실제로 언제 움직였는지는 `git reflog show origin/main --date=iso`("update by push/fetch")가 유일한 직접 증거. cf. 채번 정정 #89a/b가 이미 "author date 순" 함정을 남긴 전례.
+
+## 정확 일치 캘린더 산술(lag 56/63일)에 의존하는 지표는 배치가 하루만 밀려도 전 모수가 죽는다 (채번 후보, C8-GATE 2026-09-15) `[backend][chainsight][infra][data]`
+
+**증상**: C8(추정치 리비전) 콜드스타트 해제 예정일(2026-09-11 = 첫 스냅샷 07-17 + 56일)이 지났는데도 `z_mode mix: ts=0 cs=0 none=503 both_valid=0`이 계속. 배선은 정상, 콜드스타트도 아님.
+
+**원인**: `eps_diff_at()`이 `eps_by_date.get(anchor)`와 `eps_by_date.get(anchor − 56 or 63일)` **양쪽 모두 정확 일치**를 요구(EPS 레그는 tolerance 0 — `PRICE_TOL_DAYS=7`은 **가격 레그 전용**). 주간 금요일 스냅샷이라 56·63은 7의 배수 = 정상 가동 시에만 성립하는 설계. **머신 미가동으로 09-11(금) 스냅샷이 09-12(토)에 생성**(`snapshot_date = timezone.now().date()`, created_at 09-12 19:03 UTC vs 평소 금 20:30 UTC) → anchor 09-11 **부재**, anchor 09-12의 파트너 07-18/07-11 **부재** → 503종목 전건 `c8_leg_missing`. **밀린 하루가 그 앵커를 영구 폐기**한다(과거 날짜는 다시 생성되지 않음).
+
+**해결(설계 결정 필요)**: ⑴ EPS 레그에도 파트너 탐색 허용 오차 도입(가격 레그의 `PRICE_TOL_DAYS`와 대칭 — "정확히 56일" 대신 "56±N일 내 최근접 스냅샷") ⑵ 또는 `snapshot_date`를 실행 시각이 아니라 **해당 주의 금요일로 정규화**(지연 실행도 올바른 주차에 귀속) ⑶ 랩톱 launchd 스택에서 "주간 배치가 정시 발화한다"는 전제는 성립하지 않음을 설계 가정에 반영. 진단 규율: `both_valid=0`은 배선 결함이 아니라 **날짜 집합 불일치**를 먼저 의심하고, 앵커·파트너 날짜의 실재 여부를 집합으로 대조한다.
 ## 배포 범위는 "직전 보고의 델타"가 아니라 "현 런타임 커밋 대비 처음 나가는 것 전부" (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[deploy][harness][process]`
 
 **증상**: S3-1C 한 건을 배포한다고 알고 착수했으나, 실제 런타임(worker/api `5e4e70ea`, 09-07) 대비 delta는 비-머지 40커밋이었다. BE는 `chain_sight` 2파일 외에 `packages/shared/metrics/agent_reports.py`·`services/sec_pipeline/tasks.py`·`auto_agent_system/dogfood/` 5건이 함께 나갔다. 특히 `tasks.py` 변경은 **Celery 워커 재기동 요건**이라 누락 시 구코드가 계속 돈다.
