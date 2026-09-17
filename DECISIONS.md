@@ -7755,8 +7755,8 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 > 트랙: EOD-TIME-1 (R1+R4). 디렉터 승인 2026-09-10. 선행 조사 = EOD-DELAY-1(수집 실패 아님·채점 설계 결함 확정).
 
 - **결정(뿌리≠증상)**: 연휴·주말 신선도 오탐의 뿌리는 **dogfood 실행 스케줄이 아니라 캘린더-일수 임계**다 — 증상(스케줄 05:20→08:00 이동, R5/P1-A)이 아니라 뿌리(거래일 기준 임계)를 고친다. launchd 스케줄 변경은 **반려**.
-- **D-EOD-FRESH-TRADING-DAYS (R4)**: `check_quant` 신선도 지연은 **거래일 수**로 잰다(`market_calendar.trading_days_between`). dogfood는 당일 베이크(22:30 UTC) 이전(05:20 KST)에 돌아 파일이 항상 1 세션 뒤처지므로 1거래일까지 정상. 판정 메시지에 "지연 N일(거래일 기준 M일 — 주말/휴장 포함 여부)" 근거 동봉.
-- **D-EOD-ISSTALE-TZ (R1)**: baker `is_stale`은 UTC/로컬 혼용 금지 — `generated_at`과 now를 모두 설정 타임존(Asia/Seoul)으로 환산해 비교(`compute_is_stale`). 과거 `generated_at.date()`(UTC) vs `date.today()`(KST)가 07:30 KST 베이크를 매일 stale로 오판 → FE 배지 거짓 경고. "다음 날 stale"은 FE 24h 규칙 몫.
+- **D-EOD-FRESH-TRADING-DAYS (R4)**: `check_quant` 신선도 지연은 **거래일 수**로 잰다(`market_calendar.trading_days_between`). dogfood는 당일 베이크(22:30 UTC) 이전(05:20 KST)에 돌아 파일이 항상 1 세션 뒤처지므로 1거래일까지 정상. 판정 메시지에 "지연 N일(거래일 기준 M일 — 주말/휴장 포함 여부)" 근거 동봉. → **LANDED(분해) @`0542dd77` 2026-09-17**: 판정식은 MGMT-LEDGER-2 T4 `c62e3107`(`trading >= previous_trading_day(session)` — 1거래일 지연까지 정상과 동치) 유지, R4는 `trading_days_between` + note 병기 + 회귀 테스트 6종으로 착지(`MAX_FRESHNESS_LAG_TRADING_DAYS` 미도입).
+- **D-EOD-ISSTALE-TZ (R1)**: baker `is_stale`은 UTC/로컬 혼용 금지 — `generated_at`과 now를 모두 설정 타임존(Asia/Seoul)으로 환산해 비교(`compute_is_stale`). 과거 `generated_at.date()`(UTC) vs `date.today()`(KST)가 07:30 KST 베이크를 매일 stale로 오판 → FE 배지 거짓 경고. "다음 날 stale"은 FE 24h 규칙 몫. → **보류·이관 @2026-09-17**: 미랜딩(근거 미확정·공유 존) — TASKQUEUE `EOD-FRESH-2` 재측정 선행(OPS-BRIDGE-0 ⓐ).
 
 **Why**: 캘린더-일수 임계는 추수감사절·크리스마스·독립기념일 등 연 9~10회 연휴마다 동일 오탐을 재발시킨다(잠복). 측정 장치 오탐 5건 누적의 공통 패턴 = "아직 안 만들어진 것/거래일 아닌 날"을 "없어진 것"으로 오판. 증상이 아닌 뿌리를 고쳐야 재발이 끝난다.
 
@@ -7777,3 +7777,4 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **⑶ 장부 = ⓑ STATUS 자동생성 + 회전 (4.15)** — 트랙 상태판을 손으로 쓰지 않고 inbox/outbox/approvals + git 실측에서 생성·회전(OPS-STATUS-1).
 - **Why**: INCIDENTS 6건 중 4건(001·002·003·006)이 "문서 규칙을 실행자가 어긴" 사건. 지시·보고·승인을 채팅이 아니라 **git 추적 파일**로 옮기면 디렉터가 outbox ↔ git 실측을 대조해 판정할 수 있고, 게이트를 스크립트·훅으로 내리면 위반이 구조적으로 막힌다.
 - **경과 조치**: `D-PUSH-DELEG` 가드 (ii)(behind>0 무조건 HALT) · "푸시 1회 1승인"은 **OPS-GATE-1 착지 시 v2로 대체 예정** — 그때까지 현행 유지. 과도기에는 지시서 상단 `approved_sha`가 `.ok`를 대신한다(OPS-BRIDGE-0 선례).
+- **ⓐ 분해 랜딩 결정 (병진 2026-09-17 15:35, 선택지 ⓐ 4.45 / ⓒ 4.00 / ⓑ 2.70)**: EOD-TIME-1 역머지 코드 충돌(main T4 `c62e3107` vs R4 `f45fcb78`)은 main 판정 로직 **유지**(행위보존) + R4 가치 확증분(테스트·note·3원칙 문서)만 새 브랜치로 이식, **R1 제외 → EOD-FRESH-2**. Why: 승인이 R1(근거 미확정·공유 존)과 R4(가치 확증)가 묶인 한 커밋을 통째로 덮었던 결함(디렉터 인정)을 바로잡고, 이미 GREEN인 main 판정을 흔들지 않는다. 본체 점유 시 랜딩 = 임시 detached worktree `sv-land-tmp` 경유.
