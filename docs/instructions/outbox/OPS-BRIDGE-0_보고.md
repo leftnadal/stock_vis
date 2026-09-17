@@ -1,3 +1,16 @@
+# OPS-BRIDGE-0 보고 — 3차 실행 2026-09-17 15:3x KST (재개 지시 2 · 실행자 CC 세션 95289 · 승인 인용: 병진 "승인 근거·허가 명령은 이전과 동일 + 임시 worktree sv-land-tmp 생성·자기 삭제 허용")
+① 판정: **HALT (절차 1 말미 — 권한 거부 1건)** — 1(S4 선행 배포) 실질 완료, 2~8 미착수. 본체 무접촉(읽기만).
+② 해시: origin/main `0ff0949e`(무변경) · 3트리 전 worker `2eca515d`/web `029f57f6`/api `2eca515d` → 후 **3트리 모두 `0ff0949e`** · 새 브랜치 `sess-eod-time1-r4`·`sv-land-tmp` 미생성 · 새 머지 커밋 0.
+③ 게이트: 미실행(절차 5 전 정지). 배포 범위 사전점검 2eca515d..0ff0949e = 20커밋·마이그 0·의존성 0.
+④ 배포 확인: `sv sync` exit 0(worker inspect ping ✓ · daphne 401 ✓ · `deploy_history.log` 15:34:40 web/api `→0ff0949e` 기록 ✓, worker 줄은 sv freshen 선행으로 미기록) · web §2.2: `.next.bak` 백업 → `npm run build` exit 0 → `launchctl kickstart -k …web-frontend` → `:3000` 200 · `/chainsight` 200 · BUILD_ID `K28tDV8a…` → **`FJH-7rSq…`** · 리스너 단일(next-server pid 70067, 15:36:00 기동) · health ❌1(DUAL-OBS-1 stale #52, 선존)·⚠1 → **신규 ❌0**. 서빙 반영 = ⑴ 완료(CS-S3-1D `85eae8d8` 포함 origin/main 전량 서빙).
+⑤ 장부: 이 보고 절만(`sess-eod-time1`, push 없음).
+⑥ HALT 지점·원인: DEPLOY.md §2.2 ⑤ ".next.bak 제거" 단계에서 권한 분류기 거부 — 명령 원문:
+   `rm -rf ~/worktrees/sv-web-runtime/frontend/.next.bak && echo BAK_REMOVED; curl -s -o /dev/null -w "chainsight=%{http_code}\n" --max-time 20 http://127.0.0.1:3000/chainsight; curl -s -o /dev/null -w "daphne=%{http_code}\n" --max-time 20 http://127.0.0.1:18765/api/v1/users/me/`
+   사유(추정): 런타임 트리 대상 `rm -rf` = 파괴적 삭제로 분류. 지시("거부 시 우회·재시도 금지·HALT")대로 정지. 서빙 영향 0(`.next.bak`는 폴백 사본으로 잔존만) — 단 다음 리빌드(절차 7)의 `cp -r .next .next.bak`는 기존 디렉터리 안에 중첩 복사되므로 선제거 필요.
+   디렉터 질문: `.next.bak` 제거를 병진 수동으로 처리(또는 `rm -rf …/sv-web-runtime/frontend/.next.bak` 명시 허용)한 뒤 절차 2(S3' 새 브랜치)부터 재개하면 되는가?
+
+---
+
 # OPS-BRIDGE-0 보고 — 2차 실행 2026-09-17 14:49~15:00 KST (재개 지시 11:45 · 실행자 CC 세션 95289 · 승인 인용: 병진 14:20 채팅 "내가(정병진) 승인한다: 본체에서 git merge --no-ff … git push origin main …")
 ① 판정: **HALT (S3 역머지 코드 충돌)** — 재개 1·2·3 완료(S2 착지·push), 4에서 정지, 5(S4) 미집행, 6 락 제거·보고 완료.
 ② 해시: 본체 main·origin/main 전 `029f57f6` → 후 **`85eae8d8`**(S2 no-ff 머지·push, ahead 0/behind 0, 마커 0) · 3트리 worker `2eca515d` / web `029f57f6`(14:27 타 주체 checkout — 본 세션 아님, deploy_history 무기록) / api `2eca515d` · `sess-cs-s3-1d`=`37700794` · `sess-eod-time1`=`290d9341`(+inbox 갱신 반영 커밋, 역머지 abort 후, ahead 6/behind 56) · 새 머지 커밋 = `85eae8d8` 1개(S3분 없음).
