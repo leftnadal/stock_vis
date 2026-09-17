@@ -1,6 +1,7 @@
 ---
 track: OPS-BRIDGE-0
 status: dispatched 2026-09-16 (Cowork 디렉터)
+status: done @f4754d22 (2026-09-17 3차 실행 — S2 `85eae8d8` · S4 `0ff0949e`→`f4754d22` · S3 ⓐ 분해 랜딩)
 approved_by: 병진 2026-09-16 "동의해. 진행하자" — 관제판 §08 ①②(즉시 랜딩 2건 + 배포) 승인
 approved_sha: b0fadfa3 (CS-S3-1D, 본체 main 직접 커밋분) · e1b8e345 (EOD-TIME-1, monorepo/sess-eod-time1)
 ---
