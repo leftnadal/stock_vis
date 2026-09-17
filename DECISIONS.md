@@ -7750,3 +7750,31 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **사유 ⑶ 권한**: 타 트랙이 소유한 이설을 이 슬라이스가 되돌릴 권한이 없다.
 - **경위**: 디렉터 09-10 측정은 **그 시점 정확**했다(`113b48a3`은 당시 `monorepo/sess-guide-csg1`에 머물러 main에 없었고, `0bfd185e` 머지로 뒤늦게 착지). main이 지시서 작성과 실행 사이에 밑에서 움직인 경우다. 실행자 STEP 0의 **숫자로 된 HALT 조건**(dogfood 실패 2건)이 착수 전에 잡았다.
 - **파생 규율**: 원안 §4가 주장한 "dogfood RED 2→0"은 **이 슬라이스의 공로가 아니다**. 원장에 그렇게 적지 않는다. 이 슬라이스의 실효는 ⑴ 가이드 문구의 화면 정합 ⑵ `rubric_targets()` 5→6 편입, 둘뿐이다.
+## [2026-09-10] D-EOD-FRESH-ROOT-NOT-SCHEDULE — 연휴 신선도 오탐의 뿌리는 스케줄이 아니라 캘린더-일수 임계 [ops][monitoring][process]
+
+> 트랙: EOD-TIME-1 (R1+R4). 디렉터 승인 2026-09-10. 선행 조사 = EOD-DELAY-1(수집 실패 아님·채점 설계 결함 확정).
+
+- **결정(뿌리≠증상)**: 연휴·주말 신선도 오탐의 뿌리는 **dogfood 실행 스케줄이 아니라 캘린더-일수 임계**다 — 증상(스케줄 05:20→08:00 이동, R5/P1-A)이 아니라 뿌리(거래일 기준 임계)를 고친다. launchd 스케줄 변경은 **반려**.
+- **D-EOD-FRESH-TRADING-DAYS (R4)**: `check_quant` 신선도 지연은 **거래일 수**로 잰다(`market_calendar.trading_days_between`). dogfood는 당일 베이크(22:30 UTC) 이전(05:20 KST)에 돌아 파일이 항상 1 세션 뒤처지므로 1거래일까지 정상. 판정 메시지에 "지연 N일(거래일 기준 M일 — 주말/휴장 포함 여부)" 근거 동봉. → **LANDED(분해) @`0542dd77` 2026-09-17**: 판정식은 MGMT-LEDGER-2 T4 `c62e3107`(`trading >= previous_trading_day(session)` — 1거래일 지연까지 정상과 동치) 유지, R4는 `trading_days_between` + note 병기 + 회귀 테스트 6종으로 착지(`MAX_FRESHNESS_LAG_TRADING_DAYS` 미도입).
+- **D-EOD-ISSTALE-TZ (R1)**: baker `is_stale`은 UTC/로컬 혼용 금지 — `generated_at`과 now를 모두 설정 타임존(Asia/Seoul)으로 환산해 비교(`compute_is_stale`). 과거 `generated_at.date()`(UTC) vs `date.today()`(KST)가 07:30 KST 베이크를 매일 stale로 오판 → FE 배지 거짓 경고. "다음 날 stale"은 FE 24h 규칙 몫. → **보류·이관 @2026-09-17**: 미랜딩(근거 미확정·공유 존) — TASKQUEUE `EOD-FRESH-2` 재측정 선행(OPS-BRIDGE-0 ⓐ).
+
+**Why**: 캘린더-일수 임계는 추수감사절·크리스마스·독립기념일 등 연 9~10회 연휴마다 동일 오탐을 재발시킨다(잠복). 측정 장치 오탐 5건 누적의 공통 패턴 = "아직 안 만들어진 것/거래일 아닌 날"을 "없어진 것"으로 오판. 증상이 아닌 뿌리를 고쳐야 재발이 끝난다.
+
+## [2026-09-10] D-LANDING-ORDER — GUARD-1C 먼저, 그 다음 EOD-TIME-1 [git][harness][process]
+
+> 트랙: EOD-TIME-1 랜딩 순서. 디렉터 자동 결정(가중합 5.00 vs 3.18·마진 1.82), 2026-09-10.
+
+- **결정**: ⓐ GUARD-1C(GUIDE-CS-GUARD-1C) 먼저 랜딩해 main 10일 RED를 종료 → ⓑ GREEN main 위에서 EOD-TIME-1 재동기(origin/main 흡수)→게이트 전수→no-ff 머지(D-EOD-FRESH-* 명기)→push.
+- **Why**: ①RED 10일·랜딩 25건 상태를 먼저 끝낸다 ②GREEN main 위에서 "0 failed"를 각주 없이 증명 ③csg1이 이미 20커밋 앞서고 충돌 파일이 장부 3개(DECISIONS/TASKQUEUE/PROGRESS)인데 EOD-TIME-1도 동일 3개를 건드렸으므로 먼저 밀면 흡수 부담만 커진다.
+- **장부 3파일 충돌**: 양쪽 보존(append 병합). force·원격 삭제 금지.
+
+## [2026-09-16] D-OPS-BRIDGE — 디렉터→실행자 지시 통로·랜딩 게이트·장부 자동화 (병진 승인 3건) [harness][ops][governance]
+
+> 트랙: OPS-BRIDGE-0 → OPS-GATE-1 → OPS-DISPATCH-1 / OPS-STATUS-1. 병진 승인 2026-09-16 ("동의해. 진행하자" — 관제판 §08 ①②). 근거 문서(선택지 전문·가중합 표) = Cowork 프로젝트 `claude/판독_하네스점검_결정3건_20260916.md`(repo 외부 — 여기엔 결론만). 장부 기재 = OPS-BRIDGE-0 S3.1(2026-09-17, `monorepo/sess-eod-time1`).
+
+- **⑴ 지시서 통로 = A 메일박스 + Mac 상주 디스패처 (4.20)** — `docs/instructions/inbox/<트랙>.md`가 곧 디스패치(채팅 복붙 없음) · `outbox/<트랙>_보고.md`가 보고 · `approvals/<트랙>.ok`(`sha=` 필수)가 승인 증표. 디스패처(OPS-DISPATCH-1) 구축 완료 전까지는 **B Remote Control 스폰(3.75)** 으로 운용. 규약 정본 = `docs/instructions/inbox/README.md`(지시서는 짧게 — 없는 것은 repo 하네스가 단일 출처, 복제 금지).
+- **⑵ 랜딩 게이트 = ⓑ 랜딩 승인 1회 (4.25, 타이브레이커 = 안전)** — `.ok`가 가리키는 SHA에 대해 **역머지 → 게이트(vitest·pytest·tsc 0 failed) → no-ff 머지 → push → `sv sync` → FE 리빌드**를 한 승인으로 묶는다. **HALT는 3경우만**: 충돌 / 게이트 RED / 마이그·beat·plist·prod-write 동반. 병진 수동 항목(prod migrate · 영구/강제 삭제 · 원격 브랜치 삭제 · plist · beat 등록)은 **불변**. 집행 수단 = OPS-GATE-1(`scripts/ops/land.sh` + PreToolUse 훅 — 문서가 아니라 스크립트·훅이 지킨다).
+- **⑶ 장부 = ⓑ STATUS 자동생성 + 회전 (4.15)** — 트랙 상태판을 손으로 쓰지 않고 inbox/outbox/approvals + git 실측에서 생성·회전(OPS-STATUS-1).
+- **Why**: INCIDENTS 6건 중 4건(001·002·003·006)이 "문서 규칙을 실행자가 어긴" 사건. 지시·보고·승인을 채팅이 아니라 **git 추적 파일**로 옮기면 디렉터가 outbox ↔ git 실측을 대조해 판정할 수 있고, 게이트를 스크립트·훅으로 내리면 위반이 구조적으로 막힌다.
+- **경과 조치**: `D-PUSH-DELEG` 가드 (ii)(behind>0 무조건 HALT) · "푸시 1회 1승인"은 **OPS-GATE-1 착지 시 v2로 대체 예정** — 그때까지 현행 유지. 과도기에는 지시서 상단 `approved_sha`가 `.ok`를 대신한다(OPS-BRIDGE-0 선례).
+- **ⓐ 분해 랜딩 결정 (병진 2026-09-17 15:35, 선택지 ⓐ 4.45 / ⓒ 4.00 / ⓑ 2.70)**: EOD-TIME-1 역머지 코드 충돌(main T4 `c62e3107` vs R4 `f45fcb78`)은 main 판정 로직 **유지**(행위보존) + R4 가치 확증분(테스트·note·3원칙 문서)만 새 브랜치로 이식, **R1 제외 → EOD-FRESH-2**. Why: 승인이 R1(근거 미확정·공유 존)과 R4(가치 확증)가 묶인 한 커밋을 통째로 덮었던 결함(디렉터 인정)을 바로잡고, 이미 GREEN인 main 판정을 흔들지 않는다. 본체 점유 시 랜딩 = 임시 detached worktree `sv-land-tmp` 경유.
