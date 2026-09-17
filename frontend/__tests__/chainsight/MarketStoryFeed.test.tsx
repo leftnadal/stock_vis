@@ -299,3 +299,49 @@ describe('상태 회귀(K 복원)', () => {
     expect(screen.getByText('이번 주 활발').className).toMatch(/gray/);
   });
 });
+
+describe('D-S3-9 빈 상태 두 갈래(C-2)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('no_article: 근거 자체가 없으면 "근거 기사 없음 · 언급 수만 집계"', async () => {
+    const card: MarketStoryCard = {
+      ...spikeCard, title: null, title_state: 'no_article', evidence: [],
+    };
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed([card], []));
+    render(<MarketStoryFeed />, { wrapper });
+    const el = await screen.findByTestId('title-empty');
+    expect(el.getAttribute('data-state')).toBe('no_article');
+    expect(el).toHaveTextContent('근거 기사 없음 · 언급 수만 집계');
+    expect(el).not.toHaveTextContent('멤버를 다룬 기사 없음');
+  });
+
+  it('no_member_article: 근거는 있으나 멤버 기사가 없으면 근거 건수와 함께 다르게 말한다', async () => {
+    const card: MarketStoryCard = {
+      ...spikeCard,
+      title: null,
+      title_state: 'no_member_article',
+      evidence: [
+        { kind: 'article', ref: 'cne:1', title: 'A', url: null, date: '2026-08-21' },
+        { kind: 'article', ref: 'cne:2', title: 'B', url: null, date: '2026-08-21' },
+      ],
+    };
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed([card], []));
+    render(<MarketStoryFeed />, { wrapper });
+    const el = await screen.findByTestId('title-empty');
+    expect(el.getAttribute('data-state')).toBe('no_member_article');
+    expect(el).toHaveTextContent('멤버를 다룬 기사 없음 · 근거 2건');
+  });
+
+  it('두 문구는 서로 달라야 한다(같은 말로 뭉개면 정직성이 깨진다)', async () => {
+    const a: MarketStoryCard = { ...spikeCard, story_id: 'a', title: null, title_state: 'no_article', evidence: [] };
+    const b: MarketStoryCard = {
+      ...spikeCard, story_id: 'b', title: null, title_state: 'no_member_article',
+      evidence: [{ kind: 'article', ref: 'cne:1', title: 'A', url: null, date: '2026-08-21' }],
+    };
+    vi.mocked(fetchMarketStoryFeed).mockResolvedValue(feed([a, b], []));
+    render(<MarketStoryFeed />, { wrapper });
+    const els = await screen.findAllByTestId('title-empty');
+    expect(els).toHaveLength(2);
+    expect(els[0].textContent).not.toBe(els[1].textContent);
+  });
+});

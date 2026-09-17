@@ -45,13 +45,21 @@ export default function MarketStoryCardItem({ card }: { card: MarketStoryCard })
         {STORY_CARD_LABEL[card.type]}
       </span>
 
-      {/* 제목(인용/템플릿) 또는 정직 표기 */}
+      {/* 제목(인용/템플릿) 또는 정직 표기.
+          D-S3-9 C-2: 빈 상태는 두 갈래다. "근거가 없다"와 "근거는 있는데 우리 종목
+          이야기가 아니다"는 다른 사실이므로 다르게 말한다. 문구는 이 둘뿐 — 지어내지 않는다. */}
       {card.title ? (
         <div className="font-semibold text-sm text-gray-900 dark:text-gray-50">{card.title}</div>
       ) : (
         coMention && (
-          <div className="text-xs italic text-gray-400 dark:text-gray-500">
-            근거 기사 없음 · 언급 수만 집계
+          <div
+            data-testid="title-empty"
+            data-state={card.title_state ?? 'no_article'}
+            className="text-xs italic text-gray-400 dark:text-gray-500"
+          >
+            {card.title_state === 'no_member_article'
+              ? `멤버를 다룬 기사 없음 · 근거 ${evidenceCount}건`
+              : '근거 기사 없음 · 언급 수만 집계'}
           </div>
         )
       )}

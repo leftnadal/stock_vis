@@ -383,6 +383,10 @@ export interface MarketStoryCard {
   evidence?: StoryEvidence[];
   // ── S3-1C 추가(D-S3-8) ──
   /** 관계 종류 한 줄(serving_layer 축). 기록됨 문장 또는 "관계 기록 없음". 등급 단어 금지. */
+  /** D-S3-9 제목 상태. quoted=인용 성공 / no_member_article=근거는 있으나 멤버를 다룬 제목 없음 / no_article=근거 자체 없음. */
+  title_state?: 'quoted' | 'no_member_article' | 'no_article';
+  /** D-S3-9 A-3: 선택된 제목 기사가 덮는 멤버 목록. 제목이 없으면 빈 배열. */
+  covered_members?: string[];
   relation_line?: string;
   /** relation_line 이 '기록됨' 계열인지(FE 시각 구분). context·CO_MENTIONED·무행=false. */
   relation_recorded?: boolean;
