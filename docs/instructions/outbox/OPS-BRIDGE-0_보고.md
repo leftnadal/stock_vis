@@ -8,6 +8,7 @@
 ⑥ 랜딩·S4 후속: `sv-land-tmp`(detached origin/main) no-ff → 직전 fetch 재확인 → `git push origin HEAD:main` → `sv-land-tmp` 자기 제거 → `sv sync`. frontend diff(`0ff0949e`..착지) = 0 → **web 리빌드 생략**(절차 7 조건). 결과 = 추기 줄.
 ⑦ 삭제 후보(병진 수동): `~/worktrees/sv-web-runtime/frontend/.next.bak.stale-20260917-1536` · 구 `monorepo/sess-eod-time1`/`sv-eod-time1`(R1 원본 보존용 — EOD-FRESH-2 종결 후) · `monorepo/sess-ops-bridge-0-halt`/`sv-ops-bridge-0-halt` · test DB `test_stock_vis_obr0`(로컬 test 전용).
 ⑧ 교훈(채번 후보): 공유 `test_stock_vis` 동시 `--create-db`가 타 세션 게이트를 거짓 RED로 만든다(1시간 내 2회 실측) → 게이트용 test DB 이름 세션별 격리를 OPS-GATE-1 `land.sh`에 내장 권고.
+**추기(착지 후)**: origin/main `0ff0949e` → 역머지 흡수 `329716b4`(타 세션 docs 2파일 — 1층 재실행 = 흡수 파일 참조 테스트+dogfood+architecture 190 passed·health ❌ 신규 0; '1층' 정의 문서 부재로 이렇게 해석) → **착지 `f4754d22`**(`sv-land-tmp` no-ff, push `329716b4..f4754d22`, ahead 0/behind 0, 마커 0, baker diff 0) · `sv sync` 3트리 `f4754d22`(deploy_history 16:41:03~04) · frontend diff `0ff0949e..f4754d22` = 0 → web 리빌드 생략(BUILD_ID `FJH-7rSq…` 유지) · `:3000` 200 · daphne 401 · health ❌1(선존)·신규 0 · `sv-land-tmp` 제거. 서빙 반영 = ⑴(이 추기 커밋 자체는 docs 전용 → 다음 세션 sync 자동). ⚠ 본체 `~/Desktop/stock_vis`의 **미추적** `docs/instructions/inbox/*.md` 4파일이 이제 origin/main 추적 파일 → near-stop 세션 종료 후 `git pull --ff-only`/`checkout main`이 'untracked working tree files would be overwritten'으로 거부될 수 있음 → 병진 수동으로 미추적 사본 치우기 필요(본체 무접촉 규칙상 미조치).
 
 ---
 
