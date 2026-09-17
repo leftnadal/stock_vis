@@ -2135,3 +2135,42 @@ cf. `D-ASOF-EXEMPT-0912`·`D-ASOF-POPULATION`·`D-DSS-W11-RESCUE`
 **해결**: ⑴ **커밋 전에 세션 전용 브랜치를 만든다**(`git switch -c monorepo/sess-<이름>`) — 지시서가 브랜치를 지정하지 않았더라도 실행자가 만든다. ⑵ 이미 고아가 됐다면 **최우선으로 `git branch <이름> <해시>`**로 고정한다(main 무접촉·즉시 안전). ⑶ 이후 worktree를 떼어 그 안에서만 작업한다. ⑷ **push 전 반드시 `git reflog main`과 `git merge-base --is-ancestor <내커밋> HEAD`로 내 커밋이 여전히 계보에 있는지 확인한다** — `ahead/behind 0/0`은 "올릴 게 없다"는 뜻이지 "내 작업이 반영됐다"는 뜻이 아니다.
 
 **교훈**: `ahead/behind 0/0`을 성공 신호로 읽지 말 것. 이 아크의 [[lesson_shared_main_worktree_holds_other_session_merge]]·"수치 인용 시 축을 명시" 항목과 같은 계열 — **같은 숫자가 다른 사실을 가리킨다**. 짝 규율(지시서 측): **지시서는 worktree와 브랜치를 명시한다. 생략하면 실행자가 공유 main에서 작업하게 되므로, 생략은 지시서의 결함이다.**
+
+## 스킵 판정은 실행일이 아니라 대상 세션 기준이다 — 시차가 있는 잡에서 "오늘"은 대상이 아니다 (채번 후보, AGENT-CAL-1 2026-09-17) `[infra][dogfood][process]`
+
+**증상**: 야간 도그푸딩(05:20 KST)이 **토요일마다 스킵**되어 금요일 세션 리뷰가 나가지 않았다. 로그는 `⏭ 미국장 휴장(Weekend) — 점검 스킵`으로 정상처럼 보였다.
+
+**원인**: 이 잡은 언제나 **어제 닫힌 세션**을 리뷰하는데, 휴장 판정만 `holiday_name(date.today())`로 **실행일**을 물었다. 토요일은 실행일이 주말이라 스킵되지만, 리뷰 대상인 어제(금요일)는 멀쩡한 거래일이었다. 잡의 **대상 시점과 판정 시점이 어긋나 있었고**, 로그 문구가 대상 세션을 적지 않아 어긋남이 드러나지 않았다.
+
+**해결**: 판정을 `date.today() - timedelta(days=1)` = **달력상 어제**로 옮긴다. 스킵 로그에 대상 세션 날짜를 함께 적어 어긋남이 다시 생기면 눈에 보이게 한다.
+⚠️ **`target_session_date`(직전 거래일)를 쓰면 안 된다** — 일요일과 월요일이 모두 금요일 세션을 가리켜 **같은 리뷰가 두 번** 나간다. 달력상 어제여야 토=금·일=토·월=일로 중복 없이 맞는다.
+
+**교훈**: **시차가 있는 배치 잡에서 "오늘"은 대상이 아니다.** 스킵·신선도·임계 판정은 전부 *실행 시점*이 아니라 *대상 시점*을 기준으로 물어야 한다. 그리고 이 부류의 버그는 **로그가 정상으로 보인다** — 스킵 사유는 사실이고(토요일은 정말 주말이다) 틀린 것은 질문이었다. 그래서 **판정 로그에 "무엇에 대한 판정인지"를 적는 것이 계측**이다. 같은 계열: EOD 신선도의 달력일→거래일 교정(DOGFOOD-EOD-LAG-TRADINGDAYS).
+
+## baker `is_stale`은 UTC date와 로컬(KST) date를 비교해 18:30 ET 슬롯에서 구조적으로 항상 True (채번 후보, DASH-TOP 2026-09-15 실측 확증) `[backend][eod][timezone][frontend]`
+## baker `is_stale`은 UTC date와 로컬(KST) date를 비교해 18:30 ET 슬롯에서 구조적으로 항상 True (#137, DASH-TOP 발견 2026-09-15 · 실측 확증 2026-09-15, 채번 MGMT-BATCH-b49) `[backend][eod][timezone][frontend]`
+
+**증상**: 정상적으로 구워진 당일 데이터인데도 `dashboard.json`의 `is_stale`이 **항상 `true`**. 프론트가 이 값을 그대로 믿어 제목을 "어제 데이터입니다"로 대체 → 최신 데이터에 상시 오경보. dogfood `eod.is_stale` WARN 재발(08-27~)의 근인.
+
+**원인**: `packages/shared/stocks/services/eod_json_baker.py:145`
+```python
+generated_at = dj_timezone.now()          # USE_TZ=True → UTC aware
+is_stale = generated_at.date() != date.today()   # ← UTC date vs 로컬(KST) date
+```
+`generated_at.date()`는 **UTC 날짜**, `date.today()`는 **OS 로컬(Asia/Seoul) 날짜**다. bake 슬롯은 `run-eod-pipeline` 크론 `30 18 1-5 * *` **@America/New_York** = 22:30 UTC = **익일 07:30 KST** → 두 날짜가 **항상** 다르다. 즉 이 비교는 신선도가 아니라 "UTC와 KST의 날짜가 다른가"를 묻고 있고, 이 슬롯에서는 답이 늘 참이다.
+
+**실측**(2026-09-15): `trading_date` 2026-09-14(월·정상 최신 세션) · `generated_at` `2026-09-14T22:30:56Z` · `is_stale` **true**. 09-17 재확인도 동일.
+
+**교훈**: ⑴ **aware datetime의 `.date()`와 `date.today()`를 같은 식에서 비교하지 않는다** — 한쪽은 UTC, 한쪽은 로컬이라 시간대 폭만큼의 창에서 상시 오답이 된다(#117류 캘린더 산술 금지 동류). 비교하려면 양쪽을 같은 시간대로 먼저 환산한다. ⑵ **신선도는 "생성 시각"이 아니라 "기대 슬롯 대비 결번 수"로 판정**한다 — 소비처 FE는 `countMissedBakeSlots()`(ET 평일 18:30 슬롯 · 임계 2회)로 전환해 이 플래그 의존을 끊었다(DASH-TOP ⑥ S2). ⑶ 상시 점등하는 경보는 경보가 아니다 — 켜진 채로 방치되면 진짜 결번과 구분이 사라진다.
+
+**관련**: TASKQUEUE `EOD-ISSTALE-DEF`(플래그 정의 프로브 — 본 항목이 그 근인 답) · BAKER-ISSTALE-REDEF 위임(재정의는 별건, 본 항목은 버그 등재).
+
+## bake `pipeline_status`가 "running"에 고착 — 완료 플립 누락으로 "정말 멈춘 것"과 구분 불가 (#138, DASH-TOP 발견 2026-09-14, 채번 MGMT-BATCH-b49) `[backend][eod][observability]`
+
+**증상**: bake가 정상 완료(JSON 전량 생성 · `llm_fill` 10/10 ok · `issuance_verified` 10/10 ok)했는데 `meta.json`의 `pipeline_status`가 **`"running"`** 그대로이고 `total_duration_seconds`가 **0.0**이다.
+
+**실측**(2026-09-14): `run_id` `177e198f-2d65-4847-a329-e9335dad0360` · `generated_at` 09-12T10:28Z · `pipeline_status` `"running"` · `total_duration_seconds` `0.0` — 산출물은 완전한데 상태만 중간값.
+
+**왜 문제인가**: 상태 필드의 값어치는 **"running"이 드물 때**만 생긴다. 완료분이 계속 running으로 남으면 상태가 상수로 수렴해 **진짜 hang·중단을 가리키는 신호가 사라진다**. 감시·알림이 이 필드를 쓰면 전건 무시하거나 전건 오탐하게 된다.
+
+**교훈**: 상태 머신은 **종료 전이가 산출물 쓰기와 같은 트랜잭션**에 묶여야 한다. 완료 플립이 별도 경로에 있으면 그 경로만 조용히 빠져도 산출물은 멀쩡해 육안으로 안 잡힌다. 점검은 "성공했나"가 아니라 **"성공 상태로 기록됐나"**까지.
