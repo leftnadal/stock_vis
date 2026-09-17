@@ -7767,3 +7767,13 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **결정**: ⓐ GUARD-1C(GUIDE-CS-GUARD-1C) 먼저 랜딩해 main 10일 RED를 종료 → ⓑ GREEN main 위에서 EOD-TIME-1 재동기(origin/main 흡수)→게이트 전수→no-ff 머지(D-EOD-FRESH-* 명기)→push.
 - **Why**: ①RED 10일·랜딩 25건 상태를 먼저 끝낸다 ②GREEN main 위에서 "0 failed"를 각주 없이 증명 ③csg1이 이미 20커밋 앞서고 충돌 파일이 장부 3개(DECISIONS/TASKQUEUE/PROGRESS)인데 EOD-TIME-1도 동일 3개를 건드렸으므로 먼저 밀면 흡수 부담만 커진다.
 - **장부 3파일 충돌**: 양쪽 보존(append 병합). force·원격 삭제 금지.
+
+## [2026-09-16] D-OPS-BRIDGE — 디렉터→실행자 지시 통로·랜딩 게이트·장부 자동화 (병진 승인 3건) [harness][ops][governance]
+
+> 트랙: OPS-BRIDGE-0 → OPS-GATE-1 → OPS-DISPATCH-1 / OPS-STATUS-1. 병진 승인 2026-09-16 ("동의해. 진행하자" — 관제판 §08 ①②). 근거 문서(선택지 전문·가중합 표) = Cowork 프로젝트 `claude/판독_하네스점검_결정3건_20260916.md`(repo 외부 — 여기엔 결론만). 장부 기재 = OPS-BRIDGE-0 S3.1(2026-09-17, `monorepo/sess-eod-time1`).
+
+- **⑴ 지시서 통로 = A 메일박스 + Mac 상주 디스패처 (4.20)** — `docs/instructions/inbox/<트랙>.md`가 곧 디스패치(채팅 복붙 없음) · `outbox/<트랙>_보고.md`가 보고 · `approvals/<트랙>.ok`(`sha=` 필수)가 승인 증표. 디스패처(OPS-DISPATCH-1) 구축 완료 전까지는 **B Remote Control 스폰(3.75)** 으로 운용. 규약 정본 = `docs/instructions/inbox/README.md`(지시서는 짧게 — 없는 것은 repo 하네스가 단일 출처, 복제 금지).
+- **⑵ 랜딩 게이트 = ⓑ 랜딩 승인 1회 (4.25, 타이브레이커 = 안전)** — `.ok`가 가리키는 SHA에 대해 **역머지 → 게이트(vitest·pytest·tsc 0 failed) → no-ff 머지 → push → `sv sync` → FE 리빌드**를 한 승인으로 묶는다. **HALT는 3경우만**: 충돌 / 게이트 RED / 마이그·beat·plist·prod-write 동반. 병진 수동 항목(prod migrate · 영구/강제 삭제 · 원격 브랜치 삭제 · plist · beat 등록)은 **불변**. 집행 수단 = OPS-GATE-1(`scripts/ops/land.sh` + PreToolUse 훅 — 문서가 아니라 스크립트·훅이 지킨다).
+- **⑶ 장부 = ⓑ STATUS 자동생성 + 회전 (4.15)** — 트랙 상태판을 손으로 쓰지 않고 inbox/outbox/approvals + git 실측에서 생성·회전(OPS-STATUS-1).
+- **Why**: INCIDENTS 6건 중 4건(001·002·003·006)이 "문서 규칙을 실행자가 어긴" 사건. 지시·보고·승인을 채팅이 아니라 **git 추적 파일**로 옮기면 디렉터가 outbox ↔ git 실측을 대조해 판정할 수 있고, 게이트를 스크립트·훅으로 내리면 위반이 구조적으로 막힌다.
+- **경과 조치**: `D-PUSH-DELEG` 가드 (ii)(behind>0 무조건 HALT) · "푸시 1회 1승인"은 **OPS-GATE-1 착지 시 v2로 대체 예정** — 그때까지 현행 유지. 과도기에는 지시서 상단 `approved_sha`가 `.ok`를 대신한다(OPS-BRIDGE-0 선례).

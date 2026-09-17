@@ -30,6 +30,16 @@
   이 매핑은 노드 적중(GPC)으로 **검증됨** → 매핑 오류는 배제. 합성 MouseEvent(mousemove→click) 디스패치도 미발화.
   남은 가설: ⑴ force-graph 히트 판정이 노드 우선이라 짧은 엣지가 가려짐 ⑵ `link.edge` undefined → `setSelectedEdge(undefined)`로 바가 안 뜸 ⑶ 섀도 캔버스 갱신 타이밍.
 - **RC-C1-LIVE-2** (todo·RC-C1-LIVE-1 의존) — 원인 규명 후 **히트영역 자체를 잡는 회귀 테스트** 추가(현 vitest는 배선만 검증).
+## OPS-BRIDGE — 디렉터→실행자 메일박스·랜딩 게이트·장부 자동화 (2026-09-16 등재, D-OPS-BRIDGE) [harness][ops]
+
+> 지시서 = `docs/instructions/inbox/<트랙>.md`(파일이 곧 디스패치) · 보고 = `outbox/<트랙>_보고.md` · 승인 = `approvals/<트랙>.ok`(`sha=`). 규약 정본 `docs/instructions/inbox/README.md`. 결정 = DECISIONS `D-OPS-BRIDGE`.
+
+| 태스크 | 크기 | 내용 | depends_on | 상태 |
+|--------|------|------|-----------|------|
+| OPS-BRIDGE-0 | M | main 발산 해소(`b0fadfa3`→`monorepo/sess-cs-s3-1d` 보존 · 본체 reset→origin/main) + 즉시 랜딩 2건(CS-S3-1D · EOD-TIME-1) + 배포(`sv sync` + web 리빌드 §2.2) + D-OPS-BRIDGE 등재. 지시서 `inbox/OPS-BRIDGE-0.md` | — | 🟡 in_progress (2026-09-17 ops 세션 · 결과 = `outbox/OPS-BRIDGE-0_보고.md`) |
+| OPS-GATE-1 | M | 랜딩 승인 게이트: `approvals/` 규약 + `scripts/ops/land.sh`(승인 SHA 검증→역머지→게이트→수동항목 감지→no-ff→push→sync→리빌드, force·삭제 명령 부재) + PreToolUse 훅 `.claude/hooks/guard_bash.sh`(push/force/`-D`/원격삭제/worktree remove/launchctl/migrate deny) + D-PUSH-DELEG v2 문구. 지시서 `inbox/OPS-GATE-1.md` | OPS-BRIDGE-0 | 📋 queued (착수 조건 OPS-BRIDGE-0 착지) |
+| OPS-DISPATCH-1 | M | inbox 감시 디스패처 `scripts/ops/dispatch.sh`(`claude -p` 헤드리스 · lockfile · 세션ID 저장 · HALT 재개 `--resume`) + launchd plist **초안**(등록 = 병진 수동 1회) + health 2항목(H-INBOX-STALE · H-OUTBOX-UNGRADED). 지시서 `inbox/OPS-DISPATCH-1.md` | OPS-GATE-1 | 📋 queued (착수 조건 OPS-GATE-1 착지) |
+| OPS-STATUS-1 | S | D-OPS-BRIDGE ⑶ STATUS 자동생성+회전 — inbox/outbox/approvals + git 실측에서 트랙 상태판 생성(`scripts/ops/status.py`, 디스패처가 호출). 지시서 미작성 | OPS-GATE-1 | 📋 todo (디렉터 지시서 대기) |
 
 ## CS-S3 트랙 — "이야기 리포트" (S3-PRE 등재 재landing + S3-1 착지, 2026-09-07) [chainsight][frontend]
 
@@ -1776,6 +1786,7 @@
   - 재발 맥락: `chainsight.backbone`(08-31)과 동일 패턴이 9일 만에 재발. 근본 처방은 게이트(OPS-FE-GATE-0 측정 완료) + [[GUIDE-COUPDATE-DOD]](지시서 템플릿 DoD).
 ## EOD-TIME-1 (2026-09-10)
 
-- ✅ **EOD-TIME-1 R1+R4** (@infra) — **구현·테스트 완료 · `sv sync`/배포 범위 밖(미실행)**. R1: baker `is_stale` TZ 혼용 수정(`compute_is_stale`·UTC/KST 통일) — 유닛 5(신선/비신선/경계2/09-09 UTC 회귀). R4: `check_quant` 신선도 임계 캘린더-일→**거래일 기준**(`market_calendar.trading_days_between`) + 판정근거 메시지. 유닛: market_calendar 7 파라미터 + quant 6(평일연속·주말월요일·휴장화요일=09-09 회귀 ok·추수감사절·2거래일 FAIL·메시지). **48 passed · eod_pipeline 10 passed · 신규 lint 0**(선존 3건 import 무접촉). FE 배지: baker false→`computeIsStale` 24h 규칙→신선 시 초록(배지 꺼짐) 라인 확증. 마이그레이션 0. worktree `sv-eod-time1`. 정본 결정 = `D-EOD-FRESH-ROOT-NOT-SCHEDULE`.
+- ✅ **EOD-TIME-1 R1+R4** (@infra) — **구현·테스트 완료 → LANDED 예정(OPS-BRIDGE-0 S3, 2026-09-17 · 착지·배포 결과 = `docs/instructions/outbox/OPS-BRIDGE-0_보고.md`)**. R1: baker `is_stale` TZ 혼용 수정(`compute_is_stale`·UTC/KST 통일) — 유닛 5(신선/비신선/경계2/09-09 UTC 회귀). R4: `check_quant` 신선도 임계 캘린더-일→**거래일 기준**(`market_calendar.trading_days_between`) + 판정근거 메시지. 유닛: market_calendar 7 파라미터 + quant 6(평일연속·주말월요일·휴장화요일=09-09 회귀 ok·추수감사절·2거래일 FAIL·메시지). **48 passed · eod_pipeline 10 passed · 신규 lint 0**(선존 3건 import 무접촉). FE 배지: baker false→`computeIsStale` 24h 규칙→신선 시 초록(배지 꺼짐) 라인 확증. 마이그레이션 0. worktree `sv-eod-time1`. 정본 결정 = `D-EOD-FRESH-ROOT-NOT-SCHEDULE`.
+- 📋 **EOD-FRESH-2 (장부 부재 메모, 2026-09-17)** — OPS-BRIDGE-0 S3.1 참조 항목. 실측: PROGRESS·DECISIONS·TASKQUEUE 3장부 어디에도 이 ID 없음(유지할 대상 없음). 내용 미상 → 본 세션은 등재하지 않음. 보존할 조건 문구 = **'R1(`is_stale` TZ, D-EOD-ISSTALE-TZ) 재측정 선행'**. 디렉터 확인 후 정식 등재.
 - 📋 **EOD-META-STATUS-1 (R2 별건 승격)** (@backend/@infra) — `pipeline_meta.status` 영구 "running" 고착. 뿌리: `eod_pipeline.py`에서 Stage7 bake가 `log.status="success"`(Stage8 이후, :263) **전**에 실행 → baker(`eod_json_baker.py:163`)가 "running"을 구움. 수리는 orchestrator 실행순서(run() 라이프사이클) 건드림 → 같은-파일 저비용 아님·별도 회귀 테스트 필요 → EOD-TIME-1에서 분리. cosmetic(데이터 정합 무영향·FE 소비 미확인).
 - 📋 **RUBRIC-DRIFT-1 (S3 착수 전 필수 선행)** (@infra/@qa) — 채점 재현성 드리프트. 실측: 빈 상태 2화면 내용 불변인데 monitor 5→4→4·portfolio 4→4→3·빈 평균 4.5→4.0→3.5 **단조 하락**(노이즈면 상하 진동해야 함 = 채점자 드리프트 서명). 가설: 채점 프롬프트가 prev_score 참조 → 자기참조 앵커링. 실험(저비용): ⓐ동일 `rendered_*.json` 3회 재채점→순수 분산 ⓑprev_score 제거 조건 비교. **이 실험 전 S3 관찰 후보 임계 확정 금지**.
