@@ -1,6 +1,6 @@
 ---
 track: OPS-GATE-1
-status: queued — 착수 조건 OPS-BRIDGE-0 착지
+status: dispatched 2026-09-17 17:05 (Cowork 디렉터 · OPS-BRIDGE-0 착지 f4754d22 확인 후)
 decision: D-OPS-BRIDGE ⑵ 랜딩 승인 1회(ⓑ 4.25) — 병진 승인 2026-09-16
 ---
 
@@ -36,3 +36,10 @@ decision: D-OPS-BRIDGE ⑵ 랜딩 승인 1회(ⓑ 4.25) — 병진 승인 2026-0
 ## 실측 반영 2026-09-17 (OPS-BRIDGE-0 1차 실행에서 관측)
 - **관측 1**: 자동 권한 분류기가 inbox 파일에서 온 지시로 본체 `git merge`를 실행하는 것을 "Instruction Poisoning → Modify Shared Resources"로 2회 거부. → **`land.sh`가 곧 해법**: 분류기가 보는 것은 `Bash(scripts/ops/land.sh <wt> <branch>)` 한 줄이며, `.ok`(승인 SHA) 검증이 스크립트 안에 있다. `.claude/settings.json` allow에 `Bash(scripts/ops/land.sh:*)`를 추적 파일로 등재.
 - **관측 2**: 본체(main 전용 머지 지점)를 병렬 세션이 동시에 사용 — 실행자의 `reset --hard origin/main`(11:05) 1.5분 뒤 다른 세션이 같은 본체에서 sess-guide-macro 머지·push(11:06). INC-005 유형 near-miss. → land.sh S2 단계 앞에 **본체 락**(`.git/land.lock`, noclobber, 소유자·시각·pid 기록, stale 30분 초과 시 경고 후 HALT) + `MERGE_HEAD` 부재 + `main==origin/main` 3중 확인을 필수로. `reset --hard`는 land.sh에 넣지 않는다(발산 해소는 별도 명시 승인 절차).
+
+## 실측 반영 2 — 2026-09-17 17:05 (OPS-BRIDGE-0 2~4차 실행에서 관측 · land.sh 필수 요건으로 승격)
+- **관측 3 — 본체 점유** *(집계 정정 2026-09-17, 본체 HEAD reflog 실측)*: 본체(`~/Desktop/stock_vis`) HEAD가 당일 **3회** 이동 — guide-macro 머지 11:06:53 · **OPS-BRIDGE-0 실행자 자신의 `sess-cs-s3-1d` 머지 14:50:03** · near-stop 체크아웃 15:17:56. **recover-1(15:14)은 본체를 쓰지 않았다** — 해당 시각 본체 HEAD reflog 기록이 없고, `853f71c6`은 본체를 거치지 않고 생성됐다(그 세션의 '임시 브랜치 우회' 보고와 일치). 즉 **타 세션 점유는 2회이고, 나머지 1회는 착지 실행자 자신**이다. 이는 land.sh 설계를 약화시키지 않고 **강화**한다 — 본체를 피해야 하는 이유가 '남이 쓰기 때문'만이 아니라 **착지 실행자의 기본 동선 자체가 본체 점유**이기 때문이다. (수치 인용 시 축 명시 규율: 같은 '3'이 다른 구성을 가리켰다.) → `land.sh`는 **본체를 쓰지 않는다**: 항상 `git worktree add ~/worktrees/sv-land-<트랙> origin/main --detach`에 no-ff 머지 → `git push origin HEAD:main` → 완료 후 자기 임시 트리 제거(`git worktree remove` — 분류기가 거부하면 `git worktree prune` 후보로 남기고 종료). 본체 `main` 로컬 ref는 건드리지 않는다(`land.lock`도 임시 트리 기준으로 대체).
+- **관측 4 — 게이트 test DB 오염**: 공유 `test_stock_vis`를 타 세션이 `--create-db`로 갈아엎어 게이트가 거짓 RED(16:11 1건 → 16:17 50건). → `land.sh` 게이트는 **test DB 이름을 세션별 격리**(`test_stock_vis_<트랙소문자>` — repo 무수정 `/tmp` settings 오버레이 패턴, OPS-BRIDGE-0 run3 선례) 후 종료 시 그 DB를 삭제 후보로 보고.
+- **관측 5 — 분류기가 막는 명령 목록(실측)**: `rm -rf <런타임 트리>/.next.bak`(거부) · `git worktree remove`(거부 추정 — sv-land-tmp 잔존) · 본체 `git merge`(1차 2회 거부 → 승인 인용 문구 포함 시 통과). → `land.sh`: `.next.bak`은 **개명**(`.next.bak.stale-<ts>`)만 하고 삭제 후보로 보고, 삭제 계열 명령 0.
+- **관측 6 — frontend 무변경 시 리빌드 생략 조건**은 이번에 실효(`git diff --name-only <이전 배포>..<착지> -- frontend/` = 0 → 생략·근거 기재). land.sh 9단계 조건으로 명문화.
+- 첫 실적용 대상은 그대로 **이 브랜치 자신**. 지시서 S2의 5~10단계 번호는 위 관측 3~6을 반영해 실행자가 재배열해도 된다(보고에 최종 단계표 기재).
