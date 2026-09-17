@@ -12,7 +12,13 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-__all__ = ["is_trading_day", "previous_trading_day", "target_session_date", "holiday_name"]
+__all__ = [
+    "is_trading_day",
+    "previous_trading_day",
+    "target_session_date",
+    "holiday_name",
+    "trading_days_between",
+]
 
 
 def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
@@ -85,6 +91,24 @@ def previous_trading_day(d: date) -> date:
     while not is_trading_day(cur):
         cur -= timedelta(days=1)
     return cur
+
+
+def trading_days_between(start: date, end: date) -> int:
+    """start(미포함)부터 end(포함)까지의 거래일 수. end <= start면 0.
+
+    신선도 지연을 '놓친 세션 수'로 센다 — 캘린더 일수가 아니다. 주말·휴장은
+    세지 않으므로 3일 연휴가 끼어도 놓친 세션이 1개면 1을 반환한다.
+    (EOD-TIME-1 R4: 캘린더-일수 임계가 연휴마다 거짓 FAIL을 내던 것을 교정)
+    """
+    if end <= start:
+        return 0
+    count = 0
+    cur = start + timedelta(days=1)
+    while cur <= end:
+        if is_trading_day(cur):
+            count += 1
+        cur += timedelta(days=1)
+    return count
 
 
 def target_session_date(run_date_kst: date) -> date:

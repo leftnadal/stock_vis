@@ -280,17 +280,34 @@ class TestTitles:
         assert sec["title"] == "MRVL, GOOGL와 중요 계약 체결 공시"
 
     def test_co_mention_card_title_from_article_quote(self):
+        """제목은 생성하지 않고 기사 원문을 그대로 인용한다(LLM 0).
+
+        D-S3-9(CS-S3-1D) 이후 인용 자격은 "제목이 카드 멤버를 말할 것"이다. 이 테스트는
+        인용의 **축자성**을 지키고, 자격 탈락 쪽은 test_title_gate.py F-5 가 맡는다.
+        """
+        _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
+        _chain_event("ORCL", ["PANW"], "ORCL, PANW와 클라우드 계약 체결", days_ago=2)
+        feed = build_market_story_feed(now=NOW)
+        card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
+        assert card["title"] == "ORCL, PANW와 클라우드 계약 체결"  # 원문 인용(가공 0)
+        assert card["title_state"] == "quoted"
+
+    def test_co_mention_card_title_dropped_when_no_member_in_title(self):
+        """D-S3-9: 근거는 있으나 멤버를 다룬 제목이 없으면 인용하지 않는다(evidence 는 유지)."""
         _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
         _chain_event("ORCL", ["PANW"], "오라클·팔로알토 클라우드 계약", days_ago=2)
         feed = build_market_story_feed(now=NOW)
         card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
-        assert card["title"] == "오라클·팔로알토 클라우드 계약"  # 원문 인용
+        assert card["title"] is None
+        assert card["title_state"] == "no_member_article"
+        assert len(card["evidence"]) == 1  # 게이트는 제목 선택에만 작용
 
     def test_co_mention_card_title_null_when_no_article(self):
         _edge("ORCL", "PANW", 13, last_days_ago=2, span_days=0)
         feed = build_market_story_feed(now=NOW)
         card = [c for c in feed["cards"] if c["type"] == "daily_spike"][0]
         assert card["title"] is None
+        assert card["title_state"] == "no_article"  # D-S3-9 C-1: 빈 상태 두 갈래
 
 
 @pytest.mark.django_db

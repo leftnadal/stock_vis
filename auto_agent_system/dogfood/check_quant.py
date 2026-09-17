@@ -27,6 +27,7 @@ from .market_calendar import (
     is_trading_day,
     previous_trading_day,
     target_session_date,
+    trading_days_between,
 )
 from .targets import (
     API_TARGETS,
@@ -146,10 +147,16 @@ def check_freshness(session: date) -> dict[str, Any]:
         # 방금 닫힌 세션은 아직 미베이크가 정상이므로, 대상 세션의 직전 거래일 이상이면 ok.
         prev = previous_trading_day(session)
         status = OK if trading >= prev else FAIL
+        # 판정 근거 병기 — "이 판정이 틀릴 수 있는 조건"(주말/휴장 포함 여부)을 읽는
+        # 사람이 바로 알 수 있게(신선도 3원칙 ③, EOD-TIME-1 R4). 판정 자체는 위 식 그대로.
+        lag_calendar = (session - trading).days
+        lag_trading = trading_days_between(trading, session)
+        spans = "주말/휴장 포함" if lag_calendar != lag_trading else "주말/휴장 없음"
         out["eod.trading_date"] = _item(
             status, str(trading), f"대상 세션 {session} 직전 거래일 {prev} 이상",
             f"EOD 최신 거래일 {trading} / 대상 세션 {session}(직전 거래일 {prev}) — "
-            + ("거래일 기준 신선" if status == OK else "거래일 기준 지연"),
+            + ("거래일 기준 신선" if status == OK else "거래일 기준 지연")
+            + f" · 지연 {lag_calendar}일(거래일 기준 {lag_trading}일 — {spans})",
         )
 
     out["eod.is_stale"] = _item(

@@ -1277,6 +1277,56 @@ def check_env_symlink(worktrees_dir: Path | None = None) -> CheckResult:
         return CheckResult(name=name, status=OK, detail="런타임 트리 없음 — skip")
     return evaluate_env_symlink(entries)
 
+def check_story_title_gate() -> CheckResult:
+    """D-S3-9 제목 적중 게이트가 제목을 지운 카드 비율. [CS-S3-1D §E]
+
+    게이트는 "제목이 카드 멤버를 말하지 않으면 인용하지 않는다"이므로, 지운 비율이 치솟으면
+    게이트가 사나워진 게 아니라 **회사명 사전이 낡은** 것이다(Stock.stock_name +
+    CompanyAlias). 사전 보강은 CompanyAlias 행 추가 — 숫자가 먼저 말하게 한다.
+    """
+    name = "story 제목 게이트"
+    try:
+        import os
+
+        import django
+
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+        django.setup()
+        from apps.chain_sight.services.market_story_feed import build_market_story_feed
+    except Exception as e:  # noqa: BLE001 — 비-런타임 환경은 검사 대상 아님
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="Django/DB 미가용 — 검사 생략(비-런타임 환경)",
+            evidence=[str(e)[:120]],
+        )
+
+    try:
+        cards = build_market_story_feed().get("cards", [])
+    except Exception as e:  # noqa: BLE001
+        return CheckResult(
+            name=name, status=WARN, detail="피드 조립 실패", evidence=[str(e)[:160]]
+        )
+
+    shown = len(cards)
+    if not shown:
+        return CheckResult(name=name, status=OK, detail="표시 카드 0장 — skip")
+    dropped = sum(1 for c in cards if c.get("title_state") == "no_member_article")
+    ratio = dropped / shown
+    detail = f"게이트가 제목을 지운 카드 {dropped}/{shown} ({ratio:.0%})"
+    evidence = [
+        "no_member_article = 근거는 있으나 멤버를 다룬 제목이 없음",
+        "임계: warn>=40% · error>=50%(D-2 관문과 동일) — 사전(CompanyAlias) 보강 신호",
+    ]
+    if ratio >= 0.5:
+        return CheckResult(name=name, status=ERROR, detail=detail + " — 절반 이상(D-2 관문 위반)", evidence=evidence)
+    if ratio >= 0.4:
+        return CheckResult(name=name, status=WARN, detail=detail + " — 사전 노후 의심", evidence=evidence)
+    return CheckResult(name=name, status=OK, detail=detail, evidence=evidence)
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -1299,6 +1349,7 @@ CHECKS = [
     check_runtime_check_log,
     check_launchd_tree_alignment,
     check_env_symlink,
+    check_story_title_gate,
 ]
 
 

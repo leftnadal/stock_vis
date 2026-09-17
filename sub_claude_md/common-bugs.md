@@ -2006,3 +2006,106 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **원인**: `eps_diff_at()`이 `eps_by_date.get(anchor)`와 `eps_by_date.get(anchor − 56 or 63일)` **양쪽 모두 정확 일치**를 요구(EPS 레그는 tolerance 0 — `PRICE_TOL_DAYS=7`은 **가격 레그 전용**). 주간 금요일 스냅샷이라 56·63은 7의 배수 = 정상 가동 시에만 성립하는 설계. **머신 미가동으로 09-11(금) 스냅샷이 09-12(토)에 생성**(`snapshot_date = timezone.now().date()`, created_at 09-12 19:03 UTC vs 평소 금 20:30 UTC) → anchor 09-11 **부재**, anchor 09-12의 파트너 07-18/07-11 **부재** → 503종목 전건 `c8_leg_missing`. **밀린 하루가 그 앵커를 영구 폐기**한다(과거 날짜는 다시 생성되지 않음).
 
 **해결(설계 결정 필요)**: ⑴ EPS 레그에도 파트너 탐색 허용 오차 도입(가격 레그의 `PRICE_TOL_DAYS`와 대칭 — "정확히 56일" 대신 "56±N일 내 최근접 스냅샷") ⑵ 또는 `snapshot_date`를 실행 시각이 아니라 **해당 주의 금요일로 정규화**(지연 실행도 올바른 주차에 귀속) ⑶ 랩톱 launchd 스택에서 "주간 배치가 정시 발화한다"는 전제는 성립하지 않음을 설계 가정에 반영. 진단 규율: `both_valid=0`은 배선 결함이 아니라 **날짜 집합 불일치**를 먼저 의심하고, 앵커·파트너 날짜의 실재 여부를 집합으로 대조한다.
+## 배포 범위는 "직전 보고의 델타"가 아니라 "현 런타임 커밋 대비 처음 나가는 것 전부" (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[deploy][harness][process]`
+
+**증상**: S3-1C 한 건을 배포한다고 알고 착수했으나, 실제 런타임(worker/api `5e4e70ea`, 09-07) 대비 delta는 비-머지 40커밋이었다. BE는 `chain_sight` 2파일 외에 `packages/shared/metrics/agent_reports.py`·`services/sec_pipeline/tasks.py`·`auto_agent_system/dogfood/` 5건이 함께 나갔다. 특히 `tasks.py` 변경은 **Celery 워커 재기동 요건**이라 누락 시 구코드가 계속 돈다.
+
+**원인**: 배포 범위를 "이번 세션이 만든 커밋"(= 직전 보고의 델타)으로 세는 습관. 런타임 트리는 여러 세션의 랜딩을 건너뛴 채 뒤처져 있으므로, 세션 델타와 배포 델타는 **다른 축**이다.
+
+**해결**: 배포 전 반드시 `git diff --name-status <런타임HEAD>..<목표커밋>`를 **경로 필터 없이** 1회 실행해 머지 diff를 직접 본다. 앱별로 묶어 BE/FE를 나누고, ⑴ `*/tasks.py` 포함 여부(워커 재기동) ⑵ `migrations/` 포함 여부 ⑶ `frontend/` 앱코드 포함 여부(=prod 리빌드 필수)를 각각 확인한다. 런타임 트리가 3종(worker/api/web)이고 **각자 다른 커밋에 있을 수 있으므로**, FE 델타는 web 런타임 HEAD 기준으로 따로 센다(이번엔 web이 `1efd410c`로 더 앞서 있어, FE 신규 배포분은 4파일뿐이었다).
+
+**교훈**: [[lesson_worker_sync_excludes_fe_prod_build]]의 짝. 그쪽이 "무엇을 나르지 않는가"라면, 이쪽은 "무엇을 나를 차례인가"를 잘못 센 경우다. 범위 산정과 도구 한계는 별개의 실패 지점이다.
+
+## 수치를 인용할 때 "어느 축·어느 행의 값인가"를 매번 명시한다 (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[harness][process]`
+
+**증상**: M-T3의 `PEER_OF 9`를 "쌍 수"로 읽어 우선순위를 잘못 정했다. 같은 세션에서 재발 — 지시서의 "SEC 4종 pending 19행"을 그대로 대조하려 하자 실측은 SEC 4종 pending **13행**, 전체 pending **21행**이었고, 정작 19는 `backfill_serving_layer` dry-run이 보고하는 **"pending→evidence로 전환될 행 수"**였다(전환 후 pending 21→2). 세 값이 전부 다른 축인데 같은 이름("pending 19")으로 오갔다.
+
+**원인**: 수치가 축(what is counted)·모집단(which rows)·시점(before/after) 없이 단독으로 유통되면, 받는 쪽이 자기 맥락의 축에 끼워 맞춘다. 숫자가 우연히 그럴듯하면 오독이 검출되지 않는다.
+
+**해결**: 인용 형식을 `값 [축] [모집단] [시점]`으로 고정한다. 예: "19 = pending→evidence 전환 예정 행 수(RelationConfidence 전체, 백필 전)". 대조할 때는 **상대의 숫자를 재현하는 쿼리를 먼저 지목**하고(어느 테이블·어느 필터), 값이 어긋나면 축부터 의심한다 — 값이 아니라.
+
+## 디렉터 read-only는 마운트 너머를 보므로, 절대경로 의존 git 상태를 디렉터가 판정하지 않는다 (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[harness][process][git]`
+
+**증상**: 지시서가 "런타임 worktree 3개 = prunable"을 기정사실로 주고 복구 절차를 예고했으나, 실기기 실측은 prunable **0건**(3종 모두 정상 detached HEAD)이었다. 같은 지시서가 `origin/main = 2eca515d`로 단정했으나 실측은 `50d37950`이었다(로컬 main이 ahead 4, `rev-list --left-right`의 좌우를 거꾸로 읽음).
+
+**원인**: `git worktree list`의 prunable 판정은 **등록된 절대경로의 실재 여부**로 결정된다. 마운트를 통해 보는 환경에서는 그 경로가 없으므로 전부 prunable로 보인다 — 환경 아티팩트이지 저장소 상태가 아니다. 마찬가지로 `origin/main`은 fetch 시점에 따라 관측자마다 다르다.
+
+**해결**: ⑴ 절대경로·원격추적에 의존하는 git 상태(worktree 등록, origin/* 해시, ahead/behind)는 **실행 기기에서 측정한 값만** 판정 근거로 삼는다. ⑵ 지시서는 그런 값을 단정하지 말고 "실측해 보고, 다르면 HALT"로 위임한다(이번 STEP 0 설계가 실제로 두 오류를 잡았다). ⑶ 인용할 값은 복합 출력의 첫 줄에서 추론하지 말고 **그 값만 찍는 명령으로 직접 지목**한다(`git rev-parse origin/main`).
+
+**교훈**: STEP 0를 "판정 금지·수치만"으로 분리한 설계가 옳았다. 기준과 실측이 다를 때 HALT하는 규율이 없었다면 잘못된 목표 커밋으로 배포가 진행됐을 것이다.
+
+## 디렉터 실측에도 유통기한이 있다 — 미착지 세션 브랜치가 지시서 작성과 실행 사이에 main에 들어오면 전제가 죽는다 (채번 후보, GUIDE-MACRO-REVIEW 2026-09-15) `[harness][process][git]`
+
+**증상**: 지시서가 "dogfood 실패 2건"을 착수 전제로 주고 그것을 끄는 Part 3을 지시했다. 실행 시점 실측은 **103 passed / 0 failed**. 더 나쁜 것은 Part 3의 블록이 `/chainsight/events` 자리에 `/chainsight`를 써서, 적용하면 **dogfood 0 → 1 RED 순증**이 될 참이었다(같은 파일의 `by_id["chainsight.main"].route == "/chainsight/events"` 단언과 정면 충돌).
+
+**원인**: 디렉터 09-10 측정은 **그 시점 정확**했다. 문제를 끈 커밋 `113b48a3`(GUIDE-CS-GUARD-1)은 09-07에 작성됐지만 브랜치 `monorepo/sess-guide-csg1`에 머물러 있었고, `0bfd185e` 머지로 **09-10 이후에 main에 착지**했다. 즉 main이 지시서 작성과 실행 사이에 **밑에서 움직였다**. 세션 브랜치가 오래 미착지로 남는 워크플로에서는 "지금 main"이 관측 시점마다 다르다 — 브랜치 수가 많을수록 유통기한이 짧아진다.
+
+**해결**: 지시서에 ⑴ **측정 시각**과 ⑵ **측정한 base 커밋 해시** ⑶ **숫자로 된 HALT 조건**을 박는다. 이번 STEP 0의 `HALT③ = dogfood 실패가 2건이 아니면 멈춘다`가 착수 전에 잡았다. 실행자는 "지시서가 기대한 RED가 실제로 RED인지"를 **고치기 전에 먼저 확인**한다 — 이미 GREEN이면 그 Part는 목적을 잃었거나 회귀 유발분이다. 역방향도 성립: 기대보다 실패가 **많으면** 슬라이스 밖의 새 회귀다.
+
+**교훈**: [[lesson_shared_main_worktree_holds_other_session_merge]]의 짝. 그쪽이 "local main이 남의 미push 머지를 들고 있다"면, 이쪽은 "남의 미착지 브랜치가 뒤늦게 들어와 내 전제를 죽인다"다. 둘 다 **main을 고정된 좌표로 가정한 것**이 근인이다. 지시서의 전제는 데이터가 아니라 **관측**이며, 관측에는 시각이 붙어야 한다.
+
+## `worker_sync.sh`는 default worker/beat만 재기동 — 별도 큐 워커(`-Q neo4j`)는 구코드를 계속 들고 돈다 (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[deploy][infra][celery][harness]`
+
+**증상**: `sv sync`(=`scripts/worker_sync.sh`)로 런타임 3종을 `2eca515d`로 정렬하고 celery worker·beat·daphne를 재기동한 뒤에도, `com.stockvis.celery-worker-neo4j`(PID 3464)만 **09-12 기동분 그대로**였다. cwd는 이미 새 코드로 바뀐 `sv-worker-runtime`인데, 프로세스는 3일 전 import한 모듈을 메모리에 들고 있다 — **파일과 메모리가 어긋난 상태**.
+
+**원인**: `worker_sync.sh`의 worker 단계가 재기동하는 launchd 잡이 `com.stockvis.celery-worker`·`com.stockvis.celery-beat` 둘뿐이다. 별도 큐 워커(`-Q neo4j --pool=solo`)는 **같은 트리에서 돌지만 다른 잡**이라 스크립트 범위 밖이다. re-detach는 트리 단위라 조용히 성공하므로, 로그에 아무 경고도 남지 않는다.
+
+**해결**: 배포 시 워커 재기동 대상을 **잡 단위로 열거**한다 — `launchctl list | grep stockvis` 로 celery 계열 잡을 전수 확인하고, `worker_sync.sh`가 건드리지 않는 잡(`celery-worker-neo4j` 등)은 `launchctl kickstart -k gui/$(id -u)/<잡>`로 별도 재기동한다. 완주 검증 = 해당 큐로 태스크 1건 발사 후 SUCCESS 확인(예: `health_check_neo4j` → `{status: healthy, connected: true}`). 근본 수리는 `worker_sync.sh`에 큐 워커 잡 목록을 추가하는 것(별건).
+
+**교훈**: 이 아크에서 **세 번째** "동기화가 안 나르는 것"이다 — ⑴ FE prod 빌드([[lesson_worker_sync_excludes_fe_prod_build]]) ⑵ 배포 범위 산정(현 런타임 대비) ⑶ 별도 큐 워커. 공통 구조는 **"트리를 옮기는 일"과 "그 코드를 실제로 들고 도는 프로세스를 갈아끼우는 일"이 분리돼 있고, 후자는 목록으로 관리되지 않는다**는 것. 동기화 도구의 이름(`worker_sync`)이 범위를 보장한다고 읽지 말 것.
+
+## union 병합은 아무것도 삭제하지 않는다 — 그래서 "삭제 줄 0"은 검증이 아니다 (채번 후보, GUIDE-MACRO-REVIEW 애든덤 B 2026-09-15) `[harness][git][process]`
+
+**증상**: 원장 역머지 후 `PROGRESS.md`에 타 트랙(`CS-RESUME-DEPLOY`) 항목이 **구버전·신버전 두 벌**로 남았다. 충돌 0, 삭제 0이라 보고서에는 "양측 기입 전건 생존"으로 적혔다 — 실제로는 한 트랙의 상태가 두 개의 서로 다른 시점으로 동시에 서술되고 있었다.
+
+**원인**: `.gitattributes`의 `merge=union`은 **append 로그 전제**다. 상대가 같은 블록을 **편집**하면 union은 구·신 두 줄을 모두 보존한다. 충돌이 나지 않으므로 조용하다. 활성 작업 블록을 덮어쓰는 `PROGRESS.md`에서 특히 잘 터진다. `origin/main`에 이미 같은 원인의 중복 2건(`HUB-V02-S2`·`MGMT-LEDGER-2`)이 선존한다 — 재발형 결함이다.
+
+**해결**: 원장 역머지 후 검증은 **삭제 줄이 아니라 중복 블록을 센다** — `git show <ref>:<file> | awk 'length($0)>120' | sort | uniq -d`. 병합 전(base·origin/main)과 병합 후를 각각 돌려 **증가분만** 제거한다(선존 중복은 소유 트랙 몫이므로 건드리지 않는다). 세션 DoD에 이 한 줄을 넣는다.
+
+**교훈**: [[디렉터 실측에도 유통기한이 있다]]의 짝. 그쪽이 "main이 밑에서 움직여 전제가 죽는다"면 이쪽은 "main이 밑에서 움직인 흔적이 조용히 두 벌로 남는다"다. **union은 안전장치가 아니라 충돌 회피 장치**이며, 회피된 충돌은 사라진 게 아니라 문서 안으로 들어간다. 검증 명제를 고를 때는 "이 확인이 실패할 수 있는가"를 먼저 묻는다 — union 병합에서 "삭제 줄 0"은 **항상 참**이라 아무것도 반증하지 못한다.
+
+---
+
+## 로컬 main 머지 후 push 누락이 반복된다 — health_check에 'main ahead>0' 감지 가드가 공백 (채번 후보, SCB-RECOVER-PROBE 2026-09-17) `[harness][git][ops]`
+
+**증상**: 세션이 브랜치를 로컬 `main`에 머지해 놓고 `push`를 빠뜨려도 **아무 계측도 이를 보고하지 않는다**. 2회 관측 — 2026-09-11 **4커밋**(RC-D-0 아크, 09-11~09-15 방치) · 2026-09-15 **1커밋**(`de0f334d` CS-RESUME-DEPLOY, 09:28 머지 후 09:50까지 미push). 두 건 모두 디렉터의 **수동 `git rev-list` 실측**으로만 발견됐다.
+
+**원인**: 이름이 남아 있어 감지되는 줄 착각하기 쉽다. `scripts/health_check.py`의 `check_origin_main_hash`("origin/main 해시")는 **2026-07-02 B2에서 해시 비교를 의도적으로 버리고 PROGRESS 신선도 검사로 내용이 교체**됐고 **함수명·표시 항목명만 유지**됐다. 그 결과 항목 이름은 `origin/main 해시`인데 출력은 `PROGRESS.md N시간 미갱신`이다 — 실측 예: `❌ ERROR  origin/main 해시  PROGRESS.md 112.3h 미갱신 (임계 72h)`. **"로컬 main이 origin/main보다 ahead"라는 상태를 보는 검사는 repo 전체에 존재하지 않는다.** 항목명이 그 검사가 살아 있다는 인상을 주어 공백을 가린다.
+
+**해결**: `health_check.py`에 독립 체크 추가 — `git rev-list --count origin/main..main > 0` → `⚠`(문서 전용이면 ⚠, 코드 포함이면 승격 검토). **앞서 보류된 `STARTUP_CHECKLIST`의 "구동 트리 HEAD ≠ origin/main 경고"와 동일 계열이므로 한 세션으로 묶어 구현한다.** 이름과 내용이 갈라진 `check_origin_main_hash`는 함수명·항목명을 실제 검사 내용(PROGRESS 신선도)에 맞게 개명한다.
+
+**교훈**: **검사의 내용을 바꿀 때 이름을 남겨 두면, 그 이름이 가드가 아직 있다는 거짓 신호가 된다.** 공백은 "검사가 없다"보다 "검사가 있는 줄 알았다"로 더 오래 산다. 계측을 교체할 땐 이름도 함께 교체하고, 버린 검사는 버렸다고 장부에 남긴다.
+
+---
+
+## nightly 발행본은 gitignore 대상 — 'main에 리포트 부재'는 이상 신호가 아니다 (채번 후보, SCB-RECOVER-PROBE 2026-09-17) `[harness][ops][nightly]`
+
+**증상**: `main:docs/nightly_auto_system/reports/`에 4·5·6월만 있고 7·8·9월이 없는 것을 보고 "nightly 자동화가 3개월째 고장"이라 판정할 뻔했다. 같은 근거로 `monorepo/nightly-20260910~14` 브랜치가 전부 `ahead=0`인 것도 고장의 증거로 읽혔다.
+
+**원인**: 둘 다 **설계대로 동작한 결과**다. `.gitignore:229` `docs/nightly_auto_system/reports/**/*.md`(근거 = DECISIONS `[2026-06-23] B-2` "발행본 = 미추적 + gitignore")가 **본진과 격리 nightly repo 양쪽에** 적용된다. 그래서 ⑴ 추적본이 4·5·6월뿐인 것은 gitignore **도입 이전**에 이미 추적 중이던 역사 파일이고 ⑵ tier3는 매일 **커밋을 시도하지만** 생성물이 전부 ignore 대상이라 `커밋할 변경사항 없음`으로 끝나 `ahead=0`이 된다. 실제로 nightly는 멈춘 적이 없었다 — 원본은 `~/stock-vis-nightly/repo/docs/nightly_auto_system/reports/`에 7·8·9월 **795개 md**가 쌓여 있었다.
+
+**진짜 문제는 다른 곳**이었다: B-2가 "격리본을 read 경로로 단방향 복사"하도록 정한 **발행 단계(`publish_reports.sh`)가 어느 스크립트에서도 호출되지 않는다**(grep 호출처 0건). B-2는 이 배선을 **사용자 수동**으로 남겨 뒀고 그 절차가 3개월간 한 번도 이행되지 않았다. 결과로 본진 read 경로가 6-30에서 멈췄고, 대시보드 reader(`packages/shared/metrics/services/agent_reports.py`, `REPORTS_BASE` = 본진 경로 하드코딩)가 6/16 이후 "보고서 없음"을 냈다.
+
+**해결**: 검사 지점을 옮긴다. **git 추적 여부가 아니라 본진 트리의 미추적 발행본 존재 여부**를 본다 — `ls docs/nightly_auto_system/reports/<M>월/<D>일/*.md`, 또는 reader가 실제로 파일을 찾는지(`_find_report_path`)를 본다. `git log`·`git status`는 이 경로에 대해 **구조적으로 항상 침묵**하므로 증거가 될 수 없다. 소급 발행 실측(2026-09-17): 92일 루프 → 69일 발행 · 21일 원본 부재 · 2일 빈 디렉터리 · md **795개** 복사 · git 오염 0 · reader 인식 **12/12**.
+
+**교훈**: **gitignore된 산출물에 대해 git이 보여 주는 침묵은 "없다"가 아니라 "볼 수 없다"다.** 파이프라인 건강을 git 상태로 재는 순간, 무시하도록 설계한 바로 그 구간이 사각지대가 된다. 그리고 "수동 절차로 남긴다"는 결정은 **이행 여부를 재는 계측을 함께 만들지 않으면 3개월 뒤 조용히 미이행 상태로 발견된다**.
+
+## 신선도·생존 판정 3원칙 — 측정 장치가 거짓 경보를 내는 공통 패턴 (채번 대기, EOD-TIME-1 2026-09-10) `[ops][monitoring][process]`
+
+측정 장치(헬스체크·신선도·루브릭) 오탐 5건 누적의 공통 뿌리. 신선도/생존을 판정하는 코드는 반드시:
+
+① **지연은 거래일 기준으로 센다** — 캘린더 일수 임계 금지. 주말·연휴가 끼면 캘린더 일수가 벌어져도 놓친 세션은 1개일 수 있다(3일 연휴 = 캘린더 4일이나 거래일 1일).
+② **자기 실행 시점이 대상 갱신 이전인지 반영한다** — "아직 안 만들어진 것"을 "없어진 것"으로 판정 금지(예: dogfood 05:20 KST < EOD 베이크 07:30 KST → 파일이 항상 1 세션 뒤처짐이 정상).
+③ **실패 메시지에 "이 판정이 틀릴 수 있는 조건"을 함께 적는다** — 예: "지연 N일(거래일 기준 M일 — 주말/휴장 포함 여부)".
+
+근거(오탐 5건): 루브릭 미인증 1.4/5 · beat=DOWN 오판 · "백엔드 다운" · 실행 트리 상시 WARN · EOD 지연 4일(=이번 건, 실제로는 수집 성공·채점 순서+연휴 artifact). 실측 3일치: EOD-DELAY-1 09-08 지연0 ok / 09-09 지연4 FAIL / 09-10 지연1 ok — **개입 없이 치유 = 검사 설계 결함**. 수리 = 거래일 판정 MGMT-LEDGER-2 T4(`c62e3107`) + EOD-TIME-1 R4 분해 랜딩(회귀 테스트 6종·판정 근거 note 병기, OPS-BRIDGE-0 ⓐ 2026-09-17). 정본 결정 = DECISIONS `D-EOD-FRESH-ROOT-NOT-SCHEDULE`.
+
+## 커밋은 세션 전용 브랜치에만 한다 — 공유 main 워크트리의 커밋은 타 세션 reset에 떨어져 나간다 (채번 후보, CS-S3-1D 2026-09-17) `[harness][git][process]`
+
+**증상**: 공유 main 워크트리(`~/Desktop/stock_vis`)에서 `main`에 직접 커밋한 `b0fadfa3`(CS-S3-1D 코드 10파일)이 push 직전에 브랜치에서 사라졌다. 로컬 `main`과 `origin/main`이 같은 해시를 가리켜 `ahead/behind 0/0`으로 보였고, 지시받은 `git push origin main`을 그대로 실행했다면 **no-op으로 성공하면서 작업만 조용히 누락**됐을 것이다.
+
+**원인**: reflog가 `main@{1}: reset: moving to origin/main` — 병렬 세션이 같은 워크트리에서 `main`을 `origin/main`으로 reset했다. 그 시점 `origin/main`에는 내 커밋이 없었다(push 지시 대기 중이었다). 커밋 객체는 살아 있었지만 **어떤 브랜치도 가리키지 않는 상태**가 됐다. 공유 워크트리에서 브랜치는 세션 간 공유 자원이고, `reset`은 다른 세션의 미push 작업을 소리 없이 떨어뜨린다.
+
+**해결**: ⑴ **커밋 전에 세션 전용 브랜치를 만든다**(`git switch -c monorepo/sess-<이름>`) — 지시서가 브랜치를 지정하지 않았더라도 실행자가 만든다. ⑵ 이미 고아가 됐다면 **최우선으로 `git branch <이름> <해시>`**로 고정한다(main 무접촉·즉시 안전). ⑶ 이후 worktree를 떼어 그 안에서만 작업한다. ⑷ **push 전 반드시 `git reflog main`과 `git merge-base --is-ancestor <내커밋> HEAD`로 내 커밋이 여전히 계보에 있는지 확인한다** — `ahead/behind 0/0`은 "올릴 게 없다"는 뜻이지 "내 작업이 반영됐다"는 뜻이 아니다.
+
+**교훈**: `ahead/behind 0/0`을 성공 신호로 읽지 말 것. 이 아크의 [[lesson_shared_main_worktree_holds_other_session_merge]]·"수치 인용 시 축을 명시" 항목과 같은 계열 — **같은 숫자가 다른 사실을 가리킨다**. 짝 규율(지시서 측): **지시서는 worktree와 브랜치를 명시한다. 생략하면 실행자가 공유 main에서 작업하게 되므로, 생략은 지시서의 결함이다.**

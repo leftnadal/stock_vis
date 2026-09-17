@@ -8,6 +8,7 @@ from auto_agent_system.dogfood.market_calendar import (
     is_trading_day,
     previous_trading_day,
     target_session_date,
+    trading_days_between,
 )
 
 
@@ -55,3 +56,20 @@ def test_target_session_is_previous_trading_day():
     assert target_session_date(date(2026, 8, 27)) == date(2026, 8, 26)
     # 월요일 새벽 실행 → 금요일 세션
     assert target_session_date(date(2026, 8, 31)) == date(2026, 8, 28)
+
+
+@pytest.mark.parametrize(
+    "start,end,expected",
+    [
+        (date(2026, 8, 25), date(2026, 8, 26), 1),   # 화→수 평일 연속
+        (date(2026, 8, 28), date(2026, 8, 31), 1),   # 금→월 (주말 낌)
+        (date(2026, 9, 4), date(2026, 9, 8), 1),     # 금→화 (주말+Labor Day) = 09-09 재현
+        (date(2026, 11, 25), date(2026, 11, 27), 1), # 수→금 (추수감사절 목 휴장)
+        (date(2026, 8, 26), date(2026, 8, 26), 0),   # 동일일
+        (date(2026, 8, 26), date(2026, 8, 20), 0),   # end < start
+        (date(2026, 8, 25), date(2026, 8, 27), 2),   # 2 거래일 뒤처짐
+    ],
+)
+def test_trading_days_between_counts_sessions_not_calendar_days(start, end, expected):
+    """start(미포함)~end(포함) 사이의 거래일 수. 주말·휴장은 세지 않는다."""
+    assert trading_days_between(start, end) == expected
