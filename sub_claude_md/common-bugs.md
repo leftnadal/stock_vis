@@ -2011,6 +2011,16 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 
 **교훈**: STEP 0를 "판정 금지·수치만"으로 분리한 설계가 옳았다. 기준과 실측이 다를 때 HALT하는 규율이 없었다면 잘못된 목표 커밋으로 배포가 진행됐을 것이다.
 
+## 디렉터 실측에도 유통기한이 있다 — 미착지 세션 브랜치가 지시서 작성과 실행 사이에 main에 들어오면 전제가 죽는다 (채번 후보, GUIDE-MACRO-REVIEW 2026-09-15) `[harness][process][git]`
+
+**증상**: 지시서가 "dogfood 실패 2건"을 착수 전제로 주고 그것을 끄는 Part 3을 지시했다. 실행 시점 실측은 **103 passed / 0 failed**. 더 나쁜 것은 Part 3의 블록이 `/chainsight/events` 자리에 `/chainsight`를 써서, 적용하면 **dogfood 0 → 1 RED 순증**이 될 참이었다(같은 파일의 `by_id["chainsight.main"].route == "/chainsight/events"` 단언과 정면 충돌).
+
+**원인**: 디렉터 09-10 측정은 **그 시점 정확**했다. 문제를 끈 커밋 `113b48a3`(GUIDE-CS-GUARD-1)은 09-07에 작성됐지만 브랜치 `monorepo/sess-guide-csg1`에 머물러 있었고, `0bfd185e` 머지로 **09-10 이후에 main에 착지**했다. 즉 main이 지시서 작성과 실행 사이에 **밑에서 움직였다**. 세션 브랜치가 오래 미착지로 남는 워크플로에서는 "지금 main"이 관측 시점마다 다르다 — 브랜치 수가 많을수록 유통기한이 짧아진다.
+
+**해결**: 지시서에 ⑴ **측정 시각**과 ⑵ **측정한 base 커밋 해시** ⑶ **숫자로 된 HALT 조건**을 박는다. 이번 STEP 0의 `HALT③ = dogfood 실패가 2건이 아니면 멈춘다`가 착수 전에 잡았다. 실행자는 "지시서가 기대한 RED가 실제로 RED인지"를 **고치기 전에 먼저 확인**한다 — 이미 GREEN이면 그 Part는 목적을 잃었거나 회귀 유발분이다. 역방향도 성립: 기대보다 실패가 **많으면** 슬라이스 밖의 새 회귀다.
+
+**교훈**: [[lesson_shared_main_worktree_holds_other_session_merge]]의 짝. 그쪽이 "local main이 남의 미push 머지를 들고 있다"면, 이쪽은 "남의 미착지 브랜치가 뒤늦게 들어와 내 전제를 죽인다"다. 둘 다 **main을 고정된 좌표로 가정한 것**이 근인이다. 지시서의 전제는 데이터가 아니라 **관측**이며, 관측에는 시각이 붙어야 한다.
+
 ## `worker_sync.sh`는 default worker/beat만 재기동 — 별도 큐 워커(`-Q neo4j`)는 구코드를 계속 들고 돈다 (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[deploy][infra][celery][harness]`
 
 **증상**: `sv sync`(=`scripts/worker_sync.sh`)로 런타임 3종을 `2eca515d`로 정렬하고 celery worker·beat·daphne를 재기동한 뒤에도, `com.stockvis.celery-worker-neo4j`(PID 3464)만 **09-12 기동분 그대로**였다. cwd는 이미 새 코드로 바뀐 `sv-worker-runtime`인데, 프로세스는 3일 전 import한 모듈을 메모리에 들고 있다 — **파일과 메모리가 어긋난 상태**.
@@ -2020,3 +2030,13 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **해결**: 배포 시 워커 재기동 대상을 **잡 단위로 열거**한다 — `launchctl list | grep stockvis` 로 celery 계열 잡을 전수 확인하고, `worker_sync.sh`가 건드리지 않는 잡(`celery-worker-neo4j` 등)은 `launchctl kickstart -k gui/$(id -u)/<잡>`로 별도 재기동한다. 완주 검증 = 해당 큐로 태스크 1건 발사 후 SUCCESS 확인(예: `health_check_neo4j` → `{status: healthy, connected: true}`). 근본 수리는 `worker_sync.sh`에 큐 워커 잡 목록을 추가하는 것(별건).
 
 **교훈**: 이 아크에서 **세 번째** "동기화가 안 나르는 것"이다 — ⑴ FE prod 빌드([[lesson_worker_sync_excludes_fe_prod_build]]) ⑵ 배포 범위 산정(현 런타임 대비) ⑶ 별도 큐 워커. 공통 구조는 **"트리를 옮기는 일"과 "그 코드를 실제로 들고 도는 프로세스를 갈아끼우는 일"이 분리돼 있고, 후자는 목록으로 관리되지 않는다**는 것. 동기화 도구의 이름(`worker_sync`)이 범위를 보장한다고 읽지 말 것.
+
+## union 병합은 아무것도 삭제하지 않는다 — 그래서 "삭제 줄 0"은 검증이 아니다 (채번 후보, GUIDE-MACRO-REVIEW 애든덤 B 2026-09-15) `[harness][git][process]`
+
+**증상**: 원장 역머지 후 `PROGRESS.md`에 타 트랙(`CS-RESUME-DEPLOY`) 항목이 **구버전·신버전 두 벌**로 남았다. 충돌 0, 삭제 0이라 보고서에는 "양측 기입 전건 생존"으로 적혔다 — 실제로는 한 트랙의 상태가 두 개의 서로 다른 시점으로 동시에 서술되고 있었다.
+
+**원인**: `.gitattributes`의 `merge=union`은 **append 로그 전제**다. 상대가 같은 블록을 **편집**하면 union은 구·신 두 줄을 모두 보존한다. 충돌이 나지 않으므로 조용하다. 활성 작업 블록을 덮어쓰는 `PROGRESS.md`에서 특히 잘 터진다. `origin/main`에 이미 같은 원인의 중복 2건(`HUB-V02-S2`·`MGMT-LEDGER-2`)이 선존한다 — 재발형 결함이다.
+
+**해결**: 원장 역머지 후 검증은 **삭제 줄이 아니라 중복 블록을 센다** — `git show <ref>:<file> | awk 'length($0)>120' | sort | uniq -d`. 병합 전(base·origin/main)과 병합 후를 각각 돌려 **증가분만** 제거한다(선존 중복은 소유 트랙 몫이므로 건드리지 않는다). 세션 DoD에 이 한 줄을 넣는다.
+
+**교훈**: [[디렉터 실측에도 유통기한이 있다]]의 짝. 그쪽이 "main이 밑에서 움직여 전제가 죽는다"면 이쪽은 "main이 밑에서 움직인 흔적이 조용히 두 벌로 남는다"다. **union은 안전장치가 아니라 충돌 회피 장치**이며, 회피된 충돌은 사라진 게 아니라 문서 안으로 들어간다. 검증 명제를 고를 때는 "이 확인이 실패할 수 있는가"를 먼저 묻는다 — union 병합에서 "삭제 줄 0"은 **항상 참**이라 아무것도 반증하지 못한다.
