@@ -16,11 +16,12 @@ This file helps humans and agents find relevant Working Records. It is a locator
 ## Judgment / Outcome / Learning
 
 **Topic:** Judgment–Outcome–Learning Feedback Loop  
-**Keywords:** judgment quality, outcome bias, signal, review target, candidate learning, learning quality, transfer test, operational learning, prior-learning scan, retrieval trigger, classification review, terminology, counterexample, self-review, 분류 점검, 사전 검토, 반례, 검색 조건  
-**Latest recorded state:** Feedback-loop and retrieval-trigger proposals remain working candidates. Checkpoint 02 preserves the user's request for multi-perspective pre-review of important classifications, candidate wording history, and unresolved boundaries; it does not approve a final taxonomy.  
+**Keywords:** judgment quality, outcome bias, signal, review target, candidate learning, learning quality, transfer test, operational learning, prior-learning scan, retrieval trigger, classification review, terminology, counterexample, self-review, relevance screening, use-specific compatibility, positive outcome, 분류 점검, 사전 검토, 반례, 검색 조건, 적용 가능성, 뜻밖의 성공  
+**Latest recorded state:** Proposals remain non-authoritative. Checkpoint 02 preserves the pre-review request and wording history; Checkpoint 03 proposes current-situation retrieval cues and use-specific compatibility after reading source records. No final taxonomy, runtime policy, or new admission authority is approved by these records.  
 **Records:**
 - [`2026-09-17_judgment-outcome-learning-feedback-loop_01.md`](records/2026-09-17_judgment-outcome-learning-feedback-loop_01.md)
 - [`2026-09-18_judgment-outcome-learning-feedback-loop_02.md`](records/2026-09-18_judgment-outcome-learning-feedback-loop_02.md)
+- [`2026-09-18_judgment-outcome-learning-feedback-loop_03.md`](records/2026-09-18_judgment-outcome-learning-feedback-loop_03.md)
 
 ## Retrieval Rule
 
