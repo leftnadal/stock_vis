@@ -1423,14 +1423,21 @@ def check_weekly_firing_contract() -> CheckResult:
 
         # 행은 있다 — 그러나 SymbolDemandSignal은 '유효신호 0'일 수 있다.
         # 09-12가 정확히 그 상태였고(전건 missing_prev) 행 존재만으로는 잡히지 않았다.
+        #
+        # 🔴 최신 앵커 하나가 아니라 **직전 금요일 이후 앵커 전체**를 본다. 드리프트·백필로
+        #    같은 주에 앵커가 둘일 수 있고(09-11 유효 487 + 09-12 유효 0), 그중 하나라도
+        #    쓸 만하면 그 주의 발화는 성립한 것이다. 최신 하나만 보면 보존된 사건 행(09-12)이
+        #    영구 고착 ERROR를 만든다 — 꺼지지 않는 경보는 경보가 아니다.
         if label == "SymbolDemandSignal":
-            total = model.objects.filter(anchor_date=latest).count()
-            valid = model.objects.filter(anchor_date=latest, excluded=False).count()
+            week = model.objects.filter(anchor_date__gte=friday)
+            total = week.count()
+            valid = week.filter(excluded=False).count()
             if total and valid == 0:
+                anchors = sorted({str(d) for d in week.values_list("anchor_date", flat=True)})
                 worst = max(worst, ERROR)
                 details.append(f"{label} 유효신호 0")
                 evidence.append(
-                    f"{label}: 앵커 {latest} 행 {total}건이나 excluded=False가 0건 "
+                    f"{label}: 앵커 {','.join(anchors)} 행 {total}건이나 excluded=False가 0건 "
                     f"— 행은 있으나 신호 없음(전건 제외). prev 앵커 부재 의심"
                 )
                 continue

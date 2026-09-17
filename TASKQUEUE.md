@@ -60,17 +60,24 @@
 - **§2 D-FIRING-WATCH-DECOUPLE**: health 신규 2항목 — `주간 발화 계약`(직전 금요일 DB 행 + **유효신호 0 → ERROR**, as_of·last_run_at 미사용, +48h/+96h) · `서비스 재기동 폭풍`(24h >20/>200, 계수 소스 4종 실측 확정·web-frontend 제외). 기존 항목 **출력 diff 0**. 역케이스 12 passed.
 - 게이트: pytest `tests/unit/shared` + `tests/ops` **130 passed** · health ✅17/⚠1/❌2(신규 ERROR = 09-12 유효신호 0 = 진짜 조건).
 
-## ⚠️ DSS-ASOF-EXEMPT-0912 — 09-12 앵커 동결 여부 (디렉터 안건, DSS-ASOF-1-R2 2026-09-16) [dss][harness] — 디렉터 판정 대기
+## ✅ DSS-ASOF-EXEMPT-0912 — 09-12 앵커 동결 (종결, 애든덤 2026-09-17) [dss][harness]
 - **사실**: 동결 4건 제외 후 `asof_anchor_sweep` 위반 **2건**(EstimateSnapshot 09-12 · SymbolDemandSignal 09-12). 지시서 §1-2 기대는 0건 → HALT 조건 충족.
 - **구조**: `D-DSS-W11-RESCUE` §3-4가 "09-12 앵커 행은 삭제하지 않는다"로 확정했으므로 두 행은 **영구 잔존** → 위반도 영구 잔존한다. 지시서 동결 초기 목록 4건에 09-12가 빠져 있다.
 - **CC 미집행 근거**: §1-3 *"동결 목록에 항목을 추가하는 것은 사람의 결정이지 테스트를 통과시키는 수단이 아니다"* → 자기 추가 금지. 상신만.
 - **선택지**: ⒜ 09-12 2건을 동결 추가(근거=본 사건의 드리프트·흔적 보존 결정) / ⒝ sweep을 "신규 앵커만" 보도록 범위 축소 / ⒞ 09-12 행 삭제(§3-4 결정 번복).
-- **머지 보류**: 지시서 "§1·§2까지 게이트 통과 시 머지"에 따라 **main 머지·push 미집행**. §2는 독립 완료 상태로 대기.
+- **종결(2026-09-17 `D-ASOF-EXEMPT-0912`)**: 09-12 2건을 `INCIDENT_PRESERVED` 사유로 동결 + 동결 구조를 `{앵커 → (사유코드, 근거)}` 로 전환(사유코드 3종). **재전수검사 위반 0건** → 머지 게이트 개방. 근인은 지시서 자기모순(디렉터 오류 D7 — §3-3-4 보존 결정 vs §1-1 동결 목록 누락)으로 확인됨.
+
+## 🔴 OPS-LAUNCHD-DAEMON-1 — 재부팅 후 콘솔 미로그인 시 전 스택 정지 (신규 등재, 애든덤 2026-09-17) [ops][infra] — 등재만·이번 주 착수 금지
+- **실측(OBS-TRIAGE-1 §E-4)**: `~/Library/LaunchAgents/com.stockvis.*.plist` = **user agent**(`LimitLoadToSessionType` 키 부재 = 기본 Aqua · `/Library/LaunchDaemons/com.stockvis.*` **부재**). 2026-09-12 머신 재부팅 **12:32** → 콘솔 로그인 **18:37** → beat 기동 18:38:13 = **6시간 5분 전 스택 정지**.
+- 09-14 보고의 "launchd respawn throttle 추정"은 **오류로 정정**됨(throttle 문구 0건).
+- 선택지: LaunchDaemons 이설(부팅 시 기동·사용자 세션 무관) vs 자동 로그인 설정. **별도 결정 사이클 — 이번 주 착수 금지.**
 
 ## DSS-ASOF-2 — as_of 적재 레이어 승격 (Phase 1 승격·배포창 편승, DSS-ASOF-1-R2 2026-09-16) [dss][infra] — `sv sync` 창 대기
 - 결정 = `D-DSS-ASOF-LAYER`. 변경 지점 **2곳뿐**: `apps/chain_sight/tasks/estimate_tasks.py:40`(⚠️ 현재 `timezone.now().date()` = **UTC 날짜**. 20:00 ET 이후 실행 시 하루 앞선 날짜가 박히는 잠재 결함 동반 수리) · `apps/chain_sight/tasks/dss_tasks.py:34` `et_today`.
 - 가드(`최신 스냅샷 앵커 ≠ et_today`)도 as_of 기반 전환 시 09-12형 skip 소멸. **마이그레이션 불요**(값 의미만 변경·`unique_together` 불변).
 - 행위보존 증명 = 자동발화 12건에 신·구 로직 동일 앵커 산출 확인(`scripts/asof_anchor_sweep.py`가 모집단 출력).
+- **🟢 DST 시한폭탄 판정 = ⑵(ET 변환) — 폭탄 없음 (애든덤 §3, 2026-09-17 read-only 실측)**: `dss_tasks.py:34` = `timezone.now().astimezone(ET).date()` → EST(11-01 이후) 19:00 ET는 UTC로 00:00 **토**가 되지만 **ET 기준 날짜는 11-06 금요일 유지**. 애든덤 표의 '🔴 11-06 확정 재발'은 DSS가 UTC 날짜를 쓴다는 전제였고, 코드는 그렇지 않다. **11-06 기한 불요.**
+- ⚠️ **잔존 위험(스냅샷 쪽)**: `estimate_tasks.py:40` = `timezone.now().date()` = **UTC 날짜**. 정시 16:30 ET는 EDT 20:30 UTC·EST 21:30 UTC로 금요일 유지(안전)이나, **catch-up 지연 발화가 20:00 ET(EDT)/19:00 ET(EST)를 넘기면 앵커가 토요일로 박힌다.** 09-12 catch-up은 15:03 ET라 ~5h 여유로 안전했다. DSS-ASOF-2에서 동반 수리.
 
 ## 🔴 DSS-LEDGER-IMMUTABLE — EstimateSnapshot upsert로 인한 관측 소급 소멸 (신규 최우선 후보, DSS-ASOF-1-R2 2026-09-16) [dss][data] — 등재만
 - **사실**: `EstimateSnapshot`은 append-only가 **아니다** — `estimate_service.snapshot_symbol()`이 `update_or_create` upsert다. 과거 앵커를 재수집하면 그 시점 관측이 **조용히 덮어써진다**(복구 불가).
@@ -86,11 +93,20 @@
 - 09-04(금) 발화 후: SymbolDemandSignal anchor 09-04 신규 행 수·Score 11행(**DB 행 증거·last_run_at 불인정**) / flat_ratio 판정(§2) / arrow 상태 / 클린 쌍 5/6 갱신(ε는 09-11 6/6에 개시).
 - **검증 결과(2026-09-07·DB 행 증거)**: SymbolDemandSignal anchor 09-04 **501행** + ThemeDemandScore **11행**, Signal created_at **09-04 19:04 ET**(beat 19:00 ET 첫 자동 발화 성공·가드 skip 없음). invariant PASS(합=n·breadth∈[-1,1]·유효분모>0). **flat_ratio 42.15%(정상<60)**. **arrow_suppressed=False**(curr 42.15%·prev 08-28 52.85%). 오프셋 = 스냅샷 완료 16:40 ET → DSS 19:04 ET = **+2h24m ≥2h ✅**. **클린 WoW 쌍 = 4**(pair-based 양끝 비축퇴: 07-31·08-07·08-28·09-04 clean / 08-14 self-축퇴·08-21 prev-축퇴 오염 제외 / 07-24 prev-미평가 판정부재). 직전 단순 anchor 카운트=6/7. **6/6 성숙 ≈ 09-18**(직전 예상 09-11은 5/6 가정분·실측 4 클린이라 +1주). DSS-BEAT 자동화 정상 가동 확인.
 
-## ⏸️ LLM-CREDIT-OUTAGE — LLM 분석 파이프라인 크레딧/quota 소진 (판정 대기, DUAL-OBS-1 2026-09-07) [news][llm][infra] — 디렉터 판정 대기
-- **§B-4 = 미회복**: 분석률 **전 일자 0%대 고착**(09-01 0.3%·09-02 0.1%·09-03 0.1%·09-04 0.1%·09-05 0.2%·09-06 0.0%) — 09-03 크레딧 충전 후에도 탈피 못함. 종결 기입 금지·**디렉터 판정 대기**.
+## ✅ LLM-CREDIT-OUTAGE — SUPERSEDED (전제 반증, `D-LLM-CREDIT-CLOSE` 2026-09-17) [news][llm][infra]
+- **🔴 종결 판정(2026-09-17) = 쿼터 병목 아님(전제 반증)**. 워커 로그 전수 정밀 계수: `RESOURCE_EXHAUSTED`·`429 Too Many` **09월 각 0건**, 전 기간 마지막 발생 **2026-06-10 23:30**. `analyze_news_deep` `errors` **전 구간 0** = LLM 호출 전건 성공. 09-10 결제 전환 전후 처리량 무차이(09-09 7 > 09-10 5).
+- **아래 L46 "Gemini 실패 마커 지배적" 기술 정정**: 날짜 미필터 계수(5~6월분 포함 추정)로 판단한 것. 09월 창에는 해당 마커가 없다.
+- **실제 병목**: `news_deep_analyzer.analyze_batch()` ⑴ `importance_score < TIER_A_THRESHOLD(0.70)` 전량 skip(일 250~267건) ⑵ `published_at >= 오늘 00:00` 창 → 과거 미분석분 영구 미도달(후보 **17,757건**, 전체 미분석 492,889).
+- **후속** = `NEWS-ANALYSIS-SELECTION`(아래). 크레딧/쿼터 트랙은 종결.
+- (구 기록) **§B-4 = 미회복**: 분석률 **전 일자 0%대 고착**(09-01 0.3%·09-02 0.1%·09-03 0.1%·09-04 0.1%·09-05 0.2%·09-06 0.0%) — 09-03 크레딧 충전 후에도 탈피 못함. 종결 기입 금지·**디렉터 판정 대기**.
 - **⚠ 실경로 = Gemini (지시서 B-2 'anthropic' 전제 정정)**: 분석률 소스 `news_deep_analyzer`는 **Gemini 2.5 Flash**(`MODEL=gemini-2.5-flash`·`GEMINI_API_KEY`), anthropic 아님. 워커 로그 gemini **8675** vs anthropic 139(=advisor 별도). Gemini 실패 마커 지배적: **quota/429/RESOURCE_EXHAUSTED/rate-limit/billing**. → **09-03 충전이 anthropic 대상이었다면 Gemini quota를 못 살린다(충전 대상 오인 가능성)** = 디렉터 판정 핵심 재료.
 - **재료(교정은 별도 지시)**: `analyze-news-deep-batch` beat **enabled·last_run 09-04 18:30 ET**·weekday(dow1-5)·total 808 → beat/dispatch 정상, 실행이 Gemini quota로 진척 미미(top-15%·max50 대상). 백로그 09-01~03 **미분석 7798/7807**. 최근 분석완료 09-04 18:30 ET(주말 미실행 정상). 뉴스 수집 생존(최신 09-06).
 - 관찰(C-1): 야간 감사 `docs/nightly_auto_system/reports/`에 09-04~07 산출물 부재(구독 경로·크레딧과 분리). 관찰(C-2): Celery NotRegistered 09-01 이후 **0건**(08-31 5회=재시작 창 일회성 확증).
+
+## NEWS-ANALYSIS-SELECTION — 뉴스 심층분석 선별 임계·수집창 재설계 (신규 등재, `D-LLM-CREDIT-CLOSE` 2026-09-17) [news][llm] — **소유 = 뉴스/Chain Sight 도메인 트랙**
+- 근거 = `LLM-CREDIT-OUTAGE` 전제 반증. 쿼터는 여유가 있고(실패 0·상한 300콜/일) 제약은 **선별 임계·당일 창**이다.
+- 재설계 대상: ⑴ `TIER_A_THRESHOLD(0.70)` 임계 ⑵ `published_at >= 오늘 00:00` 창(과거 미분석 17,757건 도달 경로) ⑶ 배치 상한 `max_articles=50` × 일 6회.
+- 🔴 **ops는 등재만 한다 — 설계하지 않는다**(경계 규약). 구현·설계 = 도메인 트랙 소관.
 
 ## AGENT-DOGFOOD-DSS-FRESHNESS — dogfood에 DSS/사분면 신선도 커버 추가 (이관 등재, DSS-BEAT-1 0-4 2026-08-31) [agent][dss] — @agent 소관
 - 0-4 실측: `auto_agent_system/dogfood/`가 ThemeDemandScore/사분면 API(`/api/v1/chainsight/theme-heat/quadrant/`) 신선도 **미점검**. 주간 적재 자동화(DSS-BEAT) 후 무발화 감지 공백 → dogfood 신선도 타깃에 편입 검토. **구현은 AGENT 트랙 소관**(본 트랙 구현 금지·등재만).
@@ -1279,7 +1295,8 @@
 - open: #4 채점 모드(raw/excess, Phase 5) · user_id 스코프(멀티테넌트 시 unique 확장).
 - 참고: D-P1-GRAIN·D-P1-CONF의 DECISIONS.md append는 Dashboard 빌드 커밋에 포함(원자적 land).
 
-## OPS-LOG-FLOOD — celery-worker-error.log 폭주 (등재만, 2026-07-03)
+## 🔴 OPS-LOG-FLOOD — celery 로그 폭주 (등재만·악화 중, 2026-07-03 · 갱신 2026-09-17)
+- **2026-09-17 실측**: worker-error **384MB** · beat-error **386MB** · neo4j-error **534MB** = **약 1.3GB**, 악화 중. health `서비스 재기동 폭풍`이 꼬리 4MB만 읽는 것도 이 때문(전수 스캔 불가).
 - 상태: **등재만**(수리 안 함, 사용자 지시). 긴급도 낮음.
 - 관찰: worker-error.log에 모든 INFO + `missed heartbeat`(고빈도) + 15분 regime 등 전량 적재 → 126MB, ~2,700줄/h.
 - 영향: tail-window 로그 도구 오탐 유발(#28 verify E1의 근인). verify는 경계-timestamp 스캔으로 회피 완료 → 판정 정확도 무영향.

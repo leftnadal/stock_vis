@@ -14,6 +14,7 @@ from apps.chain_sight.models.heat import EstimateSnapshot, SymbolDemandSignal
 from packages.shared.market_week import (
     ANCHOR_EXEMPTIONS,
     as_of_week,
+    exemption_reason,
     find_anchor_violations,
     is_anchor_exempt,
 )
@@ -42,7 +43,7 @@ for label, model, field in TARGETS:
     print(f"{'앵커':<12}{'dow':<5}{'관측시각(ET)':<21}{'as_of':<12}판정")
     for anchor, obs, in_rows in [(a, o, None) for a, o in rows]:
         if is_anchor_exempt(label, anchor):
-            verdict = "동결(검증 제외)"
+            verdict = f"동결:{exemption_reason(label, anchor)[0]}"
         else:
             got = as_of_week(obs)
             verdict = "OK" if got == anchor else "*** VIOLATION"

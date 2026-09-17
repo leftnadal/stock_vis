@@ -60,24 +60,66 @@ def as_of_week(observed_at_et: datetime) -> date:
 #
 # 검증 모집단 = "동결 목록에 없는 모든 앵커". health_check `_BOUNDARY_KNOWN_VIOLATIONS`와 동형.
 #
-# 🔴 동결 목록에 항목을 추가하는 것은 **사람의 결정**이지 테스트를 통과시키는 수단이 아니다.
-#    as_of_week 규칙은 자동 주간 발화에만 적용 가능하다. 사람이 만든 소급/임시 적재는 실행 시각이
-#    데이터 내용과 무관하므로 관측시각 기반 추론이 **원리적으로 불가능**하다 — 그것이 동결 사유다.
+# 🔴 동결 항목은 **사유코드를 갖는다.** 예외는 "테스트가 빨개서"가 아니라 아래 카테고리에
+#    해당해서 들어간다. 사유코드 없이는 추가할 수 없고, **새 사유코드를 만드는 것은 디렉터 결정**이다.
+#    어느 카테고리에도 맞지 않는 새 앵커는 여전히 진짜 신호다 — RED가 옳다.
+#    (D-ASOF-EXEMPT-0912. 이 장치가 없으면 동결 목록이 테스트 무마용 쓰레기통이 된다.)
 #
-# 키 = (모델 레이블, 앵커). 값 = 동결 근거 1줄.
-ANCHOR_EXEMPTIONS: dict[tuple[str, date], str] = {
-    # ── 2026-08-16 일괄백필 3건: 사람이 만든 소급 적재 (created_at 08-15 21:01 ET 동일) ──
-    ("SymbolDemandSignal", date(2026, 7, 24)):
-        "2026-08-16 일괄백필 — 실행시각이 데이터 내용과 무관(소급 적재)",
-    ("SymbolDemandSignal", date(2026, 7, 31)):
-        "2026-08-16 일괄백필 — 실행시각이 데이터 내용과 무관(소급 적재)",
-    ("SymbolDemandSignal", date(2026, 8, 7)):
-        "2026-08-16 일괄백필 — 실행시각이 데이터 내용과 무관(소급 적재)",
-    # ── 임시수집 1건: 수요일 수집이라 주간 마감 라벨이 아니다 ──
-    ("EstimateSnapshot", date(2026, 7, 29)):
-        "2026-07-29(수) 임시수집 — 주간 마감일이 아님(앵커 쪽이 주간 라벨이 아니다)",
-    # ── (§3 백필 집행 후) 2026-09-11 항목을 여기에 추가한다. 집행 전에는 넣지 않는다. ──
+# as_of_week 규칙은 **자동 주간 발화**에만 적용 가능하다. 사람이 만든 소급/임시 적재는 실행
+# 시각이 데이터 내용과 무관하므로 관측시각 기반 추론이 **원리적으로 불가능**하다.
+
+#: 사람이 만든 소급 적재 — 실행시각이 데이터 내용과 무관(자동발화 아님).
+EXEMPT_MANUAL_BACKFILL = "MANUAL_BACKFILL"
+#: 사람이 만든 임시 관측 — 주간 마감일이 아님(자동발화 아님).
+EXEMPT_MANUAL_ADHOC = "MANUAL_ADHOC"
+#: 장애로 관측이 밀려 기록됐고, 사건 흔적 보존을 위해 삭제하지 않기로 디렉터가 결정한 앵커.
+EXEMPT_INCIDENT_PRESERVED = "INCIDENT_PRESERVED"
+
+EXEMPT_REASON_CODES = frozenset(
+    {EXEMPT_MANUAL_BACKFILL, EXEMPT_MANUAL_ADHOC, EXEMPT_INCIDENT_PRESERVED}
+)
+
+#: 키 = (모델 레이블, 앵커). 값 = (사유코드, 근거 1줄).
+ANCHOR_EXEMPTIONS: dict[tuple[str, date], tuple[str, str]] = {
+    # ── 2026-08-16 일괄백필 3건 (created_at 08-15 21:01 ET 동일) ──
+    ("SymbolDemandSignal", date(2026, 7, 24)): (
+        EXEMPT_MANUAL_BACKFILL,
+        "2026-08-16 일괄백필 — 사람이 만든 소급 적재",
+    ),
+    ("SymbolDemandSignal", date(2026, 7, 31)): (
+        EXEMPT_MANUAL_BACKFILL,
+        "2026-08-16 일괄백필 — 사람이 만든 소급 적재",
+    ),
+    ("SymbolDemandSignal", date(2026, 8, 7)): (
+        EXEMPT_MANUAL_BACKFILL,
+        "2026-08-16 일괄백필 — 사람이 만든 소급 적재",
+    ),
+    # ── 수요일 임시수집 1건 ──
+    ("EstimateSnapshot", date(2026, 7, 29)): (
+        EXEMPT_MANUAL_ADHOC,
+        "2026-07-29(수) 임시 관측 — 주간 마감일이 아님(앵커 쪽이 주간 라벨이 아니다)",
+    ),
+    # ── 09-12 사건분 2건 (D-ASOF-EXEMPT-0912) ──
+    # celery-beat 크래시루프(09-12 02:23~12:31 KST)로 09-11 발화가 소실되고 관측이 하루 밀려
+    # 기록됐다. 사건 흔적 보존을 위해 삭제하지 않기로 디렉터가 결정했으므로(D-DSS-W11-RESCUE
+    # §3-4) 위반이 영구 잔존한다 → 사유 분류하여 동결.
+    ("EstimateSnapshot", date(2026, 9, 12)): (
+        EXEMPT_INCIDENT_PRESERVED,
+        "celery-beat 크래시루프로 09-11 발화 소실·관측 1일 지연 기록. 사건 흔적 보존(디렉터 결정)",
+    ),
+    ("SymbolDemandSignal", date(2026, 9, 12)): (
+        EXEMPT_INCIDENT_PRESERVED,
+        "celery-beat 크래시루프로 09-11 발화 소실·관측 1일 지연 기록. 사건 흔적 보존(디렉터 결정)",
+    ),
+    # ── 2026-09-11 백필분은 동결 불필요 ──
+    # `backfill_snapshot_anchor`가 created_at을 원본(09-12 15:03 ET)으로 유지하므로
+    # as_of_week(created_at) == 09-11 == anchor 로 규칙을 그대로 만족한다.
 }
+
+
+def exemption_reason(model_label: str, anchor: date) -> tuple[str, str] | None:
+    """해당 (모델, 앵커)의 (사유코드, 근거). 동결이 아니면 None."""
+    return ANCHOR_EXEMPTIONS.get((model_label, anchor))
 
 
 def is_anchor_exempt(model_label: str, anchor: date) -> bool:

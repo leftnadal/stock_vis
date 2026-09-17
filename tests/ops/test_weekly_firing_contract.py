@@ -36,6 +36,7 @@ class _Q:
 
     def __init__(self, latest, total=0, valid=0):
         self._latest, self._total, self._valid = latest, total, valid
+        self._excl_false = False
 
     def order_by(self, *_a):
         return self
@@ -47,11 +48,12 @@ class _Q:
         return self._latest
 
     def filter(self, **kw):
-        self._excl_false = kw.get("excluded") is False
-        return self
+        q = _Q(self._latest, self._total, self._valid)
+        q._excl_false = self._excl_false or (kw.get("excluded") is False)
+        return q
 
     def count(self):
-        return self._valid if getattr(self, "_excl_false", False) else self._total
+        return self._valid if self._excl_false else self._total
 
 
 def _run_h1(monkeypatch, snap_latest, dss_latest, dss_total, dss_valid, now_et):
@@ -74,8 +76,9 @@ def _run_h1(monkeypatch, snap_latest, dss_latest, dss_total, dss_valid, now_et):
             notes.append(f"{label} 결번")
             continue
         if label == "SymbolDemandSignal":
-            total = m.filter(anchor_date=latest).count()
-            valid = m.filter(anchor_date=latest, excluded=False).count()
+            week = m.filter(anchor_date__gte=friday)
+            total = week.count()
+            valid = week.filter(excluded=False).count()
             if total and valid == 0:
                 worst = max(worst, hc.ERROR)
                 notes.append(f"{label} 유효신호 0")
@@ -161,3 +164,14 @@ def test_restart_storm_ignores_old_entries(tmp_path):
 
 def test_missing_log_returns_none(tmp_path):
     assert hc._count_recent_restarts(tmp_path / "nope.log", BEAT_BANNER, BEAT_TS, "2026-01-01") is None
+
+
+def test_drifted_week_with_one_usable_anchor_does_not_fire(monkeypatch):
+    """🔑 백필 후 실제 상태: 같은 주에 09-11(유효 487) + 09-12(유효 0)가 공존한다.
+
+    하나라도 쓸 만하면 그 주의 발화는 성립한 것이다. 최신 앵커 하나만 보면
+    보존된 사건 행(09-12)이 영구 고착 ERROR를 만든다 — 꺼지지 않는 경보는 경보가 아니다.
+    """
+    worst, notes = _run_h1(monkeypatch, dt.date(2026, 9, 12), dt.date(2026, 9, 12),
+                           1004, 487, WED_AFTER)
+    assert worst == hc.OK, notes

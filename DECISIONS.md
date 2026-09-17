@@ -8,6 +8,56 @@
 
 ---
 
+## [2026-09-17] D-ASOF-EXEMPT-0912 — 09-12 앵커 동결 + 동결 사유 분류 체계 [dss][harness]
+
+> 출처: 애든덤 DSS-ASOF-1-R2 §2 (자동 결정). 선행 = `D-ASOF-POPULATION`.
+
+**결정**: `2026-09-12` 앵커 2건(`EstimateSnapshot`·`SymbolDemandSignal`)을 동결 목록에 추가한다. 단 평평한 목록을 **{앵커 → (사유코드, 근거 1줄)}** 구조로 바꾸고 사유를 분류한다.
+
+| 사유코드 | 대상 | 근거 |
+|---|---|---|
+| `MANUAL_BACKFILL` | SymbolDemandSignal 07-24·07-31·08-07 | 2026-08-16 일괄백필 — 사람이 만든 소급 적재 |
+| `MANUAL_ADHOC` | EstimateSnapshot 07-29 | 수요일 임시 관측 — 주간 마감일이 아님 |
+| `INCIDENT_PRESERVED` | EstimateSnapshot·SymbolDemandSignal 09-12 | celery-beat 크래시루프(09-12 02:23~12:31 KST)로 09-11 발화 소실·관측 1일 지연 기록. 사건 흔적 보존을 위해 삭제하지 않기로 디렉터 결정 |
+
+| 옵션 | 가중합 |
+|---|---|
+| **ⓐ 사유코드 분류 후 동결** | **4.88** ← 채택 |
+| ⓑ 평평한 목록에 09-12 단순 추가 | 3.43 |
+| ⓒ sweep 범위를 신규 앵커만으로 축소 | 3.20 |
+
+**마진 = 1.45** (ⓐ−ⓑ).
+
+**Why**: R2 지시서의 두 조항이 충돌했다 — §3-3-4 *"09-12 앵커 행은 삭제하지 않는다"* vs §1-1 동결 초기 4건에 09-12 부재. 두 조항이 동시에 참이면 09-12는 **영구 위반**이고 §1-2의 "불일치 0건"은 처음부터 달성 불가였다(디렉터 오류 D7). CC가 §1-3 규율(*"동결 추가는 사람의 결정이지 테스트를 통과시키는 수단이 아니다"*)을 지켜 자기 추가하지 않고 상신한 판단이 정확했다.
+사유 분류를 덧붙이는 이유: 예외가 *"테스트가 빨개서"* 가 아니라 **카테고리에 해당해서** 들어가게 만든다. 어느 카테고리에도 맞지 않는 새 앵커는 여전히 진짜 신호다. 이 장치가 없으면 동결 목록이 테스트 무마용 쓰레기통이 된다.
+
+**CC 정정 채택 — 09-11 백필분은 동결 불필요**: `backfill_snapshot_anchor`가 `created_at`을 `bulk_update`로 원본(09-12 15:03 ET)으로 유지하므로 `as_of_week(created_at) == 09-11 == anchor` 로 규칙을 그대로 만족한다. **R2 §1-1의 "집행 후 09-11 추가 예정" 항목은 폐기.**
+
+**How to apply**: `packages/shared/market_week.py` — `EXEMPT_MANUAL_BACKFILL`/`EXEMPT_MANUAL_ADHOC`/`EXEMPT_INCIDENT_PRESERVED` + `EXEMPT_REASON_CODES` + `exemption_reason()`. 회귀 = `tests/unit/shared/test_anchor_contract.py`(사유코드 없거나 미등록 코드면 **RED** · `INCIDENT_PRESERVED`는 09-12에만 · 09-11은 비동결 · 새 드리프트 앵커 RED). 전수검사 = `scripts/asof_anchor_sweep.py` → **위반 0건**. 🔴 **새 사유코드 신설은 디렉터 결정.**
+
+## [2026-09-17] D-DSS-W11-RESCUE 집행 위임 및 완료 [dss][data][process]
+
+> `D-DSS-W11-RESCUE`(2026-09-16, 병진 ⓐ 채택)의 집행 위임 기록.
+
+**위임 문구 (원문)**:
+> **2026-09-17 병진 위임**: *"09-11 백필 집행을 CC에 위임한다."*
+> (디렉터 세션 결정 `D-DSS-W11-RESCUE` ⓐ 채택分의 집행 위임. 09-15 결정 시 디렉터 추천·타이브레이커는 ⓑ였으나 병진이 ⓐ를 선택했고, 09-17에 집행까지 위임함.)
+
+**위임 범위 = 두 명령 1회 실행에 한정**(확대 해석 금지): ⒜ `backfill_snapshot_anchor --from 2026-09-12 --to 2026-09-11 --execute` ⒝ `load_dss_week --anchor 2026-09-11`. **되돌리기(09-11 앵커 행 삭제)는 여전히 병진 수동**(파괴적) · `sv sync`·launchd·서비스 재기동 불포함 · 그 외 모든 prod DB 쓰기 불포함.
+
+**집행 결과 (2026-09-17)**: 선행 3종 PASS(09-11 E/S 0행·09-12 1005/503) → **A** 1005행 INSERT, 검증 4종 PASS(행수 1005·심볼 503·값 해시 `45d825ef5232a866` **IDENTICAL**·`created_at` 원본 09-12 15:03 ET 유지 = `auto_now_add` 덮어쓰기 미발생) → **B** signals 502·scores 11, 검증 3종 PASS(`missing_prev` **0**·유효분모 **487**·`flat_ratio` **41.07%** = 예측과 정확히 일치·invariant 전건 True). **클린 WoW 쌍 4 → 5**(07-31·08-07·08-28·09-04·**09-11**). 6/6 성숙은 09-18 회차 클린 여부에 달림.
+
+## [2026-09-17] D-LLM-CREDIT-CLOSE — LLM-CREDIT-OUTAGE 종결 (전제 반증) [news][llm][ops]
+
+> 출처: 애든덤 §6. 근거 = OBS-TRIAGE-1 §B 실측(2026-09-15).
+
+**결정**: `LLM-CREDIT-OUTAGE`를 **`✅ SUPERSEDED`** 로 전환한다. 쿼터 병목이 아니었다.
+
+**Why**: 워커 로그 전수 정밀 계수 — `RESOURCE_EXHAUSTED`·`429 Too Many` 09월 **각 0건**, 전 기간 마지막 발생 **2026-06-10 23:30**. `analyze_news_deep` 실행 로그 `errors` **전 구간 0** = LLM 호출 전건 성공. 09-10 결제 전환 전후 처리량 무차이(09-09 7건 > 09-10 5건). 기존 기술 *"Gemini 실패 마커 지배적"* 은 **날짜 미필터 계수**(5~6월분 포함 추정)로 판단한 것 — 정정.
+실제 병목 = `news_deep_analyzer.analyze_batch()` ⑴ `importance_score < TIER_A_THRESHOLD(0.70)` 전량 skip(일 250~267건) ⑵ `published_at >= 오늘 00:00` 창으로 과거 미분석분 영구 미도달(후보 17,757건).
+
+**How to apply**: 후속 `NEWS-ANALYSIS-SELECTION`(선별 임계·수집창 재설계) 등재. **소유 = 뉴스/Chain Sight 도메인 트랙** — ops는 **등재만, 설계하지 않는다**(경계 규약).
+
 ## [2026-09-16] D-ASOF-POPULATION — 앵커 as_of 계약 검증 모집단 = "동결 목록에 없는 모든 앵커" [dss][harness]
 
 > 출처: 처분 DSS-ASOF-1 HALT해제 ① (자동 결정). 구현 = `packages/shared/market_week.py:ANCHOR_EXEMPTIONS`.
