@@ -28,6 +28,20 @@
 - 🆕 **REPORT-FIX-REALIZE** (⑤·검증 대기) — T3(REPORT-TLDR-SYSLINE)·T4(DOGFOOD-EOD-LAG-TRADINGDAYS) **착지 ≠ 실효**. 실효 검증 = **다음 `sv sync`(worker_sync) 후 아침 메일 2종**(@backend 06:15 agent report의 System 줄 = 실제 beat/neo4j 반영 / dogfood 06:20 report의 `eod.trading_date` = 주말·휴장 개재에도 ok). **활성화≠배포** — 유닛 테스트 통과는 착지이며, 자연 발화가 실효 게이트. MIG-BUNDLE-1 배포창(관문②) 동반 랜딩으로 참조.
 
 
+## 📋 PIXEL-VERIFY-TOOL — 픽셀 검증 수단 부재 (관측 등재, CS-S3-1E S-5 2026-09-17) [qa][tooling] — 등재만·구현 금지
+
+> **관측 사실만 기록한다. 수정 아님.**
+> 브라우저 스크린샷 캡처 실패가 **2회 누적**됐고, 둘 다 다른 실패 양상이다.
+> ⑴ **backbone 엣지 클릭**(2026-09-15): 캡처는 됐으나 클릭 히트가 발화하지 않아 5회 시도 후 포기 → DOM/vitest로 갈음.
+> ⑵ **대시보드 상단 DASH-TOP**(2026-09-17): `computer{screenshot}`이 "Script injection timed out after 5000ms"로 **3회 연속 실패**(페이지가 무거움) → `get_page_text`로 갈음.
+> 두 경우 모두 텍스트·DOM 층 검증은 성공했다. 즉 **기능 확인은 됐고 픽셀 증거만 없다.**
+>
+> 함의: 규약 [[feedback_ui_slice_live_screenshot]]("UI 슬라이스 마감 = 라이브 렌더 스크린샷")이
+> 무거운 페이지에서 **구조적으로 충족 불가**할 수 있다. 픽셀 검증이 필요한 항목은 별도 수단을 찾아야 한다.
+> 후보(미검증): `scripts/shot.sh`(야간 렌더러 온디맨드·[[reference_shot_tool_ondemand_capture]]) · Playwright(현재 `@playwright/test` 미설치) · 병진 육안.
+
+- **PIXEL-VERIFY-1** (todo·등재만) — 무거운 페이지에서 동작하는 픽셀 캡처 수단 선정. 위 후보 중 실측으로 고를 것.
+
 ## ⚠️ RC-C1-HITAREA-LIVE — backbone 엣지 클릭 라이브 재검 (이관 등재, CS-RESUME-DEPLOY 2026-09-15) [chainsight][frontend][qa] — RC-C1 트랙 소관
 
 > **경고 이관이지 잔무 이관이 아니다.** 이 트랙이 반드시 알아야 할 사실:

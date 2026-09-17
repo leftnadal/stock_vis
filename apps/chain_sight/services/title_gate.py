@@ -17,7 +17,7 @@ _LEGAL_SUFFIXES = {
     "co", "co.", "ltd", "ltd.", "limited", "plc", "llc", "lp", "nv", "sa", "ag",
     "holdings", "holding", "group", "the", "&", "common", "stock", "class",
 }
-# 단독 토큰 매칭을 허용할 최소 길이(짧은 핵심어는 오탐이 크다).
+# 매칭 후보로 채택할 회사명 핵심 구문의 최소 길이(짧은 핵심어는 오탐이 크다).
 _MIN_NAME_LEN = 4
 
 
@@ -37,7 +37,14 @@ def _core_name(name: str) -> str:
 def build_name_index(symbols) -> dict:
     """symbol → 제목 매칭 후보 문자열 목록. 조회 2회(Stock, CompanyAlias)로 고정 — N+1 금지.
 
-    후보 = Stock.stock_name 핵심 구문 + 그 첫 유의어(길이 >= _MIN_NAME_LEN) + CompanyAlias.alias.
+    후보 = Stock.stock_name 핵심 구문(전체) + CompanyAlias.alias.
+
+    첫 유의어(head) 단일 토큰 후보는 쓰지 않는다 — CS-S3-1E. 'Bank of America Corporation'
+    의 head 'Bank' 가 "M&T Bank raises prime lending rate" 를 통과시켰다(BAC·JPM, BAC·WFC).
+    실측상 head 규칙이 살리는 판정은 2건뿐인데 그 2건 모두 오탐이었고, core 가 이미 단일
+    토큰인 회사(Salesforce·NVIDIA·Amazon)는 head 규칙 없이도 그대로 잡힌다. 고유명사 head
+    만 골라 살리는 절충은 쓰지 않는다 — 특정 회사가 누락되면 **CompanyAlias 행 추가**가
+    정석 경로다(B-4가 요구한 구조).
     """
     from django.apps import apps
 
@@ -55,9 +62,6 @@ def build_name_index(symbols) -> dict:
         core = _core_name(name or "")
         if len(core) >= _MIN_NAME_LEN:
             index[sym.upper()].add(core)
-            head = core.split(" ")[0]
-            if len(head) >= _MIN_NAME_LEN and head != core:
-                index[sym.upper()].add(head)
 
     for alias, ticker in CompanyAlias.objects.filter(ticker__in=syms).values_list("alias", "ticker"):
         core = _core_name(alias or "")
