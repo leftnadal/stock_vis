@@ -2099,6 +2099,7 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **교훈**: **시차가 있는 배치 잡에서 "오늘"은 대상이 아니다.** 스킵·신선도·임계 판정은 전부 *실행 시점*이 아니라 *대상 시점*을 기준으로 물어야 한다. 그리고 이 부류의 버그는 **로그가 정상으로 보인다** — 스킵 사유는 사실이고(토요일은 정말 주말이다) 틀린 것은 질문이었다. 그래서 **판정 로그에 "무엇에 대한 판정인지"를 적는 것이 계측**이다. 같은 계열: EOD 신선도의 달력일→거래일 교정(DOGFOOD-EOD-LAG-TRADINGDAYS).
 
 ## baker `is_stale`은 UTC date와 로컬(KST) date를 비교해 18:30 ET 슬롯에서 구조적으로 항상 True (채번 후보, DASH-TOP 2026-09-15 실측 확증) `[backend][eod][timezone][frontend]`
+## baker `is_stale`은 UTC date와 로컬(KST) date를 비교해 18:30 ET 슬롯에서 구조적으로 항상 True (#137, DASH-TOP 발견 2026-09-15 · 실측 확증 2026-09-15, 채번 MGMT-BATCH-b49) `[backend][eod][timezone][frontend]`
 
 **증상**: 정상적으로 구워진 당일 데이터인데도 `dashboard.json`의 `is_stale`이 **항상 `true`**. 프론트가 이 값을 그대로 믿어 제목을 "어제 데이터입니다"로 대체 → 최신 데이터에 상시 오경보. dogfood `eod.is_stale` WARN 재발(08-27~)의 근인.
 
@@ -2115,7 +2116,7 @@ is_stale = generated_at.date() != date.today()   # ← UTC date vs 로컬(KST) d
 
 **관련**: TASKQUEUE `EOD-ISSTALE-DEF`(플래그 정의 프로브 — 본 항목이 그 근인 답) · BAKER-ISSTALE-REDEF 위임(재정의는 별건, 본 항목은 버그 등재).
 
-## bake `pipeline_status`가 "running"에 고착 — 완료 플립 누락으로 "정말 멈춘 것"과 구분 불가 (채번 후보, DASH-TOP 2026-09-14 관측) `[backend][eod][observability]`
+## bake `pipeline_status`가 "running"에 고착 — 완료 플립 누락으로 "정말 멈춘 것"과 구분 불가 (#138, DASH-TOP 발견 2026-09-14, 채번 MGMT-BATCH-b49) `[backend][eod][observability]`
 
 **증상**: bake가 정상 완료(JSON 전량 생성 · `llm_fill` 10/10 ok · `issuance_verified` 10/10 ok)했는데 `meta.json`의 `pipeline_status`가 **`"running"`** 그대로이고 `total_duration_seconds`가 **0.0**이다.
 
