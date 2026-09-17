@@ -1,7 +1,7 @@
 // 스캐너 필터·정렬 순수 로직 (D-SCANNER-SELECT-UX ③ · SCAN-B1-FE)
 // 본판정·집계 무접촉 — 화면단 필터/정렬만. 백엔드 0.
 import type { SignalStock, SortOption } from '@/types/eod';
-import { getAxisCount, type ConfluenceMap } from './confluence';
+import { compareConfluenceOrder, getAxisCount, type ConfluenceMap } from './confluence';
 
 /** 정렬 옵션 = 기존 3종 + 합류순. */
 export type ScannerSort = SortOption | 'confluence';
@@ -36,7 +36,8 @@ export function validSector(sector: string | null | undefined): boolean {
 
 /**
  * 실매칭 뉴스 여부. match_type === 'profile'(프로필 폴백) 또는 headline 부재 = 뉴스 아님.
- * (오늘 데이터는 전건 profile 폴백 → 실뉴스 0 → 뉴스 칩 자연 생략 = 정칙 ⑴.)
+ * 09-03 sync·bake 이후 news_context는 실뉴스 매칭(symbol_today·symbol_7d)이 대부분이라
+ * `뉴스만` 필터는 실제로 걸러낸다. (예전 "전건 profile 폴백 → 실뉴스 0" 주석은 #128 시절 사실 — 폐기.)
  */
 export function hasRealNews(stock: SignalStock): boolean {
   const nc = stock.news_context;
@@ -77,7 +78,8 @@ export function availableSectors(stocks: SignalStock[]): string[] {
 }
 
 /**
- * 정렬(원본 불변). 기존 3종은 카드 제공 rank 리스트 순서 유지, 합류순은 축 수 desc(동률 시 composite desc).
+ * 정렬(원본 불변). 기존 3종은 카드 제공 rank 리스트 순서 유지.
+ * 합류순 = 추천 캐러셀과 같은 규칙(compareConfluenceOrder: 축 수 → 거래대금 → symbol).
  */
 export function sortScannerStocks(
   stocks: SignalStock[],
@@ -86,12 +88,12 @@ export function sortScannerStocks(
   rankLists: { volume: string[]; return: string[]; market_cap: string[] },
 ): SignalStock[] {
   if (sort === 'confluence') {
-    return [...stocks].sort((a, b) => {
-      const ax = getAxisCount(map, a.symbol);
-      const bx = getAxisCount(map, b.symbol);
-      if (bx !== ax) return bx - ax;
-      return b.composite_score - a.composite_score;
-    });
+    return [...stocks].sort((a, b) =>
+      compareConfluenceOrder(
+        { axes: getAxisCount(map, a.symbol), dollarVolume: a.dollar_volume, symbol: a.symbol },
+        { axes: getAxisCount(map, b.symbol), dollarVolume: b.dollar_volume, symbol: b.symbol },
+      ),
+    );
   }
   const rankList = rankLists[sort];
   if (!rankList || rankList.length === 0) return stocks;
