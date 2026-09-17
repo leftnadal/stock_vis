@@ -1,3 +1,16 @@
+# OPS-BRIDGE-0 보고 — 3차 실행(계속) 2026-09-17 15:5x~16:4x KST (재개 지시 2·3 · 실행자 CC 세션 95289 · 승인 인용: 병진 "승인·허가 명령은 이전과 동일" + "임시 worktree sv-land-tmp 생성·자기 삭제 허용")
+① 판정: **합격(랜딩 착지 해시는 맨 아래 추기 줄)** — ⓐ 분해 랜딩 완료 · 본체 무접촉(읽기만).
+② 해시: origin/main 전 `0ff0949e` → 후 = 추기 줄 · 브랜치 `monorepo/sess-eod-time1-r4`(worktree `sv-eod-time1-r4`, base `0ff0949e`): R4 이식 `0542dd77` · 장부 선반입 `0ca432a7` · cherry-pick 6(`af915df3`→`9f301bd0` · `d65e832c`→`7cc235aa` · `e731a21e`→`db1d90c8` · `290d9341`→`df486bfa` · `ef63b5f8`→`3348bc22` · `e808a8d6`→`409063a5`, 충돌 0) · 부기 `030ae14d` · 3트리(S4 선행) `0ff0949e`.
+③ 게이트(@`030ae14d`): vitest 176 files / **1359 passed** · tsc **0** · pytest **5437 passed / 49 skipped / 0 failed**(424.9s) · `tests/dogfood` 신선도 8종(T4 2 + R4 6) 전부 GREEN — R4 6종은 T4 로직에서 **수정 없이 GREEN**(로직 차이 없음 확증).
+   - pytest 오염 2회 선행(코드 무관·기록): run1 1 failed(`test_watchlist_api::test_resolve_action` — 16:11:46 타 세션 `pytest tests/monitor/ --create-db`가 공유 `test_stock_vis` 연결 강제종료) · run2 50 failed/13 errors(16:17:29 타 세션이 `test_stock_vis` drop·타 브랜치 스키마로 재생성 → `stocks_stock.cik` 등 UndefinedColumn). → run3 = repo 무수정 `/tmp` settings로 **test DB 이름만 `test_stock_vis_obr0` 격리** → GREEN. 로그 `/tmp/obr0_gate3_pytest_{run1_dbkill,run2_dbrecreate,iso}.log`.
+④ 이식 내역: `market_calendar.trading_days_between`(+`__all__`)·테스트 7 / `check_quant` 판정식·기대값 = T4 그대로, note에 `· 지연 N일(거래일 기준 M일 — 주말/휴장 포함|없음)` 병기(`MAX_FRESHNESS_LAG_TRADING_DAYS` 미도입) / R4 테스트 6종 / SESSION_CONTRACT §J / common-bugs 3원칙 절(채번 대기 유지, "수리 = … + R1" 문구 → T4+R4 분해 랜딩으로 교체). **제외**: `eod_json_baker.py`·`test_eod_json_baker.py`(R1) — 코드 diff에 없음 확인.
+⑤ 주요 결정 포인트(D-H1-SELFRESOLVE): 갭 = `af915df3`가 수정하는 TASKQUEUE "EOD-TIME-1" 절·3원칙이 참조하는 `D-EOD-FRESH-ROOT-NOT-SCHEDULE`가 origin/main에 부재(원문은 `f45fcb78`·`e1b8e345` 장부분) → 장부 3파일 원문 선반입(additive·마이그 0·절차 4 범위) 후 부기로 R1 = "보류·이관 → EOD-FRESH-2" · R4 = "LANDED(분해)" 표기. `e808a8d6`(3차 HALT 보고)는 지시서 목록 작성 후 생긴 같은 보고 파일 이력이라 함께 cherry-pick. EOD-FRESH-2 정식 등재(재측정 선행 조건 문구 포함). D-OPS-BRIDGE에 ⓐ 결정 1줄.
+⑥ 랜딩·S4 후속: `sv-land-tmp`(detached origin/main) no-ff → 직전 fetch 재확인 → `git push origin HEAD:main` → `sv-land-tmp` 자기 제거 → `sv sync`. frontend diff(`0ff0949e`..착지) = 0 → **web 리빌드 생략**(절차 7 조건). 결과 = 추기 줄.
+⑦ 삭제 후보(병진 수동): `~/worktrees/sv-web-runtime/frontend/.next.bak.stale-20260917-1536` · 구 `monorepo/sess-eod-time1`/`sv-eod-time1`(R1 원본 보존용 — EOD-FRESH-2 종결 후) · `monorepo/sess-ops-bridge-0-halt`/`sv-ops-bridge-0-halt` · test DB `test_stock_vis_obr0`(로컬 test 전용).
+⑧ 교훈(채번 후보): 공유 `test_stock_vis` 동시 `--create-db`가 타 세션 게이트를 거짓 RED로 만든다(1시간 내 2회 실측) → 게이트용 test DB 이름 세션별 격리를 OPS-GATE-1 `land.sh`에 내장 권고.
+
+---
+
 # OPS-BRIDGE-0 보고 — 3차 실행 2026-09-17 15:3x KST (재개 지시 2 · 실행자 CC 세션 95289 · 승인 인용: 병진 "승인 근거·허가 명령은 이전과 동일 + 임시 worktree sv-land-tmp 생성·자기 삭제 허용")
 ① 판정: **HALT (절차 1 말미 — 권한 거부 1건)** — 1(S4 선행 배포) 실질 완료, 2~8 미착수. 본체 무접촉(읽기만).
 ② 해시: origin/main `0ff0949e`(무변경) · 3트리 전 worker `2eca515d`/web `029f57f6`/api `2eca515d` → 후 **3트리 모두 `0ff0949e`** · 새 브랜치 `sess-eod-time1-r4`·`sv-land-tmp` 미생성 · 새 머지 커밋 0.
