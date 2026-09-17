@@ -124,12 +124,14 @@
 - 09-14 보고의 "launchd respawn throttle 추정"은 **오류로 정정**됨(throttle 문구 0건).
 - 선택지: LaunchDaemons 이설(부팅 시 기동·사용자 세션 무관) vs 자동 로그인 설정. **별도 결정 사이클 — 이번 주 착수 금지.**
 
-## DSS-ASOF-2 — as_of 적재 레이어 승격 (Phase 1 승격·배포창 편승, DSS-ASOF-1-R2 2026-09-16) [dss][infra] — `sv sync` 창 대기
-- 결정 = `D-DSS-ASOF-LAYER`. 변경 지점 **2곳뿐**: `apps/chain_sight/tasks/estimate_tasks.py:40`(⚠️ 현재 `timezone.now().date()` = **UTC 날짜**. 20:00 ET 이후 실행 시 하루 앞선 날짜가 박히는 잠재 결함 동반 수리) · `apps/chain_sight/tasks/dss_tasks.py:34` `et_today`.
+## DSS-ASOF-2 — as_of 적재 레이어 승격 + `estimate_tasks.py:40` 동반 수리 (Phase 1 승격·배포창 편승, DSS-ASOF-1-R2 2026-09-16 · **기한 정정 2026-09-17**) [dss][infra] — **기한 = 날짜 아님. "다음 발화 장애 이전"**
+- 결정 = `D-DSS-ASOF-LAYER`. 변경 지점 **2곳**: `apps/chain_sight/tasks/estimate_tasks.py:40` · `apps/chain_sight/tasks/dss_tasks.py:34`. (각 위험도는 아래 정정 항목 참조 — 전자가 실제 결함, 후자는 승격 대상일 뿐 결함 아님.)
 - 가드(`최신 스냅샷 앵커 ≠ et_today`)도 as_of 기반 전환 시 09-12형 skip 소멸. **마이그레이션 불요**(값 의미만 변경·`unique_together` 불변).
 - 행위보존 증명 = 자동발화 12건에 신·구 로직 동일 앵커 산출 확인(`scripts/asof_anchor_sweep.py`가 모집단 출력).
-- **🟢 DST 시한폭탄 판정 = ⑵(ET 변환) — 폭탄 없음 (애든덤 §3, 2026-09-17 read-only 실측)**: `dss_tasks.py:34` = `timezone.now().astimezone(ET).date()` → EST(11-01 이후) 19:00 ET는 UTC로 00:00 **토**가 되지만 **ET 기준 날짜는 11-06 금요일 유지**. 애든덤 표의 '🔴 11-06 확정 재발'은 DSS가 UTC 날짜를 쓴다는 전제였고, 코드는 그렇지 않다. **11-06 기한 불요.**
-- ⚠️ **잔존 위험(스냅샷 쪽)**: `estimate_tasks.py:40` = `timezone.now().date()` = **UTC 날짜**. 정시 16:30 ET는 EDT 20:30 UTC·EST 21:30 UTC로 금요일 유지(안전)이나, **catch-up 지연 발화가 20:00 ET(EDT)/19:00 ET(EST)를 넘기면 앵커가 토요일로 박힌다.** 09-12 catch-up은 15:03 ET라 ~5h 여유로 안전했다. DSS-ASOF-2에서 동반 수리.
+- **🛑 기한 정정(디렉터, 2026-09-17)**: 기한 **"11-06 이전 필착" 취소**. 디렉터의 DST 가설은 실측으로 **반증**됐다 — `dss_tasks.py:34`는 `timezone.now().astimezone(ET).date()`로 **ET 변환을 이미 하며**, EST에서도 19:00 ET의 ET 날짜는 **금요일로 유지**된다. **정시 발화 경로에 DST 결함 없음.** → **새 기한 = 날짜가 아니라 "다음 발화 장애 이전"**(달력 기한은 근거를 잃었고, 실제 트리거는 catch-up이 늦게 도는 그 순간이다).
+- **🟢 DST 시한폭탄 판정 근거 = ⑵(ET 변환) (애든덤 §3, 2026-09-17 read-only 실측)**: EST(11-01 이후) 금 19:00 ET → UTC `2026-11-07 00:00` **토**이지만 `astimezone(ET).date()` = **11-06 금**. 애든덤 표의 '🔴 11-06 확정 재발'은 DSS가 UTC 날짜를 쓴다는 전제였고, 코드는 그렇지 않다.
+- 🔴 **실제 잔존 위험 = `estimate_tasks.py:40` catch-up 지연 (동반 수리 = 본 태스크 범위에 포함)**: `snapshot_date = timezone.now().date()` = **UTC 날짜**. 정시 16:30 ET는 EDT 20:30 UTC·EST 21:30 UTC로 금요일 유지(안전)이나, **catch-up 발화가 20:00 ET(EDT) / 19:00 ET(EST)를 넘기면 앵커가 토요일로 찍힌다.** 2026-09-12는 **15:03 ET 발화로 4시간 57분 여유**가 있어 **우연히 회피**됐다 — 설계가 막은 게 아니다. catch-up은 장애 직후에 일어나므로, 장애가 길어질수록 이 결함에 걸릴 확률이 올라간다(위험이 사고와 상관된다).
+- **범위 확정**: ⑴ `dss_tasks.py:34` as_of 승격 ⑵ **`estimate_tasks.py:40` UTC→as_of 수리(동반·필수)** ⑶ 가드(`최신 스냅샷 앵커 ≠ et_today`) as_of 기반 전환. 마이그레이션 불요.
 
 ## 🔴 DSS-LEDGER-IMMUTABLE — EstimateSnapshot upsert로 인한 관측 소급 소멸 (신규 최우선 후보, DSS-ASOF-1-R2 2026-09-16) [dss][data] — 등재만
 - **사실**: `EstimateSnapshot`은 append-only가 **아니다** — `estimate_service.snapshot_symbol()`이 `update_or_create` upsert다. 과거 앵커를 재수집하면 그 시점 관측이 **조용히 덮어써진다**(복구 불가).
