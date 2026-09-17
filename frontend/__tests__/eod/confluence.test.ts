@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { buildConfluenceMap, getAxisCount, CONFLUENCE_MIN_AXES } from '@/components/eod/confluence';
+import {
+  buildConfluenceMap,
+  buildStockIndex,
+  compareConfluenceOrder,
+  getAxisCategories,
+  getAxisCount,
+  CONFLUENCE_MIN_AXES,
+} from '@/components/eod/confluence';
 import type { SignalCardDetail, SignalStock } from '@/types/eod';
 
 // 최소 stock stub (합류 계산은 symbol만 사용)
@@ -75,5 +82,28 @@ describe('buildConfluenceMap — 카테고리 축 단위 합류', () => {
 
   it('임계 상수 = 2', () => {
     expect(CONFLUENCE_MIN_AXES).toBe(2);
+  });
+});
+
+describe('DASH-RECO 보조 — buildStockIndex · compareConfluenceOrder', () => {
+  it('buildStockIndex: 카드 stocks_by_score 전수 symbol 사전(먼저 본 행 유지)', () => {
+    const idx = buildStockIndex([card('momentum', ['AAA', 'BBB']), card('volume', ['AAA', 'CCC'])]);
+    expect([...idx.keys()].sort()).toEqual(['AAA', 'BBB', 'CCC']);
+  });
+
+  it('compareConfluenceOrder: 축 → 거래대금(결측 맨 뒤) → symbol', () => {
+    const keys = [
+      { axes: 1, dollarVolume: 5, symbol: 'B' },
+      { axes: 1, dollarVolume: undefined, symbol: 'A' },
+      { axes: 2, dollarVolume: 1, symbol: 'Z' },
+      { axes: 1, dollarVolume: 5, symbol: 'A' },
+    ];
+    expect([...keys].sort(compareConfluenceOrder).map((k) => `${k.axes}${k.symbol}`)).toEqual(['2Z', '1A', '1B', '1A']);
+    expect([...keys].sort(compareConfluenceOrder).map((k) => k.dollarVolume)).toEqual([1, 5, 5, undefined]);
+  });
+
+  it('getAxisCategories: 미로딩·미존재 = 빈 배열', () => {
+    expect(getAxisCategories(undefined, 'AAA')).toEqual([]);
+    expect(getAxisCategories(buildConfluenceMap([card('relation', ['AAA'])]), 'AAA')).toEqual(['relation']);
   });
 });

@@ -2,7 +2,7 @@ import { useQueries } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { eodService } from '@/services/eodService';
 import type { SignalCardDetail } from '@/types/eod';
-import { buildConfluenceMap, type ConfluenceMap } from './confluence';
+import { buildConfluenceMap, buildStockIndex, type ConfluenceMap, type StockIndex } from './confluence';
 
 /**
  * 전 카드 JSON을 로드해 합류 지도를 만든다 (SCAN-B1-FE).
@@ -25,14 +25,15 @@ export function useConfluenceMap(cardIds: string[], enabled = true) {
   // 안정 dep: 로드 완료 여부 + 각 카드 갱신 스탬프
   const stamp = results.map((r) => r.dataUpdatedAt).join(',');
 
-  const map: ConfluenceMap | undefined = useMemo(() => {
+  const built = useMemo((): { map: ConfluenceMap; stockIndex: StockIndex } | undefined => {
     if (!allSuccess) return undefined;
     const cards = results
       .map((r) => r.data as SignalCardDetail | undefined)
       .filter((c): c is SignalCardDetail => !!c);
-    return buildConfluenceMap(cards);
+    return { map: buildConfluenceMap(cards), stockIndex: buildStockIndex(cards) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allSuccess, stamp]);
 
-  return { map, isLoading: results.some((r) => r.isLoading) };
+  // stockIndex = 같은 카드 JSON의 symbol→행 사전(추천 체급·섹터·기술 조인용, 추가 요청 0).
+  return { map: built?.map, stockIndex: built?.stockIndex, isLoading: results.some((r) => r.isLoading) };
 }
