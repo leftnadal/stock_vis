@@ -1983,6 +1983,29 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 
 **해결(사소)**: `app/layout` 계열에서 `themeColor`·`viewport`를 `export const viewport` 로 이동. 기능 영향 0(경고만)·위임(dashboard/frontend chore).
 
+## 수치형 HALT 조건은 "스냅샷 수치 이월 금지"와 충돌한다 — HALT는 메커니즘·불변식에 걸고 관측치에 걸지 않는다 (채번 후보, RC-D-0 2026-09-07) `[harness][process]`
+
+**증상**: RC-D-0 지시서 STEP 3-4가 "델타가 −166이 아니면 HALT"라는 **과거 스냅샷 수치**를 HALT 조건으로 박아둠. 실측 −167 → 형식상 HALT 성립. 그러나 메커니즘(무향 collapse 시 다관계·왕복 중복 흡수)은 정상 재현이었고 차이 1은 **관측 사이 데이터 성장분**(입력 2,365→2,418행).
+
+**원인**: 하네스 상시 규율 "스냅샷 수치는 기록 시점 실측이며 **이월 금지**, 다음 세션 STEP 0 재실측이 정본"과, 지시서의 "수치 일치 = HALT 게이트"가 **정면 충돌**. 재실측이 정본이라면 과거 수치와의 불일치는 애초에 HALT 신호가 될 수 없다.
+
+**해결**: HALT 조건은 **불변식·메커니즘**으로 쓴다 — "델타 = −166" (X) → "무향 collapse 델타가 (왕복 양방향 + 동방향 다관계) 합으로 **정확히 설명되지 않으면** HALT" (O). 수치는 참고값으로만 병기하고 "기록 시점·재실측이 정본"을 명시. 수치형 게이트가 꼭 필요하면 허용 오차(데이터 성장분)를 함께 정의한다. cf. 관련 = 기록 시점 실측 이월 금지 규율.
+
+## `git log` 기본 날짜는 author date다 — 랜딩 순서·전진 판정에는 commit date(`%cd`)를 쓴다 (채번 후보, RC-D-0 2026-09-07) `[git][harness][process]`
+
+**증상**: 디렉터 STEP 0에서 main 히스토리를 `git log` 기본 출력으로 읽어 **main이 되감긴 것처럼** 오경보. 실제 되감김 0건.
+
+**원인**: `git log`의 기본 표시 날짜는 **author date(`%ad`)** = 커밋이 *처음 작성된* 시각. 역머지·rebase·cherry-pick·장기 브랜치는 author date를 보존하므로, author date 순서는 **main에 착지한 순서와 무관**하게 뒤섞인다. 랜딩 순서를 결정하는 것은 **commit date(`%cd`)**다.
+
+**해결**: 랜딩 순서·전진/되감김 판정은 항상 `git log --format='%h %cd %s' --date=iso` (또는 `--date-order`)로 읽는다. 되감김 의심 시 판정 근거는 날짜가 아니라 **조상 관계**다 — `git merge-base --is-ancestor <old> <new>`가 참이면 되감김이 아니다. 원격 ref가 실제로 언제 움직였는지는 `git reflog show origin/main --date=iso`("update by push/fetch")가 유일한 직접 증거. cf. 채번 정정 #89a/b가 이미 "author date 순" 함정을 남긴 전례.
+
+## 정확 일치 캘린더 산술(lag 56/63일)에 의존하는 지표는 배치가 하루만 밀려도 전 모수가 죽는다 (채번 후보, C8-GATE 2026-09-15) `[backend][chainsight][infra][data]`
+
+**증상**: C8(추정치 리비전) 콜드스타트 해제 예정일(2026-09-11 = 첫 스냅샷 07-17 + 56일)이 지났는데도 `z_mode mix: ts=0 cs=0 none=503 both_valid=0`이 계속. 배선은 정상, 콜드스타트도 아님.
+
+**원인**: `eps_diff_at()`이 `eps_by_date.get(anchor)`와 `eps_by_date.get(anchor − 56 or 63일)` **양쪽 모두 정확 일치**를 요구(EPS 레그는 tolerance 0 — `PRICE_TOL_DAYS=7`은 **가격 레그 전용**). 주간 금요일 스냅샷이라 56·63은 7의 배수 = 정상 가동 시에만 성립하는 설계. **머신 미가동으로 09-11(금) 스냅샷이 09-12(토)에 생성**(`snapshot_date = timezone.now().date()`, created_at 09-12 19:03 UTC vs 평소 금 20:30 UTC) → anchor 09-11 **부재**, anchor 09-12의 파트너 07-18/07-11 **부재** → 503종목 전건 `c8_leg_missing`. **밀린 하루가 그 앵커를 영구 폐기**한다(과거 날짜는 다시 생성되지 않음).
+
+**해결(설계 결정 필요)**: ⑴ EPS 레그에도 파트너 탐색 허용 오차 도입(가격 레그의 `PRICE_TOL_DAYS`와 대칭 — "정확히 56일" 대신 "56±N일 내 최근접 스냅샷") ⑵ 또는 `snapshot_date`를 실행 시각이 아니라 **해당 주의 금요일로 정규화**(지연 실행도 올바른 주차에 귀속) ⑶ 랩톱 launchd 스택에서 "주간 배치가 정시 발화한다"는 전제는 성립하지 않음을 설계 가정에 반영. 진단 규율: `both_valid=0`은 배선 결함이 아니라 **날짜 집합 불일치**를 먼저 의심하고, 앵커·파트너 날짜의 실재 여부를 집합으로 대조한다.
 ## 배포 범위는 "직전 보고의 델타"가 아니라 "현 런타임 커밋 대비 처음 나가는 것 전부" (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[deploy][harness][process]`
 
 **증상**: S3-1C 한 건을 배포한다고 알고 착수했으나, 실제 런타임(worker/api `5e4e70ea`, 09-07) 대비 delta는 비-머지 40커밋이었다. BE는 `chain_sight` 2파일 외에 `packages/shared/metrics/agent_reports.py`·`services/sec_pipeline/tasks.py`·`auto_agent_system/dogfood/` 5건이 함께 나갔다. 특히 `tasks.py` 변경은 **Celery 워커 재기동 요건**이라 누락 시 구코드가 계속 돈다.
@@ -2116,6 +2139,16 @@ cf. `D-DSS-W11-RESCUE`·`D-FIRING-WATCH-DECOUPLE`
 **재발 방지 산출**: 동결 목록을 `{앵커 → (사유코드, 근거)}` 로 바꿔 **예외가 카테고리에 해당해야만** 들어가게 했다(`D-ASOF-EXEMPT-0912`). 사유코드 없이 추가하면 테스트가 RED다.
 
 cf. `D-ASOF-EXEMPT-0912`·`D-ASOF-POPULATION`·`D-DSS-W11-RESCUE`
+## 신선도·생존 판정 3원칙 — 측정 장치가 거짓 경보를 내는 공통 패턴 (채번 대기, EOD-TIME-1 2026-09-10) `[ops][monitoring][process]`
+
+측정 장치(헬스체크·신선도·루브릭) 오탐 5건 누적의 공통 뿌리. 신선도/생존을 판정하는 코드는 반드시:
+
+① **지연은 거래일 기준으로 센다** — 캘린더 일수 임계 금지. 주말·연휴가 끼면 캘린더 일수가 벌어져도 놓친 세션은 1개일 수 있다(3일 연휴 = 캘린더 4일이나 거래일 1일).
+② **자기 실행 시점이 대상 갱신 이전인지 반영한다** — "아직 안 만들어진 것"을 "없어진 것"으로 판정 금지(예: dogfood 05:20 KST < EOD 베이크 07:30 KST → 파일이 항상 1 세션 뒤처짐이 정상).
+③ **실패 메시지에 "이 판정이 틀릴 수 있는 조건"을 함께 적는다** — 예: "지연 N일(거래일 기준 M일 — 주말/휴장 포함 여부)".
+
+근거(오탐 5건): 루브릭 미인증 1.4/5 · beat=DOWN 오판 · "백엔드 다운" · 실행 트리 상시 WARN · EOD 지연 4일(=이번 건, 실제로는 수집 성공·채점 순서+연휴 artifact). 실측 3일치: EOD-DELAY-1 09-08 지연0 ok / 09-09 지연4 FAIL / 09-10 지연1 ok — **개입 없이 치유 = 검사 설계 결함**. 수리 = 거래일 판정 MGMT-LEDGER-2 T4(`c62e3107`) + EOD-TIME-1 R4 분해 랜딩(회귀 테스트 6종·판정 근거 note 병기, OPS-BRIDGE-0 ⓐ 2026-09-17). 정본 결정 = DECISIONS `D-EOD-FRESH-ROOT-NOT-SCHEDULE`.
+
 ## 커밋은 세션 전용 브랜치에만 한다 — 공유 main 워크트리의 커밋은 타 세션 reset에 떨어져 나간다 (채번 후보, CS-S3-1D 2026-09-17) `[harness][git][process]`
 
 **증상**: 공유 main 워크트리(`~/Desktop/stock_vis`)에서 `main`에 직접 커밋한 `b0fadfa3`(CS-S3-1D 코드 10파일)이 push 직전에 브랜치에서 사라졌다. 로컬 `main`과 `origin/main`이 같은 해시를 가리켜 `ahead/behind 0/0`으로 보였고, 지시받은 `git push origin main`을 그대로 실행했다면 **no-op으로 성공하면서 작업만 조용히 누락**됐을 것이다.
@@ -2125,3 +2158,42 @@ cf. `D-ASOF-EXEMPT-0912`·`D-ASOF-POPULATION`·`D-DSS-W11-RESCUE`
 **해결**: ⑴ **커밋 전에 세션 전용 브랜치를 만든다**(`git switch -c monorepo/sess-<이름>`) — 지시서가 브랜치를 지정하지 않았더라도 실행자가 만든다. ⑵ 이미 고아가 됐다면 **최우선으로 `git branch <이름> <해시>`**로 고정한다(main 무접촉·즉시 안전). ⑶ 이후 worktree를 떼어 그 안에서만 작업한다. ⑷ **push 전 반드시 `git reflog main`과 `git merge-base --is-ancestor <내커밋> HEAD`로 내 커밋이 여전히 계보에 있는지 확인한다** — `ahead/behind 0/0`은 "올릴 게 없다"는 뜻이지 "내 작업이 반영됐다"는 뜻이 아니다.
 
 **교훈**: `ahead/behind 0/0`을 성공 신호로 읽지 말 것. 이 아크의 [[lesson_shared_main_worktree_holds_other_session_merge]]·"수치 인용 시 축을 명시" 항목과 같은 계열 — **같은 숫자가 다른 사실을 가리킨다**. 짝 규율(지시서 측): **지시서는 worktree와 브랜치를 명시한다. 생략하면 실행자가 공유 main에서 작업하게 되므로, 생략은 지시서의 결함이다.**
+
+## 스킵 판정은 실행일이 아니라 대상 세션 기준이다 — 시차가 있는 잡에서 "오늘"은 대상이 아니다 (채번 후보, AGENT-CAL-1 2026-09-17) `[infra][dogfood][process]`
+
+**증상**: 야간 도그푸딩(05:20 KST)이 **토요일마다 스킵**되어 금요일 세션 리뷰가 나가지 않았다. 로그는 `⏭ 미국장 휴장(Weekend) — 점검 스킵`으로 정상처럼 보였다.
+
+**원인**: 이 잡은 언제나 **어제 닫힌 세션**을 리뷰하는데, 휴장 판정만 `holiday_name(date.today())`로 **실행일**을 물었다. 토요일은 실행일이 주말이라 스킵되지만, 리뷰 대상인 어제(금요일)는 멀쩡한 거래일이었다. 잡의 **대상 시점과 판정 시점이 어긋나 있었고**, 로그 문구가 대상 세션을 적지 않아 어긋남이 드러나지 않았다.
+
+**해결**: 판정을 `date.today() - timedelta(days=1)` = **달력상 어제**로 옮긴다. 스킵 로그에 대상 세션 날짜를 함께 적어 어긋남이 다시 생기면 눈에 보이게 한다.
+⚠️ **`target_session_date`(직전 거래일)를 쓰면 안 된다** — 일요일과 월요일이 모두 금요일 세션을 가리켜 **같은 리뷰가 두 번** 나간다. 달력상 어제여야 토=금·일=토·월=일로 중복 없이 맞는다.
+
+**교훈**: **시차가 있는 배치 잡에서 "오늘"은 대상이 아니다.** 스킵·신선도·임계 판정은 전부 *실행 시점*이 아니라 *대상 시점*을 기준으로 물어야 한다. 그리고 이 부류의 버그는 **로그가 정상으로 보인다** — 스킵 사유는 사실이고(토요일은 정말 주말이다) 틀린 것은 질문이었다. 그래서 **판정 로그에 "무엇에 대한 판정인지"를 적는 것이 계측**이다. 같은 계열: EOD 신선도의 달력일→거래일 교정(DOGFOOD-EOD-LAG-TRADINGDAYS).
+
+## baker `is_stale`은 UTC date와 로컬(KST) date를 비교해 18:30 ET 슬롯에서 구조적으로 항상 True (채번 후보, DASH-TOP 2026-09-15 실측 확증) `[backend][eod][timezone][frontend]`
+## baker `is_stale`은 UTC date와 로컬(KST) date를 비교해 18:30 ET 슬롯에서 구조적으로 항상 True (#137, DASH-TOP 발견 2026-09-15 · 실측 확증 2026-09-15, 채번 MGMT-BATCH-b49) `[backend][eod][timezone][frontend]`
+
+**증상**: 정상적으로 구워진 당일 데이터인데도 `dashboard.json`의 `is_stale`이 **항상 `true`**. 프론트가 이 값을 그대로 믿어 제목을 "어제 데이터입니다"로 대체 → 최신 데이터에 상시 오경보. dogfood `eod.is_stale` WARN 재발(08-27~)의 근인.
+
+**원인**: `packages/shared/stocks/services/eod_json_baker.py:145`
+```python
+generated_at = dj_timezone.now()          # USE_TZ=True → UTC aware
+is_stale = generated_at.date() != date.today()   # ← UTC date vs 로컬(KST) date
+```
+`generated_at.date()`는 **UTC 날짜**, `date.today()`는 **OS 로컬(Asia/Seoul) 날짜**다. bake 슬롯은 `run-eod-pipeline` 크론 `30 18 1-5 * *` **@America/New_York** = 22:30 UTC = **익일 07:30 KST** → 두 날짜가 **항상** 다르다. 즉 이 비교는 신선도가 아니라 "UTC와 KST의 날짜가 다른가"를 묻고 있고, 이 슬롯에서는 답이 늘 참이다.
+
+**실측**(2026-09-15): `trading_date` 2026-09-14(월·정상 최신 세션) · `generated_at` `2026-09-14T22:30:56Z` · `is_stale` **true**. 09-17 재확인도 동일.
+
+**교훈**: ⑴ **aware datetime의 `.date()`와 `date.today()`를 같은 식에서 비교하지 않는다** — 한쪽은 UTC, 한쪽은 로컬이라 시간대 폭만큼의 창에서 상시 오답이 된다(#117류 캘린더 산술 금지 동류). 비교하려면 양쪽을 같은 시간대로 먼저 환산한다. ⑵ **신선도는 "생성 시각"이 아니라 "기대 슬롯 대비 결번 수"로 판정**한다 — 소비처 FE는 `countMissedBakeSlots()`(ET 평일 18:30 슬롯 · 임계 2회)로 전환해 이 플래그 의존을 끊었다(DASH-TOP ⑥ S2). ⑶ 상시 점등하는 경보는 경보가 아니다 — 켜진 채로 방치되면 진짜 결번과 구분이 사라진다.
+
+**관련**: TASKQUEUE `EOD-ISSTALE-DEF`(플래그 정의 프로브 — 본 항목이 그 근인 답) · BAKER-ISSTALE-REDEF 위임(재정의는 별건, 본 항목은 버그 등재).
+
+## bake `pipeline_status`가 "running"에 고착 — 완료 플립 누락으로 "정말 멈춘 것"과 구분 불가 (#138, DASH-TOP 발견 2026-09-14, 채번 MGMT-BATCH-b49) `[backend][eod][observability]`
+
+**증상**: bake가 정상 완료(JSON 전량 생성 · `llm_fill` 10/10 ok · `issuance_verified` 10/10 ok)했는데 `meta.json`의 `pipeline_status`가 **`"running"`** 그대로이고 `total_duration_seconds`가 **0.0**이다.
+
+**실측**(2026-09-14): `run_id` `177e198f-2d65-4847-a329-e9335dad0360` · `generated_at` 09-12T10:28Z · `pipeline_status` `"running"` · `total_duration_seconds` `0.0` — 산출물은 완전한데 상태만 중간값.
+
+**왜 문제인가**: 상태 필드의 값어치는 **"running"이 드물 때**만 생긴다. 완료분이 계속 running으로 남으면 상태가 상수로 수렴해 **진짜 hang·중단을 가리키는 신호가 사라진다**. 감시·알림이 이 필드를 쓰면 전건 무시하거나 전건 오탐하게 된다.
+
+**교훈**: 상태 머신은 **종료 전이가 산출물 쓰기와 같은 트랜잭션**에 묶여야 한다. 완료 플립이 별도 경로에 있으면 그 경로만 조용히 빠져도 산출물은 멀쩡해 육안으로 안 잡힌다. 점검은 "성공했나"가 아니라 **"성공 상태로 기록됐나"**까지.
