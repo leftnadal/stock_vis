@@ -1774,3 +1774,12 @@
   - **ops는 문구를 쓰지 않는다**(소유 경계) — GUIDE-CS-GUARD-1D는 유예만 등록했고 `dashboard.ts`를 건드리지 않았다.
   - 기한 연장이 필요하면 **DECISIONS.md에 근거를 남긴 뒤** `until`을 갱신한다. 코드에서 조용히 날짜만 바꾸는 것은 금지 — 그 순간 구조가 장식이 된다.
   - 재발 맥락: `chainsight.backbone`(08-31)과 동일 패턴이 9일 만에 재발. 근본 처방은 게이트(OPS-FE-GATE-0 측정 완료) + [[GUIDE-COUPDATE-DOD]](지시서 템플릿 DoD).
+
+## AGENT-CAL-1 (2026-09-17, worktree sv-cal1)
+
+> 결정 = [[DECISIONS]] D-SKIP-BASIS-TARGET-SESSION. 선행 처분 = DOGFOOD-CAL-LAND-1 HALT 3결정(R4 폐기·R1 동결·AGENT-CAL-1 단독 분리).
+
+- ✅ **AGENT-CAL-1** (@infra) — `run_dogfood.sh` 휴장 스킵 판정을 실행일 → **대상 세션(어제 KST)** 으로 교정. **랜딩 완료 · `sv sync` 상신 대기**. diff 2파일(`run_dogfood.sh` +20/-5 · `tests/dogfood/test_skip_decision.py` 신규 80줄) — `check_quant.py`·`test_quant_schema.py`·`eod_json_baker.py`·`market_calendar.py` **전건 무접촉**(충돌 표면적 0 설계). 게이트: pytest 전체 5,429 passed/53 skipped · dogfood+architecture 121 · vitest 1,359 · tsc 0 · ruff clean.
+  - **마감 09-18(금) 밤까지 `sv sync`** — 넘기면 09-19(토) 05:20 발화가 구코드로 돌아 토요일 리뷰가 한 주 더 밀린다.
+  - **행동 변화 주의**: 월요일 발화가 **스킵으로 전환**된다(그날 리뷰할 새 세션이 없다). 장부·메일에 "리뷰 누락"으로 적지 말 것 — 금요일 리뷰는 기존에도 월요일에 도착하고 있었고, 이 수정은 그것을 **토요일로 이동**시킨다.
+
