@@ -2040,3 +2040,29 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **해결**: 원장 역머지 후 검증은 **삭제 줄이 아니라 중복 블록을 센다** — `git show <ref>:<file> | awk 'length($0)>120' | sort | uniq -d`. 병합 전(base·origin/main)과 병합 후를 각각 돌려 **증가분만** 제거한다(선존 중복은 소유 트랙 몫이므로 건드리지 않는다). 세션 DoD에 이 한 줄을 넣는다.
 
 **교훈**: [[디렉터 실측에도 유통기한이 있다]]의 짝. 그쪽이 "main이 밑에서 움직여 전제가 죽는다"면 이쪽은 "main이 밑에서 움직인 흔적이 조용히 두 벌로 남는다"다. **union은 안전장치가 아니라 충돌 회피 장치**이며, 회피된 충돌은 사라진 게 아니라 문서 안으로 들어간다. 검증 명제를 고를 때는 "이 확인이 실패할 수 있는가"를 먼저 묻는다 — union 병합에서 "삭제 줄 0"은 **항상 참**이라 아무것도 반증하지 못한다.
+
+---
+
+## 로컬 main 머지 후 push 누락이 반복된다 — health_check에 'main ahead>0' 감지 가드가 공백 (채번 후보, SCB-RECOVER-PROBE 2026-09-17) `[harness][git][ops]`
+
+**증상**: 세션이 브랜치를 로컬 `main`에 머지해 놓고 `push`를 빠뜨려도 **아무 계측도 이를 보고하지 않는다**. 2회 관측 — 2026-09-11 **4커밋**(RC-D-0 아크, 09-11~09-15 방치) · 2026-09-15 **1커밋**(`de0f334d` CS-RESUME-DEPLOY, 09:28 머지 후 09:50까지 미push). 두 건 모두 디렉터의 **수동 `git rev-list` 실측**으로만 발견됐다.
+
+**원인**: 이름이 남아 있어 감지되는 줄 착각하기 쉽다. `scripts/health_check.py`의 `check_origin_main_hash`("origin/main 해시")는 **2026-07-02 B2에서 해시 비교를 의도적으로 버리고 PROGRESS 신선도 검사로 내용이 교체**됐고 **함수명·표시 항목명만 유지**됐다. 그 결과 항목 이름은 `origin/main 해시`인데 출력은 `PROGRESS.md N시간 미갱신`이다 — 실측 예: `❌ ERROR  origin/main 해시  PROGRESS.md 112.3h 미갱신 (임계 72h)`. **"로컬 main이 origin/main보다 ahead"라는 상태를 보는 검사는 repo 전체에 존재하지 않는다.** 항목명이 그 검사가 살아 있다는 인상을 주어 공백을 가린다.
+
+**해결**: `health_check.py`에 독립 체크 추가 — `git rev-list --count origin/main..main > 0` → `⚠`(문서 전용이면 ⚠, 코드 포함이면 승격 검토). **앞서 보류된 `STARTUP_CHECKLIST`의 "구동 트리 HEAD ≠ origin/main 경고"와 동일 계열이므로 한 세션으로 묶어 구현한다.** 이름과 내용이 갈라진 `check_origin_main_hash`는 함수명·항목명을 실제 검사 내용(PROGRESS 신선도)에 맞게 개명한다.
+
+**교훈**: **검사의 내용을 바꿀 때 이름을 남겨 두면, 그 이름이 가드가 아직 있다는 거짓 신호가 된다.** 공백은 "검사가 없다"보다 "검사가 있는 줄 알았다"로 더 오래 산다. 계측을 교체할 땐 이름도 함께 교체하고, 버린 검사는 버렸다고 장부에 남긴다.
+
+---
+
+## nightly 발행본은 gitignore 대상 — 'main에 리포트 부재'는 이상 신호가 아니다 (채번 후보, SCB-RECOVER-PROBE 2026-09-17) `[harness][ops][nightly]`
+
+**증상**: `main:docs/nightly_auto_system/reports/`에 4·5·6월만 있고 7·8·9월이 없는 것을 보고 "nightly 자동화가 3개월째 고장"이라 판정할 뻔했다. 같은 근거로 `monorepo/nightly-20260910~14` 브랜치가 전부 `ahead=0`인 것도 고장의 증거로 읽혔다.
+
+**원인**: 둘 다 **설계대로 동작한 결과**다. `.gitignore:229` `docs/nightly_auto_system/reports/**/*.md`(근거 = DECISIONS `[2026-06-23] B-2` "발행본 = 미추적 + gitignore")가 **본진과 격리 nightly repo 양쪽에** 적용된다. 그래서 ⑴ 추적본이 4·5·6월뿐인 것은 gitignore **도입 이전**에 이미 추적 중이던 역사 파일이고 ⑵ tier3는 매일 **커밋을 시도하지만** 생성물이 전부 ignore 대상이라 `커밋할 변경사항 없음`으로 끝나 `ahead=0`이 된다. 실제로 nightly는 멈춘 적이 없었다 — 원본은 `~/stock-vis-nightly/repo/docs/nightly_auto_system/reports/`에 7·8·9월 **795개 md**가 쌓여 있었다.
+
+**진짜 문제는 다른 곳**이었다: B-2가 "격리본을 read 경로로 단방향 복사"하도록 정한 **발행 단계(`publish_reports.sh`)가 어느 스크립트에서도 호출되지 않는다**(grep 호출처 0건). B-2는 이 배선을 **사용자 수동**으로 남겨 뒀고 그 절차가 3개월간 한 번도 이행되지 않았다. 결과로 본진 read 경로가 6-30에서 멈췄고, 대시보드 reader(`packages/shared/metrics/services/agent_reports.py`, `REPORTS_BASE` = 본진 경로 하드코딩)가 6/16 이후 "보고서 없음"을 냈다.
+
+**해결**: 검사 지점을 옮긴다. **git 추적 여부가 아니라 본진 트리의 미추적 발행본 존재 여부**를 본다 — `ls docs/nightly_auto_system/reports/<M>월/<D>일/*.md`, 또는 reader가 실제로 파일을 찾는지(`_find_report_path`)를 본다. `git log`·`git status`는 이 경로에 대해 **구조적으로 항상 침묵**하므로 증거가 될 수 없다. 소급 발행 실측(2026-09-17): 92일 루프 → 69일 발행 · 21일 원본 부재 · 2일 빈 디렉터리 · md **795개** 복사 · git 오염 0 · reader 인식 **12/12**.
+
+**교훈**: **gitignore된 산출물에 대해 git이 보여 주는 침묵은 "없다"가 아니라 "볼 수 없다"다.** 파이프라인 건강을 git 상태로 재는 순간, 무시하도록 설계한 바로 그 구간이 사각지대가 된다. 그리고 "수동 절차로 남긴다"는 결정은 **이행 여부를 재는 계측을 함께 만들지 않으면 3개월 뒤 조용히 미이행 상태로 발견된다**.

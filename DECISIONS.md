@@ -8,6 +8,15 @@
 
 ---
 
+## [2026-09-17] D-SCB-CONTEXT-SOURCE-1 — 채점 카드 맥락층 원천 확정 [portfolio][data][llm]
+**결정**: SCB-CONTEXT 맥락층의 데이터 원천을 아래로 **확정**한다.
+- **논거 축 = FMP `/stable/grades`** — 등급 변경 **사건 타임라인**. 프로브 실측(SCB-RECOVER-PROBE 2026-09-15): `200` · NVDA **1,158행** · **2012-02-13~2026-09-04** · `gradingCompany`·`previousGrade`·`newGrade`·`action`·`date` 실재.
+- **맥락 축 = 기존 `NewsEntity`(624,562행)** 심볼+날짜 조인. **신규 수집 0**.
+- **`/stable/grades-news` = 트리거 보류.** 프로브에서 `200`·논거 필드(`newsTitle`·`newsURL`·`newsBaseURL`·`newsPublisher`·`priceWhenPosted`·`publishedDate`) 실재 확인했으나 채택 보류. **재평가 트리거 = S2 착지 후 "연결 정확도가 부족하다"는 소감이 나올 때** — 그때 규모 측정 1콜(1심볼당 총 행수·소급 범위, 현재 미확인) 후 재판단.
+- **`grades_historical`(월별 등급 카운트) = 폐기 아님.** "분포 추이" 표시로 **흡수**한다.
+**Why**: 가중합 = 안1(a 카운트추이만) **3.80** / 안2(b1 grades + c news 조인) **4.30** / 안3(전부) **3.55** / 안4(c만) **4.30**. 안2·안4 **마진 0** → 타이브레이커 = **"게이트 가용성은 휘발성 자산"** (오늘 열린 문이 내일 닫힐 수 있다 — 프로브가 `200`을 확인한 지금 `grades`를 원천으로 고정해 두는 편이, 나중에 402로 닫혔을 때 되돌릴 수 없는 손실을 막는다). recon(2026-09-10)이 논거 축을 RED로 닫은 근거는 `grades-historical` **단일 경로만** 본 결과였고, 프로브가 이를 반증했다.
+**How to apply**: 수집 구현 시 `packages/shared/api_request/providers/fmp/client.py`에 `grades` 메서드 신설(현재 **부재**). `grades-news`는 메서드조차 만들지 않는다(보류). 맥락 축은 신규 수집 없이 `NewsEntity` 조인만. 설계·구현은 **별 세션**(SCB-RECOVER-PROBE 세션은 코드 변경 0).
+
 ## [2026-09-10] D-BRANCH-DELETE-DELEGATE-1 — 단계별 승인 게이트 하 CC 삭제 집행 위임 [harness][ops][governance]
 **결정**: D-BRANCH-DELETE-MANUAL("삭제는 병진 수동")의 **정련**. 다음 4조건이 모두 충족된 경우에 한해 CC가 브랜치·worktree·원격 삭제를 **집행**한다 — ⑴ 분류 보고서가 main에 착지됨 ⑵ 전 ref `git bundle` 백업 + `verify` 통과 ⑶ 사용자가 세션 안에서 단계별 승인 토큰(`승인 A`~`E`)을 직접 입력 ⑷ 사후 재측정 보고. `-D`(강제)는 **줄 단위 실측으로 미이식 0이 확인된 건**에만(명시 목록 아님 — 실측이 목록을 갱신). **자가 `-D` 전환 금지**(`-d` 거부 = 건너뜀·기록이 기본, `-D`는 별도 승인·실측 근거 필요).
 **Why**: worktree-per-세션 병렬 환경에서 "후보만 보고" 고정은 누적 적체(225브랜치·61worktree)를 낳는다. 백업+단계 승인+사후측정의 3중 방어가 파괴성을 상쇄하면 위임이 안전·효율적. 집행 증거 = MGMT-BATCH-B-EXEC(2026-09-04~10): A(메인 트리 main 복귀)·B(worktree 40 제거·sv-dash-s0 제외)·C(브랜치 -d 200)·D(브랜치 7 삭제·이식 4줄·42줄 철회)·E(원격 5 삭제). bundle 2종 = `~/stockvis-refs-20260904-1119.bundle`·`~/stockvis-refs-20260907-0948.bundle`.
