@@ -55,17 +55,27 @@ fi
 cd "$PROJECT_DIR"
 
 # ── 휴장 판정 ─────────────────────────────────────────────
-HOLIDAY="$("$VENV_PY" -c "
-from datetime import date
+# 판정 기준은 '실행일'이 아니라 '대상 세션 = 어제(KST)'다. 05:20 KST에 도는 이 잡은
+# 언제나 어제 닫힌 세션을 리뷰하므로, "오늘 장이 열리나"는 물어야 할 질문이 아니었다.
+# 토요일에 금요일 세션 리뷰가 빠지던 원인이 이것이다(AGENT-CAL-1).
+#
+# 달력상 어제를 쓴다 — target_session_date(직전 거래일)를 쓰면 일요일과 월요일이
+# 모두 금요일 세션을 가리켜 같은 리뷰가 두 번 나간다.
+CAL_OUT="$("$VENV_PY" -c "
+from datetime import date, timedelta
 from auto_agent_system.dogfood.market_calendar import holiday_name
-print(holiday_name(date.today()) or '')
+y = date.today() - timedelta(days=1)
+print(y)
+print(holiday_name(y) or '')
 " 2>>"$LOG_FILE")"
+TARGET_SESSION="$(printf '%s\n' "$CAL_OUT" | sed -n 1p)"
+HOLIDAY="$(printf '%s\n' "$CAL_OUT" | sed -n 2p)"
 
 if [ -n "$HOLIDAY" ] && [ "$FORCE" != "--force" ]; then
-  log "⏭  미국장 휴장($HOLIDAY) — 점검 스킵. 강제 실행은 --force."
+  log "⏭  어제($TARGET_SESSION)가 휴장($HOLIDAY) — 신규 세션 없음, 스킵. 강제 실행은 --force."
   exit 0
 fi
-[ -n "$HOLIDAY" ] && log "⚠️  휴장($HOLIDAY)인데 --force로 실행합니다."
+[ -n "$HOLIDAY" ] && log "⚠️  어제($TARGET_SESSION) 휴장($HOLIDAY)인데 --force로 실행합니다."
 
 # ── ⑴ 정량 체크 ───────────────────────────────────────────
 RC_CHECK=0
