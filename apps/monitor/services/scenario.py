@@ -5,6 +5,7 @@ refresh 흐름의 evaluate **직후** additive 호출(신규 beat 없음, state_
 그리고 기한만료 제안(자동 마감 금지 — 제안만, 3-B). 반환 이벤트는 다이제스트가 소비.
 """
 import logging
+from zoneinfo import ZoneInfo
 
 from django.utils import timezone
 
@@ -17,6 +18,7 @@ from apps.monitor.services.closure import (
 )
 from apps.monitor.services.price_zone import (
     NEAR_STOP_BUFFER,
+    NEAR_STOP_CAP,
     NEAR_STOP_MULTIPLIER,
     NEAR_STOP_RECHECK_DAYS,
     is_immediate_zone_alert,
@@ -47,18 +49,22 @@ def latest_close(symbol, as_of=None):
     return float(row) if row is not None else None
 
 
-# 변동성 산출 창(거래일). 손잡이 3종(price_zone)과 달리 계산 세부라 여기 둔다.
+# 변동성 산출 창(거래일). 손잡이(price_zone)와 달리 계산 세부라 여기 둔다.
 NEAR_STOP_WINDOW = 20
+
+# 재발화 창 날짜 비교 기준 — as_of(et_today)와 같은 축.
+_ET = ZoneInfo("America/New_York")
 
 
 def near_stop_buffer(symbol, as_of=None):
-    """손절 접근 밴드 = max(바닥값, 배수 × median|일간 변동률| 최근 20거래일).
+    """손절 접근 밴드 = min(상한, max(바닥값, 배수 × median|일간 변동률| 20거래일)).
 
     데이터 20행 미만이면 바닥값(NEAR_STOP_BUFFER) 반환 — 폴백.
     price_zone은 순수 유지(D-HOLD-DECISIONS 2 전제)라 DB 조회는 이 모듈에만 둔다.
 
-    변동성 비례인 이유: 고정 밴드는 저변동 종목에서 너무 늦고(손절을 그냥 통과),
-    고변동 종목에서 너무 잦다(매일 경고). 바닥값은 저변동 쪽 하한만 지킨다.
+    변동성 비례인 이유: 고정 밴드는 종목마다 리드타임이 제각각이 된다. 배수를
+    리드타임으로 읽으면(밴드 ÷ 평소 변동률 ≈ 손절까지 남은 평소 거래일 수) 모든
+    종목이 같은 대응 시간을 받는다 — 바닥값·상한에 걸린 종목만 예외.
     """
     import statistics
 
@@ -81,7 +87,10 @@ def near_stop_buffer(symbol, as_of=None):
     ]
     if len(rets) < NEAR_STOP_WINDOW:
         return NEAR_STOP_BUFFER
-    return max(float(NEAR_STOP_BUFFER), NEAR_STOP_MULTIPLIER * statistics.median(rets))
+    return min(
+        float(NEAR_STOP_CAP),
+        max(float(NEAR_STOP_BUFFER), NEAR_STOP_MULTIPLIER * statistics.median(rets)),
+    )
 
 
 def process_claim_scenario(claim, close, as_of):
@@ -132,12 +141,14 @@ def process_claim_scenario(claim, close, as_of):
         # 재발화 창: 밴드 안에 계속 머물면 N일마다 재확인. 메일 1회 실패가 영구 침묵이
         # 되지 않게 하는 유일한 이중화다 — near_stop은 인앱 표면(3-B)이 아직 없고,
         # claim.save()는 pipeline.py:154에서 먼저 커밋되므로 send_digest 실패를 모른다.
-        # 비교는 UTC date끼리다: notified=timezone.now()(UTC), as_of=et_today()이고
-        # beat는 22:45 UTC(=18:45 ET)에 도므로 두 날짜가 같은 날을 가리킨다.
-        # localtime()으로 바꾸면 KST가 되어 하루 밀린다 — 바꾸지 말 것.
+        #
+        # as_of=et_today()이므로 비교도 ET 날짜로 맞춘다. UTC date 비교는 beat가
+        # 22:45 UTC일 때만 우연히 일치했고, beat 시각은 코드가 아니라 DB
+        # PeriodicTask에 있다(공통버그 #28) — 여유가 75분뿐이었다.
+        # retry가 UTC 자정을 넘겨도 이 방식은 어긋나지 않는다.
         is_recheck = bool(
             notified is not None
-            and (as_of - notified.date()).days >= NEAR_STOP_RECHECK_DAYS
+            and (as_of - notified.astimezone(_ET).date()).days >= NEAR_STOP_RECHECK_DAYS
         )
         if near and (notified is None or is_recheck):
             stop_f = float(claim.stop_price)

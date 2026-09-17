@@ -11,16 +11,18 @@ from apps.monitor.models import Claim
 # 접근 버퍼: 진입가 위 이 비율까지는 아직 "접근"(진입 여지). 상수(D-TIMING-DECISIONS-5 ③-B).
 APPROACH_BUFFER = Decimal("0.03")
 
-# ── 손절 접근 손잡이 3종 (D-NEAR-STOP-BUFFER 안 C: 변동성 비례 + 바닥값) ──────────
-# 실효 버퍼 = max(NEAR_STOP_BUFFER, NEAR_STOP_MULTIPLIER × median|일간 변동률| 20거래일).
+# ── 손절 접근 손잡이 4종 (D-NEAR-STOP-BUFFER 안 C: 변동성 비례 + 바닥값 + 상한) ────
+# 실효 버퍼 = min(상한, max(바닥값, 배수 × median|일간 변동률| 20거래일)).
 # 계산은 DB가 필요하므로 scenario.near_stop_buffer()가 맡는다 — 이 모듈은 순수 유지
 # (D-HOLD-DECISIONS 2의 전제). 여기에는 손잡이만 둔다.
 #
-# 바닥값 5%: 익절 접근(NEAR_TARGET_BUFFER 3%)보다 넓다. 손절은 늦게 알면 되돌릴 수 없다.
-# 데이터가 부족하면(20거래일 미달) 이 값이 그대로 폴백이 된다.
+# 배수 = 리드타임. 밴드를 평소 일간 변동률로 나눈 값 ≈ 경고 후 손절까지의 평소 거래일 수.
+# 4 = 저녁 다이제스트 → 다음날 조사 → 그다음날 결정·실행.
+# 바닥값 5%는 가장 조용한 종목(median<1.25%)에만 걸리는 하한.
+# 상한 15%는 변동성 급등 시 밴드 폭주 방지 — 평시 무작동.
 NEAR_STOP_BUFFER = Decimal("0.05")
-# 변동성 배수 — median 일간 변동률의 몇 배를 밴드로 볼 것인가.
-NEAR_STOP_MULTIPLIER = 2
+NEAR_STOP_MULTIPLIER = 4
+NEAR_STOP_CAP = Decimal("0.15")
 # 재발화 창(일) — 밴드 안에 머무는 동안 이 간격으로 재확인 경고를 낸다.
 # 메일 1회 실패가 영구 침묵이 되지 않게 하는 이중화(near_stop은 인앱 표면이 없다).
 NEAR_STOP_RECHECK_DAYS = 5
