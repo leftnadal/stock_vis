@@ -1983,6 +1983,29 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 
 **해결(사소)**: `app/layout` 계열에서 `themeColor`·`viewport`를 `export const viewport` 로 이동. 기능 영향 0(경고만)·위임(dashboard/frontend chore).
 
+## 수치형 HALT 조건은 "스냅샷 수치 이월 금지"와 충돌한다 — HALT는 메커니즘·불변식에 걸고 관측치에 걸지 않는다 (채번 후보, RC-D-0 2026-09-07) `[harness][process]`
+
+**증상**: RC-D-0 지시서 STEP 3-4가 "델타가 −166이 아니면 HALT"라는 **과거 스냅샷 수치**를 HALT 조건으로 박아둠. 실측 −167 → 형식상 HALT 성립. 그러나 메커니즘(무향 collapse 시 다관계·왕복 중복 흡수)은 정상 재현이었고 차이 1은 **관측 사이 데이터 성장분**(입력 2,365→2,418행).
+
+**원인**: 하네스 상시 규율 "스냅샷 수치는 기록 시점 실측이며 **이월 금지**, 다음 세션 STEP 0 재실측이 정본"과, 지시서의 "수치 일치 = HALT 게이트"가 **정면 충돌**. 재실측이 정본이라면 과거 수치와의 불일치는 애초에 HALT 신호가 될 수 없다.
+
+**해결**: HALT 조건은 **불변식·메커니즘**으로 쓴다 — "델타 = −166" (X) → "무향 collapse 델타가 (왕복 양방향 + 동방향 다관계) 합으로 **정확히 설명되지 않으면** HALT" (O). 수치는 참고값으로만 병기하고 "기록 시점·재실측이 정본"을 명시. 수치형 게이트가 꼭 필요하면 허용 오차(데이터 성장분)를 함께 정의한다. cf. 관련 = 기록 시점 실측 이월 금지 규율.
+
+## `git log` 기본 날짜는 author date다 — 랜딩 순서·전진 판정에는 commit date(`%cd`)를 쓴다 (채번 후보, RC-D-0 2026-09-07) `[git][harness][process]`
+
+**증상**: 디렉터 STEP 0에서 main 히스토리를 `git log` 기본 출력으로 읽어 **main이 되감긴 것처럼** 오경보. 실제 되감김 0건.
+
+**원인**: `git log`의 기본 표시 날짜는 **author date(`%ad`)** = 커밋이 *처음 작성된* 시각. 역머지·rebase·cherry-pick·장기 브랜치는 author date를 보존하므로, author date 순서는 **main에 착지한 순서와 무관**하게 뒤섞인다. 랜딩 순서를 결정하는 것은 **commit date(`%cd`)**다.
+
+**해결**: 랜딩 순서·전진/되감김 판정은 항상 `git log --format='%h %cd %s' --date=iso` (또는 `--date-order`)로 읽는다. 되감김 의심 시 판정 근거는 날짜가 아니라 **조상 관계**다 — `git merge-base --is-ancestor <old> <new>`가 참이면 되감김이 아니다. 원격 ref가 실제로 언제 움직였는지는 `git reflog show origin/main --date=iso`("update by push/fetch")가 유일한 직접 증거. cf. 채번 정정 #89a/b가 이미 "author date 순" 함정을 남긴 전례.
+
+## 정확 일치 캘린더 산술(lag 56/63일)에 의존하는 지표는 배치가 하루만 밀려도 전 모수가 죽는다 (채번 후보, C8-GATE 2026-09-15) `[backend][chainsight][infra][data]`
+
+**증상**: C8(추정치 리비전) 콜드스타트 해제 예정일(2026-09-11 = 첫 스냅샷 07-17 + 56일)이 지났는데도 `z_mode mix: ts=0 cs=0 none=503 both_valid=0`이 계속. 배선은 정상, 콜드스타트도 아님.
+
+**원인**: `eps_diff_at()`이 `eps_by_date.get(anchor)`와 `eps_by_date.get(anchor − 56 or 63일)` **양쪽 모두 정확 일치**를 요구(EPS 레그는 tolerance 0 — `PRICE_TOL_DAYS=7`은 **가격 레그 전용**). 주간 금요일 스냅샷이라 56·63은 7의 배수 = 정상 가동 시에만 성립하는 설계. **머신 미가동으로 09-11(금) 스냅샷이 09-12(토)에 생성**(`snapshot_date = timezone.now().date()`, created_at 09-12 19:03 UTC vs 평소 금 20:30 UTC) → anchor 09-11 **부재**, anchor 09-12의 파트너 07-18/07-11 **부재** → 503종목 전건 `c8_leg_missing`. **밀린 하루가 그 앵커를 영구 폐기**한다(과거 날짜는 다시 생성되지 않음).
+
+**해결(설계 결정 필요)**: ⑴ EPS 레그에도 파트너 탐색 허용 오차 도입(가격 레그의 `PRICE_TOL_DAYS`와 대칭 — "정확히 56일" 대신 "56±N일 내 최근접 스냅샷") ⑵ 또는 `snapshot_date`를 실행 시각이 아니라 **해당 주의 금요일로 정규화**(지연 실행도 올바른 주차에 귀속) ⑶ 랩톱 launchd 스택에서 "주간 배치가 정시 발화한다"는 전제는 성립하지 않음을 설계 가정에 반영. 진단 규율: `both_valid=0`은 배선 결함이 아니라 **날짜 집합 불일치**를 먼저 의심하고, 앵커·파트너 날짜의 실재 여부를 집합으로 대조한다.
 ## 배포 범위는 "직전 보고의 델타"가 아니라 "현 런타임 커밋 대비 처음 나가는 것 전부" (채번 후보, CS-RESUME-DEPLOY 2026-09-15) `[deploy][harness][process]`
 
 **증상**: S3-1C 한 건을 배포한다고 알고 착수했으나, 실제 런타임(worker/api `5e4e70ea`, 09-07) 대비 delta는 비-머지 40커밋이었다. BE는 `chain_sight` 2파일 외에 `packages/shared/metrics/agent_reports.py`·`services/sec_pipeline/tasks.py`·`auto_agent_system/dogfood/` 5건이 함께 나갔다. 특히 `tasks.py` 변경은 **Celery 워커 재기동 요건**이라 누락 시 구코드가 계속 돈다.
@@ -2031,6 +2054,40 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 
 **교훈**: 이 아크에서 **세 번째** "동기화가 안 나르는 것"이다 — ⑴ FE prod 빌드([[lesson_worker_sync_excludes_fe_prod_build]]) ⑵ 배포 범위 산정(현 런타임 대비) ⑶ 별도 큐 워커. 공통 구조는 **"트리를 옮기는 일"과 "그 코드를 실제로 들고 도는 프로세스를 갈아끼우는 일"이 분리돼 있고, 후자는 목록으로 관리되지 않는다**는 것. 동기화 도구의 이름(`worker_sync`)이 범위를 보장한다고 읽지 말 것.
 
+## 관측일과 대상일을 같은 필드에 담으면, 실행이 밀리는 순간 원장이 조용히 거짓말을 한다 (채번 후보, DSS-ASOF-1-R2 2026-09-16) `[dss][data][harness][ops]`
+
+**증상**: 2026-09-11(금) 예정이던 `EstimateSnapshot` 수집이 beat 크래시루프로 밀려 09-12(토)에 실행됐다. 앵커 필드(`snapshot_date`)가 **실행일**을 받으므로 09-12로 기록됐고, 데이터 내용은 09-11 마감 컨센서스 그대로였다. 아무 에러도 나지 않았다.
+
+**파급 (조인 규칙이 정확일자라서 연쇄한다)**
+- DSS: `prev = anchor − 7일` → 09-12 − 7 = 09-05(스냅샷 없음) → **502행 전건 `missing_prev`**. 행은 있으나 유효신호 0.
+- C8: `eps_diff_at`이 `anchor−56` 또는 `anchor−63` 정확일자 → 09-12 − 56 = 07-18 ✗ / −63 = 07-11 ✗ → 전건 `c8_leg_missing`. (anchor가 09-11이었다면 −56 = 07-17 ✓로 성립했다.)
+- 감시 공백: 프로세스 생존 점검은 3일 내내 ✅였다. **생존과 발화는 다른 사실이다.**
+
+**해결**
+1. 읽는 쪽 = `packages/shared/market_week.as_of_week(관측시각 ET) -> date` — 가장 최근 완료된 주간 마감(금 16:00 ET) 반환. 자동 발화 12건을 100% 복원.
+2. 감시 = health `주간 발화 계약` — 직전 금요일 앵커의 **DB 행 존재** + **유효신호 0 여부**(행 존재만 보면 이 사건을 놓친다). `as_of`·`last_run_at` 미사용.
+3. 근본 = 적재 시점에 `anchor = as_of_week(관측시각)`으로 기록(`D-DSS-ASOF-LAYER`). 읽는 쪽 교정은 **이미 적재된 행의 내용을 바꾸지 못한다**.
+
+**함정**: `as_of` 규칙은 **자동 발화에만** 쓸 수 있다. 사람이 만든 백필·임시수집은 실행시각이 내용과 무관해 추론이 원리적으로 불가능하다 → 동결 목록으로 분리(`D-ASOF-POPULATION`).
+
+cf. `D-DSS-ANCHOR-SEMANTICS`·`D-FIRING-WATCH-DECOUPLE`·`D-DSS-W11-RESCUE`
+
+## 조인 규칙을 코드로 확인하지 않고 "합리적인 쪽"으로 가정하면, 그 위에 세운 결정 전체가 조용히 무너진다 (채번 후보, DSS-ASOF-1-R2 2026-09-16) `[harness][process][data]`
+
+**증상**: "09-12 앵커에 502행이 적재됐다"는 사실만 보고 *데이터가 하루 밀렸을 뿐 쓸 수 있다*고 가정한 채 처분을 설계했다. 실제로는 `WOW_LAG_DAYS = 7` **정확일자** 조회라 `prev = 09-05`가 부재했고 **502행 전건이 `missing_prev`** 였다 — 유효신호 0. 같은 가정 위에 있던 후속 지시서의 "판정 레이어 배선" 단계는 무력했고 폐기됐다.
+
+**왜 놓쳤나**: 행수(502)가 정상 회차(501)와 비슷해 보였다. **행수는 유효성의 증거가 아니다.**
+
+**해결**: 앵커·lag·조인 키를 쓰는 결정은 착수 전에 **코드 좌표를 인용**해 고정한다.
+```
+demand_signal.py:91   prev = anchor - timedelta(days=WOW_LAG_DAYS)   # WOW_LAG_DAYS = 7, 폴백 없음
+estimate_revision.py:58  lags = (LAG_PRIMARY_DAYS, LAG_FALLBACK_DAYS)  # 56 → 63 OR 폴백
+```
+같은 결번이라도 **DSS는 자가 복구되지 않고**(단일 lag) **C8은 복구된다**(56/63 OR) — 코드를 보지 않으면 뒤집어 판단한다.
+
+**검증 습관**: 적재 결과는 행수가 아니라 **유효분모**(`excluded=False` 수)로 본다. 그것이 health `주간 발화 계약`의 유효신호 0 조항이 된 근거다.
+
+cf. `D-DSS-W11-RESCUE`·`D-FIRING-WATCH-DECOUPLE`
 ## union 병합은 아무것도 삭제하지 않는다 — 그래서 "삭제 줄 0"은 검증이 아니다 (채번 후보, GUIDE-MACRO-REVIEW 애든덤 B 2026-09-15) `[harness][git][process]`
 
 **증상**: 원장 역머지 후 `PROGRESS.md`에 타 트랙(`CS-RESUME-DEPLOY`) 항목이 **구버전·신버전 두 벌**로 남았다. 충돌 0, 삭제 0이라 보고서에는 "양측 기입 전건 생존"으로 적혔다 — 실제로는 한 트랙의 상태가 두 개의 서로 다른 시점으로 동시에 서술되고 있었다.
@@ -2041,6 +2098,25 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 
 **교훈**: [[디렉터 실측에도 유통기한이 있다]]의 짝. 그쪽이 "main이 밑에서 움직여 전제가 죽는다"면 이쪽은 "main이 밑에서 움직인 흔적이 조용히 두 벌로 남는다"다. **union은 안전장치가 아니라 충돌 회피 장치**이며, 회피된 충돌은 사라진 게 아니라 문서 안으로 들어간다. 검증 명제를 고를 때는 "이 확인이 실패할 수 있는가"를 먼저 묻는다 — union 병합에서 "삭제 줄 0"은 **항상 참**이라 아무것도 반증하지 못한다.
 
+## `fail_silently=False`로 던진 예외를 best-effort로 삼키면 알림은 7주간 조용히 죽는다 (채번 후보, MONITOR-ALERT-RECOVERY 2026-09-17) `[monitor][alerting][infra][ops]`
+
+**증상**: monitor 다이제스트 메일이 **2026-07-29부터 09-16까지 7주간 단 한 통도 발송되지 않았다**. 그 사이 PLTR이 목표가를 돌파(09-14, zone `waiting→overheated`)했으나 사용자는 알지 못했다. beat는 매일 정상 실행됐고 태스크 결과는 전부 `SUCCESS`였다. `refresh_monitors_task` 반환값의 `digest_sent: False` 한 필드만이 유일한 단서였고, 이는 "보낼 내용 없음"과 구분되지 않는다.
+
+**원인**: Gmail 앱 비밀번호가 폐기(`535 5.7.8 BadCredentials`)됐는데, `send_digest`의 `except Exception: logger.warning(..., exc_info=True)` 가 이를 삼켰다. 주석은 `"best-effort, 인앱이 이중화"`를 근거로 들지만 **zone 축에는 인앱 기록이 없다** — `AlertEvent`는 `detect_and_record_alert`(신호축) 전용이고 `process_claim_scenario`는 `last_price_zone`만 저장한다. 즉 메일 실패 = **이벤트 영구 소실**이며, `last_price_zone`이 이미 전이됐으므로 **재발화도 불가능**하다. 같은 세션에서 Anthropic API 키 401도 발견됐는데(09-10~, 18건) `advisor_briefing_task`는 전 종목 LLM 실패에도 `status: 'ok'`를 반환하고 있었다 — **동형 결함**.
+
+**해결**: ⑴ 자격증명 교체 후 검증은 **실제 소비 경로로** 한다 — `send_mail()`은 `EmailProvider`+`with_circuit`을 우회하므로 SMTP 로그인 성공만으로는 불충분하다. 서킷 상태(`cb:state:alert_email`, Redis·`timeout=None`이라 **재기동으로 안 풀림**)까지 확인할 것. ⑵ 워커 트리 `.env`는 메인 트리 심링크이나 `celery-worker.sh`가 기동 시 `. ./.env` **1회 로드**라 값 교체 후 **워커 재기동 필수**. ⑶ 근본 수리는 실패를 상태로 승격하는 것 — best-effort 삼킴은 유지하되 `digest_sent=False`의 **사유**(`no_content`/`no_recipient`/`send_failed`)를 반환·로그에 남기고, `send_failed`는 태스크 결과에서 구분 가능해야 한다.
+
+**교훈**: **"성공"의 정의가 층마다 다르면 장애는 층 사이에 숨는다.** beat는 태스크 완주를 성공으로 보고, 태스크는 예외 없음을 성공으로 보고, 사용자는 메일 수신을 성공으로 본다. 이 셋이 어긋난 구간이 7주였다. best-effort 삼킴은 **폭주를 막는 장치이지 실패를 없애는 장치가 아니다** — 삼킨 예외는 반드시 어딘가에 **세어지는 형태로** 남아야 한다. 부수 규율: 외부 자격증명(SMTP·LLM 키)은 만료가 상시 발생하므로 **라이브 프로브를 상설화**한다([[lesson_runtime_debug_true_overrides_safe_settings]]와 같은 계열 — 정적 감사로는 안 잡힌다).
+
+## Django 5에서 `django.utils.timezone.utc`가 제거됐다 — `datetime.timezone.utc`를 쓴다 (채번 후보, ADDENDUM-3A-0917-A 2026-09-17) `[django][test][upgrade]`
+
+**증상**: `timezone.make_aware(dt, timezone.utc)` 가 `AttributeError: module 'django.utils.timezone' has no attribute 'utc'` 로 죽는다. 테스트 3건이 같은 헬퍼 한 줄 때문에 동시에 실패했다.
+
+**원인**: Django 4.1에서 deprecate, **5.0에서 제거**. 리포는 Django 5.2.14다. `django.utils.timezone`은 여전히 `now()`·`make_aware()`·`localtime()`을 제공하므로 `from django.utils import timezone` 관용구가 그대로 통과하고, `.utc` 속성 접근 시점에만 터진다 — import 단계에서 안 잡힌다.
+
+**해결**: `from datetime import timezone as dt_timezone` 후 `datetime(..., tzinfo=dt_timezone.utc)`. aware datetime을 **직접 생성**하면 `make_aware` 자체가 불필요하다(`make_aware`는 naive 입력 전용이라 aware를 주면 `ValueError`). ET 등 다른 존은 `zoneinfo.ZoneInfo`.
+
+**교훈**: 제거된 심볼이 **모듈 속성**이면 정적 검사·import 테스트를 통과하고 런타임에만 드러난다. 업그레이드 후에는 `grep -rn "timezone\.utc"` 같은 **속성 단위 grep**이 필요하다 — 모듈 import가 성공한다는 사실은 그 모듈의 모든 속성이 살아 있다는 뜻이 아니다.
 ---
 
 ## 로컬 main 머지 후 push 누락이 반복된다 — health_check에 'main ahead>0' 감지 가드가 공백 (채번 후보, SCB-RECOVER-PROBE 2026-09-17) `[harness][git][ops]`
@@ -2067,6 +2143,21 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 
 **교훈**: **gitignore된 산출물에 대해 git이 보여 주는 침묵은 "없다"가 아니라 "볼 수 없다"다.** 파이프라인 건강을 git 상태로 재는 순간, 무시하도록 설계한 바로 그 구간이 사각지대가 된다. 그리고 "수동 절차로 남긴다"는 결정은 **이행 여부를 재는 계측을 함께 만들지 않으면 3개월 뒤 조용히 미이행 상태로 발견된다**.
 
+## 지시서의 두 조항이 같은 대상을 다르게 규정하면 실행자는 반드시 멈춘다 (채번 후보, DSS-ASOF-1-R2 애든덤 2026-09-17) `[harness][process]`
+
+**증상**: DSS-ASOF-1-R2 지시서가 `§3-3-4`에서 *"09-12 앵커 행은 삭제하지 않는다 — 사건의 흔적이 원장에 남아야 한다"* 고 확정하면서, 같은 문서 `§1-1`의 동결 목록 초기 4건에는 09-12를 넣지 않았다. 두 조항이 동시에 참이면 09-12는 **영구 위반**이고, `§1-2`의 DoD *"불일치 0건"* 은 **처음부터 달성 불가능**했다.
+
+**결과**: 실행자가 §1-2 HALT 조건에 걸려 멈췄고, 같은 문서 `§1-3`(*"동결 추가는 사람의 결정이지 테스트를 통과시키는 수단이 아니다"*)이 자가 해소도 금지했다. 한 사이클이 소모됐다.
+
+**왜 실행자 잘못이 아닌가**: §1-3을 어기고 자기 추가했다면 동결 목록이 **테스트 무마용 쓰레기통**이 되는 첫 사례가 됐을 것이다. 멈춘 것이 옳다.
+
+**해결 (발부 측)**: 지시서 발부 전 **"이 DoD가 이 금지조항 아래에서 달성 가능한가"를 1회 검산**한다. 특히 ⑴ 보존/삭제 결정과 ⑵ 검증 통과 조건이 같은 대상을 건드릴 때.
+
+**해결 (실행 측)**: 불가능한 DoD를 만나면 **자가 해소 대신 모순 지점 두 조항을 인용해 상신**한다. "어느 쪽이 맞는지"가 아니라 "둘이 충돌한다"를 보고한다.
+
+**재발 방지 산출**: 동결 목록을 `{앵커 → (사유코드, 근거)}` 로 바꿔 **예외가 카테고리에 해당해야만** 들어가게 했다(`D-ASOF-EXEMPT-0912`). 사유코드 없이 추가하면 테스트가 RED다.
+
+cf. `D-ASOF-EXEMPT-0912`·`D-ASOF-POPULATION`·`D-DSS-W11-RESCUE`
 ## 신선도·생존 판정 3원칙 — 측정 장치가 거짓 경보를 내는 공통 패턴 (채번 대기, EOD-TIME-1 2026-09-10) `[ops][monitoring][process]`
 
 측정 장치(헬스체크·신선도·루브릭) 오탐 5건 누적의 공통 뿌리. 신선도/생존을 판정하는 코드는 반드시:
@@ -2098,3 +2189,30 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 
 **교훈**: **시차가 있는 배치 잡에서 "오늘"은 대상이 아니다.** 스킵·신선도·임계 판정은 전부 *실행 시점*이 아니라 *대상 시점*을 기준으로 물어야 한다. 그리고 이 부류의 버그는 **로그가 정상으로 보인다** — 스킵 사유는 사실이고(토요일은 정말 주말이다) 틀린 것은 질문이었다. 그래서 **판정 로그에 "무엇에 대한 판정인지"를 적는 것이 계측**이다. 같은 계열: EOD 신선도의 달력일→거래일 교정(DOGFOOD-EOD-LAG-TRADINGDAYS).
 
+## baker `is_stale`은 UTC date와 로컬(KST) date를 비교해 18:30 ET 슬롯에서 구조적으로 항상 True (채번 후보, DASH-TOP 2026-09-15 실측 확증) `[backend][eod][timezone][frontend]`
+## baker `is_stale`은 UTC date와 로컬(KST) date를 비교해 18:30 ET 슬롯에서 구조적으로 항상 True (#137, DASH-TOP 발견 2026-09-15 · 실측 확증 2026-09-15, 채번 MGMT-BATCH-b49) `[backend][eod][timezone][frontend]`
+
+**증상**: 정상적으로 구워진 당일 데이터인데도 `dashboard.json`의 `is_stale`이 **항상 `true`**. 프론트가 이 값을 그대로 믿어 제목을 "어제 데이터입니다"로 대체 → 최신 데이터에 상시 오경보. dogfood `eod.is_stale` WARN 재발(08-27~)의 근인.
+
+**원인**: `packages/shared/stocks/services/eod_json_baker.py:145`
+```python
+generated_at = dj_timezone.now()          # USE_TZ=True → UTC aware
+is_stale = generated_at.date() != date.today()   # ← UTC date vs 로컬(KST) date
+```
+`generated_at.date()`는 **UTC 날짜**, `date.today()`는 **OS 로컬(Asia/Seoul) 날짜**다. bake 슬롯은 `run-eod-pipeline` 크론 `30 18 1-5 * *` **@America/New_York** = 22:30 UTC = **익일 07:30 KST** → 두 날짜가 **항상** 다르다. 즉 이 비교는 신선도가 아니라 "UTC와 KST의 날짜가 다른가"를 묻고 있고, 이 슬롯에서는 답이 늘 참이다.
+
+**실측**(2026-09-15): `trading_date` 2026-09-14(월·정상 최신 세션) · `generated_at` `2026-09-14T22:30:56Z` · `is_stale` **true**. 09-17 재확인도 동일.
+
+**교훈**: ⑴ **aware datetime의 `.date()`와 `date.today()`를 같은 식에서 비교하지 않는다** — 한쪽은 UTC, 한쪽은 로컬이라 시간대 폭만큼의 창에서 상시 오답이 된다(#117류 캘린더 산술 금지 동류). 비교하려면 양쪽을 같은 시간대로 먼저 환산한다. ⑵ **신선도는 "생성 시각"이 아니라 "기대 슬롯 대비 결번 수"로 판정**한다 — 소비처 FE는 `countMissedBakeSlots()`(ET 평일 18:30 슬롯 · 임계 2회)로 전환해 이 플래그 의존을 끊었다(DASH-TOP ⑥ S2). ⑶ 상시 점등하는 경보는 경보가 아니다 — 켜진 채로 방치되면 진짜 결번과 구분이 사라진다.
+
+**관련**: TASKQUEUE `EOD-ISSTALE-DEF`(플래그 정의 프로브 — 본 항목이 그 근인 답) · BAKER-ISSTALE-REDEF 위임(재정의는 별건, 본 항목은 버그 등재).
+
+## bake `pipeline_status`가 "running"에 고착 — 완료 플립 누락으로 "정말 멈춘 것"과 구분 불가 (#138, DASH-TOP 발견 2026-09-14, 채번 MGMT-BATCH-b49) `[backend][eod][observability]`
+
+**증상**: bake가 정상 완료(JSON 전량 생성 · `llm_fill` 10/10 ok · `issuance_verified` 10/10 ok)했는데 `meta.json`의 `pipeline_status`가 **`"running"`** 그대로이고 `total_duration_seconds`가 **0.0**이다.
+
+**실측**(2026-09-14): `run_id` `177e198f-2d65-4847-a329-e9335dad0360` · `generated_at` 09-12T10:28Z · `pipeline_status` `"running"` · `total_duration_seconds` `0.0` — 산출물은 완전한데 상태만 중간값.
+
+**왜 문제인가**: 상태 필드의 값어치는 **"running"이 드물 때**만 생긴다. 완료분이 계속 running으로 남으면 상태가 상수로 수렴해 **진짜 hang·중단을 가리키는 신호가 사라진다**. 감시·알림이 이 필드를 쓰면 전건 무시하거나 전건 오탐하게 된다.
+
+**교훈**: 상태 머신은 **종료 전이가 산출물 쓰기와 같은 트랜잭션**에 묶여야 한다. 완료 플립이 별도 경로에 있으면 그 경로만 조용히 빠져도 산출물은 멀쩡해 육안으로 안 잡힌다. 점검은 "성공했나"가 아니라 **"성공 상태로 기록됐나"**까지.

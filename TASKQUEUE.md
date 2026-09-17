@@ -5,16 +5,58 @@
 
 ---
 
+## MGMT-BATCH-b49 등재 (2026-09-17, 등재만 · 구현 금지) [ops][mgmt]
+
+> DASH-TOP 슬라이스 2 랜딩·배포 후속. 구현은 각 소관 트랙.
+
+- 🔴 **DSS-BREADTH-MISSING** (**최우선**·todo·theme-heat/chain_sight 트랙) — `GET /api/v1/chainsight/theme-heat/quadrant/`가 **200**을 주고 `sectors` **11건**을 돌려주지만 **`breadth_curr`가 11/11 전건 `null`**(heat는 7/11 존재). 로그인 상태 실측(2026-09-17).
+  **파급 2곳**: ⑴ `SectorQuadrant.chartedSectors()`가 `heat !== null && breadth_curr !== null`을 요구 → **산점도 점 0개**(빈 사분면 카드 407px, 축·경계선·"Heat 미산출" 목록만). ⑵ `assignZone()`이 `breadth_curr === null`이면 `'other'` → 구역 II/IV 0곳 → **DASH-TOP Q3 섹터 칩이 정칙 ⑴로 상시 미표시**.
+  **단서**: 응답 헤더 `heat_date` = **2026-09-16**, 차트 표기 `수요 breadth` 앵커 = **2026-09-12** → **4일 괴리**. DSS 주간 적재 주기·앵커 산출(`SymbolDemandSignal`/`EstimateSnapshot` 계열) 점검이 1순위. cf. [[project_dss_demand_score]] DSS beat 미배선.
+  **주의**: FE 코드 결함 아님 — 두 소비처 모두 결측을 정칙대로 다루고 있다. 수리 지점은 **데이터 생산**.
+- 🆕 **HEALTH-NUMBERING-GUARD** (todo·ops/mgmt 트랙) — `scripts/health_check.py`에 **common-bugs 번호 유일성 검사** 추가(현 18검사 → 19). 같은 `#NN`이 2회 이상 부여되면 FAIL, 대기열(번호 없는 후보) 건수는 정보성으로 병기.
+  **근거 = 규율 위반 3회 실증**: ⑴ b48 병렬 선착 충돌(#130~132 중복 → #133~136 순차 밀기) ⑵ b49 지시서의 대기열 추정 오류(2건 추정 vs 실측 33건) ⑶ **선존 중복 #97·#98·#99 한 달 방치**. **git은 텍스트 충돌만 보고 의미 유일성은 지키지 않는다** — rebase가 무충돌로 중복 번호를 병합한다(D-NUMBERING-ORDER 실증). 사람 규율로 3회 뚫렸으므로 기계 검사로 이관한다.
+  **주의**: 검사 추가는 선존 중복 3건 때문에 **도입 즉시 FAIL**한다 → 도입과 renumber 처분의 순서를 함께 정할 것(또는 선존 3건을 한시 allowlist로 두고 만료일 부여 — 죽은 allowlist 금지 규율 적용).
+
 ## MGMT-LEDGER-2 등재 (2026-09-08, 등재만 · 구현 금지) [ops][mgmt]
 
 > mgmt 배치 등재. ①③④=관찰/프로브(도메인·디렉터 판정), ②=상신 필요, ⑤=T3·T4 실효 조건. 구현은 각 소관 트랙.
 
-- 🆕 **EOD-ISSTALE-DEF** (①·todo·도메인 이관) — 베이커 `is_stale` 플래그 정의 프로브. 거래일 전진에도 지속 점등(08-27~ 관측·dogfood `eod.is_stale` WARN 재발). 플래그 산정 기준이 거래일 갱신을 반영하는지 정의 검토 → EOD/대시보드 도메인 트랙 소관.
+- 🆕 **EOD-ISSTALE-DEF** (①·todo·도메인 이관) — 베이커 `is_stale` 플래그 정의 프로브. 거래일 전진에도 지속 점등(08-27~ 관측·dogfood `eod.is_stale` WARN 재발). 플래그 산정 기준이 거래일 갱신을 반영하는지 정의 검토 → EOD/대시보드 도메인 트랙 소관. **★근인 확정(DASH-TOP 2026-09-15 실측, MGMT-BATCH-b49 부기)**: 정의 문제가 아니라 **버그**다 — `eod_json_baker.py:145`가 `generated_at.date()`(**UTC**)를 `date.today()`(**로컬 KST**)와 비교한다. bake 슬롯 18:30 ET = 22:30 UTC = 익일 07:30 KST이므로 두 날짜가 **항상** 달라 `is_stale`이 **구조적으로 상시 True**. 실측: `trading_date` 09-14(정상 최신) · `generated_at` 09-14T22:30Z · `is_stale` true. → common-bugs **#137** 등재(채번 MGMT-BATCH-b49). **소비처 FE는 이미 이 플래그 의존을 끊었다**(DASH-TOP ⑥ S2 = `countMissedBakeSlots()` 결번 판정으로 전환). **★위임 병합(b49)**: `BAKER-ISSTALE-REDEF`와 본 `EOD-ISSTALE-DEF`는 **같은 건**이므로 본 항목으로 **병합**한다(별도 추적 중단). 근인은 **#137**로 확정됐고 유일 소비처가 의존을 끊었으므로, **잔여 과제는 "백엔드 플래그를 수리할 것인가 폐기할 것인가" 판단 하나뿐**이다 — 재정의(redefine) 설계는 더 이상 필요하지 않다(신선도 판정식은 FE의 결번 계산이 이미 보유).
 - 🆕 **LOG-ROTATE** (②·상신 필요·@infra) — `~/Library/Logs/stockvis` 대형 로그 로테이션 도입(worker-error ~327MB · neo4j-error ~531MB). **시스템 설정(launchd/newsyslog) 동반 → 상신 필요 항목**(자기 집행 금지).
 - 🆕 **LOG-FORMAT-DATE** (③·todo) — nightly 로그 본문 타임스탬프에 **날짜 포함**(현재 `[HH:MM:SS]`만, 날짜는 파일명에만). 0-3(a) 판별: health json은 mtime이 자기 날짜(9/4~9/8 각 05:40) → "매일 실행" 확정으로 catch-up 기각 가능했으나, **로그 본문만으로는 날짜 판별 불가**(mtime 의존) → 자기서술 로그 위해 등재.
 - 🆕 **NIGHTLY-AUDIT-MISS** (④·발동·디렉터 판정) — 0-3(b) 확정: tier3 감사 산출물 **09-04~ 매일 부재**(마지막 성공 09-03 `reports/9월/3일`). 로그는 존재하나 즉시 **HALT**: "전용 worktree에 미커밋 변경 존재 — 직전 run 커밋/push 실패 잔재 보호. 격리·커밋 중단"(launchd 23:00 발화는 확인 = 스케줄 미스 아님). 원인 = nightly repo worktree(`~/stock-vis-nightly/repo`)에 미커밋 `?? frontend/docs/` 잔재 → 격리 자기보호가 매일 중단. cf. LLM-CREDIT-OUTAGE 관찰 C-1(동일 부재 언급). **★복구 완료(2026-09-10, 디렉터 "남은 항목 작업" 지시)**: stray `frontend/docs/nightly_auto_system/`(잘못된 경로 감사 산출물·정상=`docs/`·untracked·gitignore 아님)를 **비파괴 move-aside**(백업 `~/stock-vis-nightly/stray_frontend_docs_backup_20260910_152027`) → nightly repo worktree **clean 확인**. 데몬 재시작 불요 — 다음 23:00 run이 격리 브랜치 생성·자가 정상화. **잔여 관찰**: 재발 시 근본(감사 스크립트가 `frontend/docs/`로 쓰는 경로 버그 OR gitignore 갭)은 도메인 트랙 소관.
 - 🆕 **REPORT-FIX-REALIZE** (⑤·검증 대기) — T3(REPORT-TLDR-SYSLINE)·T4(DOGFOOD-EOD-LAG-TRADINGDAYS) **착지 ≠ 실효**. 실효 검증 = **다음 `sv sync`(worker_sync) 후 아침 메일 2종**(@backend 06:15 agent report의 System 줄 = 실제 beat/neo4j 반영 / dogfood 06:20 report의 `eod.trading_date` = 주말·휴장 개재에도 ok). **활성화≠배포** — 유닛 테스트 통과는 착지이며, 자연 발화가 실효 게이트. MIG-BUNDLE-1 배포창(관문②) 동반 랜딩으로 참조.
 
+
+## 📈 GATE-DROP-TREND — 제목 게이트 탈락률 추세 관찰 (등재만·2주 뒤 재판단, CS-S3-1E U-6 2026-09-17) [chainsight][harness]
+
+> **기록만 한다. 임계 조정·코드 수정 금지.**
+> health `story 제목 게이트` 탈락률(`no_member_article` / 표시 카드) 실측 추세:
+> **30%(09-16 게이트 도입) → 37%(09-17 배포) → 40%(09-17 head 규칙 제거 후)**
+> 각 상승은 **신호가 정확해진 결과**다 — 오탐 제목을 걷어낸 만큼 정직 표기가 늘었다.
+>
+> - **재판단 시점: 2026-10-01(2주 뒤)**
+> - **상시 40%+로 굳으면 임계를 올리지 않는다.** 대신 **그 항목이 '경고'인지 '지표'인지를 다시 정한다** —
+>   경고라면 40%가 이상 상태여야 하고, 지표라면 WARN 색을 뗀 계측 항목으로 바꾸는 게 맞다.
+>   임계 상향은 신호를 죽이는 것이므로 선택지가 아니다(D-S3-9 §E 규율).
+> - 참고: 이 수치가 **사전 노후를 재지 않는다**는 점은 CS-S3-1E S-2에서 문구로 못박았다
+>   (`Stock.stock_name` 커버리지 757/757=100% 실측으로 최초 가설 기각).
+
+- **GATE-DROP-OBS-1** (todo·2026-10-01 이후) — 2주치 추세 확인 후 '경고 vs 지표' 판정.
+
+## 📋 PIXEL-VERIFY-TOOL — 픽셀 검증 수단 부재 (관측 등재, CS-S3-1E S-5 2026-09-17) [qa][tooling] — 등재만·구현 금지
+
+> **관측 사실만 기록한다. 수정 아님.**
+> 브라우저 스크린샷 캡처 실패가 **2회 누적**됐고, 둘 다 다른 실패 양상이다.
+> ⑴ **backbone 엣지 클릭**(2026-09-15): 캡처는 됐으나 클릭 히트가 발화하지 않아 5회 시도 후 포기 → DOM/vitest로 갈음.
+> ⑵ **대시보드 상단 DASH-TOP**(2026-09-17): `computer{screenshot}`이 "Script injection timed out after 5000ms"로 **3회 연속 실패**(페이지가 무거움) → `get_page_text`로 갈음.
+> 두 경우 모두 텍스트·DOM 층 검증은 성공했다. 즉 **기능 확인은 됐고 픽셀 증거만 없다.**
+>
+> 함의: 규약 [[feedback_ui_slice_live_screenshot]]("UI 슬라이스 마감 = 라이브 렌더 스크린샷")이
+> 무거운 페이지에서 **구조적으로 충족 불가**할 수 있다. 픽셀 검증이 필요한 항목은 별도 수단을 찾아야 한다.
+> 후보(미검증): `scripts/shot.sh`(야간 렌더러 온디맨드·[[reference_shot_tool_ondemand_capture]]) · Playwright(현재 `@playwright/test` 미설치) · 병진 육안.
+
+- **PIXEL-VERIFY-1** (todo·등재만) — 무거운 페이지에서 동작하는 픽셀 캡처 수단 선정. 위 후보 중 실측으로 고를 것.
 
 ## ⚠️ RC-C1-HITAREA-LIVE — backbone 엣지 클릭 라이브 재검 (이관 등재, CS-RESUME-DEPLOY 2026-09-15) [chainsight][frontend][qa] — RC-C1 트랙 소관
 
@@ -63,15 +105,60 @@
 - D-DSS-BEAT-1. celery `chainsight-load-dss-weekly`(Fri 19:00 ET·default 큐) + 폴백 command `load_dss_week`. **2단 스위치**: PeriodicTask enabled=False 등재 → §D 워커 재시작+검증 후 enable.
 - **가동 완료(2026-08-31)**: §C push 착지(origin/main `64c5b622`) → 병진 `sv sync`(worker 트리 `835da979` re-detach + celery-worker/beat 재기동·inspect ping ✓) → CC 검증 2종 통과(트리 조상 `64c5b622` 포함 · `inspect registered`에 chainsight-load-dss-weekly) → **PeriodicTask id=143 enabled=True**. **다음 발화 = 09-04(금) 19:00 ET**. 관측 = DSS-BEAT-OBS-1. 폴백(미발화 시) = 착지 트리 `manage.py load_dss_week`.
 
+## ✅ DSS-ASOF-1 — 관측일/대상일 분리(as_of) + 발화 계약 감시 (완료, DSS-ASOF-1-R2 2026-09-16) [dss][harness][ops]
+- **STEP 1 as_of**: `packages/shared/market_week.as_of_week()` — 주간 마감(금 16:00 ET) 기준 "가장 최근 완료된 마감". 표준 라이브러리만·`apps` import 0·shared 경계 우회 0. 자동 발화 **12/12 복원**.
+- **STEP 2 증거 게이트 G-2 PASS**: G-1 불가(FMP 리비전 타임스탬프 부재 — `estimate_service.py` docstring 명시). 09-04→09-12 개정 폭이 클린 7일 pooled 대비 변경률 **0.960x**·|Δ|중앙 **0.367x**·p75/p90 모두 이하 = **전 분위 부풀림 0** → 내용상 7일 창 확증.
+- **§1 D-ASOF-POPULATION**: 동결 4건(백필 3 + 임시수집 1) 코드 상수화 + 회귀 테스트. 동결 제외 후 위반 **2건 잔존(둘 다 09-12)** → **⚠️ 디렉터 안건**(아래 DSS-ASOF-EXEMPT-0912).
+- **§2 D-FIRING-WATCH-DECOUPLE**: health 신규 2항목 — `주간 발화 계약`(직전 금요일 DB 행 + **유효신호 0 → ERROR**, as_of·last_run_at 미사용, +48h/+96h) · `서비스 재기동 폭풍`(24h >20/>200, 계수 소스 4종 실측 확정·web-frontend 제외). 기존 항목 **출력 diff 0**. 역케이스 12 passed.
+- 게이트: pytest `tests/unit/shared` + `tests/ops` **130 passed** · health ✅17/⚠1/❌2(신규 ERROR = 09-12 유효신호 0 = 진짜 조건).
+
+## ✅ DSS-ASOF-EXEMPT-0912 — 09-12 앵커 동결 (종결, 애든덤 2026-09-17) [dss][harness]
+- **사실**: 동결 4건 제외 후 `asof_anchor_sweep` 위반 **2건**(EstimateSnapshot 09-12 · SymbolDemandSignal 09-12). 지시서 §1-2 기대는 0건 → HALT 조건 충족.
+- **구조**: `D-DSS-W11-RESCUE` §3-4가 "09-12 앵커 행은 삭제하지 않는다"로 확정했으므로 두 행은 **영구 잔존** → 위반도 영구 잔존한다. 지시서 동결 초기 목록 4건에 09-12가 빠져 있다.
+- **CC 미집행 근거**: §1-3 *"동결 목록에 항목을 추가하는 것은 사람의 결정이지 테스트를 통과시키는 수단이 아니다"* → 자기 추가 금지. 상신만.
+- **선택지**: ⒜ 09-12 2건을 동결 추가(근거=본 사건의 드리프트·흔적 보존 결정) / ⒝ sweep을 "신규 앵커만" 보도록 범위 축소 / ⒞ 09-12 행 삭제(§3-4 결정 번복).
+- **종결(2026-09-17 `D-ASOF-EXEMPT-0912`)**: 09-12 2건을 `INCIDENT_PRESERVED` 사유로 동결 + 동결 구조를 `{앵커 → (사유코드, 근거)}` 로 전환(사유코드 3종). **재전수검사 위반 0건** → 머지 게이트 개방. 근인은 지시서 자기모순(디렉터 오류 D7 — §3-3-4 보존 결정 vs §1-1 동결 목록 누락)으로 확인됨.
+
+## 🔴 OPS-LAUNCHD-DAEMON-1 — 재부팅 후 콘솔 미로그인 시 전 스택 정지 (신규 등재, 애든덤 2026-09-17) [ops][infra] — 등재만·이번 주 착수 금지
+- **실측(OBS-TRIAGE-1 §E-4)**: `~/Library/LaunchAgents/com.stockvis.*.plist` = **user agent**(`LimitLoadToSessionType` 키 부재 = 기본 Aqua · `/Library/LaunchDaemons/com.stockvis.*` **부재**). 2026-09-12 머신 재부팅 **12:32** → 콘솔 로그인 **18:37** → beat 기동 18:38:13 = **6시간 5분 전 스택 정지**.
+- 09-14 보고의 "launchd respawn throttle 추정"은 **오류로 정정**됨(throttle 문구 0건).
+- 선택지: LaunchDaemons 이설(부팅 시 기동·사용자 세션 무관) vs 자동 로그인 설정. **별도 결정 사이클 — 이번 주 착수 금지.**
+
+## DSS-ASOF-2 — as_of 적재 레이어 승격 (Phase 1 승격·배포창 편승, DSS-ASOF-1-R2 2026-09-16) [dss][infra] — `sv sync` 창 대기
+- 결정 = `D-DSS-ASOF-LAYER`. 변경 지점 **2곳뿐**: `apps/chain_sight/tasks/estimate_tasks.py:40`(⚠️ 현재 `timezone.now().date()` = **UTC 날짜**. 20:00 ET 이후 실행 시 하루 앞선 날짜가 박히는 잠재 결함 동반 수리) · `apps/chain_sight/tasks/dss_tasks.py:34` `et_today`.
+- 가드(`최신 스냅샷 앵커 ≠ et_today`)도 as_of 기반 전환 시 09-12형 skip 소멸. **마이그레이션 불요**(값 의미만 변경·`unique_together` 불변).
+- 행위보존 증명 = 자동발화 12건에 신·구 로직 동일 앵커 산출 확인(`scripts/asof_anchor_sweep.py`가 모집단 출력).
+- **🟢 DST 시한폭탄 판정 = ⑵(ET 변환) — 폭탄 없음 (애든덤 §3, 2026-09-17 read-only 실측)**: `dss_tasks.py:34` = `timezone.now().astimezone(ET).date()` → EST(11-01 이후) 19:00 ET는 UTC로 00:00 **토**가 되지만 **ET 기준 날짜는 11-06 금요일 유지**. 애든덤 표의 '🔴 11-06 확정 재발'은 DSS가 UTC 날짜를 쓴다는 전제였고, 코드는 그렇지 않다. **11-06 기한 불요.**
+- ⚠️ **잔존 위험(스냅샷 쪽)**: `estimate_tasks.py:40` = `timezone.now().date()` = **UTC 날짜**. 정시 16:30 ET는 EDT 20:30 UTC·EST 21:30 UTC로 금요일 유지(안전)이나, **catch-up 지연 발화가 20:00 ET(EDT)/19:00 ET(EST)를 넘기면 앵커가 토요일로 박힌다.** 09-12 catch-up은 15:03 ET라 ~5h 여유로 안전했다. DSS-ASOF-2에서 동반 수리.
+
+## 🔴 DSS-LEDGER-IMMUTABLE — EstimateSnapshot upsert로 인한 관측 소급 소멸 (신규 최우선 후보, DSS-ASOF-1-R2 2026-09-16) [dss][data] — 등재만
+- **사실**: `EstimateSnapshot`은 append-only가 **아니다** — `estimate_service.snapshot_symbol()`이 `update_or_create` upsert다. 과거 앵커를 재수집하면 그 시점 관측이 **조용히 덮어써진다**(복구 불가).
+- 대조: `SymbolDemandSignal`은 append-only이나 그마저 **관례**(`store_for_anchor` 사전존재 skip)이며 모델 제약·save 오버라이드는 없다.
+- 백필 명령이 "대상 앵커 비어있지 않으면 거부" 가드를 둔 근거가 이것이다. 근본 수리 = 제약/불변 원장 전환. **구현 별건**.
+
+## DSS-ASOF-CAL — 주간 마감 = 금요일 고정(휴장 주 미처리) (잔여 등재, DSS-ASOF-1-R2 2026-09-16) [dss][shared] — 등재만
+- `as_of_week`는 주간 마감을 **금요일 고정**으로 본다. 미국장 휴장 주(예: Good Friday)에는 실제 마감이 목요일이라 그 주를 정확히 라벨하지 못한다.
+- 거래일 캘린더가 `packages/shared`에 **없다** — `apps/credit_signals/trading_calendar.py`에만 존재(NYSE 휴일 2025~2028 + `is/next/previous_trading_day`, 원본 미러 = `services/news/services/ml_label_collector.py`). 해당 파일 자체가 이미 `[보류 큐] 캘린더 유틸 shared 통합`을 명시.
+- 이번 범위에서 shared 승격하지 않음(범위 확대·경계 리스크). 승격 시 `as_of_week`의 "금요일"을 "그 주의 마지막 거래일"로 일반화.
+
 ## ✅ DSS-BEAT-OBS-1 — 09-04 첫 자동 발화 검증 (종결, DUAL-OBS-1 2026-09-07) [theme-heat][dss]
 - 09-04(금) 발화 후: SymbolDemandSignal anchor 09-04 신규 행 수·Score 11행(**DB 행 증거·last_run_at 불인정**) / flat_ratio 판정(§2) / arrow 상태 / 클린 쌍 5/6 갱신(ε는 09-11 6/6에 개시).
 - **검증 결과(2026-09-07·DB 행 증거)**: SymbolDemandSignal anchor 09-04 **501행** + ThemeDemandScore **11행**, Signal created_at **09-04 19:04 ET**(beat 19:00 ET 첫 자동 발화 성공·가드 skip 없음). invariant PASS(합=n·breadth∈[-1,1]·유효분모>0). **flat_ratio 42.15%(정상<60)**. **arrow_suppressed=False**(curr 42.15%·prev 08-28 52.85%). 오프셋 = 스냅샷 완료 16:40 ET → DSS 19:04 ET = **+2h24m ≥2h ✅**. **클린 WoW 쌍 = 4**(pair-based 양끝 비축퇴: 07-31·08-07·08-28·09-04 clean / 08-14 self-축퇴·08-21 prev-축퇴 오염 제외 / 07-24 prev-미평가 판정부재). 직전 단순 anchor 카운트=6/7. **6/6 성숙 ≈ 09-18**(직전 예상 09-11은 5/6 가정분·실측 4 클린이라 +1주). DSS-BEAT 자동화 정상 가동 확인.
 
-## ⏸️ LLM-CREDIT-OUTAGE — LLM 분석 파이프라인 크레딧/quota 소진 (판정 대기, DUAL-OBS-1 2026-09-07) [news][llm][infra] — 디렉터 판정 대기
-- **§B-4 = 미회복**: 분석률 **전 일자 0%대 고착**(09-01 0.3%·09-02 0.1%·09-03 0.1%·09-04 0.1%·09-05 0.2%·09-06 0.0%) — 09-03 크레딧 충전 후에도 탈피 못함. 종결 기입 금지·**디렉터 판정 대기**.
+## ✅ LLM-CREDIT-OUTAGE — SUPERSEDED (전제 반증, `D-LLM-CREDIT-CLOSE` 2026-09-17) [news][llm][infra]
+- **🔴 종결 판정(2026-09-17) = 쿼터 병목 아님(전제 반증)**. 워커 로그 전수 정밀 계수: `RESOURCE_EXHAUSTED`·`429 Too Many` **09월 각 0건**, 전 기간 마지막 발생 **2026-06-10 23:30**. `analyze_news_deep` `errors` **전 구간 0** = LLM 호출 전건 성공. 09-10 결제 전환 전후 처리량 무차이(09-09 7 > 09-10 5).
+- **아래 L46 "Gemini 실패 마커 지배적" 기술 정정**: 날짜 미필터 계수(5~6월분 포함 추정)로 판단한 것. 09월 창에는 해당 마커가 없다.
+- **실제 병목**: `news_deep_analyzer.analyze_batch()` ⑴ `importance_score < TIER_A_THRESHOLD(0.70)` 전량 skip(일 250~267건) ⑵ `published_at >= 오늘 00:00` 창 → 과거 미분석분 영구 미도달(후보 **17,757건**, 전체 미분석 492,889).
+- **후속** = `NEWS-ANALYSIS-SELECTION`(아래). 크레딧/쿼터 트랙은 종결.
+- (구 기록) **§B-4 = 미회복**: 분석률 **전 일자 0%대 고착**(09-01 0.3%·09-02 0.1%·09-03 0.1%·09-04 0.1%·09-05 0.2%·09-06 0.0%) — 09-03 크레딧 충전 후에도 탈피 못함. 종결 기입 금지·**디렉터 판정 대기**.
 - **⚠ 실경로 = Gemini (지시서 B-2 'anthropic' 전제 정정)**: 분석률 소스 `news_deep_analyzer`는 **Gemini 2.5 Flash**(`MODEL=gemini-2.5-flash`·`GEMINI_API_KEY`), anthropic 아님. 워커 로그 gemini **8675** vs anthropic 139(=advisor 별도). Gemini 실패 마커 지배적: **quota/429/RESOURCE_EXHAUSTED/rate-limit/billing**. → **09-03 충전이 anthropic 대상이었다면 Gemini quota를 못 살린다(충전 대상 오인 가능성)** = 디렉터 판정 핵심 재료.
 - **재료(교정은 별도 지시)**: `analyze-news-deep-batch` beat **enabled·last_run 09-04 18:30 ET**·weekday(dow1-5)·total 808 → beat/dispatch 정상, 실행이 Gemini quota로 진척 미미(top-15%·max50 대상). 백로그 09-01~03 **미분석 7798/7807**. 최근 분석완료 09-04 18:30 ET(주말 미실행 정상). 뉴스 수집 생존(최신 09-06).
 - 관찰(C-1): 야간 감사 `docs/nightly_auto_system/reports/`에 09-04~07 산출물 부재(구독 경로·크레딧과 분리). 관찰(C-2): Celery NotRegistered 09-01 이후 **0건**(08-31 5회=재시작 창 일회성 확증).
+
+## NEWS-ANALYSIS-SELECTION — 뉴스 심층분석 선별 임계·수집창 재설계 (신규 등재, `D-LLM-CREDIT-CLOSE` 2026-09-17) [news][llm] — **소유 = 뉴스/Chain Sight 도메인 트랙**
+- 근거 = `LLM-CREDIT-OUTAGE` 전제 반증. 쿼터는 여유가 있고(실패 0·상한 300콜/일) 제약은 **선별 임계·당일 창**이다.
+- 재설계 대상: ⑴ `TIER_A_THRESHOLD(0.70)` 임계 ⑵ `published_at >= 오늘 00:00` 창(과거 미분석 17,757건 도달 경로) ⑶ 배치 상한 `max_articles=50` × 일 6회.
+- 🔴 **ops는 등재만 한다 — 설계하지 않는다**(경계 규약). 구현·설계 = 도메인 트랙 소관.
 
 ## AGENT-DOGFOOD-DSS-FRESHNESS — dogfood에 DSS/사분면 신선도 커버 추가 (이관 등재, DSS-BEAT-1 0-4 2026-08-31) [agent][dss] — @agent 소관
 - 0-4 실측: `auto_agent_system/dogfood/`가 ThemeDemandScore/사분면 API(`/api/v1/chainsight/theme-heat/quadrant/`) 신선도 **미점검**. 주간 적재 자동화(DSS-BEAT) 후 무발화 감지 공백 → dogfood 신선도 타깃에 편입 검토. **구현은 AGENT 트랙 소관**(본 트랙 구현 금지·등재만).
@@ -338,7 +425,7 @@
 
 | ID | Task | 분류 | Depends On | Status |
 |----|------|------|-----------|--------|
-| TH-HEAT-C8-CONVERGENCE | **관찰 프로브**. C8(추정치 리비전) 축적 후 heat 저장 커버리지 수렴 확인. **마감일 재설정(2026-08-10, TH-HEAT-C8-COLDSTART-CHECK 종결 반영)**: cs=0·none=503은 배선 결함이 아니라 **설계된 콜드스타트**(EPS diff lag 56/63일 캘린더 정확 매칭, 첫 스냅샷 07-17 기준 파트너 부재)로 확정. **종결 게이트 = 2026-09-12(토) heat beat**(첫 스냅샷 07-17 + 56일 = 09-11 금 회차 직후)에서 **cs > 0 최초 전환 확인**. GREEN → 관찰 종결 / cs=0 지속 → 정식 조사 승격. 근거=SEAL-PUSH-1b·PROBE-EST-5TH·TH-HEAT-C8-COLDSTART-CHECK. | @backend/ops (관찰) | 2026-09-12(토) heat beat | 🕒 마감일 확정(09-12 게이트 대기) |
+| TH-HEAT-C8-CONVERGENCE | **관찰 프로브**. C8(추정치 리비전) 축적 후 heat 저장 커버리지 수렴 확인. **마감일 재설정(2026-08-10, TH-HEAT-C8-COLDSTART-CHECK 종결 반영)**: cs=0·none=503은 배선 결함이 아니라 **설계된 콜드스타트**(EPS diff lag 56/63일 캘린더 정확 매칭, 첫 스냅샷 07-17 기준 파트너 부재)로 확정. **종결 게이트 = 2026-09-12(토) heat beat**(첫 스냅샷 07-17 + 56일 = 09-11 금 회차 직후)에서 **cs > 0 최초 전환 확인**. GREEN → 관찰 종결 / cs=0 지속 → 정식 조사 승격. 근거=SEAL-PUSH-1b·PROBE-EST-5TH·TH-HEAT-C8-COLDSTART-CHECK. **★2026-09-15 게이트 실측 = 판정 불능(미도달 아님)**: 09-12 회차 `z_mode mix: ts=0 cs=0 none=503 (as_of=2026-09-12, both_valid=0, cs_ok=False)` — 09-13 06:04·07:00 두 회차 동일, as_of=09-14(09-15 07:00 실행)까지 cs=0 지속. **'cs=0 지속 → 정식 조사 승격' 규칙 미발동** — 앵커 부재는 수렴 실패가 아니며, **수렴 여부는 측정된 적이 없다.** 원인 규명 완료 → 배선/설계 결함 아님·일정 사고: 머신 미가동(디렉터 STEP 0 `device_absent`와 동일 창)으로 **09-11(금) EstimateSnapshot이 09-12(토)로 1일 밀려 생성**(created_at 09-12 19:03 UTC vs 평소 금 20:30 UTC·`snapshot_date = timezone.now().date()`). C8 EPS 레그는 **정확 일치 캘린더 산술**(anchor 및 anchor−56/−63 양쪽이 스냅샷 날짜 집합에 존재해야 함·tolerance 0, `PRICE_TOL_DAYS=7`은 가격 레그 전용) → FY2027 스냅샷 날짜 집합 {07-17,07-24,07-29,07-31,08-07,08-14,08-21,08-28,09-04,**09-12**}에서 anchor 09-11 **부재**·anchor 09-12의 파트너 07-18/07-11 **부재** → 503종목 전건 `c8_leg_missing`. **anchor 09-11·09-12는 영구 폐기**(과거 날짜 재생성 불가). **자가 복구 가능**: 다음 금요일 스냅샷이 **09-18(금)에 정상 생성되면** 파트너 07-24(−56)·07-17(−63) 모두 실재 → **2026-09-19(토) heat beat(as_of=2026-09-18)에서 cs>0 전환 예상**. 전제 = 09-18(금) 16:30 ET(=09-19 05:30 KST)와 09-19 07:00 KST에 머신 가동. **09-19 감쇠 봉인과 동일 창 → 디렉터 ② '09-19 Mac 깨어 있게'가 이 게이트도 함께 보호.** 실측 read-only(쓰기 0). 채번 후보 1건 등재(common-bugs, C8-GATE). | @backend/ops (관찰) | **2026-09-19(토) heat beat(as_of=09-18)로 재설정** | ⏸ **09-12 게이트 판정 불능 — 원인 규명 완료·09-19(as_of=09-18) 재확인 대기.** 근본 원인은 `SNAPDATE-0` 정식 트랙으로 분리(병진 확정 ⒞, 2026-09-15) |
 | BRK.B/BF.B cs 편입 확인 | **경량 관찰**. DOTSYM 신규 편입 2종(첫 스냅샷 08-07)의 C8 cross-sectional 편입은 08-07 + 56일 = **2026-10-02(금) 회차**부터 가능(자기 lag 파트너 성립). 그 직후 heat beat에서 BRK.B/BF.B가 cs 모수에 포함되는지 확인. **CONVERGENCE 종결(09-12)과 독립**. | @backend/ops (관찰) | 2026-10-02(금) 회차 | 🆕 등재(관찰 대기) |
 | HONA no_data 관찰 | **경량 관찰**. PROBE-EST-5TH(08-07 5회차)에서 HONA 1종 no_data(FMP estimates 미제공, DOTSYM 무관). 다음 회차 **2026-08-14(금)**에서 데이터 생성 여부 확인 — 지속 시 신규 상장/티커 이슈 별도 판단. | @backend/ops (관찰) | 2026-08-14(금) 회차 | 🆕 등재(관찰 대기) |
 | OPS-SHARED-TREE-RECOVERY | **공유 메인 트리 정상화 + HOLD-P1 통합**. 공유 메인 트리(`/Users/byeongjinjeong/Desktop/stock_vis`)가 ⑴ `monorepo/sess-hold-p1` 체크아웃, ⑵ HOLD-P1 4커밋(`4c920494`~`b8d767aa`)이 이 트리 내 **직접 생성**, ⑶ dirty(스테이지 `D` 1건 `PORTFOLIO_SURVEY_S0_REPORT.md`·untracked 다수) 상태. HOLD-P1 cherry-pick 정합 확인과 통합 처리(브랜치 처분 포함 가능). 근거=SEAL-PUSH-1a 실측(reflog HEAD@{5} sess-hold-p1 전환). **⚠ 브랜치 처분·통합 방식은 사용자 도장 사안**([[feedback_deploy_approval_explicit_quote]]). **OPS-WORKTREE-ISOLATION Phase 2 승격 근거로 본 건 첨부**(공유 트리에서 세션 브랜치 직접 커밋=격리 원칙 위반 실증). | @infra/ops | 사용자 처분 방침 | 🆕 등재(사용자 도장 대기) |
@@ -1260,7 +1347,8 @@
 - open: #4 채점 모드(raw/excess, Phase 5) · user_id 스코프(멀티테넌트 시 unique 확장).
 - 참고: D-P1-GRAIN·D-P1-CONF의 DECISIONS.md append는 Dashboard 빌드 커밋에 포함(원자적 land).
 
-## OPS-LOG-FLOOD — celery-worker-error.log 폭주 (등재만, 2026-07-03)
+## 🔴 OPS-LOG-FLOOD — celery 로그 폭주 (등재만·악화 중, 2026-07-03 · 갱신 2026-09-17)
+- **2026-09-17 실측**: worker-error **384MB** · beat-error **386MB** · neo4j-error **534MB** = **약 1.3GB**, 악화 중. health `서비스 재기동 폭풍`이 꼬리 4MB만 읽는 것도 이 때문(전수 스캔 불가).
 - 상태: **등재만**(수리 안 함, 사용자 지시). 긴급도 낮음.
 - 관찰: worker-error.log에 모든 INFO + `missed heartbeat`(고빈도) + 15분 regime 등 전량 적재 → 126MB, ~2,700줄/h.
 - 영향: tail-window 로그 도구 오탐 유발(#28 verify E1의 근인). verify는 경계-timestamp 스캔으로 회피 완료 → 판정 정확도 무영향.
@@ -1753,6 +1841,7 @@
 ## D1-SCOREBOARD 후속 (D1-CLOSE-LEDGER 2026-09-02 — D1 종결)
 
 - 🕒 **SCB-CONTEXT-LAYER** — 채점 카드에 애널리스트 논거·현재 상황 비교 맥락 추가(병진 09-02 소감: "가격만 나오니 그렇구나 싶다"). **✅ recon 완료(2026-09-10, SCB-CONTEXT-RECON·보고서 `docs/mgmt/SCB-CONTEXT-RECON_report.md`) · **✅ 원천 결정 확정 = `D-SCB-CONTEXT-SOURCE-1`(DECISIONS, 2026-09-17)**: 논거 축=`/stable/grades`(등급 변경 사건 타임라인) · 맥락 축=기존 `NewsEntity` 624,562행 조인(수집 0) · `/stable/grades-news`=**트리거 보류**(S2 착지 후 연결 정확도 부족 소감 시 규모 1콜 후 재평가) · `grades_historical`=폐기 아님, "분포 추이" 표시로 흡수. 가중합 안1 3.80/안2 4.30/안3 3.55/안4 4.30 · 마진 0 → 타이브레이커 "게이트 가용성은 휘발성 자산". 설계·구현 슬라이스 발행 대기(별 세션).** 요지: **맥락 축 GREEN**(NewsEntity 614k·StockNews 98k 부활[#128 반전·beat ON]·좌표쿼리 sub-second·주입지점 E3 AnalysisContext budget 7000) / **논거 텍스트 RED**(grades_historical 100%채움이나 등급 카운트 추이일 뿐·FMP grades-historical numeric-only 확증·논거 텍스트 엔드포인트 미구현). rag_analysis 휴면(RED)·Neo4j/RC 14,072 생존(AMBER). 디렉터 결정 = 논거 축 (a)카운트추이 대체 (b)신규 FMP수집 (c)news 우회 택1. **✅ 논거 원천 프로브 완료(SCB-RECOVER-PROBE, 2026-09-15) — 논거 축 RED → GREEN 반전**: FMP `/stable/grades`(200·NVDA 1,158행·2012-02-13~2026-09-04·`gradingCompany`/`previousGrade`/`newGrade`/`action`/`date` 실재) + `/stable/grades-news`(200·`newsTitle`/`newsURL`/`newsBaseURL`/`newsPublisher`/`priceWhenPosted`/`publishedDate` 실재) **둘 다 현행 Starter 키로 즉시 수집 가능**(402 아님). 텍스트 입도=헤드라인+출처+URL+당시가(본문 prose는 FMP 미제공). → 디렉터 선택지 (b)신규 FMP수집이 **플랜 게이트 해제됨**. 미구현=`packages/shared/api_request/providers/fmp/client.py`에 두 메서드 부재. **stale 정정**: StockNews 0행·beat enabled=False 기록 → 위 NEWSFIX-SYNC-BE 행에서 정정 완료. cost_ledger "측정 위치 오류" 가설은 **반증** — 런타임 3트리 모두 `docs/portfolio/coach/cost_ledger.jsonl` 31행(본진과 동일·append 0건)·마지막 기록 **2026-05-26** → coach LLM 휴면 또는 로깅 미작동. 설계 슬라이스 발행 대기.
+- 🔗 **상호 참조(2026-09-17 추가)**: 이 항목과 **OPS-GATE-1 관측 3의 `land.sh`**(착지를 본체가 아닌 `sv-land-<트랙>` 임시 트리에서 수행)는 **같은 병소**를 다룬다 — 로컬 `main` 발산·본체 점유. `land.sh`가 **발생원을 없애면** GUARD-1은 *탐지*가 아니라 **잔여 계측**(land.sh 밖 경로로 생긴 드리프트만)으로 범위가 줄어든다. 두 항목을 한 세션으로 묶어 설계하고, GUARD-1 단독 구현으로 중복을 만들지 말 것.
 - 🔴 **HARNESS-DRIFT-GUARD-1** (**다음 실행 세션 1순위** — 디렉터 상향 2026-09-17·이번 세션 구현 금지) — **로컬 `main` ahead>0 감지 가드 신설**. `scripts/health_check.py`에 `git rev-list --count origin/main..main > 0` → `⚠` 체크 추가 + 이름과 내용이 갈라진 `check_origin_main_hash`(2026-07-02 B2에서 해시 비교→PROGRESS 신선도로 교체됐으나 함수명·항목명 유지) 개명. **앞서 보류된 `SESSION_STARTUP_CHECKLIST` "구동 트리 HEAD ≠ origin/main 경고"와 동일 계열 → 한 세션으로 묶어 구현.** 근거 = push 누락 2회 실측(2026-09-11 4커밋 방치 · 2026-09-15 1커밋 `de0f334d`), 둘 다 디렉터 수동 `git rev-list`로만 발견. common-bugs 채번 후보 등재(SCB-RECOVER-PROBE 2026-09-17). **★상향 근거 = 동일 병소가 세 트랙에서 독립 관측**: ① common-bugs **#40** "세션 중 origin/main 빈번 전진"(cs reader→leadership→board **4세션 연속**) ② origin/main **`8b191b6f`**(09-17 16:02) "CS-S3-1D 공유 main 커밋 분리 사고 + 교훈 ⑤" ③ SCB-RECOVER-PROBE 본편(세션 중 origin/main **5회 전진**·push 2건 no-op·역머지 3회). **부수 실증(09-17)**: health `실행 트리 정합` ⚠는 main 지연이 아니라 **본진이 세션 브랜치를 점유 중**(본진 HEAD=`monorepo/sess-near-stop` `5a481e70` ≠ origin/main `f4754d22`, main 자체는 동기)임을 가리킨다 — 묶음 대상인 STARTUP_CHECKLIST "구동 트리 HEAD ≠ origin/main 경고"가 겨냥한 바로 그 조건. **처방 정정**: 본진 main 동기화는 `pull --ff-only`가 아니라 **`git -C ~/Desktop/stock_vis fetch origin main:main`**(워킹트리 무접촉) — 본진이 main을 체크아웃하고 있지 않으므로 pull은 타 세션 브랜치를 건드린다(디렉터 교정 09-17, CC 오처방 정정).
 - 🕒 **CB42-STALE-FIX** (다음 세션·문서 전용) — **common-bugs #42 원인 서술 stale 정정**(디렉터 실측 반증 2026-09-17, 본 세션 **#42 본문 무접촉**·지시 보존용 등재). #42 원문(`sub_claude_md/common-bugs.md:519`): *"`~/Desktop/stock_vis`는 **celery 워커가 직접 import하는 코드베이스**(별도 deploy/clone 없음, 우회 불가)"*. **반증**: `scripts/worker_sync.sh:26-28`이 런타임 3트리를 명시한다 — `WORKER_TREE=~/worktrees/sv-worker-runtime` · `WEB_TREE=sv-web-runtime` · `API_TREE=sv-api-runtime`. **워커는 본진을 import하지 않는다.** **정정 문안**: 증상 ⒜(워커가 옛 코드로 돎)를 **"런타임 3트리 분리(`worker_sync.sh:26-28`) 이후 무효"**로 표시하고, 증상 ⒝(타 트랙 pull 차단)·⒞(로컬 main divergence)는 **유지**한다(09-17 실측: 본진 tracked 변경 2→0·behind 5 관측 = ⒝⒞ 현행 유효). 채번 신규 없음(기존 #42 본문 수정 → 훅 가드 무관).
 - 💤 **SCB-DERIVED-VISIBILITY** — SMR·XE 표시 방식 결정(현행 제외 유지 vs "채점 불가/데이터 부재" 행 표시). DailyPrice 0이라 파생 spot 불가 → 현재 렌더 9종에서 구조적 제외. 트리거 = SCB-CONTEXT-LAYER 설계 시 동반 재평가(맥락 층에서 "데이터 부재" 표기 방식 함께 결정).

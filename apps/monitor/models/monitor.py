@@ -176,6 +176,11 @@ class Claim(models.Model):
     entry_reached_at = models.DateTimeField(
         null=True, blank=True, help_text="진입 구간 최초 도달 시각(1회 기록)"
     )
+    # 손절 접근 경고 1회 가드 (3-A) — zone 축 밖의 별개 신호라 last_price_zone으로 못 막는다.
+    # 밴드 안으로 들어오면 기록, 밖으로 회복하면 None 복귀 → 재진입 시 다시 1회 발화.
+    near_stop_notified_at = models.DateTimeField(
+        null=True, blank=True, help_text="손절 접근 경고 발송 시각(밴드 이탈 시 해제)"
+    )
 
     status = models.CharField(
         max_length=16, choices=Status.choices, default=Status.ACTIVE
