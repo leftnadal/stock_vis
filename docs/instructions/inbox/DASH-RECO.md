@@ -1,6 +1,7 @@
 ---
 track: DASH-RECO
-status: dispatched 2026-09-17 (Cowork 디렉터 · dashboard 트랙 슬라이스 3 / 5)
+status: done @ecdf1e73 (2026-09-17 실행 완료 · 랜딩 승인 대기 · 보고 outbox/DASH-RECO_보고.md)
+dispatched: 2026-09-17 (Cowork 디렉터 · dashboard 트랙 슬라이스 3 / 5)
 decision: SCAN-UX-2 사이클 2 ② R3 · ④b P3 · 사이클 3 ⑦-4 · E2 D-SCAN-QUAD-EMPTY-HIDE(자동결정 마진 4.45)
 base: S0 실측. 디렉터 최종 관측 origin/main = 98055d73 (2026-09-17 18:09:29 KST) — 5분 전 e2e4aa9a였다. **반드시 재측정한 값을 쓴다.**
 ---
