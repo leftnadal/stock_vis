@@ -1,3 +1,18 @@
+# OPS-BRIDGE-0 보고 — 2차 실행 2026-09-17 14:49~15:00 KST (재개 지시 11:45 · 실행자 CC 세션 95289 · 승인 인용: 병진 14:20 채팅 "내가(정병진) 승인한다: 본체에서 git merge --no-ff … git push origin main …")
+① 판정: **HALT (S3 역머지 코드 충돌)** — 재개 1·2·3 완료(S2 착지·push), 4에서 정지, 5(S4) 미집행, 6 락 제거·보고 완료.
+② 해시: 본체 main·origin/main 전 `029f57f6` → 후 **`85eae8d8`**(S2 no-ff 머지·push, ahead 0/behind 0, 마커 0) · 3트리 worker `2eca515d` / web `029f57f6`(14:27 타 주체 checkout — 본 세션 아님, deploy_history 무기록) / api `2eca515d` · `sess-cs-s3-1d`=`37700794` · `sess-eod-time1`=`290d9341`(+inbox 갱신 반영 커밋, 역머지 abort 후, ahead 6/behind 56) · 새 머지 커밋 = `85eae8d8` 1개(S3분 없음).
+③ 게이트: S2 = 1차 실행분 인용(@`37700794` vitest 1359/1359 · pytest 5424 passed/49 skipped/0 failed · tsc 0, behind 0 유지 확인 후 머지) · S3 = 미실행(역머지 충돌로 게이트 전 정지).
+④ 배포: **미집행** — `:3000` 200 · daphne `:18765` 401 · health(main `85eae8d8`) ❌1(DUAL-OBS-1 stale #52, 선존)·⚠1 → 신규 ❌0. **서빙 반영 = ⑵ 병진/디렉터 판단 필요**: CS-S3-1D는 origin/main 착지했으나 런타임 미동기(착지≠서빙). S4는 S3 뒤 순서 고정이라 단독 sync 안 함.
+⑤ 장부: `290d9341` = inbox `OPS-BRIDGE-0.md`(재개 지시 절)·`OPS-GATE-1.md`(실측 반영 절) 본체 사본 반영 · 이 보고 갱신 커밋. push 없음(승인 범위 = `git push origin main`만).
+⑥ HALT 지점·원인: `sv-eod-time1`에서 `git merge origin/main`(85eae8d8) → **장부 외 CONFLICT 2건**
+   - `auto_agent_system/dogfood/check_quant.py` · `tests/dogfood/test_quant_schema.py`
+   - 양측이 **같은 로직을 독립 수정**: 브랜치 `f45fcb78` EOD-TIME-1 R4(`MAX_FRESHNESS_LAG_TRADING_DAYS=1` + `trading_days_between` · 테스트 6종: 09-09 휴장 회귀·월요일·추수감사절 3일·2거래일 FAIL·주말/휴장 note) vs origin/main `c62e3107` MGMT-LEDGER-2 T4(`trading >= previous_trading_day(session)` · 테스트 2종: 주말·휴장 개재). 판정 규칙 거의 동치이나 메시지 형식·테스트 세트·import가 다름 → 어느 쪽을 택해도 행위/테스트 손실 = 자가 해소 불가.
+   - 조치: `git merge --abort`(미커밋 역머지만 폐기, 브랜치 커밋 유실 0 · rerere preimage 기록됨). 본체 락 제거 완료.
+   - 참고: 1차 11:05:21 reset은 2번째 실행자(본 세션)의 `;` 체인 결함이었음(no-op·유실 0, 별도 보고 `sess-ops-bridge-0-halt` `0aebf615`). OPS-GATE-1 "관측 2" 서술(실행자 reset 1.5분 뒤 타 세션 머지)은 실제로는 동일 지시서 2중 실행 + 별개 guide-macro 착지의 겹침 — land.lock 필요성 결론은 동일.
+   - 디렉터 질문: 충돌 해소 방침 — (a) origin/main `c62e3107` 채택 + EOD-TIME-1 R4 테스트 중 추가 커버(09-09 휴장·추수감사절·2거래일 FAIL)만 이식 (b) 브랜치 R4 채택(c62e3107 대체) (c) 기타 — 그리고 S3 전에 CS-S3-1D만 먼저 S4 배포할지?
+
+---
+
 # OPS-BRIDGE-0 보고 — 2026-09-17 11:40 KST (ops 세션 · 실행자 Claude Code · 브랜치 `monorepo/sess-eod-time1`)
 
 ① 판정: **HALT** — S2 "본체 main no-ff 머지" 직전 정지. S0 앵커 일치 · S1 발산 해소 · S2 역머지+게이트 2회 GREEN · S3.1 장부 선기재까지 완료. 본체 main 머지 이후(S2 push · S3 역머지/게이트/머지 · S4 배포)는 **미집행**. 파괴 작업 0 · 유실 0.
