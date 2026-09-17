@@ -87,6 +87,42 @@ class TestGateUnit:
         CompanyAlias.objects.create(alias="Crucial", ticker="MU", source="manual_seed")
         assert title_mentions_member("Crucial memory prices climb", ["MU"], build_name_index(["MU"]))
 
+    def test_generic_head_token_does_not_pass(self):
+        """CS-S3-1E 회귀 — 회사명 첫 토큰('Bank')이 무관 기사를 통과시키면 안 된다.
+
+        실사고: BAC="Bank of America Corporation" 의 head 'Bank' 가
+        "M&T Bank raises prime lending rate to 7.00%" 를 BAC·JPM / BAC·WFC 카드의
+        제목으로 통과시켰다. head 규칙 제거로 차단한다.
+        """
+        _stock("BAC", "Bank of America Corporation")
+        _stock("JPM", "JPMorgan Chase & Co.")
+        idx = build_name_index(["BAC", "JPM"])
+        assert not title_mentions_member(
+            "M&T Bank raises prime lending rate to 7.00%", ["BAC", "JPM"], idx
+        )
+        # 진짜 BAC 기사는 여전히 통과한다(전체 구문 매칭).
+        assert title_mentions_member(
+            "2,371,847 Shares in Raymond James Financial $RJF Acquired by Bank of America Corp DE",
+            ["BAC", "JPM"], idx,
+        )
+
+    def test_single_token_core_still_matches(self):
+        """head 규칙 제거의 부수 피해 0 — core 가 이미 단일 토큰인 회사는 그대로 잡힌다."""
+        _stock("CRM", "Salesforce, Inc.")
+        _stock("NVDA", "NVIDIA Corporation")
+        idx = build_name_index(["CRM", "NVDA"])
+        assert title_mentions_member(
+            "Snap targets enterprises with Salesforce, Nvidia AI tools", ["CRM", "NVDA"], idx
+        )
+
+    def test_long_name_head_is_not_a_candidate(self):
+        """'Advanced Micro Devices' 의 'Advanced' 같은 일반어 head 는 후보가 아니다."""
+        _stock("AMD", "Advanced Micro Devices, Inc.")
+        idx = build_name_index(["AMD"])
+        assert "Advanced" not in idx["AMD"]
+        assert not title_mentions_member("Advanced manufacturing index rises", ["AMD"], idx)
+        assert title_mentions_member("Advanced Micro Devices stock climbs", ["AMD"], idx)
+
     def test_f5_no_member_in_title_rejected(self):
         """F-5 ★ Amazon 13F 케이스 — 멤버가 제목에 없으면 탈락."""
         _stock("GOOG", "Alphabet Inc.")
