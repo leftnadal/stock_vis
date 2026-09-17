@@ -64,14 +64,14 @@
 | `~/stock-vis-nightly/daily-snapshots/` | 09-15 07:07 | ✅ |
 | `~/stock-vis-nightly/repo/docs/nightly_auto_system/reports/9월/14일/` | `performance_audit.md`(441줄)·`security_audit.md`(578줄)·`api_dependency_audit.md`(451줄) **created** | ✅ |
 
-### 근인 ① 브랜치 ahead=0 = **설계이지 고장 아님 (판별 가능)**
+### 근인 ① 브랜치 ahead=0 = **설계이지 고장 아님 (판별 가능)** — *2026-09-17 기전 정밀화*
 
 `~/stock-vis-nightly/publish_reports.sh:12-13` 원문:
 ```
 #    D2 git 커밋 아님: 발행본은 미추적 파일로 배치
 #       (read 경로 .gitignore가 무시 → git status 무오염, origin 무오염).
 ```
-tier3는 리포트를 nightly 워크트리에 **쓰기만 하고 커밋하지 않는다**. 따라서 `monorepo/nightly-20260903/10/11/12/13/14` 전부 ahead=0은 **정상 산출**. 6월(`nightly-20260618/19` ahead=1)은 D2 결정 **이전**의 구 설계.
+**⚠️ 초판 서술 정정(09-17)**: "tier3가 커밋하지 않는다"는 부정확했다. tier3는 매일 **커밋을 시도한다** — 09-14 로그에 `📝 감사 보고서 커밋 중 (격리 브랜치 monorepo/nightly-20260914)` → `ℹ️ 커밋할 변경사항 없음`. 실제 기전은 **`.gitignore:229` 가 격리 nightly repo에도 적용**되어 생성물이 전부 ignore 대상이라 스테이징할 것이 0이라는 것이다(`git -C ~/stock-vis-nightly/repo check-ignore -v` 로 실증). 결과는 같고 D2 설계 의도와도 일치한다. 따라서 `monorepo/nightly-20260903/10/11/12/13/14` 전부 ahead=0은 **정상 산출**. 6월(`nightly-20260618/19` ahead=1)은 D2 결정 **이전**의 구 설계.
 
 ### 근인 ② 본진 `docs/nightly_auto_system/reports/` 7~9월 부재 = **publish_reports.sh 미호출 (판별 가능)**
 
@@ -81,9 +81,21 @@ tier3는 리포트를 nightly 워크트리에 **쓰기만 하고 커밋하지 �
 
 → 발행 단계가 파이프라인에서 **끊겨 있다**. 리포트는 생성되지만 본진으로 복사되지 않는다. git 추적본이 4·5·6월인 것도 동일 시점 경계와 일치.
 
-### 근인 ③ 09-14 tier3 작업 실패 9건 (미해소·원인 미확인)
+### 근인 ③ 09-14 tier3 작업 실패 9건 — **근인 확정(09-17 조회). 인증/401 아님.**
 
-생성 3 / 실패 9: 데이터 무결성 · Beat 스케줄 · API 문서 · 카탈로그 동기화 · API 응답 일관성 · 모바일 UX · 설계서 갭(Chain Sight / Thesis Control / SEC+Validation+News). **실패 사유는 본 세션에서 미조회 = 미확인.**
+생성 3 / 실패 9(데이터 무결성 · Beat 스케줄 · API 문서 · 카탈로그 동기화 · API 응답 일관성 · 모바일 UX · 설계서 갭 3종). 9건 **전부 동일한 단일 사유**, 동일 초(23:45:16) 연속 실패:
+
+```
+run_tier3_audits.sh: line 80: /Users/byeongjinjeong/.nvm/versions/node/v22.19.0/bin/claude: No such file or directory
+```
+
+- `run_tier3_audits.sh:28` `CLAUDE_BIN="$(which claude 2>/dev/null || echo "$HOME/.nvm/.../claude")"` → `:80`에서 실행.
+- 해당 경로는 **심링크** → `../lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe`. bash의 `No such file or directory`는 **타깃이 없는 dangling 심링크**에서도 발생한다.
+- 현재(09-17 14:33) 심링크·타깃 모두 **존재**, mtime `Sep 17 14:33` = CLI 패키지가 방금 교체된 흔적. 09-14 23:45에도 같은 교체 창에 걸렸을 개연성이 높으나 **당시 mtime 증거는 없어 직접 확증 불가 = 미확인**.
+- **일시적 창 확정**: 09-10 0 · 09-11 0 · 09-12 0 · **09-14 9건** · **09-15 0 · 09-16 0**. 09-13 로그의 1건은 **거짓 양성**(감사 보고서 본문이 인용한 문자열이지 실패가 아님).
+- 첫 3건(performance·security·api_dependency)은 23:00~23:45 **정상 완료** → 실행 도중 바이너리가 사라졌다는 해석과 정합.
+
+**디렉터 가설(`claude -p` 401 인증)은 반증.** 로그 전수에 `401`/`unauthorized`/`credit`/`quota` 계열 **실패** 기록 0건(매칭 라인은 전부 감사 *보고서 본문* 내용). **이미 자연 해소**(09-15 11건 · 09-16 12건 정상 생성). **조치 없음.**
 
 ### 09-14/09-15 발화 여부
 
@@ -107,6 +119,28 @@ tier3는 리포트를 nightly 워크트리에 **쓰기만 하고 커밋하지 �
 | runtime-check | — | **1** | health ⚠와 연동 |
 
 repo plist vs 설치본: `runtime-check`·`web-frontend` **IDENTICAL**. `cn_repair.nightly`는 repo에만 존재하고 설치본은 `.disabled-20260811`로 비활성 = launchctl 목록 부재와 정합.
+
+---
+
+## §1-C 후속 — 발행 소급 집행 (2026-09-17, 승인 [3])
+
+**디렉터 교정 접수·실증**: "main에 7~9월 부재"는 **이상 신호가 아니다**. `.gitignore:229` `docs/nightly_auto_system/reports/**/*.md`(근거 = DECISIONS `[2026-06-23] B-2`)가 적용되며 `git check-ignore -v`로 실증했다. 추적본이 4·5·6월뿐인 것은 gitignore 도입 **이전**의 역사 파일이다. 진짜 문제는 **본진 트리에 발행본 파일 자체가 없는 것**이었고, 원인은 B-2가 "사용자 수동"으로 남긴 발행 절차가 3개월간 한 번도 이행되지 않은 것이다(자동화 고장 아님).
+
+**집행**: `~/stock-vis-nightly/publish_reports.sh` 를 2026-07-01 ~ 2026-09-30 각 날짜로 수동 실행(멱등·비차단·always exit 0·D1 원본 불변).
+
+| 구분 | 건수 |
+|---|---|
+| 루프 일수 | 92 |
+| ✅ 발행 | **69일** |
+| ℹ️ 원본 디렉터리 부재 | 21일 |
+| ℹ️ 원본에 .md 없음(빈 디렉터리) | 2일 (7월 21일 · 8월 25일) |
+| ⚠️ 경고·오류 | **0** |
+
+**사후 실측** — 본진 `docs/nightly_auto_system/reports/`: 7월 **29일/347md** · 8월 **30일/348md** · 9월 **10일/100md** = **795개**, 원본 전량과 일치(차집합 `diff`로 확인). `git status docs/nightly_auto_system/` = **출력 0**(gitignore 정상·origin 무오염).
+
+**reader 인식 검증**(읽기 전용): `packages/shared/metrics/services/agent_reports.py` · `REPORTS_BASE` = 본진 경로 하드코딩 · `_find_report_path`는 어제→오늘→그제→3일전 순 탐색. 2026-09-17 기준 **12/12 전건 인식**(전부 `9월/16일/`에서 해소), `extract_audit_insights` 샘플 정상(`api_consistency_audit` 405줄·헤딩 6·severity_hits 1). **6/16 이후 "보고서 없음" 해소.**
+
+**미집행(지시 준수)**: 자동 배선(nightly 스크립트 말미 `publish_reports.sh` 호출 추가)은 repo 밖 파일 수정이라 **하지 않았다**. 발행은 이번 1회 수동뿐이므로 **배선하지 않으면 09-17 이후분은 다시 누적된다.**
 
 ---
 
