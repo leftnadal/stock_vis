@@ -8,6 +8,123 @@
 
 ---
 
+## [2026-09-17] D-ASOF-EXEMPT-0912 — 09-12 앵커 동결 + 동결 사유 분류 체계 [dss][harness]
+
+> 출처: 애든덤 DSS-ASOF-1-R2 §2 (자동 결정). 선행 = `D-ASOF-POPULATION`.
+
+**결정**: `2026-09-12` 앵커 2건(`EstimateSnapshot`·`SymbolDemandSignal`)을 동결 목록에 추가한다. 단 평평한 목록을 **{앵커 → (사유코드, 근거 1줄)}** 구조로 바꾸고 사유를 분류한다.
+
+| 사유코드 | 대상 | 근거 |
+|---|---|---|
+| `MANUAL_BACKFILL` | SymbolDemandSignal 07-24·07-31·08-07 | 2026-08-16 일괄백필 — 사람이 만든 소급 적재 |
+| `MANUAL_ADHOC` | EstimateSnapshot 07-29 | 수요일 임시 관측 — 주간 마감일이 아님 |
+| `INCIDENT_PRESERVED` | EstimateSnapshot·SymbolDemandSignal 09-12 | celery-beat 크래시루프(09-12 02:23~12:31 KST)로 09-11 발화 소실·관측 1일 지연 기록. 사건 흔적 보존을 위해 삭제하지 않기로 디렉터 결정 |
+
+| 옵션 | 가중합 |
+|---|---|
+| **ⓐ 사유코드 분류 후 동결** | **4.88** ← 채택 |
+| ⓑ 평평한 목록에 09-12 단순 추가 | 3.43 |
+| ⓒ sweep 범위를 신규 앵커만으로 축소 | 3.20 |
+
+**마진 = 1.45** (ⓐ−ⓑ).
+
+**Why**: R2 지시서의 두 조항이 충돌했다 — §3-3-4 *"09-12 앵커 행은 삭제하지 않는다"* vs §1-1 동결 초기 4건에 09-12 부재. 두 조항이 동시에 참이면 09-12는 **영구 위반**이고 §1-2의 "불일치 0건"은 처음부터 달성 불가였다(디렉터 오류 D7). CC가 §1-3 규율(*"동결 추가는 사람의 결정이지 테스트를 통과시키는 수단이 아니다"*)을 지켜 자기 추가하지 않고 상신한 판단이 정확했다.
+사유 분류를 덧붙이는 이유: 예외가 *"테스트가 빨개서"* 가 아니라 **카테고리에 해당해서** 들어가게 만든다. 어느 카테고리에도 맞지 않는 새 앵커는 여전히 진짜 신호다. 이 장치가 없으면 동결 목록이 테스트 무마용 쓰레기통이 된다.
+
+**CC 정정 채택 — 09-11 백필분은 동결 불필요**: `backfill_snapshot_anchor`가 `created_at`을 `bulk_update`로 원본(09-12 15:03 ET)으로 유지하므로 `as_of_week(created_at) == 09-11 == anchor` 로 규칙을 그대로 만족한다. **R2 §1-1의 "집행 후 09-11 추가 예정" 항목은 폐기.**
+
+**How to apply**: `packages/shared/market_week.py` — `EXEMPT_MANUAL_BACKFILL`/`EXEMPT_MANUAL_ADHOC`/`EXEMPT_INCIDENT_PRESERVED` + `EXEMPT_REASON_CODES` + `exemption_reason()`. 회귀 = `tests/unit/shared/test_anchor_contract.py`(사유코드 없거나 미등록 코드면 **RED** · `INCIDENT_PRESERVED`는 09-12에만 · 09-11은 비동결 · 새 드리프트 앵커 RED). 전수검사 = `scripts/asof_anchor_sweep.py` → **위반 0건**. 🔴 **새 사유코드 신설은 디렉터 결정.**
+
+## [2026-09-17] D-DSS-W11-RESCUE 집행 위임 및 완료 [dss][data][process]
+
+> `D-DSS-W11-RESCUE`(2026-09-16, 병진 ⓐ 채택)의 집행 위임 기록.
+
+**위임 문구 (원문)**:
+> **2026-09-17 병진 위임**: *"09-11 백필 집행을 CC에 위임한다."*
+> (디렉터 세션 결정 `D-DSS-W11-RESCUE` ⓐ 채택分의 집행 위임. 09-15 결정 시 디렉터 추천·타이브레이커는 ⓑ였으나 병진이 ⓐ를 선택했고, 09-17에 집행까지 위임함.)
+
+**위임 범위 = 두 명령 1회 실행에 한정**(확대 해석 금지): ⒜ `backfill_snapshot_anchor --from 2026-09-12 --to 2026-09-11 --execute` ⒝ `load_dss_week --anchor 2026-09-11`. **되돌리기(09-11 앵커 행 삭제)는 여전히 병진 수동**(파괴적) · `sv sync`·launchd·서비스 재기동 불포함 · 그 외 모든 prod DB 쓰기 불포함.
+
+**집행 결과 (2026-09-17)**: 선행 3종 PASS(09-11 E/S 0행·09-12 1005/503) → **A** 1005행 INSERT, 검증 4종 PASS(행수 1005·심볼 503·값 해시 `45d825ef5232a866` **IDENTICAL**·`created_at` 원본 09-12 15:03 ET 유지 = `auto_now_add` 덮어쓰기 미발생) → **B** signals 502·scores 11, 검증 3종 PASS(`missing_prev` **0**·유효분모 **487**·`flat_ratio` **41.07%** = 예측과 정확히 일치·invariant 전건 True). **클린 WoW 쌍 4 → 5**(07-31·08-07·08-28·09-04·**09-11**). 6/6 성숙은 09-18 회차 클린 여부에 달림.
+
+## [2026-09-17] D-LLM-CREDIT-CLOSE — LLM-CREDIT-OUTAGE 종결 (전제 반증) [news][llm][ops]
+
+> 출처: 애든덤 §6. 근거 = OBS-TRIAGE-1 §B 실측(2026-09-15).
+
+**결정**: `LLM-CREDIT-OUTAGE`를 **`✅ SUPERSEDED`** 로 전환한다. 쿼터 병목이 아니었다.
+
+**Why**: 워커 로그 전수 정밀 계수 — `RESOURCE_EXHAUSTED`·`429 Too Many` 09월 **각 0건**, 전 기간 마지막 발생 **2026-06-10 23:30**. `analyze_news_deep` 실행 로그 `errors` **전 구간 0** = LLM 호출 전건 성공. 09-10 결제 전환 전후 처리량 무차이(09-09 7건 > 09-10 5건). 기존 기술 *"Gemini 실패 마커 지배적"* 은 **날짜 미필터 계수**(5~6월분 포함 추정)로 판단한 것 — 정정.
+실제 병목 = `news_deep_analyzer.analyze_batch()` ⑴ `importance_score < TIER_A_THRESHOLD(0.70)` 전량 skip(일 250~267건) ⑵ `published_at >= 오늘 00:00` 창으로 과거 미분석분 영구 미도달(후보 17,757건).
+
+**How to apply**: 후속 `NEWS-ANALYSIS-SELECTION`(선별 임계·수집창 재설계) 등재. **소유 = 뉴스/Chain Sight 도메인 트랙** — ops는 **등재만, 설계하지 않는다**(경계 규약).
+
+## [2026-09-16] D-ASOF-POPULATION — 앵커 as_of 계약 검증 모집단 = "동결 목록에 없는 모든 앵커" [dss][harness]
+
+> 출처: 처분 DSS-ASOF-1 HALT해제 ① (자동 결정). 구현 = `packages/shared/market_week.py:ANCHOR_EXEMPTIONS`.
+
+**결정**: `as_of_week` 계약의 검증 모집단은 **동결 목록에 없는 모든 앵커**로 한다. `health_check._BOUNDARY_KNOWN_VIOLATIONS`와 동형 패턴(코드 상수 + 항목별 1줄 근거 + 회귀 테스트 고정).
+
+초기 동결 4건:
+- `("SymbolDemandSignal", 2026-07-24/07-31/08-07)` — 2026-08-16 일괄백필. 실행시각(08-15 21:01 ET)이 데이터 내용과 무관한 소급 적재.
+- `("EstimateSnapshot", 2026-07-29)` — 수요일 임시수집. 주간 마감일이 아니므로 앵커 쪽이 주간 라벨이 아니다.
+
+**Why**: `as_of_week`는 **자동 주간 발화에만** 적용 가능하다 — 사람이 만든 소급/임시 적재는 실행 시각이 데이터 내용과 무관해 관측시각 기반 추론이 **원리적으로 불가능**하다. 직전 세션 전수검사 불일치 6건 중 5건이 이 성격이었고(백필 3 + 임시수집 1 + 09-12 1), 규칙이 아니라 **모집단이 오염**돼 있었다. 자동 발화 12건은 규칙을 100% 복원했다.
+
+**How to apply**: `is_anchor_exempt(model_label, anchor)` / `find_anchor_violations(...)`. 전수검사 = `scripts/asof_anchor_sweep.py`(read-only). 회귀 = `tests/unit/shared/test_anchor_contract.py`. 🔴 **동결 목록에 항목을 추가하는 것은 사람의 결정이지 테스트를 통과시키는 수단이 아니다** — 이 문장을 테스트 헤더에 박제했다. cf. D-FIRING-WATCH-DECOUPLE·D-DSS-W11-RESCUE.
+
+## [2026-09-16] D-FIRING-WATCH-DECOUPLE — 발화 계약 감시를 as_of에서 분리 [ops][harness][dss]
+
+> 출처: 처분 DSS-ASOF-1 HALT해제 ② (자동 결정). 구현 = `scripts/health_check.py` 검증 19·20.
+
+**결정**: 주간 발화 감시(H-1 `주간 발화 계약`)는 `as_of_week`를 **쓰지 않는다**. "직전 금요일(ET) 앵커의 DB 행이 존재하는가"만 묻고, 직전 금요일 산술은 인라인 중복 정의한다. 임계 = 마감 후 **+48h WARN / +96h ERROR**. 추가로 `SymbolDemandSignal`의 **유효신호 0(전건 excluded)** 은 행 존재와 무관하게 **ERROR**.
+H-2 `서비스 재기동 폭풍` = launchd 관리 서비스 24h 재기동 **>20 WARN / >200 ERROR**.
+
+**Why**:
+- **분리 근거**: 감시가 라벨 교정 로직에 의존하면 백필이 감시를 통과시켜 버린다(감시가 감시 대상에 의존하는 순환). 발화 감시는 *의미론*이 아니라 *사실*을 물어야 한다. 부수 효과로 `DSS-ASOF-2` 배포창에 게이트가 인질로 잡히지 않는다.
+- **+48h 근거**: 주간 잡의 하루 밀림은 catch-up으로 회복된다(09-12→09-13 실제 사례). 즉시 ERROR는 경보 피로다. +96h = 회복 창을 두 번 놓친 상태.
+- **유효신호 0 조항**: 2026-09-12가 정확히 그 상태였다 — 행 502건이 있었으나 전건 `missing_prev`로 유효분모 0. **행 존재만 보는 감시는 이것을 놓친다.**
+- **>20/>200 근거**: 정상 재기동은 일 0~3회. 09-12 사건은 **3,276회**. 두 자릿수 임계면 오탐 없이 폭풍을 잡는다.
+- **last_run_at 금지**: 등재 원칙 *"last_run_at은 증거가 아니다 — DB 행이 증거다"*.
+
+**How to apply**: 계수 소스는 실측 확정한 로그 배너 4종(celery-beat `beat: Starting...` / celery-worker·neo4j `<name>@<host> ready.` / daphne `Listening on TCP address`). **web-frontend는 배너 미확정이라 제외**(측정 장치 오탐을 늘리지 않는다). 로그 꼬리 4MB만 읽는다(384MB+ 전수 스캔 회피) — 과소 계수 조건을 경보 문구에 병기. 역케이스 = `tests/ops/test_weekly_firing_contract.py`.
+
+## [2026-09-16] D-DSS-W11-RESCUE — 09-11 앵커 백필로 10회차 구조 [dss][data]
+
+> 출처: 처분 DSS-ASOF-1 HALT해제 ③ (**병진 결정**). 상신 = `scratchpad/DSS-W11-BACKFILL_상신_20260915.md`.
+
+**결정**: 2026-09-12(토) `EstimateSnapshot` 1005행을 **09-11 앵커로 복제**하고(이동 아님) `load_dss_week --anchor 2026-09-11`로 DSS를 재적재한다. 09-12 앵커 행은 **삭제하지 않는다**(유효신호 0이라 무해·사건 흔적 보존).
+
+| 옵션 | 설명 | 가중합 |
+|---|---|---|
+| **ⓐ CC 준비 + 병진 집행** | dry-run·상신까지 CC, `--execute`는 사람 | **4.32** ← 병진 선택 |
+| ⓑ CC 집행(위임) | 명시 위임 문구 하에 CC가 `--execute` | **4.40** ← 디렉터 추천 |
+| ⓒ 결번 수용 | 백필 없이 10회차 포기 | 2.85 |
+
+**마진 = 0.08** (ⓑ−ⓐ). 디렉터 추천은 ⓑ였으나 **병진이 ⓐ를 선택**했고 그대로 집행한다 — 마진이 0.1 미만이라 선택 역전의 실익이 없고, prod DB 쓰기의 최종 책임은 사람에게 있다는 규율이 우선한다. (선례 `D-HC-NIGHTLY-WIRE`와 동형 기록.)
+
+**Why**: G-2 증거 게이트가 09-12 수집분 = 09-11 마감 컨센서스임을 확증했다(개정 폭이 클린 7일 pooled 대비 변경률 0.960x·|Δ|중앙 0.367x·전 분위 부풀림 0; 부분집합 논증 — 8일 창은 7일 창을 포함하므로 더 작을 수 없다; 토요일은 미국장 휴장이라 새 리비전 발생 불가). 복제 후 예측 `flat_ratio` **41.07%**(임계 90%) · `missing_prev` **0** · 유효분모 487 → 클린 쌍 4 → **5**.
+🔴 **A 없이 B 단독 실행 금지** — 09-14의 "무효·유해" 판정은 *09-11 스냅샷 0행* 전제 위에 있었다.
+
+**How to apply**: `manage.py backfill_snapshot_anchor --from 2026-09-12 --to 2026-09-11 [--execute]`(기본 dry-run). 가드 = 대상 앵커 비어있지 않으면 거부·`--from/--to` 외 무접촉·`SymbolDemandSignal` 미복제·`created_at` 원본 유지(bulk_update로 auto_now_add 우회). 집행 후 동결 목록에 `("EstimateSnapshot", 2026-09-11)` **추가 금지** — 백필분은 관측시각이 원본이라 규칙을 지킨다.
+
+## [2026-09-16] D-DSS-ASOF-LAYER — as_of를 적재 레이어로 승격(DSS-ASOF-2, Phase 1) [dss][harness]
+
+> 출처: 처분 DSS-ASOF-1 HALT해제 ④. **이번 세션은 재료 수집만**(구현 금지) — 배포창 편승.
+
+**결정**: 적재 시점에 `anchor = as_of_week(관측시각)`으로 기록하도록 승격한다. 결번·드리프트가 원천 소멸한다. 착수 = `sv sync` 배포창 편승.
+
+**Why**: 읽는 쪽 교정(DSS-ASOF-1)은 이미 적재된 행의 **내용**을 바꾸지 못한다 — 09-12 앵커 502행이 전건 `missing_prev`인 것이 그 증거다. 관측일과 대상일을 같은 필드에 담는 구조 자체를 고쳐야 재발이 끝난다.
+
+**How to apply**: 변경 지점 2곳뿐 — `apps/chain_sight/tasks/estimate_tasks.py:40` `snapshot_date = timezone.now().date()`(⚠️ 현재 **UTC 날짜**다. 20:00 ET 이후 실행 시 하루 앞선 날짜가 박히는 잠재 결함 — 함께 수리) · `apps/chain_sight/tasks/dss_tasks.py:34` `et_today`. 가드(`최신 스냅샷 앵커 ≠ et_today`)도 as_of 기반으로 전환하면 09-12형 skip이 사라진다. **마이그레이션 불요**(값 의미만 바뀜·`unique_together` 불변: `(symbol, snapshot_date, fiscal_year)` / `(symbol, anchor_date)`). **행위보존 증명** = 자동발화 12건에 신·구 로직을 모두 적용해 동일 앵커 산출 확인(이미 `scripts/asof_anchor_sweep.py`가 그 모집단을 출력한다).
+## [2026-09-17] D-SCB-CONTEXT-SOURCE-1 — 채점 카드 맥락층 원천 확정 [portfolio][data][llm]
+**결정**: SCB-CONTEXT 맥락층의 데이터 원천을 아래로 **확정**한다.
+- **논거 축 = FMP `/stable/grades`** — 등급 변경 **사건 타임라인**. 프로브 실측(SCB-RECOVER-PROBE 2026-09-15): `200` · NVDA **1,158행** · **2012-02-13~2026-09-04** · `gradingCompany`·`previousGrade`·`newGrade`·`action`·`date` 실재.
+- **맥락 축 = 기존 `NewsEntity`(624,562행)** 심볼+날짜 조인. **신규 수집 0**.
+- **`/stable/grades-news` = 트리거 보류.** 프로브에서 `200`·논거 필드(`newsTitle`·`newsURL`·`newsBaseURL`·`newsPublisher`·`priceWhenPosted`·`publishedDate`) 실재 확인했으나 채택 보류. **재평가 트리거 = S2 착지 후 "연결 정확도가 부족하다"는 소감이 나올 때** — 그때 규모 측정 1콜(1심볼당 총 행수·소급 범위, 현재 미확인) 후 재판단.
+- **`grades_historical`(월별 등급 카운트) = 폐기 아님.** "분포 추이" 표시로 **흡수**한다.
+**Why**: 가중합 = 안1(a 카운트추이만) **3.80** / 안2(b1 grades + c news 조인) **4.30** / 안3(전부) **3.55** / 안4(c만) **4.30**. 안2·안4 **마진 0** → 타이브레이커 = **"게이트 가용성은 휘발성 자산"** (오늘 열린 문이 내일 닫힐 수 있다 — 프로브가 `200`을 확인한 지금 `grades`를 원천으로 고정해 두는 편이, 나중에 402로 닫혔을 때 되돌릴 수 없는 손실을 막는다). recon(2026-09-10)이 논거 축을 RED로 닫은 근거는 `grades-historical` **단일 경로만** 본 결과였고, 프로브가 이를 반증했다.
+**How to apply**: 수집 구현 시 `packages/shared/api_request/providers/fmp/client.py`에 `grades` 메서드 신설(현재 **부재**). `grades-news`는 메서드조차 만들지 않는다(보류). 맥락 축은 신규 수집 없이 `NewsEntity` 조인만. 설계·구현은 **별 세션**(SCB-RECOVER-PROBE 세션은 코드 변경 0).
+
 ## [2026-09-10] D-BRANCH-DELETE-DELEGATE-1 — 단계별 승인 게이트 하 CC 삭제 집행 위임 [harness][ops][governance]
 **결정**: D-BRANCH-DELETE-MANUAL("삭제는 병진 수동")의 **정련**. 다음 4조건이 모두 충족된 경우에 한해 CC가 브랜치·worktree·원격 삭제를 **집행**한다 — ⑴ 분류 보고서가 main에 착지됨 ⑵ 전 ref `git bundle` 백업 + `verify` 통과 ⑶ 사용자가 세션 안에서 단계별 승인 토큰(`승인 A`~`E`)을 직접 입력 ⑷ 사후 재측정 보고. `-D`(강제)는 **줄 단위 실측으로 미이식 0이 확인된 건**에만(명시 목록 아님 — 실측이 목록을 갱신). **자가 `-D` 전환 금지**(`-d` 거부 = 건너뜀·기록이 기본, `-D`는 별도 승인·실측 근거 필요).
 **Why**: worktree-per-세션 병렬 환경에서 "후보만 보고" 고정은 누적 적체(225브랜치·61worktree)를 낳는다. 백업+단계 승인+사후측정의 3중 방어가 파괴성을 상쇄하면 위임이 안전·효율적. 집행 증거 = MGMT-BATCH-B-EXEC(2026-09-04~10): A(메인 트리 main 복귀)·B(worktree 40 제거·sv-dash-s0 제외)·C(브랜치 -d 200)·D(브랜치 7 삭제·이식 4줄·42줄 철회)·E(원격 5 삭제). bundle 2종 = `~/stockvis-refs-20260904-1119.bundle`·`~/stockvis-refs-20260907-0948.bundle`.
@@ -7682,6 +7799,19 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **규율**: common-bugs `#NN`은 **등재(부여) 순서**이지 발견 순서가 아니다. 각 엔트리에 **발견일을 병기**해 연대 정보를 보존한다(예: "#131, … 발견 2026-09-08, 채번 b48"). 예약분(선행 배치가 "후보 #NN"으로 찜한 번호)은 배치 엔트리에 명시하고, **다음 배치는 그 번호를 건너뛴다**(침범 시 renumber 불가·공개 repo).
 - **실증(이중 충돌)**: ⑴ b47이 #130을 launchd/.env 후보로 예약. ⑵ b48 편집 중 병렬 **MGMT-LEDGER-2**(`6bc5172d`)가 origin/main에 **#130~132를 먼저 착지**(dispatch규율·일련번호금지·크레딧소진). rebase가 텍스트 무충돌로 병합해 **번호 중복(#130~132 각 2회)** 발생 → 디렉터 처분으로 b48 전건을 **#133~136으로 순차 밀기**(launchd #133·llm_fill #134·health_check #135·metadata #136·순서 유지). **교훈**: 텍스트 무충돌 rebase도 의미 충돌(중복 번호)을 낼 수 있다 → push 전 번호 유일성 grep 필수.
 
+### [2026-09-17] D-NUMBERING-ORDER 애든덤 — 대기열은 번호를 선점하지 않는다 (MGMT-BATCH-b49)
+
+- **추가 규율**: **대기열의 미등재 후보는 번호를 선점하지 않는다. 번호는 등재하는 배치가 받는다.** **예약**(번호가 명시 배정된 것)과 **대기열**(번호 없는 후보)은 **구분한다** — 앞 규율의 "예약분 건너뜀"은 예약에만 적용되고, 번호 없는 후보에는 적용되지 않는다.
+- **역산된 오류**: b49 지시서가 이 둘을 뭉뚱그려 "신규 2건을 대기열 뒤에 붙이라"고 썼다. 대기열을 2건으로 추정했으나 **실측 33건**이었고, 문자 그대로 이행하면 33건 전수 채번(신규 = #170·#171)이 되어 배치 목표와 충돌했다. 실행자가 번호를 보류하고 상신 → 디렉터 처분 **(가)**(가중합 9.45 vs 6.90, 마진 2.55 자동)로 신규 2건만 **#137·#138** 부여, **대기열 33건은 번호를 받지 않는다**(각 소관 배치가 등재할 때 받는다).
+- **왜 이게 옳은가**: 번호를 선점시키면 대기열 길이에 비례해 모든 배치가 서로를 기다리게 된다. 등재 시점에 번호를 주면 대기열은 길어져도 비용이 0이고, 연대 정보는 각 엔트리의 **발견일 병기**가 이미 보존한다.
+
+### [2026-09-17] 선존 번호 중복 — 사실 등재 (MGMT-BATCH-b49 · 처분은 별건)
+
+- **사실**: **#97 · #98 · #99가 두 트랙에 이중 부여된 채 `origin/main`에 존재**한다 — 08-04~10 계열(L2-FULL-SWEEP `#97` · PRE-DEPLOY-FIX `#98` · CN-B7-PROBE `#99`) vs 08-18 I3-SPLIT-GUARD 계열(`#97`·`#98`·`#99`). **한 달 이상 미해소.**
+- **당장의 규율**: 이 번호들을 인용할 때 **어느 쪽인지 명시**한다(트랙명·발견일 병기).
+- **처분 보류 사유**: renumber는 **공개 repo**(`leftnadal/stock_vis`)의 기존 참조를 파손할 위험이 있어 별건 처분으로 둔다.
+- **재발 방지**: 사람 규율만으로 3회 뚫렸다 → 기계 검사로 이관(TASKQUEUE `HEALTH-NUMBERING-GUARD`).
+
 ## [2026-09-10] D-NUMBERING-MEASURE-QUEUE — 채번 실측 = "max+1"이 아니라 대기열 전수 [harness][process]
 
 > 트랙: MGMT-BATCH-b48. D-INSTR-BATCH-NUM-MEASURED 보강.
@@ -7815,3 +7945,77 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 **규약**: 타 세션의 **DB 세션·프로세스·파일 잠금을 종료하지 않는다.** 경합 시 ⑴ 격리(별도 test DB·별도 트리) 또는 ⑵ 대기, 둘 다 막히면 **상신**한다.
 
 **Why**: 0917-A 집행 중 공유 `test_stock_vis` 경합을 만나 `pg_terminate_backend`로 유휴 세션 1건을 종료했는데, 그것이 타 세션의 진행 중인 게이트 실행이었을 수 있다. 내 작업 범위를 넘는 부수 피해이며 상대는 원인을 알 수 없다(그쪽에는 그냥 거짓 RED로 보인다). 격리 test DB(`test_stock_vis_<트랙>`, repo 무수정 오버레이)로 우회하면 **경합 자체가 사라진다** — 종료할 이유가 애초에 없다.
+## [2026-09-17] D-SKIP-BASIS-TARGET-SESSION — 야간 잡의 스킵 판정 기준 = 실행일이 아니라 대상 세션(어제) [infra][dogfood][process]
+
+- **결정**: 야간 도그푸딩의 휴장 스킵 판정은 **대상 세션 = 달력상 어제(KST)** 기준으로 한다. 실행일(`date.today()`)을 묻지 않는다.
+- **Why**: 05:20 KST 잡은 언제나 **어제 닫힌 세션**을 리뷰한다. "오늘 장이 열리나"는 이 잡이 물어야 할 질문이 아니었고, 그 탓에 토요일 발화가 Weekend로 스킵되어 금요일 세션 리뷰가 토요일에 나가지 못했다.
+- **`target_session_date`(직전 거래일)를 쓰지 않는 이유**: 그 함수를 쓰면 일요일과 월요일이 **모두 금요일 세션을 가리켜** 같은 리뷰가 두 번 나간다(중복 발송). 달력상 어제를 쓰면 토=금(실행)·일=토(스킵)·월=일(스킵)·화=월(실행)로 중복 없이 맞는다.
+- **효과는 '복원'이 아니라 '이동'**: 금요일 리뷰는 지금까지도 **월요일에 도착하고 있었다**. 이 수정은 그것을 토요일로 앞당기고, 대신 월요일 발화를 스킵으로 바꾼다.
+- **범위**: `market_calendar.py` 무변경 — 함수는 정확했고 **호출 기준만** 틀렸다. 유닛 9건으로 고정(6케이스 + 중복발송 방지 + 행동변화 + 회귀 정적가드).
+
+## [2026-09-10] D-EOD-FRESH-ROOT-NOT-SCHEDULE — 연휴 신선도 오탐의 뿌리는 스케줄이 아니라 캘린더-일수 임계 [ops][monitoring][process]
+
+> 트랙: EOD-TIME-1 (R1+R4). 디렉터 승인 2026-09-10. 선행 조사 = EOD-DELAY-1(수집 실패 아님·채점 설계 결함 확정).
+
+- **결정(뿌리≠증상)**: 연휴·주말 신선도 오탐의 뿌리는 **dogfood 실행 스케줄이 아니라 캘린더-일수 임계**다 — 증상(스케줄 05:20→08:00 이동, R5/P1-A)이 아니라 뿌리(거래일 기준 임계)를 고친다. launchd 스케줄 변경은 **반려**.
+- **D-EOD-FRESH-TRADING-DAYS (R4)**: `check_quant` 신선도 지연은 **거래일 수**로 잰다(`market_calendar.trading_days_between`). dogfood는 당일 베이크(22:30 UTC) 이전(05:20 KST)에 돌아 파일이 항상 1 세션 뒤처지므로 1거래일까지 정상. 판정 메시지에 "지연 N일(거래일 기준 M일 — 주말/휴장 포함 여부)" 근거 동봉. → **LANDED(분해) @`0542dd77` 2026-09-17**: 판정식은 MGMT-LEDGER-2 T4 `c62e3107`(`trading >= previous_trading_day(session)` — 1거래일 지연까지 정상과 동치) 유지, R4는 `trading_days_between` + note 병기 + 회귀 테스트 6종으로 착지(`MAX_FRESHNESS_LAG_TRADING_DAYS` 미도입).
+- **D-EOD-ISSTALE-TZ (R1)**: baker `is_stale`은 UTC/로컬 혼용 금지 — `generated_at`과 now를 모두 설정 타임존(Asia/Seoul)으로 환산해 비교(`compute_is_stale`). 과거 `generated_at.date()`(UTC) vs `date.today()`(KST)가 07:30 KST 베이크를 매일 stale로 오판 → FE 배지 거짓 경고. "다음 날 stale"은 FE 24h 규칙 몫. → **보류·이관 @2026-09-17**: 미랜딩(근거 미확정·공유 존) — TASKQUEUE `EOD-FRESH-2` 재측정 선행(OPS-BRIDGE-0 ⓐ).
+
+**Why**: 캘린더-일수 임계는 추수감사절·크리스마스·독립기념일 등 연 9~10회 연휴마다 동일 오탐을 재발시킨다(잠복). 측정 장치 오탐 5건 누적의 공통 패턴 = "아직 안 만들어진 것/거래일 아닌 날"을 "없어진 것"으로 오판. 증상이 아닌 뿌리를 고쳐야 재발이 끝난다.
+
+## [2026-09-10] D-LANDING-ORDER — GUARD-1C 먼저, 그 다음 EOD-TIME-1 [git][harness][process]
+
+> 트랙: EOD-TIME-1 랜딩 순서. 디렉터 자동 결정(가중합 5.00 vs 3.18·마진 1.82), 2026-09-10.
+
+- **결정**: ⓐ GUARD-1C(GUIDE-CS-GUARD-1C) 먼저 랜딩해 main 10일 RED를 종료 → ⓑ GREEN main 위에서 EOD-TIME-1 재동기(origin/main 흡수)→게이트 전수→no-ff 머지(D-EOD-FRESH-* 명기)→push.
+- **Why**: ①RED 10일·랜딩 25건 상태를 먼저 끝낸다 ②GREEN main 위에서 "0 failed"를 각주 없이 증명 ③csg1이 이미 20커밋 앞서고 충돌 파일이 장부 3개(DECISIONS/TASKQUEUE/PROGRESS)인데 EOD-TIME-1도 동일 3개를 건드렸으므로 먼저 밀면 흡수 부담만 커진다.
+- **장부 3파일 충돌**: 양쪽 보존(append 병합). force·원격 삭제 금지.
+
+## [2026-09-16] D-OPS-BRIDGE — 디렉터→실행자 지시 통로·랜딩 게이트·장부 자동화 (병진 승인 3건) [harness][ops][governance]
+
+> 트랙: OPS-BRIDGE-0 → OPS-GATE-1 → OPS-DISPATCH-1 / OPS-STATUS-1. 병진 승인 2026-09-16 ("동의해. 진행하자" — 관제판 §08 ①②). 근거 문서(선택지 전문·가중합 표) = Cowork 프로젝트 `claude/판독_하네스점검_결정3건_20260916.md`(repo 외부 — 여기엔 결론만). 장부 기재 = OPS-BRIDGE-0 S3.1(2026-09-17, `monorepo/sess-eod-time1`).
+
+- **⑴ 지시서 통로 = A 메일박스 + Mac 상주 디스패처 (4.20)** — `docs/instructions/inbox/<트랙>.md`가 곧 디스패치(채팅 복붙 없음) · `outbox/<트랙>_보고.md`가 보고 · `approvals/<트랙>.ok`(`sha=` 필수)가 승인 증표. 디스패처(OPS-DISPATCH-1) 구축 완료 전까지는 **B Remote Control 스폰(3.75)** 으로 운용. 규약 정본 = `docs/instructions/inbox/README.md`(지시서는 짧게 — 없는 것은 repo 하네스가 단일 출처, 복제 금지).
+- **⑵ 랜딩 게이트 = ⓑ 랜딩 승인 1회 (4.25, 타이브레이커 = 안전)** — `.ok`가 가리키는 SHA에 대해 **역머지 → 게이트(vitest·pytest·tsc 0 failed) → no-ff 머지 → push → `sv sync` → FE 리빌드**를 한 승인으로 묶는다. **HALT는 3경우만**: 충돌 / 게이트 RED / 마이그·beat·plist·prod-write 동반. 병진 수동 항목(prod migrate · 영구/강제 삭제 · 원격 브랜치 삭제 · plist · beat 등록)은 **불변**. 집행 수단 = OPS-GATE-1(`scripts/ops/land.sh` + PreToolUse 훅 — 문서가 아니라 스크립트·훅이 지킨다).
+- **⑶ 장부 = ⓑ STATUS 자동생성 + 회전 (4.15)** — 트랙 상태판을 손으로 쓰지 않고 inbox/outbox/approvals + git 실측에서 생성·회전(OPS-STATUS-1).
+- **Why**: INCIDENTS 6건 중 4건(001·002·003·006)이 "문서 규칙을 실행자가 어긴" 사건. 지시·보고·승인을 채팅이 아니라 **git 추적 파일**로 옮기면 디렉터가 outbox ↔ git 실측을 대조해 판정할 수 있고, 게이트를 스크립트·훅으로 내리면 위반이 구조적으로 막힌다.
+- **경과 조치**: `D-PUSH-DELEG` 가드 (ii)(behind>0 무조건 HALT) · "푸시 1회 1승인"은 **OPS-GATE-1 착지 시 v2로 대체 예정** — 그때까지 현행 유지. 과도기에는 지시서 상단 `approved_sha`가 `.ok`를 대신한다(OPS-BRIDGE-0 선례).
+- **ⓐ 분해 랜딩 결정 (병진 2026-09-17 15:35, 선택지 ⓐ 4.45 / ⓒ 4.00 / ⓑ 2.70)**: EOD-TIME-1 역머지 코드 충돌(main T4 `c62e3107` vs R4 `f45fcb78`)은 main 판정 로직 **유지**(행위보존) + R4 가치 확증분(테스트·note·3원칙 문서)만 새 브랜치로 이식, **R1 제외 → EOD-FRESH-2**. Why: 승인이 R1(근거 미확정·공유 존)과 R4(가치 확증)가 묶인 한 커밋을 통째로 덮었던 결함(디렉터 인정)을 바로잡고, 이미 GREEN인 main 판정을 흔들지 않는다. 본체 점유 시 랜딩 = 임시 detached worktree `sv-land-tmp` 경유.
+## [2026-09-17] D-SCAN-REC-JOIN-J2-B — 추천↔섹터 조인 경로를 카드 JSON의 `stocks_by_score.sector`로 전환 [frontend][dashboard][scanner]
+
+> 트랙: DASH-TOP / SCAN-UX-2. **D-SCAN-REC-JOIN-J2 보정**(폐기 아님 — 조인 *경로*만 교체).
+
+- **문제(실측)**: J2의 전제였던 `rec.ticker → preview_stocks.sector` 조인이 **0/10**이다. 우연이 아니라 **구조적**이다 — `preview_stocks`는 카드당 3종목(고유 **29**)이고 추천은 별도 선정 **10종목**이라 두 모집단이 겹칠 이유가 없다. 결과적으로 "추천 N종목 중 M곳이 수요 개선 섹터" 절은 **현 payload에서 사실상 항상 생략**된다.
+- **경위**: J2(8.30)가 J3(8.00)를 이긴 근거가 "FE에서 조인 가능"이었는데, 그 가능성이 실효 0이었다. 마진 0.30은 이 전제 위에 서 있었다.
+- **결정**: 조인 우변을 **`useConfluenceMap`이 이미 로드하는 카드 JSON의 `stocks_by_score.sector`**로 바꾼다. 그 데이터는 **이미 네트워크에 올라와 있으므로 payload 증가 0**이고, 모집단이 카드 전체라 추천 10종목을 덮을 확률이 preview 29종목보다 훨씬 높다.
+- **불변**: 실패 시 **그 절만 생략**하는 정칙 ⑴는 유지한다. 분모는 **실제 조인 성공 수**로 적고 허위 분모(`/10`)를 쓰지 않는다.
+- **집행**: 슬라이스 3. 집행 전 **조인율을 먼저 실측**하고, 개선이 미미하면 J3를 재검토한다(이번 교훈 = 전제를 재지 않고 경로만 바꾸면 같은 실수가 반복된다).
+
+## [2026-09-17] D-SCAN-QUAD-EMPTY-HIDE — breadth 전건 null이면 사분면 블록을 소비처에서 미렌더 [frontend][dashboard][chainsight]
+
+> 트랙: DASH-TOP. 자동 결정(가중합 **8.55 vs 4.10**, 마진 **4.45** — 임계 0.40 크게 초과).
+
+- **문제**: `breadth_curr`가 전건 null이면 산점도에 점이 **0개**인데도 카드는 **407px**를 차지한다. 축·경계선·"Heat 미산출" 목록만 있는 빈 상자가 [시장] 탭 최상단을 점유한다(DSS-BREADTH-MISSING).
+- **결정**: 차트에 찍힐 섹터가 0이면 **`app/page.tsx`에서 사분면 블록 자체를 렌더하지 않는다**(정칙 ⑴). 기존 `{quadrant.data && ...}` 가드를 "데이터 존재"에서 "**그릴 것이 존재**"로 좁힌다.
+- **경계**: **`components/charts/SectorQuadrant.tsx` 무접촉.** 판정은 그 파일이 이미 export하는 `chartedSectors()`를 소비처에서 호출해 내린다 — 구역 정의를 복제하지 않는다(단일 소스 유지).
+- **기각안(4.10)**: 차트 안에 "데이터 없음" 플레이스홀더를 그린다 → 빈 상자가 여전히 자리를 먹고, 차트 파일을 건드려야 하며, 결측이 해소되면 죽은 코드가 남는다.
+- **전제**: 이 결정은 **결측을 숨기는 것이지 고치는 것이 아니다.** 수리는 DSS-BREADTH-MISSING 소관이고, 결측이 해소되면 이 가드는 자동으로 무해해진다(그릴 것이 생기면 렌더).
+
+## [2026-09-17] D-SCAN-DIR-SEG-ROWS — 방향 세그먼트는 **행 단위**를 유지한다(고유 종목 전환 철회) [frontend][dashboard][scanner]
+
+> 트랙: DASH-TOP. 보정 B **철회** 등재.
+
+- **원안**: 세그먼트 카운트를 `symbol` Set 기준 **고유 종목 수**로 센다(37 → 29).
+- **철회 결정**: 바꾸지 않는다. 카운트와 필터가 **이미 같은 단위(행)** 라 최우선 원칙인 **"표시 수 == 클릭 후 결과 수"가 성립**한다(라이브 4/4 일치).
+- **사유 ⑴ 임의 규칙 발생**: 고유 기준으로 결과까지 맞추려면 같은 종목이 두 카드에 걸릴 때 **어느 카드에서 뺄지**를 정해야 한다. 그 규칙에 원리적 근거가 없다.
+- **사유 ⑵ R3와 모순**: "여러 축에 걸린 것이 의미 있다"가 R3의 근거인데, 중복 제거는 바로 그 신호를 지운다.
+- **대안(집행됨)**: 중복을 **제거하는 대신 화면이 설명한다** — `화면에 보이는 {행}줄(고유 {N}종목 — 한 종목이 여러 카드에 걸립니다) · 전체 {universe}종목 {signals}신호`(보정 A). 숫자 충돌은 단위를 바꿔서가 아니라 **단위를 밝혀서** 푼다.
+
+## [2026-09-17] D-DEPLOY-NO-NPM-CI-ON-LIVE — 라이브 서빙 트리에 `npm ci` 금지 [deploy][ops][frontend]
+
+> 트랙: DASH-TOP 배포. 런북 2.2(D-RB-2)의 명시적 보강.
+
+- **규칙**: **가동 중인 서빙 트리에서 `npm ci`를 실행하지 않는다.** `npm ci`는 `node_modules`를 **삭제한 뒤** 재설치하므로, `next start`로 떠 있는 프로세스가 그 창에서 모듈을 잃고 깨질 수 있다. lock diff가 0이면 **`npm run build`만** 한다(런북 2.2 = "package.json/lock 변경 시 `npm install` 선행" — 변경이 없으면 설치 자체가 불필요).
+- **적용**: 09-17 DASH-TOP 배포에서 지시서가 `npm ci → next build`를 지시했으나 lock diff **0** 실측 → `npm run build`만 집행. 결과 정상(새 BUILD_ID `K28tDV8aBR3X_ONk1g3In`, 스모크 3/3 200).
+- **디렉터 지시서 결함 사례로 박제**: 지시서가 관례보다 **강한** 절차를 적으면 실행자는 대개 그대로 따르는데, 이 건은 강한 쪽이 **더 위험했다**. 배포 절차의 단일 출처는 런북이고(SESSION_CONTRACT §H), 지시서와 충돌하면 **런북이 이긴다** — 실행자는 차이를 보고한다.
+- **일반화**: "더 깨끗하게 하려는 절차"가 **라이브 자산을 먼저 지우는** 형태이면 무중단 전제를 깬다. 배포 스텝은 *추가 후 교체*(build → kickstart)여야 하고, *삭제 후 재생성*이면 폴백 사본을 먼저 뜬다.
