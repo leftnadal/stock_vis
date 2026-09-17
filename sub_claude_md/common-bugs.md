@@ -2076,6 +2076,7 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 ③ **실패 메시지에 "이 판정이 틀릴 수 있는 조건"을 함께 적는다** — 예: "지연 N일(거래일 기준 M일 — 주말/휴장 포함 여부)".
 
 근거(오탐 5건): 루브릭 미인증 1.4/5 · beat=DOWN 오판 · "백엔드 다운" · 실행 트리 상시 WARN · EOD 지연 4일(=이번 건, 실제로는 수집 성공·채점 순서+연휴 artifact). 실측 3일치: EOD-DELAY-1 09-08 지연0 ok / 09-09 지연4 FAIL / 09-10 지연1 ok — **개입 없이 치유 = 검사 설계 결함**. 수리 = 거래일 판정 MGMT-LEDGER-2 T4(`c62e3107`) + EOD-TIME-1 R4 분해 랜딩(회귀 테스트 6종·판정 근거 note 병기, OPS-BRIDGE-0 ⓐ 2026-09-17). 정본 결정 = DECISIONS `D-EOD-FRESH-ROOT-NOT-SCHEDULE`.
+
 ## 커밋은 세션 전용 브랜치에만 한다 — 공유 main 워크트리의 커밋은 타 세션 reset에 떨어져 나간다 (채번 후보, CS-S3-1D 2026-09-17) `[harness][git][process]`
 
 **증상**: 공유 main 워크트리(`~/Desktop/stock_vis`)에서 `main`에 직접 커밋한 `b0fadfa3`(CS-S3-1D 코드 10파일)이 push 직전에 브랜치에서 사라졌다. 로컬 `main`과 `origin/main`이 같은 해시를 가리켜 `ahead/behind 0/0`으로 보였고, 지시받은 `git push origin main`을 그대로 실행했다면 **no-op으로 성공하면서 작업만 조용히 누락**됐을 것이다.
