@@ -5,6 +5,7 @@ refresh 흐름의 evaluate **직후** additive 호출(신규 beat 없음, state_
 그리고 기한만료 제안(자동 마감 금지 — 제안만, 3-B). 반환 이벤트는 다이제스트가 소비.
 """
 import logging
+from zoneinfo import ZoneInfo
 
 from django.utils import timezone
 
@@ -16,7 +17,12 @@ from apps.monitor.services.closure import (
     propose_verdict,
 )
 from apps.monitor.services.price_zone import (
+    NEAR_STOP_BUFFER,
+    NEAR_STOP_CAP,
+    NEAR_STOP_MULTIPLIER,
+    NEAR_STOP_RECHECK_DAYS,
     is_immediate_zone_alert,
+    is_near_stop,
     resolve_zone,
     zone_anchor,
 )
@@ -41,6 +47,50 @@ def latest_close(symbol, as_of=None):
         dq = dq.filter(date__lte=as_of)
     row = dq.order_by("-date").values_list("close_price", flat=True).first()
     return float(row) if row is not None else None
+
+
+# 변동성 산출 창(거래일). 손잡이(price_zone)와 달리 계산 세부라 여기 둔다.
+NEAR_STOP_WINDOW = 20
+
+# 재발화 창 날짜 비교 기준 — as_of(et_today)와 같은 축.
+_ET = ZoneInfo("America/New_York")
+
+
+def near_stop_buffer(symbol, as_of=None):
+    """손절 접근 밴드 = min(상한, max(바닥값, 배수 × median|일간 변동률| 20거래일)).
+
+    데이터 20행 미만이면 바닥값(NEAR_STOP_BUFFER) 반환 — 폴백.
+    price_zone은 순수 유지(D-HOLD-DECISIONS 2 전제)라 DB 조회는 이 모듈에만 둔다.
+
+    변동성 비례인 이유: 고정 밴드는 종목마다 리드타임이 제각각이 된다. 배수를
+    리드타임으로 읽으면(밴드 ÷ 평소 변동률 ≈ 손절까지 남은 평소 거래일 수) 모든
+    종목이 같은 대응 시간을 받는다 — 바닥값·상한에 걸린 종목만 예외.
+    """
+    import statistics
+
+    from packages.shared.stocks.models import DailyPrice
+
+    q = DailyPrice.objects.filter(stock__symbol=symbol.upper())
+    if as_of:
+        q = q.filter(date__lte=as_of)
+    rows = list(
+        q.order_by("-date").values_list("close_price", flat=True)[: NEAR_STOP_WINDOW + 1]
+    )
+    if len(rows) < NEAR_STOP_WINDOW + 1:
+        return NEAR_STOP_BUFFER
+
+    closes = [float(c) for c in reversed(rows)]
+    rets = [
+        abs(cur - prev) / prev
+        for prev, cur in zip(closes, closes[1:])
+        if prev
+    ]
+    if len(rets) < NEAR_STOP_WINDOW:
+        return NEAR_STOP_BUFFER
+    return min(
+        float(NEAR_STOP_CAP),
+        max(float(NEAR_STOP_BUFFER), NEAR_STOP_MULTIPLIER * statistics.median(rets)),
+    )
 
 
 def process_claim_scenario(claim, close, as_of):
@@ -80,6 +130,46 @@ def process_claim_scenario(claim, close, as_of):
             })
             claim.last_price_zone = zone
             update_fields.append("last_price_zone")
+
+    # ── 손절 접근 경고 (3-A) — zone 축과 별개. 1회 가드 + 밴드 이탈 시 해제 ──
+    # hold 모드에서 매입가 아래는 전부 ENTRY 한 칸이라 zone 전이로는 손절 접근을 잡을 수 없다.
+    # 손절선을 "넘은 뒤"(EXITED) 알리면 이미 늦으므로 넘기 전에 한 번 알린다.
+    if claim.stop_price is not None and close is not None:
+        buf = near_stop_buffer(claim.monitor.target_ref, as_of)
+        near = is_near_stop(close, claim.stop_price, buf)
+        notified = claim.near_stop_notified_at
+        # 재발화 창: 밴드 안에 계속 머물면 N일마다 재확인. 메일 1회 실패가 영구 침묵이
+        # 되지 않게 하는 유일한 이중화다 — near_stop은 인앱 표면(3-B)이 아직 없고,
+        # claim.save()는 pipeline.py:154에서 먼저 커밋되므로 send_digest 실패를 모른다.
+        #
+        # as_of=et_today()이므로 비교도 ET 날짜로 맞춘다. UTC date 비교는 beat가
+        # 22:45 UTC일 때만 우연히 일치했고, beat 시각은 코드가 아니라 DB
+        # PeriodicTask에 있다(공통버그 #28) — 여유가 75분뿐이었다.
+        # retry가 UTC 자정을 넘겨도 이 방식은 어긋나지 않는다.
+        is_recheck = bool(
+            notified is not None
+            and (as_of - notified.astimezone(_ET).date()).days >= NEAR_STOP_RECHECK_DAYS
+        )
+        if near and (notified is None or is_recheck):
+            stop_f = float(claim.stop_price)
+            claim.near_stop_notified_at = timezone.now()
+            update_fields.append("near_stop_notified_at")
+            events.append({
+                "type": "near_stop",
+                "claim_id": str(claim.id),
+                "monitor_name": claim.monitor.name,
+                "target_ref": claim.monitor.target_ref,
+                "close": close,
+                "stop": stop_f,
+                "to_stop_pct": (stop_f - close) / close * 100.0,
+                "band_pct": float(buf) * 100.0,
+                "recheck": is_recheck,
+                "immediate": True,
+            })
+        elif not near and notified is not None:
+            # 밴드 밖으로 회복(또는 이탈 확정) → 가드 해제. 재진입하면 다시 최초 발화한다.
+            claim.near_stop_notified_at = None
+            update_fields.append("near_stop_notified_at")
 
     # ── 기한만료 (자동 마감 금지 — 1회 알림 가드) ──
     if not is_hold:

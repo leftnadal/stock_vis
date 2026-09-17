@@ -168,9 +168,23 @@ def build_digest(as_of, new_close_monitor_ids=None, scenario_events=None):
         for e in events if e["type"] == "expiry"
     ]
 
+    # 손절 접근 (3-A) — zone 축 밖 별개 신호. 항상 즉시 취급(되돌릴 수 없는 방향이라).
+    near_stops = [
+        {
+            "monitor_name": e["monitor_name"],
+            "target_ref": e["target_ref"],
+            "close": e.get("close"),
+            "stop": e.get("stop"),
+            "to_stop_pct": e.get("to_stop_pct"),
+            "band_pct": e.get("band_pct"),
+            "recheck": bool(e.get("recheck")),
+        }
+        for e in events if e["type"] == "near_stop"
+    ]
+
     has_content = bool(
         deteriorations or improvements or close_suggestions
-        or zone_immediate or zone_digest or expiries
+        or zone_immediate or zone_digest or expiries or near_stops
     )
     return {
         "as_of": as_of.isoformat(),
@@ -180,18 +194,31 @@ def build_digest(as_of, new_close_monitor_ids=None, scenario_events=None):
         "zone_immediate": zone_immediate,
         "zone_digest": zone_digest,
         "expiries": expiries,
+        "near_stops": near_stops,
         "has_content": has_content,
     }
 
 
+def _near_stop_suffix(r):
+    """손절 접근 행의 꼬리표 — 밴드% (+재확인). 텍스트·HTML 공용(문구 드리프트 방지)."""
+    band = r.get("band_pct")
+    parts = [f"밴드 {band:.1f}%"] if band is not None else []
+    if r.get("recheck"):
+        parts.append("재확인")
+    return f" ({' · '.join(parts)})" if parts else ""
+
+
 def render_digest_subject(digest):
     """제목 = 진입/이탈·악화 요약 우선(대시보드 상태 우선순위 문법)."""
+    n_near = len(digest.get("near_stops", []))
     n_zone = len(digest.get("zone_immediate", []))
     n_exp = len(digest.get("expiries", []))
     nd = len(digest["deteriorations"])
     ni = len(digest["improvements"])
     nc = len(digest["close_suggestions"])
     parts = []
+    if n_near:
+        parts.append(f"손절 접근 {n_near}건")
     if n_zone:
         parts.append(f"진입/이탈 {n_zone}건")
     if n_exp:
@@ -209,6 +236,15 @@ def render_digest_subject(digest):
 def render_digest_text(digest):
     """플레인 텍스트 본문(진입/이탈 → 기한만료 → 악화 → 개선 → 마감 제안 → 구간 변동 순)."""
     lines = [f"Monitor 다이제스트 — {digest['as_of']}", ""]
+    if digest.get("near_stops"):
+        lines.append("■ 손절 접근 (즉시)")
+        for r in digest["near_stops"]:
+            lines.append(
+                f"  - {r['monitor_name']} [{r['target_ref']}]: "
+                f"종가 {r['close']} / 손절 {r['stop']} — "
+                f"손절까지 {r['to_stop_pct']:+.1f}%{_near_stop_suffix(r)}"
+            )
+        lines.append("")
     if digest.get("zone_immediate"):
         lines.append("■ 진입/이탈 (즉시)")
         for r in digest["zone_immediate"]:
@@ -264,6 +300,7 @@ def render_digest_html(digest):
 
     _ZONE = "#2c5aa0"
     _EXP = "#6b46c1"
+    _NEAR = "#d35400"
 
     def _section(title, rows, color, kind):
         if not rows:
@@ -282,6 +319,14 @@ def render_digest_html(digest):
                     f"<span style=\"color:#888\">[{r['target_ref']}]</span> — "
                     f"{r['from_label']} → <strong>{r['to_label']}</strong> "
                     f"<span style=\"color:#888\">(종가 {r['close']})</span>"
+                )
+            elif kind == "near_stop":
+                body = (
+                    f"<strong>{r['monitor_name']}</strong> "
+                    f"<span style=\"color:#888\">[{r['target_ref']}]</span> — "
+                    f"종가 {r['close']} / 손절 {r['stop']} — "
+                    f"손절까지 <strong>{r['to_stop_pct']:+.1f}%</strong>"
+                    f"<span style=\"color:#888\">{_near_stop_suffix(r)}</span>"
                 )
             elif kind == "expiry":
                 body = (
@@ -306,7 +351,8 @@ def render_digest_html(digest):
         )
 
     body = (
-        _section("진입/이탈 (즉시)", digest.get("zone_immediate", []), _ZONE, "zone")
+        _section("손절 접근 (즉시)", digest.get("near_stops", []), _NEAR, "near_stop")
+        + _section("진입/이탈 (즉시)", digest.get("zone_immediate", []), _ZONE, "zone")
         + _section("기한만료", digest.get("expiries", []), _EXP, "expiry")
         + _section("악화 전이", digest["deteriorations"], _DET, "transition")
         + _section("개선 전이", digest["improvements"], _IMP, "transition")

@@ -2098,6 +2098,25 @@ cf. `D-DSS-W11-RESCUE`·`D-FIRING-WATCH-DECOUPLE`
 
 **교훈**: [[디렉터 실측에도 유통기한이 있다]]의 짝. 그쪽이 "main이 밑에서 움직여 전제가 죽는다"면 이쪽은 "main이 밑에서 움직인 흔적이 조용히 두 벌로 남는다"다. **union은 안전장치가 아니라 충돌 회피 장치**이며, 회피된 충돌은 사라진 게 아니라 문서 안으로 들어간다. 검증 명제를 고를 때는 "이 확인이 실패할 수 있는가"를 먼저 묻는다 — union 병합에서 "삭제 줄 0"은 **항상 참**이라 아무것도 반증하지 못한다.
 
+## `fail_silently=False`로 던진 예외를 best-effort로 삼키면 알림은 7주간 조용히 죽는다 (채번 후보, MONITOR-ALERT-RECOVERY 2026-09-17) `[monitor][alerting][infra][ops]`
+
+**증상**: monitor 다이제스트 메일이 **2026-07-29부터 09-16까지 7주간 단 한 통도 발송되지 않았다**. 그 사이 PLTR이 목표가를 돌파(09-14, zone `waiting→overheated`)했으나 사용자는 알지 못했다. beat는 매일 정상 실행됐고 태스크 결과는 전부 `SUCCESS`였다. `refresh_monitors_task` 반환값의 `digest_sent: False` 한 필드만이 유일한 단서였고, 이는 "보낼 내용 없음"과 구분되지 않는다.
+
+**원인**: Gmail 앱 비밀번호가 폐기(`535 5.7.8 BadCredentials`)됐는데, `send_digest`의 `except Exception: logger.warning(..., exc_info=True)` 가 이를 삼켰다. 주석은 `"best-effort, 인앱이 이중화"`를 근거로 들지만 **zone 축에는 인앱 기록이 없다** — `AlertEvent`는 `detect_and_record_alert`(신호축) 전용이고 `process_claim_scenario`는 `last_price_zone`만 저장한다. 즉 메일 실패 = **이벤트 영구 소실**이며, `last_price_zone`이 이미 전이됐으므로 **재발화도 불가능**하다. 같은 세션에서 Anthropic API 키 401도 발견됐는데(09-10~, 18건) `advisor_briefing_task`는 전 종목 LLM 실패에도 `status: 'ok'`를 반환하고 있었다 — **동형 결함**.
+
+**해결**: ⑴ 자격증명 교체 후 검증은 **실제 소비 경로로** 한다 — `send_mail()`은 `EmailProvider`+`with_circuit`을 우회하므로 SMTP 로그인 성공만으로는 불충분하다. 서킷 상태(`cb:state:alert_email`, Redis·`timeout=None`이라 **재기동으로 안 풀림**)까지 확인할 것. ⑵ 워커 트리 `.env`는 메인 트리 심링크이나 `celery-worker.sh`가 기동 시 `. ./.env` **1회 로드**라 값 교체 후 **워커 재기동 필수**. ⑶ 근본 수리는 실패를 상태로 승격하는 것 — best-effort 삼킴은 유지하되 `digest_sent=False`의 **사유**(`no_content`/`no_recipient`/`send_failed`)를 반환·로그에 남기고, `send_failed`는 태스크 결과에서 구분 가능해야 한다.
+
+**교훈**: **"성공"의 정의가 층마다 다르면 장애는 층 사이에 숨는다.** beat는 태스크 완주를 성공으로 보고, 태스크는 예외 없음을 성공으로 보고, 사용자는 메일 수신을 성공으로 본다. 이 셋이 어긋난 구간이 7주였다. best-effort 삼킴은 **폭주를 막는 장치이지 실패를 없애는 장치가 아니다** — 삼킨 예외는 반드시 어딘가에 **세어지는 형태로** 남아야 한다. 부수 규율: 외부 자격증명(SMTP·LLM 키)은 만료가 상시 발생하므로 **라이브 프로브를 상설화**한다([[lesson_runtime_debug_true_overrides_safe_settings]]와 같은 계열 — 정적 감사로는 안 잡힌다).
+
+## Django 5에서 `django.utils.timezone.utc`가 제거됐다 — `datetime.timezone.utc`를 쓴다 (채번 후보, ADDENDUM-3A-0917-A 2026-09-17) `[django][test][upgrade]`
+
+**증상**: `timezone.make_aware(dt, timezone.utc)` 가 `AttributeError: module 'django.utils.timezone' has no attribute 'utc'` 로 죽는다. 테스트 3건이 같은 헬퍼 한 줄 때문에 동시에 실패했다.
+
+**원인**: Django 4.1에서 deprecate, **5.0에서 제거**. 리포는 Django 5.2.14다. `django.utils.timezone`은 여전히 `now()`·`make_aware()`·`localtime()`을 제공하므로 `from django.utils import timezone` 관용구가 그대로 통과하고, `.utc` 속성 접근 시점에만 터진다 — import 단계에서 안 잡힌다.
+
+**해결**: `from datetime import timezone as dt_timezone` 후 `datetime(..., tzinfo=dt_timezone.utc)`. aware datetime을 **직접 생성**하면 `make_aware` 자체가 불필요하다(`make_aware`는 naive 입력 전용이라 aware를 주면 `ValueError`). ET 등 다른 존은 `zoneinfo.ZoneInfo`.
+
+**교훈**: 제거된 심볼이 **모듈 속성**이면 정적 검사·import 테스트를 통과하고 런타임에만 드러난다. 업그레이드 후에는 `grep -rn "timezone\.utc"` 같은 **속성 단위 grep**이 필요하다 — 모듈 import가 성공한다는 사실은 그 모듈의 모든 속성이 살아 있다는 뜻이 아니다.
 ---
 
 ## 로컬 main 머지 후 push 누락이 반복된다 — health_check에 'main ahead>0' 감지 가드가 공백 (채번 후보, SCB-RECOVER-PROBE 2026-09-17) `[harness][git][ops]`
