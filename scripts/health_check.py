@@ -1330,6 +1330,211 @@ def check_story_title_gate() -> CheckResult:
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
+# ── 검증 19: 주간 발화 계약 (D-FIRING-WATCH-DECOUPLE) ────────────────────────
+#
+# 생존과 발화는 다른 사실이다. 09-12 사건에서 프로세스 생존 점검은 3일 내내 ✅였으나
+# 주간 발화는 통째로 빠져 있었다. 이 검사는 *의미론*이 아니라 *사실*을 묻는다:
+#   "직전 금요일 것이 DB에 들어왔는가."
+#
+# 🔴 as_of_week()를 의도적으로 쓰지 않는다 — 발화 감시가 라벨 교정 로직에 의존하면
+#    백필이 감시를 통과시켜 버린다(감시가 감시 대상에 의존하는 순환). 직전 금요일 산술만 인라인.
+# 🔴 last_run_at을 쓰지 않는다 — "last_run_at은 증거가 아니다, DB 행이 증거다"(등재 원칙).
+#
+# 임계: 마감 후 +48h WARN / +96h ERROR. 주간 잡의 하루 밀림은 catch-up으로 회복되므로
+#       즉시 ERROR는 경보 피로다(09-12→09-13 catch-up이 실제 사례).
+FIRING_WARN_HOURS = 48
+FIRING_ERROR_HOURS = 96
+
+# (레이블, 모델 경로, 앵커 필드, 그 금요일의 예정 발화 시각 ET)
+_FIRING_TARGETS = [
+    ("EstimateSnapshot", "snapshot_date", 16, 30),   # chainsight-snapshot-analyst-estimates
+    ("SymbolDemandSignal", "anchor_date", 19, 0),    # chainsight-load-dss-weekly
+]
+
+
+def _last_completed_friday(now_et):
+    """관측 시각(ET) 기준 가장 최근에 마감(금 16:00 ET)된 금요일. as_of_week 미사용(의도적 분리)."""
+    from datetime import time as _time, timedelta as _td
+
+    back = (now_et.weekday() - 4) % 7
+    friday = now_et.date() - _td(days=back)
+    if back == 0 and now_et.time() < _time(16, 0):
+        friday -= _td(days=7)
+    return friday
+
+
+def check_weekly_firing_contract() -> CheckResult:
+    """주간 2종(스냅샷·DSS)이 직전 금요일분을 DB 행으로 남겼는가. [D-FIRING-WATCH-DECOUPLE]"""
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo as _ZI
+
+    name = "주간 발화 계약"
+    et = _ZI("America/New_York")
+    try:
+        import os
+
+        import django
+
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+        django.setup()
+        from apps.chain_sight.models.heat import EstimateSnapshot, SymbolDemandSignal
+    except Exception as e:  # noqa: BLE001 — 비-런타임 환경은 검사 대상 아님
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="Django/DB 미가용 — 검사 생략(비-런타임 환경)",
+            evidence=[str(e)[:120]],
+        )
+
+    models = {"EstimateSnapshot": EstimateSnapshot, "SymbolDemandSignal": SymbolDemandSignal}
+    now_et = _dt.now(et)
+    friday = _last_completed_friday(now_et)
+
+    worst = OK
+    details, evidence = [], []
+    for label, anchor_field, hh, mm in _FIRING_TARGETS:
+        model = models[label]
+        try:
+            latest = (
+                model.objects.order_by("-" + anchor_field)
+                .values_list(anchor_field, flat=True)
+                .first()
+            )
+        except Exception as e:  # noqa: BLE001 — 테이블 부재 등
+            worst = max(worst, WARN)
+            details.append(f"{label} 조회 실패")
+            evidence.append(f"{label}: {str(e)[:100]}")
+            continue
+
+        deadline = _dt.combine(friday, _dt.min.time(), tzinfo=et).replace(hour=hh, minute=mm)
+        lag_h = (now_et - deadline).total_seconds() / 3600.0
+
+        if latest is None or latest < friday:
+            st = ERROR if lag_h > FIRING_ERROR_HOURS else (WARN if lag_h > FIRING_WARN_HOURS else OK)
+            worst = max(worst, st)
+            details.append(f"{label} 결번({latest})")
+            evidence.append(
+                f"{label}: 기대 앵커 ≥ {friday} · 최신 {latest} · 마감 후 {lag_h:.0f}h "
+                f"(warn>{FIRING_WARN_HOURS}h/error>{FIRING_ERROR_HOURS}h)"
+            )
+            continue
+
+        # 행은 있다 — 그러나 SymbolDemandSignal은 '유효신호 0'일 수 있다.
+        # 09-12가 정확히 그 상태였고(전건 missing_prev) 행 존재만으로는 잡히지 않았다.
+        #
+        # 🔴 최신 앵커 하나가 아니라 **직전 금요일 이후 앵커 전체**를 본다. 드리프트·백필로
+        #    같은 주에 앵커가 둘일 수 있고(09-11 유효 487 + 09-12 유효 0), 그중 하나라도
+        #    쓸 만하면 그 주의 발화는 성립한 것이다. 최신 하나만 보면 보존된 사건 행(09-12)이
+        #    영구 고착 ERROR를 만든다 — 꺼지지 않는 경보는 경보가 아니다.
+        if label == "SymbolDemandSignal":
+            week = model.objects.filter(anchor_date__gte=friday)
+            total = week.count()
+            valid = week.filter(excluded=False).count()
+            if total and valid == 0:
+                anchors = sorted({str(d) for d in week.values_list("anchor_date", flat=True)})
+                worst = max(worst, ERROR)
+                details.append(f"{label} 유효신호 0")
+                evidence.append(
+                    f"{label}: 앵커 {','.join(anchors)} 행 {total}건이나 excluded=False가 0건 "
+                    f"— 행은 있으나 신호 없음(전건 제외). prev 앵커 부재 의심"
+                )
+                continue
+            details.append(f"{label} {latest} ✓(유효 {valid}/{total})")
+        else:
+            details.append(f"{label} {latest} ✓")
+
+    caveat = (
+        "이 판정이 틀릴 수 있는 조건: 앵커 라벨이 실행일 기준이라 하루 밀린 발화도 "
+        "'도착'으로 읽는다(라벨 정확성은 asof_anchor_sweep이 별도로 본다) · "
+        "미국장 휴장으로 금요일 미발화가 정상인 주는 구분하지 못한다"
+    )
+    evidence.append(caveat)
+    return CheckResult(
+        name=name,
+        status=worst,
+        detail=f"직전 금요일 {friday} 기준 — " + " / ".join(details),
+        evidence=evidence,
+    )
+
+
+# ── 검증 20: 서비스 재기동 폭풍 (D-FIRING-WATCH-DECOUPLE) ────────────────────
+#
+# 09-12 사건: celery-beat가 10시간 동안 3,276회 재기동(launchd KeepAlive)했으나
+# 어떤 점검도 그것을 보지 않았다. 계수 소스는 STEP 0에서 실측 확정한 로그 배너다.
+RESTART_WARN = 20
+RESTART_ERROR = 200
+_RESTART_LOG_DIR = Path.home() / "Library" / "Logs" / "stockvis"
+_RESTART_TAIL_BYTES = 4 * 1024 * 1024  # 대용량 로그(384MB+) 전수 스캔 회피
+# (서비스, 로그파일, 기동 배너 정규식, 타임스탬프 정규식)  — 전부 실측 확정(2026-09-16)
+_RESTART_SOURCES = [
+    ("celery-beat", "celery-beat-error.log", r"beat: Starting\.\.\.", r"^\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)"),
+    ("celery-worker", "celery-worker-error.log", r"celery@[\w.\-]+ ready\.", r"^\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)"),
+    ("celery-worker-neo4j", "celery-worker-neo4j-error.log", r"neo4j@[\w.\-]+ ready\.", r"^\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)"),
+    ("web(daphne)", "web-error.log", r"Listening on TCP address", r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)"),
+]
+
+
+def _count_recent_restarts(path: Path, banner: str, ts_pat: str, since) -> int | None:
+    """로그 꼬리에서 since 이후 기동 배너 수. 파일 없으면 None."""
+    if not path.is_file():
+        return None
+    try:
+        size = path.stat().st_size
+        with path.open("rb") as fh:
+            if size > _RESTART_TAIL_BYTES:
+                fh.seek(size - _RESTART_TAIL_BYTES)
+                fh.readline()  # 잘린 첫 줄 버림
+            blob = fh.read().decode("utf-8", errors="replace")
+    except OSError:
+        return None
+    b_re, t_re = re.compile(banner), re.compile(ts_pat)
+    n = 0
+    for line in blob.splitlines():
+        if not b_re.search(line):
+            continue
+        m = t_re.match(line)
+        if m and m.group(1) >= since:
+            n += 1
+    return n
+
+
+def check_service_restart_storm() -> CheckResult:
+    """launchd 관리 서비스의 최근 24h 재기동 횟수. [D-FIRING-WATCH-DECOUPLE]"""
+    from datetime import datetime as _dt, timedelta as _td
+
+    name = "서비스 재기동 폭풍"
+    since = (_dt.now() - _td(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
+
+    worst, parts, evidence, missing = OK, [], [], []
+    for svc, fname, banner, ts_pat in _RESTART_SOURCES:
+        n = _count_recent_restarts(_RESTART_LOG_DIR / fname, banner, ts_pat, since)
+        if n is None:
+            missing.append(svc)
+            continue
+        st = ERROR if n > RESTART_ERROR else (WARN if n > RESTART_WARN else OK)
+        worst = max(worst, st)
+        parts.append(f"{svc} {n}")
+        if st != OK:
+            evidence.append(f"{svc}: 최근 24h {n}회 (warn>{RESTART_WARN}/error>{RESTART_ERROR})")
+
+    if missing:
+        evidence.append(f"로그 부재로 미계수: {', '.join(missing)}")
+    evidence.append(
+        "미커버: web-frontend(기동 배너 미확정 — 계수 소스 실측 전까지 제외). "
+        "이 판정이 틀릴 수 있는 조건: 로그 꼬리 "
+        f"{_RESTART_TAIL_BYTES // (1024 * 1024)}MB만 읽으므로 24h 분량이 그보다 크면 과소 계수 "
+        "· 로그 로테이션 직후엔 과소 계수 · 의도된 배포 재기동도 재기동으로 센다"
+    )
+    return CheckResult(
+        name=name,
+        status=worst,
+        detail="최근 24h 재기동 — " + " / ".join(parts) if parts else "계수 가능한 로그 없음",
+        evidence=evidence,
+    )
+
+
 CHECKS = [
     check_origin_main_hash,
     check_brunch_worktree_existence,
@@ -1347,6 +1552,8 @@ CHECKS = [
     check_monitor_refresh_freshness,
     check_stale_pending_backannotation,
     check_runtime_check_log,
+    check_weekly_firing_contract,
+    check_service_restart_storm,
     check_launchd_tree_alignment,
     check_env_symlink,
     check_story_title_gate,
