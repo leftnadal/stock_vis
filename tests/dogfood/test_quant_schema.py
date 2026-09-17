@@ -167,6 +167,67 @@ def test_freshness_ok_holiday_intervening(monkeypatch):
     assert out["eod.trading_date"]["status"] == cq.OK
 
 
+# ────────────────────────────── EOD-TIME-1 R4: 거래일 기준 신선도
+#
+# 지연은 캘린더 일수가 아니라 거래일로 센다. 연휴/주말이 끼면 캘린더 일수는
+# 며칠씩 벌어지지만 실제 놓친 세션은 1개뿐일 수 있다. 임계를 거래일로 두지
+# 않으면 추수감사절·크리스마스마다 동일한 거짓 FAIL이 재발한다.
+
+
+def _payload(trading_date: str) -> bytes:
+    return json.dumps({
+        "trading_date": trading_date,
+        "is_stale": False,
+        "signal_cards": [{"id": "x"}],
+        "recommendations": [{"id": "y"}],
+    }).encode()
+
+
+def test_freshness_ok_holiday_gap_regression_09_09(monkeypatch):
+    """2026-09-09 재현: 파일 09-04, 대상 세션 09-08. 주말+Labor Day로 캘린더
+    4일이지만 거래일로는 1일 → ok 여야 한다 (회귀 박제)."""
+    monkeypatch.setattr(cq, "_fetch", lambda url, timeout=cq.ROUTE_TIMEOUT_S: (200, _payload("2026-09-04"), 1.0))
+    out = cq.check_freshness(date(2026, 9, 8))
+    assert out["eod.trading_date"]["status"] == cq.OK
+    assert "거래일 기준 1일" in out["eod.trading_date"]["note"]
+
+
+def test_freshness_ok_weekend_gap_monday(monkeypatch):
+    """금요일 세션 파일 + 월요일 대상 → 거래일 1일 → ok (주말만 낌)."""
+    monkeypatch.setattr(cq, "_fetch", lambda url, timeout=cq.ROUTE_TIMEOUT_S: (200, _payload("2026-08-28"), 1.0))
+    out = cq.check_freshness(date(2026, 8, 31))
+    assert out["eod.trading_date"]["status"] == cq.OK
+
+
+def test_freshness_ok_consecutive_weekday(monkeypatch):
+    """화→수 평일 연속 → 거래일 1일 → ok."""
+    monkeypatch.setattr(cq, "_fetch", lambda url, timeout=cq.ROUTE_TIMEOUT_S: (200, _payload("2026-08-25"), 1.0))
+    out = cq.check_freshness(date(2026, 8, 26))
+    assert out["eod.trading_date"]["status"] == cq.OK
+
+
+def test_freshness_ok_thanksgiving_three_day_pattern(monkeypatch):
+    """추수감사절 패턴: 수(11-25) 세션 파일 + 금(11-27) 대상 → 거래일 1일 → ok."""
+    monkeypatch.setattr(cq, "_fetch", lambda url, timeout=cq.ROUTE_TIMEOUT_S: (200, _payload("2026-11-25"), 1.0))
+    out = cq.check_freshness(date(2026, 11, 27))
+    assert out["eod.trading_date"]["status"] == cq.OK
+
+
+def test_freshness_fails_when_two_trading_days_behind(monkeypatch):
+    """진짜 적체(2 거래일 뒤처짐)는 여전히 FAIL — 실제 장애 검출력 보존."""
+    monkeypatch.setattr(cq, "_fetch", lambda url, timeout=cq.ROUTE_TIMEOUT_S: (200, _payload("2026-08-25"), 1.0))
+    out = cq.check_freshness(date(2026, 8, 27))  # 08-26,08-27 = 2 거래일
+    assert out["eod.trading_date"]["status"] == cq.FAIL
+
+
+def test_freshness_note_flags_weekend_holiday_inclusion(monkeypatch):
+    """실패/판정 메시지는 거래일 기준 지연과 주말/휴장 포함 여부를 함께 적는다."""
+    monkeypatch.setattr(cq, "_fetch", lambda url, timeout=cq.ROUTE_TIMEOUT_S: (200, _payload("2026-09-04"), 1.0))
+    note = cq.check_freshness(date(2026, 9, 8))["eod.trading_date"]["note"]
+    assert "거래일 기준" in note
+    assert "주말/휴장 포함" in note   # 캘린더(4) ≠ 거래일(1) → 포함
+
+
 def test_api_401_is_ok_without_token_but_fail_with_token(monkeypatch):
     monkeypatch.setattr(cq, "_fetch", lambda url, timeout=cq.ROUTE_TIMEOUT_S: (401, b"", 1.0))
     without = cq.check_apis(None)
