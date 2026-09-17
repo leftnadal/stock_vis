@@ -2066,3 +2066,13 @@ cf. INCIDENTS.md INC-001/002/003/006 · `D-BRANCH-DELETE-MANUAL` · [[feedback_s
 **해결**: 검사 지점을 옮긴다. **git 추적 여부가 아니라 본진 트리의 미추적 발행본 존재 여부**를 본다 — `ls docs/nightly_auto_system/reports/<M>월/<D>일/*.md`, 또는 reader가 실제로 파일을 찾는지(`_find_report_path`)를 본다. `git log`·`git status`는 이 경로에 대해 **구조적으로 항상 침묵**하므로 증거가 될 수 없다. 소급 발행 실측(2026-09-17): 92일 루프 → 69일 발행 · 21일 원본 부재 · 2일 빈 디렉터리 · md **795개** 복사 · git 오염 0 · reader 인식 **12/12**.
 
 **교훈**: **gitignore된 산출물에 대해 git이 보여 주는 침묵은 "없다"가 아니라 "볼 수 없다"다.** 파이프라인 건강을 git 상태로 재는 순간, 무시하도록 설계한 바로 그 구간이 사각지대가 된다. 그리고 "수동 절차로 남긴다"는 결정은 **이행 여부를 재는 계측을 함께 만들지 않으면 3개월 뒤 조용히 미이행 상태로 발견된다**.
+
+## 커밋은 세션 전용 브랜치에만 한다 — 공유 main 워크트리의 커밋은 타 세션 reset에 떨어져 나간다 (채번 후보, CS-S3-1D 2026-09-17) `[harness][git][process]`
+
+**증상**: 공유 main 워크트리(`~/Desktop/stock_vis`)에서 `main`에 직접 커밋한 `b0fadfa3`(CS-S3-1D 코드 10파일)이 push 직전에 브랜치에서 사라졌다. 로컬 `main`과 `origin/main`이 같은 해시를 가리켜 `ahead/behind 0/0`으로 보였고, 지시받은 `git push origin main`을 그대로 실행했다면 **no-op으로 성공하면서 작업만 조용히 누락**됐을 것이다.
+
+**원인**: reflog가 `main@{1}: reset: moving to origin/main` — 병렬 세션이 같은 워크트리에서 `main`을 `origin/main`으로 reset했다. 그 시점 `origin/main`에는 내 커밋이 없었다(push 지시 대기 중이었다). 커밋 객체는 살아 있었지만 **어떤 브랜치도 가리키지 않는 상태**가 됐다. 공유 워크트리에서 브랜치는 세션 간 공유 자원이고, `reset`은 다른 세션의 미push 작업을 소리 없이 떨어뜨린다.
+
+**해결**: ⑴ **커밋 전에 세션 전용 브랜치를 만든다**(`git switch -c monorepo/sess-<이름>`) — 지시서가 브랜치를 지정하지 않았더라도 실행자가 만든다. ⑵ 이미 고아가 됐다면 **최우선으로 `git branch <이름> <해시>`**로 고정한다(main 무접촉·즉시 안전). ⑶ 이후 worktree를 떼어 그 안에서만 작업한다. ⑷ **push 전 반드시 `git reflog main`과 `git merge-base --is-ancestor <내커밋> HEAD`로 내 커밋이 여전히 계보에 있는지 확인한다** — `ahead/behind 0/0`은 "올릴 게 없다"는 뜻이지 "내 작업이 반영됐다"는 뜻이 아니다.
+
+**교훈**: `ahead/behind 0/0`을 성공 신호로 읽지 말 것. 이 아크의 [[lesson_shared_main_worktree_holds_other_session_merge]]·"수치 인용 시 축을 명시" 항목과 같은 계열 — **같은 숫자가 다른 사실을 가리킨다**. 짝 규율(지시서 측): **지시서는 worktree와 브랜치를 명시한다. 생략하면 실행자가 공유 main에서 작업하게 되므로, 생략은 지시서의 결함이다.**
