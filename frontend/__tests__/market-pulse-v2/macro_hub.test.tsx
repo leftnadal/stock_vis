@@ -7,8 +7,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/hooks/useMarketPulse', () => ({ useMarketPulse: vi.fn() }))
 vi.mock('next/navigation', () => ({ useSearchParams: vi.fn() }))
-vi.mock('@/components/macro/FearGreedGauge', () => ({ default: () => <div data-testid="w-sentiment" /> }))
-vi.mock('@/components/macro/YieldCurveChart', () => ({ default: () => <div data-testid="w-rates" /> }))
+// HUB-SENSE-DETAIL S1: showEducation을 속성으로 흘려 호출부가 무엇을 넘겼는지 단언 가능하게.
+// (위젯 본체는 `showEducation && (…details…)` 가드라, false를 넘긴 사실이 곧 "카드 안 details 0"이다.)
+vi.mock('@/components/macro/FearGreedGauge', () => ({
+  default: ({ showEducation }: { showEducation?: boolean }) => (
+    <div data-testid="w-sentiment" data-show-education={String(showEducation)} />
+  ),
+}))
+vi.mock('@/components/macro/YieldCurveChart', () => ({
+  default: ({ showEducation }: { showEducation?: boolean }) => (
+    <div data-testid="w-rates" data-show-education={String(showEducation)} />
+  ),
+}))
 vi.mock('@/components/macro/EconomicIndicators', () => ({ default: () => <div data-testid="w-economy" /> }))
 vi.mock('@/components/macro/GlobalMarketsCard', () => ({ default: () => <div data-testid="w-global" /> }))
 
@@ -111,6 +121,71 @@ describe('MacroHubPage (MP2-SUBPAGES S1)', () => {
     setup('all', 'ok', { ...macroPulseFixture, last_updated: fresh })
     render(<MacroHubPage />)
     expect(screen.queryByText(/분 전 데이터$/)).toBeNull()
+  })
+})
+
+describe('설명 스택 배치 (HUB-SENSE-DETAIL S1 · D-SENSE-PLACEMENT B)', () => {
+  const GUIDES = ['sentiment', 'rates', 'economy', 'global'] as const
+  const wrapper = (container: HTMLElement, a: string) =>
+    container.querySelector(`[data-guide="marketPulse.macro.${a}"]`) as HTMLElement
+
+  it('4카드 전부 트레이 1개씩', () => {
+    setup('all')
+    const { container } = render(<MacroHubPage />)
+    expect(screen.getAllByTestId('sense-slab')).toHaveLength(4)
+    for (const a of GUIDES) {
+      expect(wrapper(container, a).querySelectorAll('[data-testid="sense-slab"]')).toHaveLength(1)
+    }
+  })
+
+  it('4카드 전부 일반론 보유 — 물가·고용은 2개(물가+고용)', () => {
+    setup('all')
+    const { container } = render(<MacroHubPage />)
+    const count = (a: string) =>
+      wrapper(container, a).querySelectorAll('[data-testid="education-note"]').length
+    expect(count('sentiment')).toBe(1)
+    expect(count('rates')).toBe(1)
+    expect(count('economy')).toBe(2)
+    expect(count('global')).toBe(1)
+  })
+
+  it('★핵심 가드 — 각 카드에서 의미문이 일반론보다 앞에 온다(순서 역전 방지)', () => {
+    setup('all')
+    const { container } = render(<MacroHubPage />)
+    for (const a of GUIDES) {
+      const w = wrapper(container, a)
+      const sense = w.querySelector('[data-testid="sense-note"]')
+      const edu = w.querySelector('[data-testid="education-note"]')
+      expect(sense, `${a}: sense-note 없음`).toBeTruthy()
+      expect(edu, `${a}: education-note 없음`).toBeTruthy()
+      // compareDocumentPosition: FOLLOWING(4)이면 sense가 edu보다 앞.
+      expect(
+        sense!.compareDocumentPosition(edu!) & Node.DOCUMENT_POSITION_FOLLOWING,
+        `${a}: 일반론이 의미문보다 앞에 있다`,
+      ).toBeTruthy()
+    }
+  })
+
+  it('심리·금리 위젯은 showEducation={false} — 카드 안 details 0개', () => {
+    setup('all')
+    const { container } = render(<MacroHubPage />)
+    expect(screen.getByTestId('w-sentiment')).toHaveAttribute('data-show-education', 'false')
+    expect(screen.getByTestId('w-rates')).toHaveAttribute('data-show-education', 'false')
+    // 카드 래퍼(z-10) 안에는 details가 없고, details는 전부 트레이 안에 있다.
+    for (const a of GUIDES) {
+      const w = wrapper(container, a)
+      const inSlab = w.querySelectorAll('[data-testid="sense-slab"] details').length
+      expect(w.querySelectorAll('details')).toHaveLength(inSlab)
+    }
+  })
+
+  it('트레이는 위젯 카드의 형제 — 카드 내부 DOM에 의존하지 않는다', () => {
+    setup('all')
+    const { container } = render(<MacroHubPage />)
+    const w = wrapper(container, 'sentiment')
+    const slab = w.querySelector('[data-testid="sense-slab"]')!
+    expect(slab.parentElement).toBe(w)
+    expect(slab.querySelector('[data-testid="w-sentiment"]')).toBeNull()
   })
 })
 
