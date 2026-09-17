@@ -6,6 +6,8 @@
 > **검증 도구**: `python scripts/health_check.py` (Slice 17 closing 후속 도입)
 > **관련 결정**: DECISIONS.md "문서·git 정합성 관리 원칙" (2026-05-28)
 
+> 📅 **2026-09-10 EOD-TIME-1 (R1+R4) 구현 완료·배포 범위 밖** (worktree `sv-eod-time1`[`monorepo/sess-eod-time1`] base origin/main): EOD-DELAY-1 조사 결과 = 수집 실패 아님·채점 설계 결함(09-08 지연0 ok/09-09 지연4 FAIL/09-10 지연1 ok·개입 없이 치유). **R4** `check_quant` 신선도 임계 캘린더-일→**거래일 기준**(`trading_days_between`)+판정근거 메시지, **R1** baker `is_stale` TZ 혼용 수정(`compute_is_stale` UTC/KST 통일·FE 매일 거짓 경고 제거). 48 passed·eod_pipeline 10·신규 lint 0·마이그 0. 정본=`D-EOD-FRESH-ROOT-NOT-SCHEDULE`+신선도 3원칙(common-bugs/SESSION_CONTRACT §J). 별건=EOD-META-STATUS-1(R2)·RUBRIC-DRIFT-1(S3 선행). 선존 red=`test_targets.py` 2건(GUIDE reviewStatus drift·무관). **다음=디렉터 처분(랜딩/배포·Ⓒ AUTH-GAP 범위 확정)**.
+
 ## Harness Engineering 전환 완료
 
 - **일자**: 2026-04-12

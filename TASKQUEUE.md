@@ -1774,3 +1774,8 @@
   - **ops는 문구를 쓰지 않는다**(소유 경계) — GUIDE-CS-GUARD-1D는 유예만 등록했고 `dashboard.ts`를 건드리지 않았다.
   - 기한 연장이 필요하면 **DECISIONS.md에 근거를 남긴 뒤** `until`을 갱신한다. 코드에서 조용히 날짜만 바꾸는 것은 금지 — 그 순간 구조가 장식이 된다.
   - 재발 맥락: `chainsight.backbone`(08-31)과 동일 패턴이 9일 만에 재발. 근본 처방은 게이트(OPS-FE-GATE-0 측정 완료) + [[GUIDE-COUPDATE-DOD]](지시서 템플릿 DoD).
+## EOD-TIME-1 (2026-09-10)
+
+- ✅ **EOD-TIME-1 R1+R4** (@infra) — **구현·테스트 완료 · `sv sync`/배포 범위 밖(미실행)**. R1: baker `is_stale` TZ 혼용 수정(`compute_is_stale`·UTC/KST 통일) — 유닛 5(신선/비신선/경계2/09-09 UTC 회귀). R4: `check_quant` 신선도 임계 캘린더-일→**거래일 기준**(`market_calendar.trading_days_between`) + 판정근거 메시지. 유닛: market_calendar 7 파라미터 + quant 6(평일연속·주말월요일·휴장화요일=09-09 회귀 ok·추수감사절·2거래일 FAIL·메시지). **48 passed · eod_pipeline 10 passed · 신규 lint 0**(선존 3건 import 무접촉). FE 배지: baker false→`computeIsStale` 24h 규칙→신선 시 초록(배지 꺼짐) 라인 확증. 마이그레이션 0. worktree `sv-eod-time1`. 정본 결정 = `D-EOD-FRESH-ROOT-NOT-SCHEDULE`.
+- 📋 **EOD-META-STATUS-1 (R2 별건 승격)** (@backend/@infra) — `pipeline_meta.status` 영구 "running" 고착. 뿌리: `eod_pipeline.py`에서 Stage7 bake가 `log.status="success"`(Stage8 이후, :263) **전**에 실행 → baker(`eod_json_baker.py:163`)가 "running"을 구움. 수리는 orchestrator 실행순서(run() 라이프사이클) 건드림 → 같은-파일 저비용 아님·별도 회귀 테스트 필요 → EOD-TIME-1에서 분리. cosmetic(데이터 정합 무영향·FE 소비 미확인).
+- 📋 **RUBRIC-DRIFT-1 (S3 착수 전 필수 선행)** (@infra/@qa) — 채점 재현성 드리프트. 실측: 빈 상태 2화면 내용 불변인데 monitor 5→4→4·portfolio 4→4→3·빈 평균 4.5→4.0→3.5 **단조 하락**(노이즈면 상하 진동해야 함 = 채점자 드리프트 서명). 가설: 채점 프롬프트가 prev_score 참조 → 자기참조 앵커링. 실험(저비용): ⓐ동일 `rendered_*.json` 3회 재채점→순수 분산 ⓑprev_score 제거 조건 비교. **이 실험 전 S3 관찰 후보 임계 확정 금지**.

@@ -7750,3 +7750,20 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **사유 ⑶ 권한**: 타 트랙이 소유한 이설을 이 슬라이스가 되돌릴 권한이 없다.
 - **경위**: 디렉터 09-10 측정은 **그 시점 정확**했다(`113b48a3`은 당시 `monorepo/sess-guide-csg1`에 머물러 main에 없었고, `0bfd185e` 머지로 뒤늦게 착지). main이 지시서 작성과 실행 사이에 밑에서 움직인 경우다. 실행자 STEP 0의 **숫자로 된 HALT 조건**(dogfood 실패 2건)이 착수 전에 잡았다.
 - **파생 규율**: 원안 §4가 주장한 "dogfood RED 2→0"은 **이 슬라이스의 공로가 아니다**. 원장에 그렇게 적지 않는다. 이 슬라이스의 실효는 ⑴ 가이드 문구의 화면 정합 ⑵ `rubric_targets()` 5→6 편입, 둘뿐이다.
+## [2026-09-10] D-EOD-FRESH-ROOT-NOT-SCHEDULE — 연휴 신선도 오탐의 뿌리는 스케줄이 아니라 캘린더-일수 임계 [ops][monitoring][process]
+
+> 트랙: EOD-TIME-1 (R1+R4). 디렉터 승인 2026-09-10. 선행 조사 = EOD-DELAY-1(수집 실패 아님·채점 설계 결함 확정).
+
+- **결정(뿌리≠증상)**: 연휴·주말 신선도 오탐의 뿌리는 **dogfood 실행 스케줄이 아니라 캘린더-일수 임계**다 — 증상(스케줄 05:20→08:00 이동, R5/P1-A)이 아니라 뿌리(거래일 기준 임계)를 고친다. launchd 스케줄 변경은 **반려**.
+- **D-EOD-FRESH-TRADING-DAYS (R4)**: `check_quant` 신선도 지연은 **거래일 수**로 잰다(`market_calendar.trading_days_between`). dogfood는 당일 베이크(22:30 UTC) 이전(05:20 KST)에 돌아 파일이 항상 1 세션 뒤처지므로 1거래일까지 정상. 판정 메시지에 "지연 N일(거래일 기준 M일 — 주말/휴장 포함 여부)" 근거 동봉.
+- **D-EOD-ISSTALE-TZ (R1)**: baker `is_stale`은 UTC/로컬 혼용 금지 — `generated_at`과 now를 모두 설정 타임존(Asia/Seoul)으로 환산해 비교(`compute_is_stale`). 과거 `generated_at.date()`(UTC) vs `date.today()`(KST)가 07:30 KST 베이크를 매일 stale로 오판 → FE 배지 거짓 경고. "다음 날 stale"은 FE 24h 규칙 몫.
+
+**Why**: 캘린더-일수 임계는 추수감사절·크리스마스·독립기념일 등 연 9~10회 연휴마다 동일 오탐을 재발시킨다(잠복). 측정 장치 오탐 5건 누적의 공통 패턴 = "아직 안 만들어진 것/거래일 아닌 날"을 "없어진 것"으로 오판. 증상이 아닌 뿌리를 고쳐야 재발이 끝난다.
+
+## [2026-09-10] D-LANDING-ORDER — GUARD-1C 먼저, 그 다음 EOD-TIME-1 [git][harness][process]
+
+> 트랙: EOD-TIME-1 랜딩 순서. 디렉터 자동 결정(가중합 5.00 vs 3.18·마진 1.82), 2026-09-10.
+
+- **결정**: ⓐ GUARD-1C(GUIDE-CS-GUARD-1C) 먼저 랜딩해 main 10일 RED를 종료 → ⓑ GREEN main 위에서 EOD-TIME-1 재동기(origin/main 흡수)→게이트 전수→no-ff 머지(D-EOD-FRESH-* 명기)→push.
+- **Why**: ①RED 10일·랜딩 25건 상태를 먼저 끝낸다 ②GREEN main 위에서 "0 failed"를 각주 없이 증명 ③csg1이 이미 20커밋 앞서고 충돌 파일이 장부 3개(DECISIONS/TASKQUEUE/PROGRESS)인데 EOD-TIME-1도 동일 3개를 건드렸으므로 먼저 밀면 흡수 부담만 커진다.
+- **장부 3파일 충돌**: 양쪽 보존(append 병합). force·원격 삭제 금지.
