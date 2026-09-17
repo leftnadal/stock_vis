@@ -7741,3 +7741,21 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **사유 ⑶ 권한**: 타 트랙이 소유한 이설을 이 슬라이스가 되돌릴 권한이 없다.
 - **경위**: 디렉터 09-10 측정은 **그 시점 정확**했다(`113b48a3`은 당시 `monorepo/sess-guide-csg1`에 머물러 main에 없었고, `0bfd185e` 머지로 뒤늦게 착지). main이 지시서 작성과 실행 사이에 밑에서 움직인 경우다. 실행자 STEP 0의 **숫자로 된 HALT 조건**(dogfood 실패 2건)이 착수 전에 잡았다.
 - **파생 규율**: 원안 §4가 주장한 "dogfood RED 2→0"은 **이 슬라이스의 공로가 아니다**. 원장에 그렇게 적지 않는다. 이 슬라이스의 실효는 ⑴ 가이드 문구의 화면 정합 ⑵ `rubric_targets()` 5→6 편입, 둘뿐이다.
+
+---
+
+## [2026-09-17] D-NEAR-STOP-BUFFER — 손절 접근 경고 = zone 축 밖 별개 축, 임계 5% [monitor]
+
+> 트랙: 3-A(MONITOR-ALERT-RECOVERY 후속). base = main `2eca515d`, 브랜치 `monorepo/sess-near-stop`, 커밋 `4a77f5c8`. 실측 근거: 2026-09-15 6포지션 전건 `scenario_type=hold`, TLN 손절까지 -3.9%·GEV -7.3%인데 알림 경로 0.
+
+**결정**: 손절 접근 경고를 **`PriceZone`에 구간을 추가하지 않고** 별개 축으로 구현. `price_zone.NEAR_STOP_BUFFER = Decimal("0.05")` + `is_near_stop(close, stop)` 순수 판정. 1회 가드는 `Claim.near_stop_notified_at`(nullable, 마이그 0012) — 밴드 진입 시 기록, 이탈 시 `None` 복귀로 재진입 재발화.
+
+**Why**:
+- **zone 추가 기각**: `D-HOLD-DECISIONS 2`가 `resolve_zone`·`PriceZone` enum 불변을 못박았다. 게다가 `stop < close ≤ entry` 구간에서 손절 밴드를 떼어내면 `new_entry` 모드의 `IMMEDIATE_ALERT_ZONES = {ENTRY, EXITED}` 진입 알림이 그 구간에서 사라진다 — **행위 회귀**.
+- **별개 축 선례 있음**: `D-HOLD-DECISIONS` 부속의 "익절 접근"(`NEAR_TARGET_BUFFER = 0.03`, 저장 zone 무관 표시 전용)과 **동형**. 손절 쪽 대응물이 없었을 뿐이다.
+- **임계 5%(익절 3%보다 넓게)**: 손절은 방향이 비대칭이다 — 익절은 늦어도 되돌릴 수 있지만 손절은 못 되돌린다. 2026-09-15 실측에서 5%는 TLN만 잡고(1/6) 나머지 5종은 통과시켜 노이즈가 적다. 7%는 GEV(-7.3%)를 0.3%p 차로 놓쳐 경계 민감도가 나쁘고, 10%는 3/6이 걸려 상시 경고가 된다.
+- **1회 가드를 `last_price_zone`으로 못 대체하는 이유**: zone 축 밖 신호라 zone 전이가 일어나지 않는다(손절 접근 중에도 zone은 계속 `ENTRY`). 별도 상태 필드가 불가피하다.
+
+**배선**: `build_digest`의 `has_content`에 `near_stops` 포함 — **다른 변동이 0건이어도 손절 접근만으로 메일이 나간다**. 제목·텍스트·HTML 렌더러 전부 최상단 배치(가장 급한 신호).
+
+**게이트**: 신규 테스트 20, monitor 스위트 **355 passed**(회귀 0). 마이그 0012 = nullable additive. **적용 순서 = migrate 먼저 → 코드 배포**(구 코드는 신규 컬럼 무시, 역호환). API 무노출(`ClaimSerializer.fields` 명시 목록) — contracts 변경 없음.
