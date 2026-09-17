@@ -32,3 +32,7 @@ decision: D-OPS-BRIDGE ⑵ 랜딩 승인 1회(ⓑ 4.25) — 병진 승인 2026-0
 
 ## 금지·보고
 구현 전 push 금지(첫 push가 land.sh 자체 검증). 보고 = outbox `OPS-GATE-1_보고.md` 25줄: 판정 · 파일 목록 · 5분기+훅 테스트 결과 · settings.local 정리 diff · 규약 변경 diff 요지 · 자기 랜딩 해시.
+
+## 실측 반영 2026-09-17 (OPS-BRIDGE-0 1차 실행에서 관측)
+- **관측 1**: 자동 권한 분류기가 inbox 파일에서 온 지시로 본체 `git merge`를 실행하는 것을 "Instruction Poisoning → Modify Shared Resources"로 2회 거부. → **`land.sh`가 곧 해법**: 분류기가 보는 것은 `Bash(scripts/ops/land.sh <wt> <branch>)` 한 줄이며, `.ok`(승인 SHA) 검증이 스크립트 안에 있다. `.claude/settings.json` allow에 `Bash(scripts/ops/land.sh:*)`를 추적 파일로 등재.
+- **관측 2**: 본체(main 전용 머지 지점)를 병렬 세션이 동시에 사용 — 실행자의 `reset --hard origin/main`(11:05) 1.5분 뒤 다른 세션이 같은 본체에서 sess-guide-macro 머지·push(11:06). INC-005 유형 near-miss. → land.sh S2 단계 앞에 **본체 락**(`.git/land.lock`, noclobber, 소유자·시각·pid 기록, stale 30분 초과 시 경고 후 HALT) + `MERGE_HEAD` 부재 + `main==origin/main` 3중 확인을 필수로. `reset --hard`는 land.sh에 넣지 않는다(발산 해소는 별도 명시 승인 절차).

@@ -39,3 +39,15 @@ force/force-with-lease · 브랜치·worktree **삭제** · 원격 브랜치 삭
 
 ## 보고 — `docs/instructions/outbox/OPS-BRIDGE-0_보고.md` (커밋) + 채팅 답신, **25줄 이내**
 ① 판정 1줄(합격/불합격/HALT) ② 해시 표: 본체 main·origin/main **전/후**, 3트리, 새 머지 커밋 2개 ③ 게이트 숫자(vitest/pytest/tsc × 2회) ④ 배포 확인 3종(:3000·daphne·health) ⑤ 장부 추기 커밋 ⑥ HALT였다면 지점·원인·디렉터에게 묻는 질문 1줄.
+
+## 재개 지시 2026-09-17T11:45+09:00 (디렉터 · 1차 HALT 판독 후)
+- **판독**: 1차 실행 합격. S0 일치·S1 해소·S2 게이트 2회 GREEN·S3.1 장부 선기재 = git 대조 일치. 머지 직전 정지 처신 **옳았음**(공유 트리 동시 사용 + 분류기 거부). `EOD-FRESH-2` 미등재 판단도 옳았음 — 그 항목은 프로젝트 문서에만 있고 repo 장부에 없었다(디렉터 지시서 결함).
+- **재개 범위 = (A)**: 병진 승인(2026-09-16 "동의해. 진행하자", 승인 SHA `b0fadfa3`·`e1b8e345` 포함 브랜치)은 S2 머지·push → S3 → S4 `sv sync`·web 리빌드까지 유효하다. 새 승인 불요.
+- **재개 절차 (순서 고정)**:
+  1. 본체에서 `git fetch` → `main == origin/main` · tracked dirty 0 · `.git/MERGE_HEAD` 부재 · `git worktree list`에 새 항목 없음을 재확인. 하나라도 어긋나면 HALT(공유 트리 동시 사용 의심).
+  2. 본체에 락: `.git/land.lock` 파일을 만들고(`set -o noclobber`) 내용에 `OPS-BRIDGE-0 <ISO> pid`를 적는다. 이미 있으면 HALT. 완료·HALT 시 반드시 제거.
+  3. S2: `sess-cs-s3-1d`가 origin/main 대비 behind 0이면 그대로, 아니면 역머지+1층 재실행 → 본체 `git merge --no-ff monorepo/sess-cs-s3-1d` → `git push origin main` → fetch·ahead 0.
+  4. S3: `sess-eod-time1` 역머지(장부 3파일 union) → 게이트 3종 → 본체 no-ff 머지 → push → ahead 0. 이 inbox 파일의 본체 사본(재개 지시 포함)과 `OPS-GATE-1.md` 갱신분을 브랜치 사본에 반영해 함께 랜딩.
+  5. S4: `sv sync` → 3트리==origin/main → web §2.2 리빌드 → `:3000` 200 · health 신규 ❌0.
+  6. 락 제거 → outbox 보고를 **갱신**(같은 파일, 상단에 "2차 실행" 절 추가) → 커밋·push.
+- 분류기가 또 거부하면: 거부된 **명령 원문**과 사유를 보고에 적고 HALT. 우회·재시도 금지.
