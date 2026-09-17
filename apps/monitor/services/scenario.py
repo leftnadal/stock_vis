@@ -17,6 +17,7 @@ from apps.monitor.services.closure import (
 )
 from apps.monitor.services.price_zone import (
     is_immediate_zone_alert,
+    is_near_stop,
     resolve_zone,
     zone_anchor,
 )
@@ -80,6 +81,30 @@ def process_claim_scenario(claim, close, as_of):
             })
             claim.last_price_zone = zone
             update_fields.append("last_price_zone")
+
+    # ── 손절 접근 경고 (3-A) — zone 축과 별개. 1회 가드 + 밴드 이탈 시 해제 ──
+    # hold 모드에서 매입가 아래는 전부 ENTRY 한 칸이라 zone 전이로는 손절 접근을 잡을 수 없다.
+    # 손절선을 "넘은 뒤"(EXITED) 알리면 이미 늦으므로 넘기 전에 한 번 알린다.
+    if claim.stop_price is not None and close is not None:
+        near = is_near_stop(close, claim.stop_price)
+        if near and claim.near_stop_notified_at is None:
+            stop_f = float(claim.stop_price)
+            claim.near_stop_notified_at = timezone.now()
+            update_fields.append("near_stop_notified_at")
+            events.append({
+                "type": "near_stop",
+                "claim_id": str(claim.id),
+                "monitor_name": claim.monitor.name,
+                "target_ref": claim.monitor.target_ref,
+                "close": close,
+                "stop": stop_f,
+                "to_stop_pct": (stop_f - close) / close * 100.0,
+                "immediate": True,
+            })
+        elif not near and claim.near_stop_notified_at is not None:
+            # 밴드 밖으로 회복(또는 이탈 확정) → 가드 해제. 재진입하면 다시 1회 발화한다.
+            claim.near_stop_notified_at = None
+            update_fields.append("near_stop_notified_at")
 
     # ── 기한만료 (자동 마감 금지 — 1회 알림 가드) ──
     if not is_hold:

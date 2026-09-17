@@ -69,3 +69,29 @@ def zone_anchor(claim):
     if claim.scenario_type == Claim.ScenarioType.HOLD:
         return claim.purchase_price
     return claim.entry_price
+
+
+# 손절 접근 경고 임계 (3-A) — close ≤ stop×(1+이 값)이면 손절 접근.
+# 저장 zone(resolve_zone) 무관 — NEAR_TARGET_BUFFER(익절 접근)의 손절 쪽 대응물.
+# 익절 3%보다 넓게 잡는다: 손절은 늦게 알면 되돌릴 수 없다.
+NEAR_STOP_BUFFER = Decimal("0.05")
+
+
+def is_near_stop(close, stop, buffer=NEAR_STOP_BUFFER):
+    """현재 종가가 손절선 위 buffer 이내인가 (순수 판정).
+
+    resolve_zone 수학 불변(D-HOLD-DECISIONS 2) — zone 축을 건드리지 않는 별개 축이다.
+    hold 모드에서 매입가 아래가 ENTRY 한 칸으로 뭉뚱그려져 손절 접근을 표현할 수 없기에,
+    저장 zone과 무관한 표시·알림 전용 판정으로 분리한다.
+
+    이미 이탈(close ≤ stop)이면 False — 그건 접근이 아니라 EXITED zone의 소관이다.
+    """
+    if close is None or stop is None:
+        return False
+    close = Decimal(str(close))
+    stop = Decimal(str(stop))
+    if stop <= 0:
+        return False
+    if close <= stop:
+        return False
+    return close <= stop * (Decimal("1") + Decimal(str(buffer)))
