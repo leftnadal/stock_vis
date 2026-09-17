@@ -65,6 +65,22 @@ beforeEach(() => {
   params.value = new URLSearchParams();
 });
 
+describe('Home — E2 빈 사분면 숨김 (D-SCAN-QUAD-EMPTY-HIDE)', () => {
+  it('[시장] 탭: breadth_curr 전건 null이면 사분면 블록을 렌더하지 않는다', () => {
+    params.value = new URLSearchParams('tab=market');
+    quadrant.data = { sectors: [sector('A', 10, null), sector('B', null, null)] };
+    render(<Home />);
+    expect(screen.queryByTestId('sector-quadrant')).toBeNull();
+  });
+
+  it('[시장] 탭: 찍힐 섹터가 하나라도 있으면 렌더(결측 해소 시 자연 복귀)', () => {
+    params.value = new URLSearchParams('tab=market');
+    quadrant.data = { sectors: [sector('A', 10, 0.2), sector('B', null, null)] };
+    render(<Home />);
+    expect(screen.getByTestId('sector-quadrant')).toBeInTheDocument();
+  });
+});
+
 describe('Home — 추천 드로어 진입', () => {
   it('카드 본문 클릭 → 우측 드로어(RecommendationDetailSheet)가 열리고 ESC로 닫힌다', () => {
     render(<Home />);

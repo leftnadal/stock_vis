@@ -25,7 +25,7 @@ import { MacroStrip } from '@/components/strip/MacroStrip';
 import { EventStrip } from '@/components/strip/EventStrip';
 import { EODSkeleton } from '@/components/eod/EODSkeleton';
 import { CoverageStrip } from '@/components/dashboard/CoverageStrip';
-import { SectorQuadrant } from '@/components/charts/SectorQuadrant';
+import { SectorQuadrant, chartedSectors } from '@/components/charts/SectorQuadrant';
 import { useSectorQuadrant } from '@/hooks/useSectorQuadrant';
 import type { Recommendation, SignalCategory, SignalCard } from '@/types/eod';
 
@@ -192,8 +192,10 @@ function HomeContent() {
 
         {activeTab === 'market' && (
           <>
-            {/* DSS-QUADRANT 섹터 사분면 — 폭 축소 감싸기(max-w-[420px]) · fail-quiet */}
-            {quadrant.data && (
+            {/* DSS-QUADRANT 섹터 사분면 — 폭 축소 감싸기(max-w-[420px]) · fail-quiet.
+                D-SCAN-QUAD-EMPTY-HIDE: 찍힐 섹터가 0(예: breadth_curr 전건 null)이면 블록째 미렌더.
+                가림막이지 수리가 아니다(DSS-BREADTH-MISSING) — 결측이 풀리면 조건이 거짓이 되어 자연 복귀. */}
+            {quadrant.data && chartedSectors(quadrant.data.sectors ?? []).length > 0 && (
               <div className="max-w-[420px]">
                 <SectorQuadrant data={quadrant.data} />
               </div>
