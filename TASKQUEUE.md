@@ -5,11 +5,20 @@
 
 ---
 
+## MGMT-BATCH-b49 등재 (2026-09-17, 등재만 · 구현 금지) [ops][mgmt]
+
+> DASH-TOP 슬라이스 2 랜딩·배포 후속. 구현은 각 소관 트랙.
+
+- 🔴 **DSS-BREADTH-MISSING** (**최우선**·todo·theme-heat/chain_sight 트랙) — `GET /api/v1/chainsight/theme-heat/quadrant/`가 **200**을 주고 `sectors` **11건**을 돌려주지만 **`breadth_curr`가 11/11 전건 `null`**(heat는 7/11 존재). 로그인 상태 실측(2026-09-17).
+  **파급 2곳**: ⑴ `SectorQuadrant.chartedSectors()`가 `heat !== null && breadth_curr !== null`을 요구 → **산점도 점 0개**(빈 사분면 카드 407px, 축·경계선·"Heat 미산출" 목록만). ⑵ `assignZone()`이 `breadth_curr === null`이면 `'other'` → 구역 II/IV 0곳 → **DASH-TOP Q3 섹터 칩이 정칙 ⑴로 상시 미표시**.
+  **단서**: 응답 헤더 `heat_date` = **2026-09-16**, 차트 표기 `수요 breadth` 앵커 = **2026-09-12** → **4일 괴리**. DSS 주간 적재 주기·앵커 산출(`SymbolDemandSignal`/`EstimateSnapshot` 계열) 점검이 1순위. cf. [[project_dss_demand_score]] DSS beat 미배선.
+  **주의**: FE 코드 결함 아님 — 두 소비처 모두 결측을 정칙대로 다루고 있다. 수리 지점은 **데이터 생산**.
+
 ## MGMT-LEDGER-2 등재 (2026-09-08, 등재만 · 구현 금지) [ops][mgmt]
 
 > mgmt 배치 등재. ①③④=관찰/프로브(도메인·디렉터 판정), ②=상신 필요, ⑤=T3·T4 실효 조건. 구현은 각 소관 트랙.
 
-- 🆕 **EOD-ISSTALE-DEF** (①·todo·도메인 이관) — 베이커 `is_stale` 플래그 정의 프로브. 거래일 전진에도 지속 점등(08-27~ 관측·dogfood `eod.is_stale` WARN 재발). 플래그 산정 기준이 거래일 갱신을 반영하는지 정의 검토 → EOD/대시보드 도메인 트랙 소관.
+- 🆕 **EOD-ISSTALE-DEF** (①·todo·도메인 이관) — 베이커 `is_stale` 플래그 정의 프로브. 거래일 전진에도 지속 점등(08-27~ 관측·dogfood `eod.is_stale` WARN 재발). 플래그 산정 기준이 거래일 갱신을 반영하는지 정의 검토 → EOD/대시보드 도메인 트랙 소관. **★근인 확정(DASH-TOP 2026-09-15 실측, MGMT-BATCH-b49 부기)**: 정의 문제가 아니라 **버그**다 — `eod_json_baker.py:145`가 `generated_at.date()`(**UTC**)를 `date.today()`(**로컬 KST**)와 비교한다. bake 슬롯 18:30 ET = 22:30 UTC = 익일 07:30 KST이므로 두 날짜가 **항상** 달라 `is_stale`이 **구조적으로 상시 True**. 실측: `trading_date` 09-14(정상 최신) · `generated_at` 09-14T22:30Z · `is_stale` true. → common-bugs 신규 항목(채번 후보) 등재. **소비처 FE는 이미 이 플래그 의존을 끊었다**(DASH-TOP ⑥ S2 = `countMissedBakeSlots()` 결번 판정으로 전환) → 잔여는 **백엔드 플래그 자체 수리 or 폐기** 판단(BAKER-ISSTALE-REDEF와 합류).
 - 🆕 **LOG-ROTATE** (②·상신 필요·@infra) — `~/Library/Logs/stockvis` 대형 로그 로테이션 도입(worker-error ~327MB · neo4j-error ~531MB). **시스템 설정(launchd/newsyslog) 동반 → 상신 필요 항목**(자기 집행 금지).
 - 🆕 **LOG-FORMAT-DATE** (③·todo) — nightly 로그 본문 타임스탬프에 **날짜 포함**(현재 `[HH:MM:SS]`만, 날짜는 파일명에만). 0-3(a) 판별: health json은 mtime이 자기 날짜(9/4~9/8 각 05:40) → "매일 실행" 확정으로 catch-up 기각 가능했으나, **로그 본문만으로는 날짜 판별 불가**(mtime 의존) → 자기서술 로그 위해 등재.
 - 🆕 **NIGHTLY-AUDIT-MISS** (④·발동·디렉터 판정) — 0-3(b) 확정: tier3 감사 산출물 **09-04~ 매일 부재**(마지막 성공 09-03 `reports/9월/3일`). 로그는 존재하나 즉시 **HALT**: "전용 worktree에 미커밋 변경 존재 — 직전 run 커밋/push 실패 잔재 보호. 격리·커밋 중단"(launchd 23:00 발화는 확인 = 스케줄 미스 아님). 원인 = nightly repo worktree(`~/stock-vis-nightly/repo`)에 미커밋 `?? frontend/docs/` 잔재 → 격리 자기보호가 매일 중단. cf. LLM-CREDIT-OUTAGE 관찰 C-1(동일 부재 언급). **★복구 완료(2026-09-10, 디렉터 "남은 항목 작업" 지시)**: stray `frontend/docs/nightly_auto_system/`(잘못된 경로 감사 산출물·정상=`docs/`·untracked·gitignore 아님)를 **비파괴 move-aside**(백업 `~/stock-vis-nightly/stray_frontend_docs_backup_20260910_152027`) → nightly repo worktree **clean 확인**. 데몬 재시작 불요 — 다음 23:00 run이 격리 브랜치 생성·자가 정상화. **잔여 관찰**: 재발 시 근본(감사 스크립트가 `frontend/docs/`로 쓰는 경로 버그 OR gitignore 갭)은 도메인 트랙 소관.
