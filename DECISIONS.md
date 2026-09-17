@@ -8019,3 +8019,15 @@ cf. D-I1b-1(스코프 교정)·common-bugs GLOBAL-SCOPE-TASK.
 - **적용**: 09-17 DASH-TOP 배포에서 지시서가 `npm ci → next build`를 지시했으나 lock diff **0** 실측 → `npm run build`만 집행. 결과 정상(새 BUILD_ID `K28tDV8aBR3X_ONk1g3In`, 스모크 3/3 200).
 - **디렉터 지시서 결함 사례로 박제**: 지시서가 관례보다 **강한** 절차를 적으면 실행자는 대개 그대로 따르는데, 이 건은 강한 쪽이 **더 위험했다**. 배포 절차의 단일 출처는 런북이고(SESSION_CONTRACT §H), 지시서와 충돌하면 **런북이 이긴다** — 실행자는 차이를 보고한다.
 - **일반화**: "더 깨끗하게 하려는 절차"가 **라이브 자산을 먼저 지우는** 형태이면 무중단 전제를 깬다. 배포 스텝은 *추가 후 교체*(build → kickstart)여야 하고, *삭제 후 재생성*이면 폴백 사본을 먼저 뜬다.
+
+### 3-A LANDED — `98055d73` (2026-09-17 18:19 KST)
+
+**착지**: `monorepo/sess-near-stop` → `origin/main` no-ff 머지, push 완료. 역머지 base = `origin/main`(집행 중 `79ed64fa` → `e2e4aa9a`로 재전진 — 신규분은 chain_sight·docs 계열로 monitor·shared 무접촉이라 게이트 유효).
+
+**배포**: ① `migrate monitor 0012` 운영 적용(`[ ]`→`[X]`) → ② 워커 트리 `e2e4aa9a`→`98055d73` re-detach + `celery-worker`만 재기동(PID 42903). 웹 프런트엔드·daphne 무접촉(`web-frontend.plist` 손상 상태).
+
+**확증**: D-1 워커 트리 실측 `NEAR_STOP_MULTIPLIER = 4` / `NEAR_STOP_CAP = Decimal("0.15")` · D-2 `monitor_claim.near_stop_notified_at` = `timestamp with time zone`, nullable YES · D-3 `cb:state:alert_email` = CLOSED(키 미설정), 수신자 설정됨.
+
+**사전 상신 1건(승인 (가))**: `worker_sync.sh:176`이 런타임 트리를 **`origin/main`으로 re-detach**하므로 로컬 main 착지만으로는 워커에 도달하지 않는다(§4②가 3-A 없는 커밋을 배포할 뻔했다). 이 때문에 push가 필수 경로였고 디렉터 승인으로 집행했다. **파생 규율: "착지"의 실효 기준은 로컬 main이 아니라 `origin/main`이다** — 배포 지시서는 push를 별도 항목으로 명시해야 한다.
+
+**라이브 검증 대기**: beat 22:45 UTC(=09-18 07:45 KST) 실행 후 §6(L-1 발송 로그 / L-2 수신 메일 "손절 접근" 절 / L-3 `near_stop_notified_at` 채워진 Claim).

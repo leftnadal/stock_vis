@@ -1890,3 +1890,10 @@
 - 📋 **EOD-FRESH-2** (@infra/@backend, 2026-09-17 등재 — OPS-BRIDGE-0 ⓐ) — EOD-TIME-1 **R1(baker `is_stale` TZ, D-EOD-ISSTALE-TZ)** 이관분. **재측정 선행**: `compute_is_stale`과 베이커가 dashboard.json에 굽는 `is_stale` 플래그가 동일 함수 경로인지 확인 → 09-08~11 True / 09-14 False 시계열이 정상 동작(24h 규칙·주말)인지 판정 → 결함 확증 시에만 수리. 구현 원본 = `f45fcb78`(`packages/shared/stocks/services/eod_json_baker.py` + `tests/unit/stocks/test_eod_json_baker.py`, 공유 존 — 착수 시 단독 확인).
 - 📋 **EOD-META-STATUS-1 (R2 별건 승격)** (@backend/@infra) — `pipeline_meta.status` 영구 "running" 고착. 뿌리: `eod_pipeline.py`에서 Stage7 bake가 `log.status="success"`(Stage8 이후, :263) **전**에 실행 → baker(`eod_json_baker.py:163`)가 "running"을 구움. 수리는 orchestrator 실행순서(run() 라이프사이클) 건드림 → 같은-파일 저비용 아님·별도 회귀 테스트 필요 → EOD-TIME-1에서 분리. cosmetic(데이터 정합 무영향·FE 소비 미확인).
 - 📋 **RUBRIC-DRIFT-1 (S3 착수 전 필수 선행)** (@infra/@qa) — 채점 재현성 드리프트. 실측: 빈 상태 2화면 내용 불변인데 monitor 5→4→4·portfolio 4→4→3·빈 평균 4.5→4.0→3.5 **단조 하락**(노이즈면 상하 진동해야 함 = 채점자 드리프트 서명). 가설: 채점 프롬프트가 prev_score 참조 → 자기참조 앵커링. 실험(저비용): ⓐ동일 `rendered_*.json` 3회 재채점→순수 분산 ⓑprev_score 제거 조건 비교. **이 실험 전 S3 관찰 후보 임계 확정 금지**.
+
+## MON-ALERT-3A 이월 (2026-09-17 등재, LANDED `98055d73`)
+
+> 결정 = [[DECISIONS]] D-NEAR-STOP-BUFFER + 애든덤 0917-A/B + 3-A LANDED 절. 본 트랙(손절 접근 경고) 배포 완료 후 이월분 2건.
+
+- 📋 **3-B 손절 접근 메일 — "남은 리드일" 표기 + 급한 순 정렬** (@backend) — 현재 `near_stops` 섹션이 **이름순**이라 가장 급한 종목이 중간·하단에 온다. 그리고 **퍼센트 거리는 착시**다: 09-15 실측에서 IONQ(-8.0%, median 3.537%)가 TLN(-3.9%, median 1.594%)보다 급하다 — 리드일로 환산하면 IONQ 2.45일 vs TLN 2.53일. 수리 = ⑴ 행에 **남은 리드일**(= 필요버퍼 ÷ median, 필요버퍼는 **손절가 기준** `close/stop − 1`) 표기 ⑵ 리드일 오름차순 정렬. 이벤트 dict에 이미 `band_pct`가 있으므로 `median` 또는 `lead_days`만 추가하면 된다. ⚠️ 리드일 산식은 `test_required_buffer_is_stop_anchored`가 고정한 **손절가 기준**을 따를 것 — 종가 기준으로 나누면 틀린다(0917-A 보고 오류 선례).
+- 📋 **[OPS] pre-commit 훅이 `~/worktrees/`를 비표준·iCloud 의심 경로로 판정** (@infra) — 격리 worktree에서 커밋 시 매번 `⚠️ pre-commit 경고: 비표준 작업 경로 / iCloud 측 작업 의심` 출력(차단 아님). 격리 worktree가 표준 동선이 됐으므로(D-SESSION-NO-KILL-FOREIGN·OPS-GATE-1 관측 3) `scripts/hooks/pre-commit`의 경로 판정에 `~/worktrees/` 화이트리스트 보강 필요. 경고 피로가 실제 iCloud 사고 신호를 묻는다.
