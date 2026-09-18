@@ -34,10 +34,11 @@ This file helps humans and agents find relevant Working Records. It is a locator
 ## Record Reconstruction / Evaluation Target
 
 **Topic:** Record Reconstruction Evaluation Target  
-**Keywords:** record reconstruction, gold audit, valid provenance route, selected_route_validity, route_set_completeness, compound, ambiguous, AND OR, annotation, retrospective rescoring, 근거 역할, 정답 기준, 경로 충분성, 재채점  
-**Latest recorded state:** Checkpoint 01 reviews the user-supplied v0.1.1 gold-audit handoff and recommends bounded valid-route evaluation with role fidelity. Work counts are reported, not independently re-audited; evaluator revision and rescoring remain pending user approval.  
+**Keywords:** record reconstruction, gold audit, valid provenance route, selected_route_validity, route_set_completeness, compound, ambiguous, AND OR, annotation, retrospective rescoring, gold v0.2 candidate, bounded execution approval, 근거 역할, 정답 기준, 경로 충분성, 재채점, 승인 범위  
+**Latest recorded state:** Checkpoint 01 preserves the gold-audit review. Checkpoint 02 records the user's bounded approval for development-only valid-route evaluation, a local gold v0.2 candidate and validator revision, and rescoring existing outputs without model calls. Work execution/results are not yet confirmed here; this does not approve permanent rules or artifact promotion.  
 **Records:**
 - [`2026-09-18_record-reconstruction-evaluation-target_01.md`](records/2026-09-18_record-reconstruction-evaluation-target_01.md)
+- [`2026-09-18_record-reconstruction-evaluation-target_02.md`](records/2026-09-18_record-reconstruction-evaluation-target_02.md)
 
 ## Retrieval Rule
 
