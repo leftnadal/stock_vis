@@ -152,6 +152,25 @@ H-2 `서비스 재기동 폭풍` = launchd 관리 서비스 24h 재기동 **>20 
 **Why**: 읽는 쪽 교정(DSS-ASOF-1)은 이미 적재된 행의 **내용**을 바꾸지 못한다 — 09-12 앵커 502행이 전건 `missing_prev`인 것이 그 증거다. 관측일과 대상일을 같은 필드에 담는 구조 자체를 고쳐야 재발이 끝난다.
 
 **How to apply**: 변경 지점 2곳뿐 — `apps/chain_sight/tasks/estimate_tasks.py:40` `snapshot_date = timezone.now().date()`(⚠️ 현재 **UTC 날짜**다. 20:00 ET 이후 실행 시 하루 앞선 날짜가 박히는 잠재 결함 — 함께 수리) · `apps/chain_sight/tasks/dss_tasks.py:34` `et_today`. 가드(`최신 스냅샷 앵커 ≠ et_today`)도 as_of 기반으로 전환하면 09-12형 skip이 사라진다. **마이그레이션 불요**(값 의미만 바뀜·`unique_together` 불변: `(symbol, snapshot_date, fiscal_year)` / `(symbol, anchor_date)`). **행위보존 증명** = 자동발화 12건에 신·구 로직을 모두 적용해 동일 앵커 산출 확인(이미 `scripts/asof_anchor_sweep.py`가 그 모집단을 출력한다).
+## [2026-09-18] D-SCB-CONTEXT-SOURCE-1 정정 — 맥락 축 GREEN → **AMBER** (원 항목 무수정·정정 절 추가) [portfolio][data][process]
+
+> 대상: 아래 `[2026-09-17] D-SCB-CONTEXT-SOURCE-1`. **원 항목은 고치지 않는다** — 판단이 왜 바뀌었는지가 기록의 값이므로 정정 절로만 덧댄다.
+
+**정정**: 맥락 축(기존 news 조인) 판정을 **GREEN → AMBER**로 내린다. 논거 축(`/stable/grades`) 판정과 `grades-news` 트리거 보류, `grades_historical` 흡수는 **그대로 유지**한다.
+
+**사유 — 잰 것이 조회 가능성이지 귀속 정확도가 아니었다.** SCB-CONTEXT-RECON 지시서(2026-09-10)의 맥락 축 질문은 *"심볼+날짜로 뽑을 수 있는가(인덱스 포함)"* 였다. 조회 가능성만 물었고 **그 뉴스가 그 종목의 이야기인지는 묻지 않았다.** 그 GREEN을 근거로 원 항목에 "맥락 축 = 즉시 가용"이라 등재했다 — **"검색된다"를 "쓸 만하다"로 치환**한 것이며, 검증 4겹의 **③실질**을 건너뛴 유형이다.
+
+**교차 근거 2건 (둘 다 하한값, 독립 측정, 같은 벽을 가리킴)**:
+- **CS-S3** `docs/reports/cs_s3_comention_provenance_recon.md`(CS-RESUME-DEPLOY, 2026-09-15, prod 실측) — *"근인② `ChainNewsEvent.symbol` 이 제목의 주어가 아니다"* → 표본 50건 중 주어 적중 **18건(36%)**. 같은 보고서: *"측정 한계(하한값이라는 뜻): 규칙이 자회사·브랜드명을 놓친다"*, *"대량 노이즈 제거가 아니라 **선택 규칙 교정**의 문제"*.
+- **SCB-CONTEXT-S1** (2026-09-17, 본 세션 실측) — 성적판 9심볼 315신호의 ±3일 창 회수 925행에서 제목에 심볼 또는 회사명이 등장하는 비율 **464/925 = 50.2%**(하한값). 심볼별 편차 IREN 76.2% ~ **GEV 10.5%**.
+- 실물 확증: GEV miss 신호(`captured_at=2026-08-03`)의 ±3일 뉴스 5건 중 GE Vernova를 다룬 제목 **0건**(Valaris·Terra Innovatum·AES·ETF 2건).
+
+**Why(순서를 뒤집는 근거)**: 카드가 *"그때 무슨 일이 있었나"* 라는 제목을 달고 무관한 기사를 보여주면, **빗나간 신호일수록 사용자가 펼치므로 가장 중요한 순간에 가장 크게 어긋난다.** 가중합 = 안1 3.20 / 안2 3.55 / 안3 3.05 / **안4(S2 선행) 4.60**, 마진 **1.05 > 1.00 = 자동 결정**.
+
+**How to apply**: 맥락 축 착수 전제 = **뉴스↔종목 귀속 규칙 교정**이 선행되어야 한다. 그 규칙은 CS-S3의 S3-2 결정 사이클과 **묶어서** 정한다(각자 만들면 갈라진다). S1 재개 시 어댑터 위치는 **앱 계층**이다 — `packages/shared/stocks/services/news_source.py:6-8`이 *"실뉴스(NewsEntity, `services.news`) 기반 구현은 **앱 계층 슬라이스**에서 어댑터를 주입한다 — shared는 `apps.*`/`services.*`를 import하지 않는다"* 로 못박으며 [[D-BOUNDARY-NO-DYNAMIC-EVASION]](2026-08-31)이 동적 우회까지 차단한다. (S1 지시서 §3-6의 *"어댑터는 `packages/shared`에 두되"* 는 **철회**한다.)
+
+**절차 교훈(같이 남긴다)**: CS-S3 보고서는 **09-15에 이미 main에 있었다.** S1 지시서를 쓰기 전 `docs/reports/` 를 훑었으면 발견했을 것이다. 실측을 시작하기 전에 **같은 벽을 이미 만난 보고서가 repo에 있는지 먼저 본다.**
+
 ## [2026-09-17] D-SCB-CONTEXT-SOURCE-1 — 채점 카드 맥락층 원천 확정 [portfolio][data][llm]
 **결정**: SCB-CONTEXT 맥락층의 데이터 원천을 아래로 **확정**한다.
 - **논거 축 = FMP `/stable/grades`** — 등급 변경 **사건 타임라인**. 프로브 실측(SCB-RECOVER-PROBE 2026-09-15): `200` · NVDA **1,158행** · **2012-02-13~2026-09-04** · `gradingCompany`·`previousGrade`·`newGrade`·`action`·`date` 실재.
