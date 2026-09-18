@@ -34,12 +34,13 @@ This file helps humans and agents find relevant Working Records. It is a locator
 ## Record Reconstruction / Evaluation Target
 
 **Topic:** Record Reconstruction Evaluation Target  
-**Keywords:** record reconstruction, gold audit, valid provenance route, selected_route_validity, route_set_completeness, compound, ambiguous, AND OR, annotation, retrospective rescoring, gold v0.2 candidate, bounded execution approval, 59 routes, semantic audit, prior evaluation citation, claim strength, review independence, 근거 역할, 정답 기준, 경로 충분성, 재채점, 승인 범위, 의미 감사, 원문 대조  
-**Latest recorded state:** Checkpoint 02 preserves bounded rescoring approval. Checkpoint 03 records Work's reported Gold v0.2 result (41 valid / 2 invalid / 0 review-required) and recommends a 59-route semantic audit before prompt changes or held-out work. Chat has not accessed the underlying package or independently verified those results; gold remains a development candidate, and a new independent audit or reviewer invocation is not yet approved here.  
+**Keywords:** record reconstruction, gold audit, valid provenance route, selected_route_validity, route_set_completeness, compound, ambiguous, AND OR, annotation, retrospective rescoring, gold v0.2 candidate, bounded execution approval, 59 routes, semantic audit, prior evaluation citation, claim strength, review independence, existing audit reconciliation, 근거 역할, 정답 기준, 경로 충분성, 재채점, 승인 범위, 의미 감사, 원문 대조, 중복 작업 방지  
+**Latest recorded state:** Checkpoint 04 records bounded approval for the no-new-model-call semantic audit. A completion report found in another Work conversation must first be reconciled with source artifacts; reuse adequate checks and fill gaps rather than blindly repeat the audit. Chat has not obtained the package or independently verified the 41/2/0 or 59-route results. Gold remains a development candidate; new reviewer calls, prompt changes and held-out execution are excluded.  
 **Records:**
 - [`2026-09-18_record-reconstruction-evaluation-target_01.md`](records/2026-09-18_record-reconstruction-evaluation-target_01.md)
 - [`2026-09-18_record-reconstruction-evaluation-target_02.md`](records/2026-09-18_record-reconstruction-evaluation-target_02.md)
 - [`2026-09-18_record-reconstruction-evaluation-target_03.md`](records/2026-09-18_record-reconstruction-evaluation-target_03.md)
+- [`2026-09-18_record-reconstruction-evaluation-target_04.md`](records/2026-09-18_record-reconstruction-evaluation-target_04.md)
 
 ## Retrieval Rule
 
