@@ -34,14 +34,15 @@ This file helps humans and agents find relevant Working Records. It is a locator
 ## Record Reconstruction / Evaluation Target
 
 **Topic:** Record Reconstruction Evaluation Target  
-**Keywords:** record reconstruction, gold audit, valid provenance route, selected_route_validity, route_set_completeness, compound, ambiguous, AND OR, annotation, retrospective rescoring, gold v0.2 candidate, bounded execution approval, 59 routes, semantic audit, prior evaluation citation, claim strength, review independence, existing audit reconciliation, gold v0.2.1, attribution limit, frozen claim semantics, opaque package, 근거 역할, 정답 기준, 경로 충분성, 재채점, 승인 범위, 의미 감사, 원문 대조, 중복 작업 방지, 귀속 범위, 원 주장 보존  
-**Latest recorded state:** Checkpoint 05 reviews the Work handoff reporting a 59-route self-audit and Gold v0.2.1 candidate with 56 active routes and a 40/3/0 rescore. Chat read the handoff, not the underlying JSON/raw artifacts. It recommends the candidate for separate review while preserving frozen claim meaning and conditional prior-evaluation reuse. Reviewer execution remains unapproved; no official methodology or performance admission is made.  
+**Keywords:** record reconstruction, gold audit, valid provenance route, selected_route_validity, route_set_completeness, compound, ambiguous, AND OR, annotation, retrospective rescoring, gold v0.2 candidate, bounded execution approval, 59 routes, semantic audit, prior evaluation citation, claim strength, review independence, existing audit reconciliation, gold v0.2.1, attribution limit, frozen claim semantics, opaque package, reviewer preparation, execution plan, 근거 역할, 정답 기준, 경로 충분성, 재채점, 승인 범위, 의미 감사, 원문 대조, 중복 작업 방지, 귀속 범위, 원 주장 보존, 실행안 준비, 호출 미승인  
+**Latest recorded state:** Checkpoint 06 records user approval to use Gold v0.2.1 as a development review candidate and prepare an updated reviewer package plus a bounded execution plan under Option B. Actual reviewer/model calls remain unapproved. Package completion and independent review results are not confirmed here; no gold correctness or performance admission is implied. Checkpoint 05 retains the earlier review and its verification limits.  
 **Records:**
 - [`2026-09-18_record-reconstruction-evaluation-target_01.md`](records/2026-09-18_record-reconstruction-evaluation-target_01.md)
 - [`2026-09-18_record-reconstruction-evaluation-target_02.md`](records/2026-09-18_record-reconstruction-evaluation-target_02.md)
 - [`2026-09-18_record-reconstruction-evaluation-target_03.md`](records/2026-09-18_record-reconstruction-evaluation-target_03.md)
 - [`2026-09-18_record-reconstruction-evaluation-target_04.md`](records/2026-09-18_record-reconstruction-evaluation-target_04.md)
 - [`2026-09-18_record-reconstruction-evaluation-target_05.md`](records/2026-09-18_record-reconstruction-evaluation-target_05.md)
+- [`2026-09-18_record-reconstruction-evaluation-target_06.md`](records/2026-09-18_record-reconstruction-evaluation-target_06.md)
 
 ## Retrieval Rule
 
