@@ -34,13 +34,14 @@ This file helps humans and agents find relevant Working Records. It is a locator
 ## Record Reconstruction / Evaluation Target
 
 **Topic:** Record Reconstruction Evaluation Target  
-**Keywords:** record reconstruction, gold audit, valid provenance route, selected_route_validity, route_set_completeness, compound, ambiguous, AND OR, annotation, retrospective rescoring, gold v0.2 candidate, bounded execution approval, 59 routes, semantic audit, prior evaluation citation, claim strength, review independence, existing audit reconciliation, 근거 역할, 정답 기준, 경로 충분성, 재채점, 승인 범위, 의미 감사, 원문 대조, 중복 작업 방지  
-**Latest recorded state:** Checkpoint 04 records bounded approval for the no-new-model-call semantic audit. A completion report found in another Work conversation must first be reconciled with source artifacts; reuse adequate checks and fill gaps rather than blindly repeat the audit. Chat has not obtained the package or independently verified the 41/2/0 or 59-route results. Gold remains a development candidate; new reviewer calls, prompt changes and held-out execution are excluded.  
+**Keywords:** record reconstruction, gold audit, valid provenance route, selected_route_validity, route_set_completeness, compound, ambiguous, AND OR, annotation, retrospective rescoring, gold v0.2 candidate, bounded execution approval, 59 routes, semantic audit, prior evaluation citation, claim strength, review independence, existing audit reconciliation, gold v0.2.1, attribution limit, frozen claim semantics, opaque package, 근거 역할, 정답 기준, 경로 충분성, 재채점, 승인 범위, 의미 감사, 원문 대조, 중복 작업 방지, 귀속 범위, 원 주장 보존  
+**Latest recorded state:** Checkpoint 05 reviews the Work handoff reporting a 59-route self-audit and Gold v0.2.1 candidate with 56 active routes and a 40/3/0 rescore. Chat read the handoff, not the underlying JSON/raw artifacts. It recommends the candidate for separate review while preserving frozen claim meaning and conditional prior-evaluation reuse. Reviewer execution remains unapproved; no official methodology or performance admission is made.  
 **Records:**
 - [`2026-09-18_record-reconstruction-evaluation-target_01.md`](records/2026-09-18_record-reconstruction-evaluation-target_01.md)
 - [`2026-09-18_record-reconstruction-evaluation-target_02.md`](records/2026-09-18_record-reconstruction-evaluation-target_02.md)
 - [`2026-09-18_record-reconstruction-evaluation-target_03.md`](records/2026-09-18_record-reconstruction-evaluation-target_03.md)
 - [`2026-09-18_record-reconstruction-evaluation-target_04.md`](records/2026-09-18_record-reconstruction-evaluation-target_04.md)
+- [`2026-09-18_record-reconstruction-evaluation-target_05.md`](records/2026-09-18_record-reconstruction-evaluation-target_05.md)
 
 ## Retrieval Rule
 
