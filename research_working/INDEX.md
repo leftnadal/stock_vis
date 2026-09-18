@@ -31,6 +31,14 @@ This file helps humans and agents find relevant Working Records. It is a locator
 **Records:**
 - [`2026-09-18_research-collaboration-response-structure_01.md`](records/2026-09-18_research-collaboration-response-structure_01.md)
 
+## Record Reconstruction / Evaluation Target
+
+**Topic:** Record Reconstruction Evaluation Target  
+**Keywords:** record reconstruction, gold audit, valid provenance route, selected_route_validity, route_set_completeness, compound, ambiguous, AND OR, annotation, retrospective rescoring, 근거 역할, 정답 기준, 경로 충분성, 재채점  
+**Latest recorded state:** Checkpoint 01 reviews the user-supplied v0.1.1 gold-audit handoff and recommends bounded valid-route evaluation with role fidelity. Work counts are reported, not independently re-audited; evaluator revision and rescoring remain pending user approval.  
+**Records:**
+- [`2026-09-18_record-reconstruction-evaluation-target_01.md`](records/2026-09-18_record-reconstruction-evaluation-target_01.md)
+
 ## Retrieval Rule
 
 When using this index:
