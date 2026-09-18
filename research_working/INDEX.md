@@ -16,13 +16,14 @@ This file helps humans and agents find relevant Working Records. It is a locator
 ## Judgment / Outcome / Learning
 
 **Topic:** Judgment–Outcome–Learning Feedback Loop  
-**Keywords:** judgment quality, outcome bias, signal, review target, candidate learning, learning quality, transfer test, operational learning, prior-learning scan, retrieval trigger, classification review, terminology, counterexample, self-review, relevance screening, use-specific compatibility, positive outcome, prior-record use, declared use, observable revision, learning effect, non-use rationale, 분류 점검, 사전 검토, 반례, 검색 조건, 적용 가능성, 뜻밖의 성공, 과거 기록 활용, 명시적 사용, 관찰된 변경, 학습 효과, 판단 유지, 비적용 이유  
-**Latest recorded state:** Proposals remain non-authoritative. Checkpoint 03 proposes current-situation retrieval cues and use-specific compatibility; Checkpoint 04 proposes linking material prior-record use and limits within existing records without treating access, declared use, or observed revision as proven learning benefit. No new schema, runtime policy, or effect claim is approved by these records.  
+**Keywords:** judgment quality, outcome bias, signal, review target, candidate learning, learning quality, transfer test, operational learning, prior-learning scan, retrieval trigger, classification review, terminology, counterexample, self-review, relevance screening, use-specific compatibility, positive outcome, prior-record use, declared use, observable revision, learning effect, non-use rationale, 分류 점검, 사전 검토, 반례, 검색 조건, 적용 가능성, 뜻밖의 성공, 과거 기록 활용, 명시적 사용, 관찰된 변경, 학습 효과, 판단 유지, 비적용 이유  
+**Latest recorded state:** Checkpoint 05 records user agreement to the Checkpoint 04 design direction: link material prior-record references, declared use, current judgment and limits within existing records rather than create a separate use ledger. This does not establish a mandatory schema, runtime policy, proven learning benefit, or new execution approval. Earlier retrieval proposals and their history remain in Checkpoints 03–04.  
 **Records:**
 - [`2026-09-17_judgment-outcome-learning-feedback-loop_01.md`](records/2026-09-17_judgment-outcome-learning-feedback-loop_01.md)
 - [`2026-09-18_judgment-outcome-learning-feedback-loop_02.md`](records/2026-09-18_judgment-outcome-learning-feedback-loop_02.md)
 - [`2026-09-18_judgment-outcome-learning-feedback-loop_03.md`](records/2026-09-18_judgment-outcome-learning-feedback-loop_03.md)
 - [`2026-09-18_judgment-outcome-learning-feedback-loop_04.md`](records/2026-09-18_judgment-outcome-learning-feedback-loop_04.md)
+- [`2026-09-18_judgment-outcome-learning-feedback-loop_05.md`](records/2026-09-18_judgment-outcome-learning-feedback-loop_05.md)
 
 ## Research Collaboration / Response Structure
 
