@@ -35,6 +35,7 @@ This file helps humans and agents find relevant Working Records. It is a locator
 
 **Topic:** Research Collaboration & Response Structure  
 **Keywords:** response structure, context recovery, executive summary, CEO decision, approval scope, communication, 전체 그림, 맥락 복원, 두괄식, 최종 정리, CEO 결정, 답변 구성  
+**Latest recorded state:** Checkpoint 01 records the user's request for big-picture context, conclusion-first detail, and a self-contained final review with genuine CEO decision items. This is a communication preference, not a new Methodology or fixed decision-packet schema.  
 **Records:**
 - [`2026-09-18_research-collaboration-response-structure_01.md`](records/2026-09-18_research-collaboration-response-structure_01.md)
 
