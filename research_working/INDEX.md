@@ -16,8 +16,8 @@ This file helps humans and agents find relevant Working Records. It is a locator
 ## Judgment / Outcome / Learning
 
 **Topic:** Judgment–Outcome–Learning Feedback Loop  
-**Keywords:** judgment quality, outcome bias, signal, review target, candidate learning, learning quality, transfer test, operational learning, prior-learning scan, retrieval trigger, classification review, terminology, counterexample, self-review, relevance screening, use-specific compatibility, positive outcome, prior-record use, declared use, observable revision, learning effect, non-use rationale, record sufficiency, reconstructability, material omission, honest incompleteness, summary fidelity, worked example, next research action, negative transfer, comparison design, design agreement, 분류 점검, 사전 검토, 반례, 검색 조건, 적용 가능성, 뜻밖의 성공, 과거 기록 활용, 명시적 사용, 관찰된 변경, 학습 효과, 판단 유지, 비적용 이유, 기록 충분성, 재구성, 기록 부담, 중요한 누락, 결손, 축약 예시, 의미 보존, 다음 연구 행동, 비교 설계, 방향 합의  
-**Latest recorded state:** Checkpoint 10 records user agreement to the bounded next-research-action comparison direction in Checkpoint 09, including harmful-transfer and cost concerns. This is research-direction agreement, not approval of cases, models, a new Job, an experiment, reviewer calls, held-out work or memory admission. The user's immediate priority is the separate Work handoff review.  
+**Keywords:** judgment quality, outcome bias, signal, review target, candidate learning, learning quality, transfer test, operational learning, prior-learning scan, retrieval trigger, classification review, terminology, counterexample, self-review, relevance screening, use-specific compatibility, positive outcome, prior-record use, declared use, observable revision, learning effect, non-use rationale, record sufficiency, reconstructability, material omission, honest incompleteness, summary fidelity, worked example, next research action, negative transfer, comparison design, design agreement, conditional follow-up, information value, 分類 점검, 사전 검토, 반례, 검색 조건, 적용 가능성, 뜻밖의 성공, 과거 기록 활용, 명시적 사용, 관찰된 변경, 학습 효과, 판단 유지, 비적용 이유, 기록 충분성, 재구성, 기록 부담, 중요한 누락, 결손, 축약 예시, 의미 보존, 다음 연구 행동, 비교 설계, 방향 합의, 결과별 후속 판단, 정보 가치  
+**Latest recorded state:** Checkpoint 10 preserves user agreement to compare bounded next-research-action proposals with/without selected prior records. Checkpoint 11 resumes that design separately from Work repairs and proposes a narrow comparison-interpretation task, action rationale and conditional follow-up, source-grounded evaluation, and separate reading/execution costs. This detail is not yet agreed; illustrative cases are not test evidence and no experiment, reviewer call or Work scope change is approved.  
 **Records:**
 - [`2026-09-17_judgment-outcome-learning-feedback-loop_01.md`](records/2026-09-17_judgment-outcome-learning-feedback-loop_01.md)
 - [`2026-09-18_judgment-outcome-learning-feedback-loop_02.md`](records/2026-09-18_judgment-outcome-learning-feedback-loop_02.md)
@@ -29,6 +29,7 @@ This file helps humans and agents find relevant Working Records. It is a locator
 - [`2026-09-19_judgment-outcome-learning-feedback-loop_08.md`](records/2026-09-19_judgment-outcome-learning-feedback-loop_08.md)
 - [`2026-09-19_judgment-outcome-learning-feedback-loop_09.md`](records/2026-09-19_judgment-outcome-learning-feedback-loop_09.md)
 - [`2026-09-19_judgment-outcome-learning-feedback-loop_10.md`](records/2026-09-19_judgment-outcome-learning-feedback-loop_10.md)
+- [`2026-09-19_judgment-outcome-learning-feedback-loop_11.md`](records/2026-09-19_judgment-outcome-learning-feedback-loop_11.md)
 
 ## Research Collaboration / Response Structure
 
