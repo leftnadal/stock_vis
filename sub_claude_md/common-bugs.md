@@ -2108,7 +2108,7 @@ cf. `D-DSS-W11-RESCUE`·`D-FIRING-WATCH-DECOUPLE`
 
 **교훈**: **"성공"의 정의가 층마다 다르면 장애는 층 사이에 숨는다.** beat는 태스크 완주를 성공으로 보고, 태스크는 예외 없음을 성공으로 보고, 사용자는 메일 수신을 성공으로 본다. 이 셋이 어긋난 구간이 7주였다. best-effort 삼킴은 **폭주를 막는 장치이지 실패를 없애는 장치가 아니다** — 삼킨 예외는 반드시 어딘가에 **세어지는 형태로** 남아야 한다. 부수 규율: 외부 자격증명(SMTP·LLM 키)은 만료가 상시 발생하므로 **라이브 프로브를 상설화**한다([[lesson_runtime_debug_true_overrides_safe_settings]]와 같은 계열 — 정적 감사로는 안 잡힌다).
 
-## Django 5에서 `django.utils.timezone.utc`가 제거됐다 — `datetime.timezone.utc`를 쓴다 (채번 후보, ADDENDUM-3A-0917-A 2026-09-17) `[django][test][upgrade]`
+## Django 5에서 `django.utils.timezone.utc`가 제거됐다 — `datetime.timezone.utc`를 쓴다 (채번 후보 — 실측 최대 138, 차기 mgmt 배치가 #139 부여 예정. ADDENDUM-3A-0917-A 2026-09-17) `[django][test][upgrade]`
 
 **증상**: `timezone.make_aware(dt, timezone.utc)` 가 `AttributeError: module 'django.utils.timezone' has no attribute 'utc'` 로 죽는다. 테스트 3건이 같은 헬퍼 한 줄 때문에 동시에 실패했다.
 

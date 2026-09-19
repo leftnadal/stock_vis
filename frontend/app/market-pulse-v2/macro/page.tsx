@@ -17,7 +17,7 @@ import FearGreedGauge from '@/components/macro/FearGreedGauge'
 import YieldCurveChart from '@/components/macro/YieldCurveChart'
 import EconomicIndicators from '@/components/macro/EconomicIndicators'
 import GlobalMarketsCard from '@/components/macro/GlobalMarketsCard'
-import { SenseNote } from '../cards/SenseNote'
+import { SenseSlab } from '../cards/SenseSlab'
 import { STALE_TONE } from '../components/StatusBanner'
 import {
   fearGreedSentence,
@@ -153,15 +153,28 @@ function MacroHubInner() {
               <section className="grid gap-4 md:grid-cols-2">
                 {show('sentiment', activeTab) && (
                   <div data-guide="marketPulse.macro.sentiment">
-                    <FearGreedGauge data={data.fear_greed} />
+                    {/* HUB-SENSE-DETAIL S1: 일반론은 트레이가 그린다 → 위젯 자체 토글은 끈다.
+                        위젯 파일은 무수정 — 호출부에서 prop으로만 끈다. */}
+                    <div className="relative z-10">
+                      <FearGreedGauge data={data.fear_greed} showEducation={false} />
+                    </div>
                     {/* HUB-V02-S2: 국면 연결 한 줄(위젯 형제·위젯 파일 무수정). 룰 문장과 중복 금지 층. */}
-                    <SenseNote sense={fearGreedSentence(data.fear_greed)} />
+                    <SenseSlab
+                      sense={fearGreedSentence(data.fear_greed)}
+                      eduKeys={['fearGreed']}
+                    />
                   </div>
                 )}
                 {show('rates', activeTab) && (
                   <div data-guide="marketPulse.macro.rates">
-                    <YieldCurveChart data={data.interest_rates} />
-                    <SenseNote sense={yieldCurveSentence(data.interest_rates)} />
+                    <div className="relative z-10">
+                      <YieldCurveChart data={data.interest_rates} showEducation={false} />
+                    </div>
+                    <SenseSlab
+                      sense={yieldCurveSentence(data.interest_rates)}
+                      eduKeys={['yieldCurve']}
+                      eduLabel="수익률 곡선이란?"
+                    />
                   </div>
                 )}
               </section>
@@ -169,15 +182,26 @@ function MacroHubInner() {
             {/* 경제지표(전폭) */}
             {show('economy', activeTab) && (
               <section data-guide="marketPulse.macro.economy">
-                <EconomicIndicators data={data.economy} />
-                <SenseNote sense={economySentence(data.economy)} />
+                <div className="relative z-10">
+                  <EconomicIndicators data={data.economy} />
+                </div>
+                {/* 한 카드가 물가·고용 둘을 묶으므로 일반론도 둘(라벨은 상수 title). */}
+                <SenseSlab
+                  sense={economySentence(data.economy)}
+                  eduKeys={['inflation', 'employment']}
+                />
               </section>
             )}
             {/* 글로벌(전폭) */}
             {show('global', activeTab) && (
               <section data-guide="marketPulse.macro.global">
-                <GlobalMarketsCard data={data.global_markets} />
-                <SenseNote sense={globalIndicesSentence(data.global_markets.indices)} />
+                <div className="relative z-10">
+                  <GlobalMarketsCard data={data.global_markets} />
+                </div>
+                <SenseSlab
+                  sense={globalIndicesSentence(data.global_markets.indices)}
+                  eduKeys={['globalMarkets']}
+                />
               </section>
             )}
           </div>
