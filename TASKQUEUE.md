@@ -30,6 +30,19 @@
 - 🆕 **REPORT-FIX-REALIZE** (⑤·검증 대기) — T3(REPORT-TLDR-SYSLINE)·T4(DOGFOOD-EOD-LAG-TRADINGDAYS) **착지 ≠ 실효**. 실효 검증 = **다음 `sv sync`(worker_sync) 후 아침 메일 2종**(@backend 06:15 agent report의 System 줄 = 실제 beat/neo4j 반영 / dogfood 06:20 report의 `eod.trading_date` = 주말·휴장 개재에도 ok). **활성화≠배포** — 유닛 테스트 통과는 착지이며, 자연 발화가 실효 게이트. MIG-BUNDLE-1 배포창(관문②) 동반 랜딩으로 참조.
 
 
+## 🫀 HEARTBEAT 트랙 — 무음 실패 감시 (HB-0 측정 완료 · HB-1 층0 수리 완료, 2026-09-19) [infra][celery][harness]
+
+> HB-0(측정) 결과 요약: `PeriodicTask` **133건 전부 enabled**. 성공 기록은 `TaskResult`에 남으나
+> **`result_expires=1일`**이라 하루 넘은 "마지막 성공"은 조회 불가. health 21항목 중 **시각(신선도)형 6 / 상태형 15**,
+> **프로세스 생존을 보는 항목 0건**. 검증 5건 중 4건(web빌드·neo4j워커 구코드·serving_layer 누락·daphne 구환경)은
+> **신호 자체가 미생성**, 1건(SMTP)은 **신호는 있으나 읽는 장치가 없었다**.
+
+- ✅ **HB-1-B·C** (done, 커밋 `fbd24752`·미push) — digest `sorted()` NULL 방어 + 산출물/발송 분리 + health "Celery 실패 요약" 신설(임계 미설정). pytest 975·마이그 0.
+- 🔴 **HB-1-A-DISPOSITION** (★승인 대기 · **DB 쓰기**) — beat DB의 `rag_analysis.tasks.*` **3건**(`cleanup_expired_semantic_cache`·`get_semantic_cache_stats`·**`warm_semantic_cache`**)이 워커 등록명(`services.` 접두)과 불일치해 매 발화 `NotRegistered`. 판정 = **(a) beat DB가 틀림**(근거: services.54/apps.37/packages.11/metrics.5 전부 모듈경로, 이 3건만 예외 / 코드 `task_routes`는 이미 옳음). 단 `config/celery.py:223`에 **"Semantic Cache 태스크 — 제거됨(향후 폐기 예정)"**이라 적혀 있어, 살리기(a-1)보다 **DB에서 비활성/삭제(a-2)가 코드 의도와 일치**. 실행자 소견 = (a-2). **PeriodicTask 쓰기라 미집행.**
+- 🆕 **HB-1-D-CLOSED** (종결) — SMTP 535는 `.env` 수리(09-17 18:11)로 **이미 해소**됐다. 09-19 실측에서 digest 발송 성공 확인. **Gmail 앱 비밀번호 재발급 불필요**(09-18 보고 정정).
+- 🆕 **BEAT-TASK-FIELD-AUDIT** (todo·측정만) — beat `PeriodicTask.task` 필드에 **모듈 경로가 아닌 잡 이름**이 든 항목이 **약 17건** 관측됨(`chainsight-snapshot-etf-metrics`·`sec-8k-daily` 등). 정상 동작 여부 미확인. HB-0 집계에서 root 분류가 튄 원인이기도 하다.
+- 🕒 **HB-2 층1** (미착수·이번 슬라이스 밖) — 테이블·시그널·감시 항목 신설. HB-0 H0-4의 무음 후보 11종과 H0-5 빈틈 4건이 입력.
+
 ## 📈 GATE-DROP-TREND — 제목 게이트 탈락률 추세 관찰 (등재만·2주 뒤 재판단, CS-S3-1E U-6 2026-09-17) [chainsight][harness]
 
 > **기록만 한다. 임계 조정·코드 수정 금지.**

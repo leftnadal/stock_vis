@@ -2228,3 +2228,13 @@ is_stale = generated_at.date() != date.today()   # ← UTC date vs 로컬(KST) d
 **추적 한계**: 유입 경로는 **미규명**. 내 수리가 mtime을 덮었고, 쉘 히스토리·스크립트·에디터 잔재에 본체 `.env` 편집 흔적이 없었다. 구조적 이유 = **worktree 26개가 전부 본체 `.env`를 심링크로 가리킨다** — 어느 트리에서 편집해도 본체가 바뀌고 출처를 남기지 않는다.
 
 **교훈**: [[lesson_worker_sync_excludes_fe_prod_build]]·교훈 ④(트리 이동 ≠ 프로세스 교체)의 **환경변수판**이다. 같은 구조가 세 층에서 반복된다 — ⑴ FE 소스 vs prod 빌드 ⑵ 워커 트리 vs 메모리 적재 코드 ⑶ `.env` 파일 vs 프로세스 환경. 공통 규율: **"파일을 바꾸는 일"과 "그것을 들고 도는 프로세스를 갈아끼우는 일"은 별개이며, 후자를 하기 전까지 변경은 검증되지 않았다.**
+
+## 실패 알림 장치가 자기가 알려야 할 실패 때문에 죽는다 — `NotRegistered` → `task_name=NULL` → digest `sorted()` TypeError (채번 후보, HEARTBEAT-1 2026-09-19) `[infra][celery][harness]`
+
+**증상**: Celery 실패가 5일간(09-12~17) 아무에게도 도달하지 않았다. 원인이 둘로 겹쳐 있었다 — ⑴ SMTP 535로 발송 불가 ⑵ **`send_celery_error_digest` 자체가 `TypeError: '<' not supported between instances of 'str' and 'NoneType'`로 죽음**(`config/tasks.py:97`).
+
+**원인(사슬)**: beat가 쏘는 태스크명이 워커 등록명과 접두사가 달라(`rag_analysis.tasks.*` vs `services.rag_analysis.tasks.*`) `NotRegistered`가 난다. 워커는 **이름을 알 수 없으므로 `TaskResult.task_name`을 NULL로 저장**한다. digest가 `sorted(new_errors.keys())`로 태스크명을 정렬할 때 그 NULL이 섞여 `str < None` 비교로 죽는다. **즉 알려야 할 실패(NotRegistered)가 만든 레코드가, 그 실패를 알려줄 장치를 죽였다.** 자기참조 침묵이라 관측 신호가 하나도 남지 않는다.
+
+**해결**: ⑴ 정렬 키에 NULL 방어(`key=lambda t: t or ""`) — 집계·발송 로직은 건드리지 않는다. ⑵ **산출물을 발송과 분리**한다: `생성 → 파일 저장(atomic) → 발송`. 발송이 실패해도 요약은 남는다(`~/Library/Logs/stockvis/celery_error_digest.json`, DB 모델 신설 0). ⑶ health에 **TaskResult를 직접 집계하는** 항목을 두어 digest·이메일과 독립적으로 실패 건수가 보이게 한다. digest *생성* 실패만 ERROR로 본다 — 그건 감시 장치 자체의 고장이므로. ⑷ 임계는 즉시 박지 않는다(2주 관측 후) — 정상 국면을 경고로 오인한다.
+
+**교훈**: **알림 경로가 하나뿐이면 그 하나가 죽을 때 침묵한다.** "장치가 없다"가 아니라 "경로가 단일"인 것이 이번 사고의 본질이었다. 그리고 감시 장치는 **자기가 감시하는 대상의 이상 입력에 견뎌야 한다** — 실패 레코드로 죽는 실패 요약기는 감시가 아니다. cf. [[lesson_beat_dict_upsert_expires_dropped]](dict 삭제 ≠ DB 비활성 — 폐기된 잡이 DB에 고아로 남아 이 사슬의 출발점이 됐다).
