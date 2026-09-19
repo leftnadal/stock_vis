@@ -112,8 +112,17 @@ describe('sortScannerStocks', () => {
   ] as Pick<SignalCardDetail, 'category' | 'stocks_by_score'>[]);
   const stocks = [mk({ symbol: 'C', composite_score: 0.9 }), mk({ symbol: 'A', composite_score: 0.1 }), mk({ symbol: 'B', composite_score: 0.5 })];
 
-  it('합류순 = 축 수 desc, 동률 composite desc', () => {
+  it('합류순 = 축 수 desc', () => {
     expect(sortScannerStocks(stocks, 'confluence', map, { volume: [], return: [], market_cap: [] }).map((s) => s.symbol)).toEqual(['A', 'B', 'C']);
+  });
+  it('⑦-4 합류순 동률 = 거래대금 desc(composite 무시) → symbol asc — 추천 R3와 같은 규칙', () => {
+    const tied = [
+      mk({ symbol: 'Z', composite_score: 1, dollar_volume: 5_000_000 }),
+      mk({ symbol: 'Y', composite_score: -1, dollar_volume: 9_000_000 }),
+      mk({ symbol: 'X', composite_score: 1, dollar_volume: 5_000_000 }),
+    ];
+    // 합류 지도에 없는 종목 = 전원 0축 동률
+    expect(sortScannerStocks(tied, 'confluence', map, { volume: [], return: [], market_cap: [] }).map((s) => s.symbol)).toEqual(['Y', 'X', 'Z']);
   });
   it('기존 rank 리스트 순서 유지(volume)', () => {
     expect(sortScannerStocks(stocks, 'volume', map, { volume: ['B', 'C', 'A'], return: [], market_cap: [] }).map((s) => s.symbol)).toEqual(['B', 'C', 'A']);

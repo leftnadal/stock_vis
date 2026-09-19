@@ -18,14 +18,16 @@ import { SignalFilterTabs } from '@/components/eod/SignalFilterTabs';
 import { SignalCardGrid } from '@/components/eod/SignalCardGrid';
 import { SignalDetailSheet } from '@/components/eod/SignalDetailSheet';
 import { RecommendationCarousel } from '@/components/eod/RecommendationCarousel';
+import { RecommendationDetailSheet } from '@/components/eod/RecommendationDetailSheet';
+import { getAxisCategories } from '@/components/eod/confluence';
 import { NewsStrip } from '@/components/strip/NewsStrip';
 import { MacroStrip } from '@/components/strip/MacroStrip';
 import { EventStrip } from '@/components/strip/EventStrip';
 import { EODSkeleton } from '@/components/eod/EODSkeleton';
 import { CoverageStrip } from '@/components/dashboard/CoverageStrip';
-import { SectorQuadrant } from '@/components/charts/SectorQuadrant';
+import { SectorQuadrant, chartedSectors } from '@/components/charts/SectorQuadrant';
 import { useSectorQuadrant } from '@/hooks/useSectorQuadrant';
-import type { SignalCategory, SignalCard } from '@/types/eod';
+import type { Recommendation, SignalCategory, SignalCard } from '@/types/eod';
 
 const VALID_CATEGORIES: Set<string> = new Set([
   'all', 'momentum', 'volume', 'breakout', 'reversal', 'relation', 'technical',
@@ -42,7 +44,11 @@ function HomeContent() {
 
   // 전 카드 합류 지도(스캐너 축 칩·필터·추천 교차 배지). 비차단·세션 캐시(정칙 ⑴로 로딩 중 안전).
   const cardIds = data?.signal_cards.map((c) => c.id) ?? [];
-  const { map: confluenceMap } = useConfluenceMap(cardIds, cardIds.length > 0);
+  const {
+    map: confluenceMap,
+    stockIndex,
+    isLoading: confluenceLoading,
+  } = useConfluenceMap(cardIds, cardIds.length > 0);
 
   // URL에서 activeCategory 읽기
   const categoryParam = searchParams.get('category') ?? 'all';
@@ -61,6 +67,7 @@ function HomeContent() {
     : 'all';
 
   const [selectedCard, setSelectedCard] = useState<SignalCard | null>(null);
+  const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
 
   const handleCategoryChange = useCallback((category: SignalCategory | 'all') => {
     const params = new URLSearchParams(searchParams.toString());
@@ -162,6 +169,9 @@ function HomeContent() {
               recommendations={data.recommendations}
               tradingDate={data.trading_date}
               confluenceMap={confluenceMap}
+              stockIndex={stockIndex}
+              confluenceLoading={confluenceLoading}
+              onSelect={setSelectedRec}
             />
 
             {/* Level 3: 카테고리 필터 */}
@@ -182,8 +192,10 @@ function HomeContent() {
 
         {activeTab === 'market' && (
           <>
-            {/* DSS-QUADRANT 섹터 사분면 — 폭 축소 감싸기(max-w-[420px]) · fail-quiet */}
-            {quadrant.data && (
+            {/* DSS-QUADRANT 섹터 사분면 — 폭 축소 감싸기(max-w-[420px]) · fail-quiet.
+                D-SCAN-QUAD-EMPTY-HIDE: 찍힐 섹터가 0(예: breadth_curr 전건 null)이면 블록째 미렌더.
+                가림막이지 수리가 아니다(DSS-BREADTH-MISSING) — 결측이 풀리면 조건이 거짓이 되어 자연 복귀. */}
+            {quadrant.data && chartedSectors(quadrant.data.sectors ?? []).length > 0 && (
               <div className="max-w-[420px]">
                 <SectorQuadrant data={quadrant.data} />
               </div>
@@ -210,6 +222,16 @@ function HomeContent() {
           card={selectedCard}
           onClose={() => setSelectedCard(null)}
           confluenceMap={confluenceMap}
+        />
+      )}
+
+      {/* 추천 상세 드로어 (카드 본문 클릭) */}
+      {selectedRec && (
+        <RecommendationDetailSheet
+          rec={selectedRec}
+          onClose={() => setSelectedRec(null)}
+          stock={stockIndex?.get(selectedRec.ticker)}
+          axisCategories={getAxisCategories(confluenceMap, selectedRec.ticker)}
         />
       )}
     </div>

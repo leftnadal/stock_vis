@@ -1,7 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import { RecommendationCarousel } from '@/components/eod/RecommendationCarousel';
-import type { Recommendation } from '@/types/eod';
+import { buildConfluenceMap, buildStockIndex } from '@/components/eod/confluence';
+import type { Recommendation, SignalStock } from '@/types/eod';
+
+function stock(symbol: string, dollar_volume: number): SignalStock {
+  return { symbol, dollar_volume } as unknown as SignalStock;
+}
 
 function rec(overrides: Partial<Recommendation>): Recommendation {
   return {
@@ -30,21 +35,52 @@ describe('RecommendationCarousel', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('|composite_score| 내림차순으로 방어 정렬(부호 무관 강도순)', () => {
+  it('R3 정렬: 축 수 내림 → 거래대금 내림 → ticker 오름 (composite_score 무시)', () => {
+    const map = buildConfluenceMap([
+      { category: 'momentum', stocks_by_score: [stock('THREE', 1), stock('TWO_LOWDV', 1), stock('TWO_HIGHDV', 900)] },
+      { category: 'volume', stocks_by_score: [stock('THREE', 1), stock('TWO_LOWDV', 1), stock('TWO_HIGHDV', 900)] },
+      { category: 'technical', stocks_by_score: [stock('THREE', 1)] },
+    ]);
+    const index = buildStockIndex([
+      { category: 'momentum', stocks_by_score: [stock('THREE', 1), stock('TWO_LOWDV', 10), stock('TWO_HIGHDV', 900), stock('ZERO_B', 50), stock('ZERO_A', 50)] },
+    ]);
     render(
       <RecommendationCarousel
+        confluenceMap={map}
+        stockIndex={index}
         recommendations={[
-          rec({ ticker: 'WEAK', composite_score: 0.2 }),
-          rec({ ticker: 'SELL', composite_score: -0.9 }),
-          rec({ ticker: 'MID', composite_score: 0.6 }),
+          rec({ ticker: 'ZERO_B', composite_score: 1 }),
+          rec({ ticker: 'TWO_LOWDV', composite_score: 1 }),
+          rec({ ticker: 'NOJOIN', composite_score: -1 }),
+          rec({ ticker: 'ZERO_A', composite_score: 0.1 }),
+          rec({ ticker: 'TWO_HIGHDV', composite_score: -1 }),
+          rec({ ticker: 'THREE', composite_score: 0.2 }),
         ]}
       />,
     );
-    const items = screen.getAllByRole('listitem');
-    const order = items.map((el) => el.textContent);
-    expect(order[0]).toContain('SELL'); // |0.9|
-    expect(order[1]).toContain('MID'); // |0.6|
-    expect(order[2]).toContain('WEAK'); // |0.2|
+    const order = screen.getAllByRole('listitem').map((el) => el.querySelector('.text-lg')?.textContent);
+    // 0축 셋: 대금 50=50 → ticker 오름(ZERO_A < ZERO_B), 조인 실패(NOJOIN) = 맨 뒤
+    expect(order).toEqual(['THREE', 'TWO_HIGHDV', 'TWO_LOWDV', 'ZERO_A', 'ZERO_B', 'NOJOIN']);
+  });
+
+  it('합류 지도 로딩 중에는 캐러셀만 스켈레톤(카드 미렌더 — 도착 시 재정렬 튐 방지)', () => {
+    render(<RecommendationCarousel confluenceLoading recommendations={[rec({ ticker: 'AAA' })]} />);
+    expect(screen.getByTestId('recommendation-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('AAA')).toBeNull();
+    expect(screen.getByText('오늘의 추천')).toBeInTheDocument();
+  });
+
+  it('로딩이 끝났는데 지도가 없으면(요청 실패) 축 0으로 렌더(정칙 ⑴)', () => {
+    render(<RecommendationCarousel confluenceLoading={false} recommendations={[rec({ ticker: 'AAA' })]} />);
+    expect(screen.queryByTestId('recommendation-skeleton')).toBeNull();
+    expect(screen.getByText('AAA')).toBeInTheDocument();
+  });
+
+  it('카드 본문 클릭 → onSelect(rec)', () => {
+    const onSelect = vi.fn();
+    render(<RecommendationCarousel onSelect={onSelect} recommendations={[rec({ ticker: 'AAA' })]} />);
+    fireEvent.click(screen.getByRole('button', { name: /추천 AAA/ }));
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ ticker: 'AAA' }));
   });
 
   it('방향을 동사 라벨로 이중표기(색 단독 인코딩 금지)', () => {
