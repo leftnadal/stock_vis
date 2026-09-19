@@ -51,6 +51,14 @@ describe('SectorChipLine — 정칙 ⑴ 조용한 생략', () => {
     const { container } = render(<SectorChipLine />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('heat는 있고 breadth_curr만 전건 null(DSS-BREADTH-MISSING 현 상태)이어도 생략한다', () => {
+    useSectorQuadrant.mockReturnValue({
+      data: { sectors: [sector('A', 10, null), sector('B', 50, null), sector('C', 90, null)] },
+    });
+    const { container } = render(<SectorChipLine />);
+    expect(container).toBeEmptyDOMElement();
+  });
 });
 
 describe('SectorChipLine — 한 줄 서술', () => {
