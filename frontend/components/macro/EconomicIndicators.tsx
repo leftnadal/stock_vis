@@ -118,7 +118,10 @@ export default function EconomicIndicators({ data }: EconomicIndicatorsProps) {
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-500 dark:text-gray-400">비농업 고용 (NFP)</span>
-            {employment.nfp_change && employment.nfp_change > 0 ? (
+            {/* MACRO-FE1: 결측과 0을 가른다. 고용 변화 0은 실제로 일어나는 값이라
+                "N/A"로 뭉뚱그리면 거짓이 되고, falsy 검사는 결측을 하락으로 그렸다. */}
+            {employment.nfp_change == null || employment.nfp_change === 0 ? null : employment
+                .nfp_change > 0 ? (
               <TrendingUp className="w-4 h-4 text-green-500" />
             ) : (
               <TrendingDown className="w-4 h-4 text-red-500" />
@@ -127,14 +130,18 @@ export default function EconomicIndicators({ data }: EconomicIndicatorsProps) {
           <div className="flex items-baseline gap-2">
             <span
               className={`text-2xl font-bold ${
-                employment.nfp_change && employment.nfp_change > 0
-                  ? 'text-green-500'
-                  : 'text-red-500'
+                employment.nfp_change == null || employment.nfp_change === 0
+                  ? 'text-gray-500'
+                  : employment.nfp_change > 0
+                    ? 'text-green-500'
+                    : 'text-red-500'
               }`}
             >
-              {employment.nfp_change
-                ? `${employment.nfp_change > 0 ? '+' : ''}${(employment.nfp_change / 1000).toFixed(0)}K`
-                : 'N/A'}
+              {/* MACRO-FE1: nfp_change는 FRED PAYEMS = 이미 천 명 단위(fred_client.py 주석 명시).
+                  /1000을 한 번 더 나눠 162 → "+0K"로 보이던 것을 제거한다. 162 → "+162K". */}
+              {employment.nfp_change == null
+                ? 'N/A'
+                : `${employment.nfp_change > 0 ? '+' : ''}${employment.nfp_change.toFixed(0)}K`}
             </span>
           </div>
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
