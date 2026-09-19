@@ -11,3 +11,13 @@
 ⑪ 채번 후보(번호 미부여): (a) **D-SCAN-REC-JOIN-J2-B 미집행** — DECISIONS가 "슬라이스 3 집행"으로 적었으나 이 지시서 S1~S6에 없음 → SectorChipLine 조인 우변 교체 미착수. 전제 실측(stocks_by_score 조인 100%)은 확보 · (b) 카드 JSON 섹터 표기 불일치 `TECHNOLOGY`1·`FINANCIAL SERVICES`1·`E-Commerce`1 → 스캐너 섹터 필터에 중복 항목·드로어 대문자 노출(baker 정규화 누락 추정) · (c) 오늘 추천 10건 **전원 1축** → R3 1차 키 변별 0, 실질 거래대금 순(모집단 재고 REC-POPULATION-RECONSIDER 재료) · (d) volume 축 pip 색 `#58A6FF`가 매도 배지 sky와 유사 → 방향 오독 가능(디자인 관찰) · (e) 드로어 열기는 click 텔레메트리 미적재(링크 클릭만 기존대로) · (f) `formatCompactUSD` StockRow private 복제 1곳 → 슬라이스 4 StockRow 작업 시 공용화 · (g) risk는 드로어 3섹션 밖(카드에만 표시).
 ⑫ 착지 해시: 미착지 — push 전 상신. 브랜치 HEAD = 보고 커밋(`git -C ~/worktrees/sv-dash-reco log -1`). 랜딩 시 frontend diff 有 → web 리빌드(`npm run build`만, D-DEPLOY-NO-NPM-CI-ON-LIVE) 필요.
 교훈: 없음(신규 버그 수리 0 — 관찰은 ⑪ 채번 후보로만).
+
+[정정 2026-09-19, 디렉터 대조]
+① "구획 밖 diff 1건" → 실제 2건(inbox/DASH-RECO.md + outbox/DASH-RECO_보고.md).
+   본문 괄호의 "+ 이 보고 파일"은 맞았으나 앞 숫자와 불일치했음.
+   디렉터 판정 D-OWN-MAILBOX-EXEMPT로 구획 검사 제외 확정 — HALT 사유 아님.
+   멈춰서 상신한 처신은 옳았음(지시서 DoD 문언이 0번 게이트와 모순 — 디렉터 결함).
+⑥ "코드 17" → 코드·테스트 18 (변경 11 · 신규 6 · 삭제 1).
+   ⑥이 열거한 파일 목록 자체는 정확했고 집계 숫자만 어긋났음.
+   ※ 디렉터가 2026-09-18에 낸 1차 정정문 "변경 14 · 신규 5 · 삭제 1"은 합이 20으로 틀렸다.
+     b49 세션 실행자가 three-dot 실측으로 바로잡았다. 위 값이 확정값이다.
