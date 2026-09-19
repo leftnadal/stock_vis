@@ -31,22 +31,36 @@ logger = logging.getLogger(__name__)
 
 
 def latest_close(symbol, as_of=None):
-    """종목의 최신 종가(as_of 지정 시 그 이하 최근). EODSignal 우선, 없으면 DailyPrice."""
+    """종목의 최신 종가 — 두 소스 중 **더 최신 날짜** 쪽. 동일 날짜면 EODSignal 우선.
+
+    신선도 비교가 필요한 이유: 가드(`pipeline.ensure_price_freshness`)는 **DailyPrice만**
+    보장한다. EODSignal을 무조건 우선하면 EODSignal이 뒤처진 종목에서 stale 종가가 그대로
+    통과한다 — 2026-09-17 TLN 실측: EODSignal 09-14(286.52) vs DailyPrice 09-17(293.31)에서
+    4일 묵은 값이 쓰여 손절 접근이 거짓 발화했다. 갭은 SP500 편입과 무관하다(같은 날
+    GOOGL도 4일 갭, 비SP500 IREN은 갭 0).
+
+    as_of 지정 시 컷오프를 **두 소스 모두**에 적용한다. 둘 다 없으면 None.
+    """
     from packages.shared.stocks.models import DailyPrice, EODSignal
 
     sym = symbol.upper()
-    eq = EODSignal.objects.filter(stock__symbol=sym)
-    if as_of:
-        eq = eq.filter(date__lte=as_of)
-    row = eq.order_by("-date").values_list("close_price", flat=True).first()
-    if row is not None:
-        return float(row)
 
-    dq = DailyPrice.objects.filter(stock__symbol=sym)
-    if as_of:
-        dq = dq.filter(date__lte=as_of)
-    row = dq.order_by("-date").values_list("close_price", flat=True).first()
-    return float(row) if row is not None else None
+    def _latest(qs):
+        # close_price는 양 모델 모두 NOT NULL(실측) — 값 null 분기 불요, 행 유무만 본다.
+        if as_of:
+            qs = qs.filter(date__lte=as_of)
+        return qs.order_by("-date").values_list("date", "close_price").first()
+
+    eod = _latest(EODSignal.objects.filter(stock__symbol=sym))
+    daily = _latest(DailyPrice.objects.filter(stock__symbol=sym))
+
+    if eod is None and daily is None:
+        return None
+    if eod is None:
+        return float(daily[1])
+    if daily is None:
+        return float(eod[1])
+    return float(eod[1]) if eod[0] >= daily[0] else float(daily[1])
 
 
 # 변동성 산출 창(거래일). 손잡이(price_zone)와 달리 계산 세부라 여기 둔다.
