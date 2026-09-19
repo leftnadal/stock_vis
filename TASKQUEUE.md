@@ -13,6 +13,8 @@
   **파급 2곳**: ⑴ `SectorQuadrant.chartedSectors()`가 `heat !== null && breadth_curr !== null`을 요구 → **산점도 점 0개**(빈 사분면 카드 407px, 축·경계선·"Heat 미산출" 목록만). ⑵ `assignZone()`이 `breadth_curr === null`이면 `'other'` → 구역 II/IV 0곳 → **DASH-TOP Q3 섹터 칩이 정칙 ⑴로 상시 미표시**.
   **단서**: 응답 헤더 `heat_date` = **2026-09-16**, 차트 표기 `수요 breadth` 앵커 = **2026-09-12** → **4일 괴리**. DSS 주간 적재 주기·앵커 산출(`SymbolDemandSignal`/`EstimateSnapshot` 계열) 점검이 1순위. cf. [[project_dss_demand_score]] DSS beat 미배선.
   **주의**: FE 코드 결함 아님 — 두 소비처 모두 결측을 정칙대로 다루고 있다. 수리 지점은 **데이터 생산**.
+  **파급 ⑶ 추가 (2026-09-18 디렉터·실행자 교차 검증)**: `unchartedSectors()`가 `heat === null`만 잡는 탓에 **heat 有·breadth 無 섹터는 차트에도 "Heat 미산출" 목록에도 들어가지 않는다** — 2026-09-17 실측(heat 7/11 · breadth 0/11)이면 7개 섹터가 화면에서 흔적 없이 사라진다. `chartedSectors ∪ unchartedSectors`가 전체 섹터를 덮게 해야 한다.
+  **[정정] 위 "주의: FE 코드 결함 아님" 은 파급 ⑶으로 반증됨.** 결측 값을 비우는 것은 정칙 ⑴이지만 대상 자체를 목록에서 없애는 것은 정칙 ⑴이 아니다. 수리 지점은 **데이터 생산(1순위) + FE 목록 분류(`components/charts/SectorQuadrant.tsx`, dashboard 구획 밖)** 둘이다. 원 문구는 작성 시점 판단으로 보존한다.
 - 🆕 **HEALTH-NUMBERING-GUARD** (todo·ops/mgmt 트랙) — `scripts/health_check.py`에 **common-bugs 번호 유일성 검사** 추가(현 18검사 → 19). 같은 `#NN`이 2회 이상 부여되면 FAIL, 대기열(번호 없는 후보) 건수는 정보성으로 병기.
   **근거 = 규율 위반 3회 실증**: ⑴ b48 병렬 선착 충돌(#130~132 중복 → #133~136 순차 밀기) ⑵ b49 지시서의 대기열 추정 오류(2건 추정 vs 실측 33건) ⑶ **선존 중복 #97·#98·#99 한 달 방치**. **git은 텍스트 충돌만 보고 의미 유일성은 지키지 않는다** — rebase가 무충돌로 중복 번호를 병합한다(D-NUMBERING-ORDER 실증). 사람 규율로 3회 뚫렸으므로 기계 검사로 이관한다.
   **주의**: 검사 추가는 선존 중복 3건 때문에 **도입 즉시 FAIL**한다 → 도입과 renumber 처분의 순서를 함께 정할 것(또는 선존 3건을 한시 allowlist로 두고 만료일 부여 — 죽은 allowlist 금지 규율 적용).
