@@ -21,3 +21,26 @@
    ⑥이 열거한 파일 목록 자체는 정확했고 집계 숫자만 어긋났음.
    ※ 디렉터가 2026-09-18에 낸 1차 정정문 "변경 14 · 신규 5 · 삭제 1"은 합이 20으로 틀렸다.
      b49 세션 실행자가 three-dot 실측으로 바로잡았다. 위 값이 확정값이다.
+
+## 착지 (DASH-RECO-LAND, 2026-09-19)
+
+판정: **착지 완료 · 서빙 반영 완료** — 역머지 충돌 0 · 게이트 4종 GREEN(신규 델타 0) · DoD 20경로 정확 · push ff · 리빌드 교체 확인.
+
+- **착지 해시**: `60964fa3` (역머지 `2c3bd793` + S3 정정 `60964fa3`). merge-base `08a70cfd` 불변.
+- **push 전/후 origin/main**: `dcd51032` → **`60964fa3`** (`dcd51032..60964fa3` fast-forward · force 0 · 브랜치/worktree 삭제 0).
+- **역머지 충돌**: **0건**. behind 55(디렉터 실측 50에서 더 벌어짐) 흡수, 상류가 `components/eod/**`·`app/page.tsx`·`__tests__/eod/**`를 건드린 이력 0 — 디렉터의 "교집합 0" 실측과 일치.
+- **S2 three-dot**: **20경로** = 코드·테스트 18 + 메일박스 2. 그 밖 0건. (역머지 후라 two-dot도 20으로 수렴 — behind 0이면 두 검사식이 같아진다.)
+- **게이트 4종(역머지 후 재측정 · 절대값 아닌 신규 델타)**
+  | 게이트 | 상류(origin/main) 기준선 | 역머지 후 브랜치 | 판정 |
+  |---|---|---|---|
+  | health | ✅20/⚠1/❌0 | ✅19/⚠2/❌0 | ❌ 델타 **0** · ⚠+1 = 미push "실행 트리 정합"(#118) |
+  | vitest 전체 | 176 files / 1364 passed / 0 failed | **178 / 1390 / 0** | 실패 증가 **0**(+2 files · +26 tests) |
+  | vitest `__tests__/eod` | — | **14 files / 129 passed / 0** | 원 보고값과 일치 |
+  | tsc | — | **0** | (e2e/playwright 에러는 심링크 node_modules 환경 선존) |
+  - 09-17 원 보고의 health 기준선 ✅18/⚠3/❌0은 상류 55커밋 전진으로 검사 수가 18→20으로 바뀌어 **절대값 비교 불가**. 신규 델타로 판정함.
+- **push 후 health**: **✅20/⚠1/❌0** — 상류 기준선과 **완전 일치**. "실행 트리 정합" ⚠는 push와 함께 ✅ 복귀(#118 예측대로). 잔여 ⚠1(runtime_check 드리프트)은 선존.
+- **리빌드**: 서빙 트리 `~/worktrees/sv-web-runtime/frontend`(lsof cwd 실측) · 트리 `2ee74c91` → `60964fa3` · `npm run build`만(`npm ci` 미사용, D-DEPLOY-NO-NPM-CI-ON-LIVE) · 빌드 로그 `scratchpad/DASHRECO_build_20260919.log` · 폴백 `.next.bak-dashreco`(이전 BUILD_ID 보유, 삭제 안 함).
+  **BUILD_ID `yX4_jTqwifJKUOMuZsRls` → `rQstt3C02MTYw89L0ChGk`**. 스모크 `/`·`/?tab=market`·`/?direction=bull` **전건 200** · 리스너 단독 pid 65032(13:21:44 기동·cwd 실측).
+  의존성/마이그/env 전진분 **전건 0** 확인 후 진행.
+- **잔여 채번 후보**: ⑪ (a)~(g) 전건 유효(미해소) + 신규 (h) **D-DOD-DIFF-THREEDOT** — DoD 구획 검사는 반드시 three-dot. behind 상태에서 two-dot을 쓰면 상류 파일이 전부 "삭제"로 잡혀 메타 4종 무단 변경이라는 **가짜 위반**이 뜬다(2026-09-18 b49 세션이 실제로 이 오검출을 겪고 merge-base 재측정으로 해소). b51 등재 후보.
+- **미집행(승인 범위 밖)**: 코드 변경 0 · 메타 4종 변경 0 · 브랜치/worktree 삭제 0 · `.next.bak-*` 삭제 0 · launchd 조작(kickstart는 리빌드 절차 내) · DB 쓰기 0.

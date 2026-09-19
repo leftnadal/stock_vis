@@ -42,7 +42,7 @@ This file helps humans and agents find relevant Working Records. It is a locator
 
 **Topic:** Record Reconstruction Evaluation Target  
 **Keywords:** record reconstruction, gold audit, valid provenance route, selected_route_validity, route_set_completeness, compound, ambiguous, AND OR, annotation, retrospective rescoring, gold v0.2 candidate, bounded execution approval, 59 routes, semantic audit, prior evaluation citation, claim strength, review independence, existing audit reconciliation, gold v0.2.1, attribution limit, frozen claim semantics, opaque package, reviewer preparation, execution plan, excluded routes, schema validation, synthetic counterexamples, 근거 역할, 정답 기준, 경로 충분성, 재채점, 승인 범위, 의미 감사, 원문 대조, 중복 작업 방지, 귀속 범위, 원 주장 보존, 실행안 준비, 호출 미승인, 제외 경로, 출력 검사기  
-**Latest recorded state:** Checkpoint 07 records direct Library handoff/ZIP inspection: 19 manifest files and three final inputs passed local integrity checks, but six changed parent-route signatures are not reviewer-visible and the local output validator accepts three schema-invalid synthetic cases. Repair is recommended within the existing preparation scope before execution approval. Gold correctness, semantic independence and 40/3/0 were not revalidated; actual reviewer calls remain unapproved.  
+**Latest recorded state:** Checkpoint 08 records the user's direction to continue the two preparation repairs identified in Checkpoint 07: make the changed parent variants reviewer-visible without verdict leakage and enforce the full output schema in the actual acceptance path. This remains within Checkpoint 06's no-call preparation scope. Repair completion, a new semantic audit and reviewer execution are not confirmed; Gold and frozen-output scores are unchanged.  
 **Records:**
 - [`2026-09-18_record-reconstruction-evaluation-target_01.md`](records/2026-09-18_record-reconstruction-evaluation-target_01.md)
 - [`2026-09-18_record-reconstruction-evaluation-target_02.md`](records/2026-09-18_record-reconstruction-evaluation-target_02.md)
@@ -51,6 +51,7 @@ This file helps humans and agents find relevant Working Records. It is a locator
 - [`2026-09-18_record-reconstruction-evaluation-target_05.md`](records/2026-09-18_record-reconstruction-evaluation-target_05.md)
 - [`2026-09-18_record-reconstruction-evaluation-target_06.md`](records/2026-09-18_record-reconstruction-evaluation-target_06.md)
 - [`2026-09-19_record-reconstruction-evaluation-target_07.md`](records/2026-09-19_record-reconstruction-evaluation-target_07.md)
+- [`2026-09-19_record-reconstruction-evaluation-target_08.md`](records/2026-09-19_record-reconstruction-evaluation-target_08.md)
 
 ## Retrieval Rule
 

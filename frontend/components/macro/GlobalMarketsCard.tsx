@@ -34,7 +34,10 @@ export default function GlobalMarketsCard({ data }: GlobalMarketsCardProps) {
           </p>
         </div>
         <div className="flex items-center gap-1">
-          {indexData.change_percent && indexData.change_percent >= 0 ? (
+          {/* MACRO-FE1: 결측(null/undefined)은 아이콘 없음. 기존 falsy 검사는 값이 없을 때도
+              else로 떨어져 "N/A인데 빨간 하락 화살표"를 그렸다. 텍스트·색은 헬퍼가 이미
+              null을 옳게 처리하므로 손대지 않는다(0의 취급도 헬퍼 기준 유지 = FALSY-ZERO-GUARD 별건). */}
+          {indexData.change_percent == null ? null : indexData.change_percent >= 0 ? (
             <TrendingUp className="w-4 h-4 text-green-500" />
           ) : (
             <TrendingDown className="w-4 h-4 text-red-500" />
@@ -197,10 +200,14 @@ export default function GlobalMarketsCard({ data }: GlobalMarketsCardProps) {
               .map(([symbol, sector]) => (
                 <div
                   key={symbol}
+                  // MACRO-FE1: 결측은 중립(회색) pill. falsy 검사는 값이 없을 때도 빨강으로
+                  // 떨어져 "N/A인데 하락"을 만들었다. 0 이상/미만의 색 기준은 그대로 둔다.
                   className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                    sector.change_percent && sector.change_percent >= 0
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    sector.change_percent == null
+                      ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                      : sector.change_percent >= 0
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                   }`}
                 >
                   {sector.name} {formatChange(sector.change_percent)}
