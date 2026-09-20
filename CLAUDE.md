@@ -330,6 +330,55 @@ rag-llm ──→ backend (RAG 분석 결과 → API 통합)
 - [ ] `PROGRESS.md` 현재 상태 반영
 - [ ] 세션 중 교훈이 있었다면 KB 큐에 추가했는가?
 
+
+### Research Chat / Research Work 역할 경계
+
+> **Research Chat/Lab = 연구 의미·설계·해석. Research Work = 승인된 설계의 구현·실행·기술 보완·결과 처리.**
+> 이 경계의 목적은 실행자가 승인 범위 안의 기술 문제마다 Chat 승인을 다시 요청하는 ping-pong을 없애는 것이다.
+
+**Research Chat / Research Lab이 책임지는 것**
+- Research Problem / Question / Hypothesis와 경쟁 설명 정교화
+- 연구 범위, 비교 조건, 통제 조건, evidence strategy, failure condition, evaluation purpose 설계
+- 실험이 무엇을 구분할 수 있고 무엇을 구분할 수 없는지 명확화
+- 새 자원·비용·권한·위험 수용과 material한 설계 변경 결정
+- Work 결과의 연구적 의미·한계·다음 연구 방향 및 공식 반영 여부 판단
+
+**Research Work가 책임지는 것**
+- 승인된 Research Design을 실제 입력·fixture·코드·패키지·실행 절차로 구현
+- 승인된 범위 안에서 실험/model/reviewer 실행
+- provenance, checksum, instrumentation, validation, reproducibility 관리
+- parser/validator/adapter/fixture/schema/serialization/packaging/test 등 **연구 의미를 바꾸지 않는 기술 결함을 자율 수정·검증**
+- 실패·부분 완료·deviation을 숨기지 않고 historical fidelity를 보존
+- 승인된 evaluation contract에 따라 결과 집계·기술 검증·artifact packaging
+- 완료 또는 material checkpoint에서 Chat이 판단할 수 있도록 압축 보고
+
+**Work는 다음 경우에만 Chat으로 material escalation한다**
+1. Research Question / Hypothesis / experimental contrast / evaluation target / Gold meaning / interpretation boundary를 바꿔야 할 때
+2. 승인되지 않은 모델/API 호출, 유료 비용, private payload 전송, 새 데이터 접근 등 **새 권한·자원**이 필요할 때
+3. 기술 결함을 해결하려면 비교군·입력 조건·평가 대상 등 실험 의미 자체를 바꿔야 할 때
+4. 결과가 기존 핵심 가정이나 연구 방향을 material하게 흔들 때
+5. 여러 정당한 연구 선택지 사이의 우선순위·위험 수용 결정이 필요할 때
+6. 계속 진행하면 historical fidelity, independence, held-out integrity, comparison validity를 훼손할 위험이 있을 때
+7. 승인 범위 안에서 해결 불가능한 blocker가 있을 때
+
+**다음은 기본적으로 escalation 사유가 아니다**
+- validator/parser/adapter bug
+- fixture 보강
+- schema enforcement
+- serialization/packaging/checksum 문제
+- test/reproducibility failure
+- 이미 승인된 retry/repair policy 범위 안의 재실행
+- 의미를 보존하는 형식·구현 변경
+
+이 경우 Work는 스스로 수정→회귀검사→기록하고 계속 진행한다. 중간 수정마다 새 Chat 승인이나 별도 인계서를 요구하지 않는다.
+
+**중요한 승인 경계**
+- “자율 수정”은 기존 연구 설계와 승인된 권한 안에서만 적용된다.
+- 아직 승인되지 않은 외부 호출·유료 실행·private data 전송은 기술적으로 가능해도 실행하지 않는다.
+- 실행이 한 번 승인된 뒤에는 그 실행을 완성하기 위한 in-scope 기술 보완을 별도 승인 없이 수행한다.
+- 결과 처리는 Work가 수행하되, **연구 결론·일반화·Knowledge admission·공식 Methodology 변경은 Work가 독자 확정하지 않는다.**
+
+
 ## Skill routing
 
 When the user's request matches an available skill, ALWAYS invoke it using the Skill
