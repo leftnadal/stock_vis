@@ -17,7 +17,7 @@ This file helps humans and agents find relevant Working Records. It is a locator
 
 **Topic:** Judgment–Outcome–Learning Feedback Loop  
 **Keywords:** judgment quality, outcome bias, signal, review target, candidate learning, learning quality, transfer test, operational learning, prior-learning scan, retrieval trigger, classification review, terminology, counterexample, self-review, relevance screening, use-specific compatibility, positive outcome, prior-record use, declared use, observable revision, learning effect, non-use rationale, record sufficiency, reconstructability, material omission, honest incompleteness, summary fidelity, worked example, next research action, negative transfer, comparison design, design agreement, conditional follow-up, information value, development design, evaluator boundary examples, unavailable evidence, development pilot, paired conditions, action fit, decision linkage, proportionality, harmful transfer, 분류 점검, 사전 검토, 반례, 검색 조건, 적용 가능성, 뜻밖의 성공, 과거 기록 활용, 명시적 사용, 관찰된 변경, 학습 효과, 판단 유지, 비적용 이유, 기록 충분성, 재구성, 기록 부담, 중요한 누락, 결손, 축약 예시, 의미 보존, 다음 연구 행동, 비교 설계, 방향 합의, 결과별 후속 판단, 정보 가치, 개발 설계, 판정 반례, 접근 가능성  
-**Latest recorded state:** Checkpoint 10 preserves agreement to the bounded comparison direction. Checkpoints 11–13 develop the task, three synthetic situations, and evaluator boundaries. Checkpoint 14 proposes a small 3-situation × 2-condition development pilot candidate with repeated independent runs, source-grounded evaluation questions, material harmful-transfer flags, and a narrower Chat↔Work escalation boundary. No model call, experiment, official policy, memory admission, or Work-scope expansion is approved.  
+**Latest recorded state:** Checkpoint 10 preserves agreement to the bounded comparison direction. Checkpoints 11–13 develop the task, three synthetic situations, and evaluator boundaries. Checkpoint 14 proposes a small 3-situation × 2-condition development pilot candidate with repeated independent runs, source-grounded evaluation questions, material harmful-transfer flags, and a narrower Chat↔Work escalation boundary. Checkpoint 16 proposes synthetic-first controlled prior-record utilization, followed by real StockVis records and only later retrieval-inclusive evaluation. No model call, experiment, official policy, memory admission, or Work-scope expansion is approved.  
 **Records:**
 - [`2026-09-17_judgment-outcome-learning-feedback-loop_01.md`](records/2026-09-17_judgment-outcome-learning-feedback-loop_01.md)
 - [`2026-09-18_judgment-outcome-learning-feedback-loop_02.md`](records/2026-09-18_judgment-outcome-learning-feedback-loop_02.md)
@@ -33,6 +33,7 @@ This file helps humans and agents find relevant Working Records. It is a locator
 - [`2026-09-19_judgment-outcome-learning-feedback-loop_12.md`](records/2026-09-19_judgment-outcome-learning-feedback-loop_12.md)
 - [`2026-09-19_judgment-outcome-learning-feedback-loop_13.md`](records/2026-09-19_judgment-outcome-learning-feedback-loop_13.md)
 - [`2026-09-20_judgment-outcome-learning-feedback-loop_14.md`](records/2026-09-20_judgment-outcome-learning-feedback-loop_14.md)
+- [`2026-09-20_judgment-outcome-learning-feedback-loop_16.md`](records/2026-09-20_judgment-outcome-learning-feedback-loop_16.md)
 
 ## Research Chat / Work Role Boundary
 
