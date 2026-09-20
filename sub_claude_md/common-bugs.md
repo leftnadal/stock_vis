@@ -2238,3 +2238,25 @@ is_stale = generated_at.date() != date.today()   # ← UTC date vs 로컬(KST) d
 **해결**: ⑴ 정렬 키에 NULL 방어(`key=lambda t: t or ""`) — 집계·발송 로직은 건드리지 않는다. ⑵ **산출물을 발송과 분리**한다: `생성 → 파일 저장(atomic) → 발송`. 발송이 실패해도 요약은 남는다(`~/Library/Logs/stockvis/celery_error_digest.json`, DB 모델 신설 0). ⑶ health에 **TaskResult를 직접 집계하는** 항목을 두어 digest·이메일과 독립적으로 실패 건수가 보이게 한다. digest *생성* 실패만 ERROR로 본다 — 그건 감시 장치 자체의 고장이므로. ⑷ 임계는 즉시 박지 않는다(2주 관측 후) — 정상 국면을 경고로 오인한다.
 
 **교훈**: **알림 경로가 하나뿐이면 그 하나가 죽을 때 침묵한다.** "장치가 없다"가 아니라 "경로가 단일"인 것이 이번 사고의 본질이었다. 그리고 감시 장치는 **자기가 감시하는 대상의 이상 입력에 견뎌야 한다** — 실패 레코드로 죽는 실패 요약기는 감시가 아니다. cf. [[lesson_beat_dict_upsert_expires_dropped]](dict 삭제 ≠ DB 비활성 — 폐기된 잡이 DB에 고아로 남아 이 사슬의 출발점이 됐다).
+
+## 외부로 나가는 행위의 검증 기본값은 dry-run이다 — 지시서가 방법을 지정하지 않으면 실발송이 아니라 locmem으로 검증한다 (채번 후보, HEARTBEAT-1 마감 2026-09-19) `[harness][ops][infra]`
+
+**증상**: 알림 장치(digest)를 수리한 뒤 "동작하는가"를 확인하려고 태스크를 직접 실행했고, 그 결과 **실제 메일 3통이 수신자에게 발송**됐다. 검증 목적의 실행이 운영 발송과 구분되지 않았다.
+
+**원인**: 지시서가 **검증 방법을 지정하지 않았다**. "digest가 뜨는지 확인" 같은 지시는 관측 대상만 말하고 경로를 말하지 않는다. 실행자는 가장 직접적인 경로(운영 태스크 그대로 실행)를 고르게 되고, 그 경로에 외부 부수효과(SMTP 발송)가 붙어 있으면 검증이 곧 발송이 된다. **지시서 결함이며 실행자 과실이 아니다** — 다만 결함이 반복되지 않게 기본값을 규약으로 고정한다.
+
+**규율(기본값)**: 외부로 나가는 행위 — **메일 발송·웹훅·외부 API 쓰기·SMS/푸시·결제** — 를 검증할 때 **기본은 dry-run이다.**
+- 실제 발송으로 검증하려면 **지시서가 그렇게 하라고 명시**해야 한다.
+- 명시가 없으면 실행자는 **dry-run 경로로 검증하고, 그 사실을 보고에 적는다**(무엇을 억제했는지 포함).
+- 산출물이 발송과 분리된 설계(HEARTBEAT-1 C-1)면 **산출물만 확인**하는 것이 최우선 경로다.
+
+**메일 dry-run 표준 레시피** (Django · 실발송 0):
+```python
+from django.test.utils import override_settings
+with override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend'):
+    from config.tasks import send_celery_error_digest
+    print(send_celery_error_digest())
+```
+`mail.outbox`는 **테스트 러너 밖에서는 존재하지 않는다**(`AttributeError: module 'django.core.mail' has no attribute 'outbox'`) — 포획 건수를 세려면 `django.core.mail.backends.locmem.EmailBackend`의 `connection.test_outbox`를 쓰거나, 세지 말고 **산출물 파일로 검증**한다.
+
+**교훈**: 검증은 **관측 대상**과 **관측 경로**가 둘 다 지정돼야 실행 가능한 지시다. 경로를 비워두면 실행자는 부수효과가 가장 큰 경로를 고를 수 있다. 지시서 작성자는 "무엇을 볼 것인가"만큼 "어느 경로로 볼 것인가"를 적고, 실행자는 경로가 비었을 때 **부수효과가 없는 쪽으로 기울어 선택하고 상신**한다. cf. 이 파일 바로 앞 항목(HEARTBEAT-1 digest 사슬) · [[feedback_surface_await_disposition]]
