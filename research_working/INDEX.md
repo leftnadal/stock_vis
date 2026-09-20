@@ -34,6 +34,14 @@ This file helps humans and agents find relevant Working Records. It is a locator
 - [`2026-09-19_judgment-outcome-learning-feedback-loop_13.md`](records/2026-09-19_judgment-outcome-learning-feedback-loop_13.md)
 - [`2026-09-20_judgment-outcome-learning-feedback-loop_14.md`](records/2026-09-20_judgment-outcome-learning-feedback-loop_14.md)
 
+## Research Chat / Work Role Boundary
+
+**Topic:** Research Chat / Work Role Boundary  
+**Keywords:** chat work boundary, research design, investigation, execution autonomy, escalation, handoff minimization, 역할 분리, 실행 자율성, 인계 최소화, Research Work  
+**Latest recorded state:** Checkpoint 01 records agreement that Chat/Research Lab owns research meaning, design, interpretation and material decisions, while Research Work owns approved implementation, execution, technical repair, validation and result packaging. Routine technical fixes should not create Chat↔Work ping-pong; escalation is reserved for material changes in research meaning, authorization, resources, validity or unresolved strategic choices. This is a working collaboration boundary, not an official orchestration methodology.  
+**Records:**
+- [`2026-09-20_research-chat-work-role-boundary_01.md`](records/2026-09-20_research-chat-work-role-boundary_01.md)
+
 ## Research Collaboration / Response Structure
 
 **Topic:** Research Collaboration & Response Structure  
