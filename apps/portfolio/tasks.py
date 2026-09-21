@@ -199,3 +199,73 @@ def ingest_stock_splits(self):
     }
     logger.info("ingest_stock_splits: %s", summary)
     return summary
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    name="apps.portfolio.tasks.ingest_analyst_grades",
+)
+def ingest_analyst_grades(self):
+    """coach 유니버스 **개별 등급 변경 사건** 수집 (SCB-CONTEXT-S2, D-SCB-GRADES-KEY-1).
+
+    유니버스(보유∪관심, `_coach_universe` 재사용) 순회 → FMP `/stable/grades` →
+    `AnalystGradeChange` **dedup 후 멱등 upsert**(6필드 자연키 + source_row_count).
+
+    ★ 배선 후보 ②(별도 task) 채택 — `capture_symbol`/`_fetch_signals`/`_is_empty`
+      **무접촉**이다. 등급 수집 실패가 AnalystSignalSnapshot append를 막지 않는다(완전 격리).
+    ★ 멱등: 원천이 과거 전체를 매번 반환하므로 append가 아니라 upsert여야 한다.
+      재실행 = 행 수 불변(`AnalystSignalSnapshot`의 append 규약 D-I1-2와 반대 방향).
+    ★ FMPRateLimitError는 **터미널** → 즉시 중단(더 두드리지 않음), halted 플래그.
+      `capture_symbols`의 halt 규율을 복제한 것 — `ingest_stock_splits`에는 이 가드가 없다.
+    ★ beat 등록은 DB PeriodicTask가 유일한 진실(공통버그 #28) — config dict 금지·병진 수동.
+    """
+    from django.conf import settings
+    from django.db import connections
+
+    connections.close_all()  # fork 후 DB 연결 정리 (macOS SIGSEGV, 버그 #25)
+
+    from packages.shared.api_request.providers.fmp.client import FMPRateLimitError
+    from packages.shared.stocks.services.grade_change_writer import (
+        upsert_grade_changes,
+    )
+
+    symbols = _coach_universe()
+    if not symbols:
+        logger.info("ingest_analyst_grades: 유니버스 비어있음 — skip")
+        return {
+            "universe": 0, "fetched": 0, "created": 0, "updated": 0,
+            "halted_rate_limit": False, "errors": {},
+        }
+
+    client = FMPClient(api_key=settings.FMP_API_KEY)
+    fetched = created = updated = 0
+    halted = False
+    errors: dict = {}
+    for sym in symbols:
+        try:
+            rows = client.get_grades(sym)
+            res = upsert_grade_changes(rows)
+            fetched += res["rows_in"]
+            created += res["created"]
+            updated += res["updated"]
+        except FMPRateLimitError as e:
+            # 일일/분 한도 소진 = 터미널. 남은 심볼 중단(재시도 무의미).
+            halted = True
+            errors[sym] = f"rate-limit halt: {e}"
+            logger.warning("AnalystGradeChange 카운터 소진 — %s에서 중단", sym)
+            break
+        except Exception as e:  # noqa: BLE001 — 심볼별 격리(전체 중단 금지)
+            logger.exception("ingest_analyst_grades 실패 %s", sym)
+            errors[sym] = str(e)
+
+    summary = {
+        "universe": len(symbols),
+        "fetched": fetched,
+        "created": created,
+        "updated": updated,
+        "halted_rate_limit": halted,
+        "errors": errors,
+    }
+    logger.info("ingest_analyst_grades: %s", summary)
+    return summary

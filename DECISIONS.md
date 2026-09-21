@@ -152,6 +152,25 @@ H-2 `서비스 재기동 폭풍` = launchd 관리 서비스 24h 재기동 **>20 
 **Why**: 읽는 쪽 교정(DSS-ASOF-1)은 이미 적재된 행의 **내용**을 바꾸지 못한다 — 09-12 앵커 502행이 전건 `missing_prev`인 것이 그 증거다. 관측일과 대상일을 같은 필드에 담는 구조 자체를 고쳐야 재발이 끝난다.
 
 **How to apply**: 변경 지점 2곳뿐 — `apps/chain_sight/tasks/estimate_tasks.py:40` `snapshot_date = timezone.now().date()`(⚠️ 현재 **UTC 날짜**다. 20:00 ET 이후 실행 시 하루 앞선 날짜가 박히는 잠재 결함 — 함께 수리) · `apps/chain_sight/tasks/dss_tasks.py:34` `et_today`. 가드(`최신 스냅샷 앵커 ≠ et_today`)도 as_of 기반으로 전환하면 09-12형 skip이 사라진다. **마이그레이션 불요**(값 의미만 바뀜·`unique_together` 불변: `(symbol, snapshot_date, fiscal_year)` / `(symbol, anchor_date)`). **행위보존 증명** = 자동발화 12건에 신·구 로직을 모두 적용해 동일 앵커 산출 확인(이미 `scripts/asof_anchor_sweep.py`가 그 모집단을 출력한다).
+## [2026-09-21] D-SCB-GRADES-KEY-1 — 등급 변경 자연키 = 6필드 unique + 원본 행 수 카운터 [portfolio][data][schema]
+
+**결정**: FMP `/stable/grades`(개별 애널리스트 등급 변경 사건)의 저장 구조를 아래로 확정한다.
+- 모델 `AnalystGradeChange` (`stocks_analyst_grade_change`, 마이그 `stocks.0019`)
+- `unique_together = (symbol, date, grading_company, previous_grade, new_grade, action)` — **원천이 주는 전 필드**
+- `source_row_count = IntegerField(default=1)` — 그 키에서 온 **원본 행 수**
+- 적재 = **dedup 후 멱등 upsert**(`update_or_create`). append 금지.
+
+**Why**:
+1. **필드 조합만으로는 유일해지지 않는다.** 본 세션 §1-B 실측(유니버스 9심볼 **6,137행** · 외부 콜 10 · `scratchpad/s2_grades_raw.json`): (symbol,date,gradingCompany) 중복 **7군** → +newGrade 2군 → +previousGrade 1군 → **전 6필드에도 1군 잔존** = `AAPL / 2023-06-16 / Jefferies / Buy→Buy / maintain` **완전 동일 2행**. 재호출로 재현 확인(일시 결함 아님).
+2. **3필드 unique는 데이터를 조용히 버린다.** 중복 7군 중 **6군은 내용이 다르다** — 예 `TSLA / 2018-05-05 / Argus`에 `Buy→Hold downgrade`와 `Hold→Buy upgrade`가 **공존**한다. 3필드로 잠그면 이 6행이 유실된다. 이 6군을 **별 행으로 보존**하는 것이 본 설계의 목적이다.
+3. **`date`가 `YYYY-MM-DD`라 시각이 없다** → 같은 날 복수 사건의 **순서 복원 불가**. 타임스탬프로 유일성을 얻는 길이 원천 차원에서 막혀 있다.
+4. **ⓑ(제약 없이 append)·ⓒ(대리키)는 멱등을 구조적으로 깬다** — 등급 API가 **과거 전체를 매번 반환**하므로(2012~현재) 재수집마다 6,137행이 재유입된다. `AnalystSignalSnapshot`의 append 규약(D-I1-2)과 **반대 방향**임을 명시해 둔다.
+→ ⓐ만 남는다. 완전동일 N행은 1행 + `source_row_count=N`으로 접어 **정보 손실 0**, 내용 상이 행은 전부 보존.
+
+**How to apply**: 재수집 = 같은 키에 `update_or_create` → 행 수 불변·카운트 동일값 덮어쓰기(멱등). `updated_at`(auto_now)은 **의도적으로 두지 않았다** — 매일 전량 재반환이라 6,137행 타임스탬프가 통째로 갱신되어 신선도 신호가 무의미해진다. 수집 배선 = **후보 ② 별도 task**(`apps.portfolio.tasks.ingest_analyst_grades`) — `_fetch_signals`/`_is_empty`/`capture_symbol` **무접촉**이라 4콜 계약 테스트 2파일이 깨지지 않는다(1-E 실측: 후보 ①이면 `test_sfi_i1_ingest::halts_on_rate_limit` 전면 실패). `FMPRateLimitError` 터미널 halt는 `capture_symbols` 규율을 복제했다 — `ingest_stock_splits`에는 이 가드가 **없다**(별건 관찰). beat 등록은 DB `PeriodicTask`가 유일한 진실(#28)·병진 수동.
+
+**실측 출처**: 본 세션 §1-B(SCB-CONTEXT-S2, 2026-09-19~21). 원자료 `scratchpad/s2_grades_raw.json`(9심볼 6,137행·2012-02-08~2026-09-18).
+
 ## [2026-09-18] D-SCB-CONTEXT-SOURCE-1 정정 — 맥락 축 GREEN → **AMBER** (원 항목 무수정·정정 절 추가) [portfolio][data][process]
 
 > 대상: 아래 `[2026-09-17] D-SCB-CONTEXT-SOURCE-1`. **원 항목은 고치지 않는다** — 판단이 왜 바뀌었는지가 기록의 값이므로 정정 절로만 덧댄다.
