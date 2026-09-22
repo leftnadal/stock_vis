@@ -10,7 +10,7 @@ from decimal import Decimal
 import pytest
 
 from apps.monitor.services.price_zone import is_near_stop
-from apps.monitor.services.scenario import latest_close
+from apps.monitor.services.scenario import latest_close, latest_close_with_date
 
 AS_OF = date(2026, 9, 17)
 
@@ -136,3 +136,43 @@ class TestTlnRegression:
         assert (stale / s - 1) == pytest.approx(0.0565, abs=1e-4)
         assert (fresh / s - 1) == pytest.approx(0.0815, abs=1e-4)
         assert (stale / s - 1) < self.BAND < (fresh / s - 1)
+
+
+# ── PRICE-FRESH-1-B §A: 날짜 동반 반환 + 시그니처 보존 ──────────────────────
+
+@pytest.mark.django_db
+class TestLatestCloseWithDate:
+    def test_returns_close_and_its_date(self, mk_eod, mk_daily):
+        mk_eod(date(2026, 9, 14), 286.52)
+        mk_daily(date(2026, 9, 17), 293.31)
+        close, d = latest_close_with_date("TLN")
+        assert close == pytest.approx(293.31)
+        assert d == date(2026, 9, 17)
+
+    def test_same_date_returns_eod_and_that_date(self, mk_eod, mk_daily):
+        day = date(2026, 9, 17)
+        mk_eod(day, 200.0)
+        mk_daily(day, 201.0)
+        assert latest_close_with_date("TLN") == (pytest.approx(200.0), day)
+
+    def test_none_pair_when_absent(self, db):
+        assert latest_close_with_date("NOSUCH") == (None, None)
+
+    def test_as_of_cutoff(self, mk_eod, mk_daily):
+        mk_eod(date(2026, 9, 14), 286.52)
+        mk_daily(date(2026, 9, 17), 293.31)
+        assert latest_close_with_date("TLN", as_of=date(2026, 9, 16))[1] == date(2026, 9, 14)
+
+    def test_latest_close_signature_preserved(self, mk_eod, mk_daily):
+        """★ G-2 핵심: 기존 6개 호출부가 쓰는 계약(스칼라 float 또는 None) 불변."""
+        mk_daily(date(2026, 9, 17), 293.31)
+        v = latest_close("TLN")
+        assert isinstance(v, float) and not isinstance(v, tuple)
+        assert latest_close("NOSUCH") is None
+        # 래퍼가 with_date의 close와 동일 값을 낸다
+        assert v == pytest.approx(latest_close_with_date("TLN")[0])
+
+    def test_latest_close_accepts_as_of_kwarg(self, mk_daily):
+        mk_daily(date(2026, 9, 17), 293.31)
+        assert latest_close("TLN", as_of=date(2026, 9, 17)) == pytest.approx(293.31)
+        assert latest_close("TLN", as_of=date(2026, 9, 1)) is None
