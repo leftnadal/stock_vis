@@ -1,4 +1,29 @@
-# StockVis Decisions
+# DECISIONS.md — 아키텍처 결정 로그
+
+> 에이전트는 구현 전 이 파일을 확인하고, 기존 결정과 충돌하는 작업은 수행하지 않는다.
+> 각 결정에는 **근거(Why)**를 반드시 포함한다.
+>
+> **이 파일의 역할**: 아키텍처 결정의 **1차 소스**. 항목 구조 = **결정 / Why(근거) / How to apply / (해당 시) STEP 0 측정 · 검증 결과 · 머지 hash 출처**. 이 구조를 표준으로 유지한다(이미 최상위 품질 — 보존 우선).
+> 함정·버그는 여기가 아니라 [`sub_claude_md/common-bugs.md`](sub_claude_md/common-bugs.md). 결정 ↔ KB 동기화: 새 결정 → 이 파일 **먼저** → `shared_kb` 큐 → 검색KB 드레인.
+
+---
+
+## [2026-09-20] D-GUIDE-ANCHOR-DEFER-1031 — 가이드 앵커 유예 2건 기한 연장 [guide][harness][cross-track]
+
+> 출처: MGMT 배치(2026-09-20). 대상 = `guideAnchors.test.ts` `PENDING_ANCHORS`의 `chainsight.backbone`·`dashboard.tabs`.
+> 이 항목은 `guideAnchors.test.ts` 주석이 요구하는 **연장 근거 기록**이다. 이 기록 없이 `until`만 바꾸는 것은 금지돼 있다.
+
+**결정**: 두 앵커의 유예 기한을 **2026-09-30 → 2026-10-31**로 연장한다. 연장은 **1회**이며, 재연장은 **소유 트랙의 명시적 요청과 근거**가 있을 때만 한다.
+
+**[2026-09-22 실집행 정정]** 랜딩 시점에 `dashboard.tabs`는 **연장이 아니라 해소**됐다 — dashboard 트랙이 `cb246e46`(GUIDE-TABS-1, 09-22 09:49)로 `lib/guide/dashboard.ts`에 문구를 등재하고 `PENDING_ANCHORS`에서 항목을 제거했다(해결 ⑴). 따라서 **이 결정이 실제로 연장한 것은 `chainsight.backbone` 1건**이다. 역머지 충돌에서 origin 쪽(제거)을 채택했다 — 삭제된 항목을 되살리면 `죽은 allowlist 금지` 가드에 걸리고 등재된 문구와 모순된다. **이 결정의 Why는 그대로 유효**하다: 소유 트랙이 움직이면 해소가 정답이고, 움직이지 않는 동안 무관한 세션을 막지 않는 것이 연장의 목적이다 — dashboard는 전자를, chain_sight는 후자를 택한 셈이다.
+
+**Why**: ⑴ **둘 다 market_pulse 소관이 아니다** — `chainsight.backbone`은 chain_sight 트랙(`GUIDE-CS-REFRESH` 2단계), `dashboard.tabs`는 dashboard 앱 트랙(`GUIDE-ORPHAN-DASHTABS`, 큐에 "소유: dashboard 앱 트랙" 명시). 해결 ⑴(문구 등재)·⑵(앵커 제거) 모두 남의 트랙 화면을 건드린다. ⑵ 기한을 그대로 두면 **09-30에 그 두 트랙과 무관한 세션까지 guide 스위트 RED로 막힌다** — 트립와이어가 잡으려던 것은 방치이지 무관한 세션이 아니다. ⑶ 연장은 되돌릴 수 있고, 등재·제거는 되돌리기 어렵다.
+
+**측정(2026-09-20)**: `GUIDE-CS-REFRESH` 2단계의 착수 트리거였던 `monorepo/sess-s3s1`(및 `-b`·`-c`)은 **전건 origin/main에 착지 완료** — chain_sight 트랙은 **지금 착수 가능**하다. `GUIDE-ORPHAN-DASHTABS`는 2026-09-10 등재 이후 상태 변화 없음(🔴).
+
+**감수하는 단점**: 6주 연장은 짧지 않다. 그러나 dashboard 트랙이 3주간 무반응이었으므로 **짧은 연장은 같은 결과를 반복할 뿐**이라 보았다. 실효는 기간이 아니라 **통지**에 있다고 판단해, 두 큐 항목에 기한·소유·트리거 상태를 박고 우선순위를 올린다.
+
+**How to apply**: `frontend/__tests__/guide/guideAnchors.test.ts`의 `PENDING_ANCHORS` 두 항목 `until`을 `2026-10-31`로 갱신하고, 각 `why`에 **이 결정 ID와 소유 트랙**을 덧붙인다. TASKQUEUE `GUIDE-CS-REFRESH` 2단계·`GUIDE-ORPHAN-DASHTABS`에 새 기한과 소유를 명시한다.
 
 ## D-RESEARCH-WORK-BOUNDARY — Research Chat/Lab와 Research Work 역할 분리
 
@@ -19,6 +44,33 @@ Work는 모든 기술 수정마다 Chat 승인을 요청하지 않는다. 새 �
 **Boundary**
 
 이 결정은 기존의 승인되지 않은 모델/API 호출, 유료 비용, private payload 전송, push/merge/deploy 같은 권한을 새로 부여하지 않는다. Research Knowledge admission, 공식 Methodology 변경, 연구 결론의 일반화는 Work가 독자 확정하지 않는다.
+
+## [2026-09-17] D-SENSE-PLACEMENT — 거시 허브 의미문 배치 = 카드 아래 트레이 [market_pulse][frontend][ux]
+
+> 출처: 결정 사이클 C1(디렉터 채팅, 목업 4프레임 비교). 선행 등재 = TASKQUEUE `MACRO-SENSE-PLACEMENT`. 집행 = `HUB-SENSE-DETAIL` S1(커밋 `75c6120c`).
+
+**결정**: 거시 허브 4카드의 의미문(`SenseNote`)·일반론(교육 토글)을 **위젯 카드 아래에 끼워 넣은 트레이 한 덩어리**로 묶고 순서를 뒤집는다 — 오늘의 적용이 위, 일반론이 아래. **위젯 파일은 수정하지 않는다**: 심리·금리 위젯에는 `showEducation={false}`만 넘기고, 일반론은 허브가 `EDUCATIONAL_CONTENT`에서 직접 그린다.
+
+| 옵션 | 가중합 |
+|---|---|
+| ⓐ 위젯 내부에 `senseSlot` prop | 3.41 |
+| **ⓑ 허브가 설명 스택을 소유(트레이)** | **4.45** ← 채택 |
+| ⓒ 현행 유지 + 토글만 추가 | 3.77 |
+
+가중치(합 1.00) = 이해도달 0.30 · 경계규율 0.22 · 유지보수 0.20 · 4카드일관성 0.18 · 회귀위험 0.10.
+**마진 = 0.68** (ⓑ−ⓒ) → 자동결정선(1 초과) 미달 · 타이브레이커선(0.40 미만) 초과 → **병진 확인으로 닫음**.
+
+**Why**: ⑴ 순서 — 지금은 일반론(카드 안)이 오늘의 적용(카드 밖)보다 위라 원론이 먼저 읽힌다. ⑵ 소속 — 의미문이 흰 카드 밖 페이지 배경에 놓여 어느 숫자를 설명하는지 시각 단서가 없다. ⑶ **4장 균일** — 교육 토글은 현재 `FearGreedGauge`·`YieldCurveChart` **2장에만** 존재한다(실측). ⓒ는 이 불균일을 굳히고, ⓐ는 위젯마다 따로 손봐야 한다. ⓑ만 네 장을 같은 구조로 만든다.
+**거리로 고른 것이 아니다**: 값→의미문 수직 거리는 현재 354px / ⓐ 198px(−44%) / ⓑ 314px(−11%) / ⓒ 354px(이득 0) — 목업 재현 실측(카드 폭 334px, 실화면 아님). 거리를 실제로 줄이는 것은 ⓐ뿐이며, ⓑ는 **순서·소속·균일**로 산다.
+**ⓐ를 버린 이유**: 위젯 4종을 v1 `/market-pulse`가 함께 import한다(실측) → "위젯 diff 0" 규율이 깨지고 감시 범위가 두 화면으로 늘어난다.
+
+| 동반 자동결정 | 내용 |
+|---|---|
+| `AUTO-SENSE-SRC` | 상세 문구 단일출처 = 신규 `app/market-pulse-v2/macroDetail.ts` (`macroMeaning.ts` 확장 아님). 채점 4.40 vs 3.10, **마진 1.30 → 자동 결정** |
+| `AUTO-SENSE-ATTACH` | 부착 = **음수 마진 트레이**. 자식 선택자(`[&>div]:rounded-b-none` 류)로 위젯 카드 모서리를 누르는 방식 **금지** — 위젯 내부 DOM 의존은 ⓑ가 사는 이유를 되돌린다 |
+| `AUTO-SENSE-FOLD` | 토글 기본 **접힘** |
+| `AUTO-SENSE-EDU` | 일반론 = 공용 `cards/EducationNote.tsx` 1종, **4장 모두 허브가 그림** |
+| `AUTO-SENSE-COPY` | "다음 확인 지점"(S2) 카피 게이트 = 행동지시·예측·투자권유·연도 금지, 임계는 `insights.py` 앵커 **인용만** |
 
 
 ## [2026-09-22] PRICE-FRESH-1 LANDED — `14c22b93` (가격 신선도 수리 + 자가 노출 2종) [monitor][harness]
@@ -201,6 +253,9 @@ H-2 `서비스 재기동 폭풍` = launchd 관리 서비스 24h 재기동 **>20 
 
 **절차 교훈(같이 남긴다)**: CS-S3 보고서는 **09-15에 이미 main에 있었다.** S1 지시서를 쓰기 전 `docs/reports/` 를 훑었으면 발견했을 것이다. 실측을 시작하기 전에 **같은 벽을 이미 만난 보고서가 repo에 있는지 먼저 본다.**
 
+**정정(디렉터, 2026-09-17)**: 기한 **"11-06 이전 필착" 취소** — DST 가설이 실측으로 **반증**됐다. `dss_tasks.py:34`는 `timezone.now().astimezone(ET).date()`로 **ET 변환을 이미 하므로** EST에서도 19:00 ET의 ET 날짜는 금요일로 유지된다. **정시 발화 경로에 DST 결함 없음.** 실제 잔존 위험은 `estimate_tasks.py:40`(UTC 날짜)의 **catch-up 지연**이다 — 20:00 ET(EDT)/19:00 ET(EST)를 넘겨 catch-up하면 앵커가 토요일로 찍힌다. 2026-09-12는 15:03 ET 발화로 **4시간 57분 여유**가 있어 **우연히 회피**됐다. → `estimate_tasks.py:40` 동반 수리를 범위에 **포함**하고, **기한은 날짜가 아니라 "다음 발화 장애 이전"**으로 둔다(catch-up은 장애 직후에 일어나므로 위험이 사고와 상관된다 — 달력 기한보다 사건 기한이 정확하다).
+
+**How to apply**: 변경 지점 2곳 — `apps/chain_sight/tasks/estimate_tasks.py:40` `snapshot_date = timezone.now().date()`(**실제 결함 — 동반 수리 필수**) · `apps/chain_sight/tasks/dss_tasks.py:34` `et_today`. 가드(`최신 스냅샷 앵커 ≠ et_today`)도 as_of 기반으로 전환하면 09-12형 skip이 사라진다. **마이그레이션 불요**(값 의미만 바뀜·`unique_together` 불변: `(symbol, snapshot_date, fiscal_year)` / `(symbol, anchor_date)`). **행위보존 증명** = 자동발화 12건에 신·구 로직을 모두 적용해 동일 앵커 산출 확인(이미 `scripts/asof_anchor_sweep.py`가 그 모집단을 출력한다).
 ## [2026-09-17] D-SCB-CONTEXT-SOURCE-1 — 채점 카드 맥락층 원천 확정 [portfolio][data][llm]
 **결정**: SCB-CONTEXT 맥락층의 데이터 원천을 아래로 **확정**한다.
 - **논거 축 = FMP `/stable/grades`** — 등급 변경 **사건 타임라인**. 프로브 실측(SCB-RECOVER-PROBE 2026-09-15): `200` · NVDA **1,158행** · **2012-02-13~2026-09-04** · `gradingCompany`·`previousGrade`·`newGrade`·`action`·`date` 실재.
