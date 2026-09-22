@@ -30,23 +30,53 @@ from apps.monitor.services.price_zone import (
 logger = logging.getLogger(__name__)
 
 
-def latest_close(symbol, as_of=None):
-    """종목의 최신 종가(as_of 지정 시 그 이하 최근). EODSignal 우선, 없으면 DailyPrice."""
+def latest_close_with_date(symbol, as_of=None):
+    """종목의 최신 종가와 **그 종가의 날짜** — (close, date). 없으면 (None, None).
+
+    날짜를 함께 돌려주는 이유: 소비처(메일)가 "언제 종가인가"를 표시해야 신선도 결함이
+    눈에 보인다. 2026-09-18 실물 메일은 헤더 as_of=09-17인데 종가는 09-14 값(286.52)이었고,
+    메일만으로는 그 불일치를 알 수 없었다 — 날짜 표기가 그 침묵을 깬다.
+
+    선택 규칙은 latest_close와 동일(더 최신 날짜 우선, 동일이면 EODSignal).
+
+    신선도 비교가 필요한 이유: 가드(`pipeline.ensure_price_freshness`)는 **DailyPrice만**
+    보장한다. EODSignal을 무조건 우선하면 EODSignal이 뒤처진 종목에서 stale 종가가 그대로
+    통과한다 — 2026-09-17 TLN 실측: EODSignal 09-14(286.52) vs DailyPrice 09-17(293.31)에서
+    4일 묵은 값이 쓰여 손절 접근이 거짓 발화했다. 갭은 SP500 편입과 무관하다(같은 날
+    GOOGL도 4일 갭, 비SP500 IREN은 갭 0).
+
+    as_of 지정 시 컷오프를 **두 소스 모두**에 적용한다.
+    """
     from packages.shared.stocks.models import DailyPrice, EODSignal
 
     sym = symbol.upper()
-    eq = EODSignal.objects.filter(stock__symbol=sym)
-    if as_of:
-        eq = eq.filter(date__lte=as_of)
-    row = eq.order_by("-date").values_list("close_price", flat=True).first()
-    if row is not None:
-        return float(row)
 
-    dq = DailyPrice.objects.filter(stock__symbol=sym)
-    if as_of:
-        dq = dq.filter(date__lte=as_of)
-    row = dq.order_by("-date").values_list("close_price", flat=True).first()
-    return float(row) if row is not None else None
+    def _latest(qs):
+        # close_price는 양 모델 모두 NOT NULL(실측) — 값 null 분기 불요, 행 유무만 본다.
+        if as_of:
+            qs = qs.filter(date__lte=as_of)
+        return qs.order_by("-date").values_list("date", "close_price").first()
+
+    eod = _latest(EODSignal.objects.filter(stock__symbol=sym))
+    daily = _latest(DailyPrice.objects.filter(stock__symbol=sym))
+
+    if eod is None and daily is None:
+        return None, None
+    if eod is None:
+        return float(daily[1]), daily[0]
+    if daily is None:
+        return float(eod[1]), eod[0]
+    return (
+        (float(eod[1]), eod[0]) if eod[0] >= daily[0] else (float(daily[1]), daily[0])
+    )
+
+
+def latest_close(symbol, as_of=None):
+    """종목의 최신 종가만. 시그니처·반환 계약 불변 — 기존 6개 호출부 무변경.
+
+    날짜까지 필요하면 latest_close_with_date를 쓴다(신선도 표기용).
+    """
+    return latest_close_with_date(symbol, as_of=as_of)[0]
 
 
 # 변동성 산출 창(거래일). 손잡이(price_zone)와 달리 계산 세부라 여기 둔다.
@@ -137,6 +167,8 @@ def process_claim_scenario(claim, close, as_of):
     if claim.stop_price is not None and close is not None:
         buf = near_stop_buffer(claim.monitor.target_ref, as_of)
         near = is_near_stop(close, claim.stop_price, buf)
+        # 종가의 실제 날짜 — 메일이 as_of와의 불일치를 스스로 드러내게 한다(§A).
+        _, close_date = latest_close_with_date(claim.monitor.target_ref, as_of=as_of)
         notified = claim.near_stop_notified_at
         # 재발화 창: 밴드 안에 계속 머물면 N일마다 재확인. 메일 1회 실패가 영구 침묵이
         # 되지 않게 하는 유일한 이중화다 — near_stop은 인앱 표면(3-B)이 아직 없고,
@@ -163,6 +195,7 @@ def process_claim_scenario(claim, close, as_of):
                 "stop": stop_f,
                 "to_stop_pct": (stop_f - close) / close * 100.0,
                 "band_pct": float(buf) * 100.0,
+                "close_date": close_date.isoformat() if close_date else None,
                 "recheck": is_recheck,
                 "immediate": True,
             })

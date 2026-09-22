@@ -177,6 +177,7 @@ def build_digest(as_of, new_close_monitor_ids=None, scenario_events=None):
             "stop": e.get("stop"),
             "to_stop_pct": e.get("to_stop_pct"),
             "band_pct": e.get("band_pct"),
+            "close_date": e.get("close_date"),
             "recheck": bool(e.get("recheck")),
         }
         for e in events if e["type"] == "near_stop"
@@ -197,6 +198,19 @@ def build_digest(as_of, new_close_monitor_ids=None, scenario_events=None):
         "near_stops": near_stops,
         "has_content": has_content,
     }
+
+
+def _close_with_date(r):
+    """종가 + (MM-DD) — 텍스트·HTML 공용(문구 드리프트 방지).
+
+    날짜를 붙이는 이유: 다이제스트 헤더의 as_of와 실제 종가 날짜가 어긋날 수 있고
+    (가격 소스 신선도 갭), 표기가 없으면 메일만으로 그 불일치를 알 수 없다.
+    """
+    close = r.get("close")
+    d = r.get("close_date")
+    if not d:
+        return f"{close}"
+    return f"{close} ({d[5:]})" if len(d) >= 10 else f"{close} ({d})"
 
 
 def _near_stop_suffix(r):
@@ -241,7 +255,7 @@ def render_digest_text(digest):
         for r in digest["near_stops"]:
             lines.append(
                 f"  - {r['monitor_name']} [{r['target_ref']}]: "
-                f"종가 {r['close']} / 손절 {r['stop']} — "
+                f"종가 {_close_with_date(r)} / 손절 {r['stop']} — "
                 f"손절까지 {r['to_stop_pct']:+.1f}%{_near_stop_suffix(r)}"
             )
         lines.append("")
@@ -324,7 +338,7 @@ def render_digest_html(digest):
                 body = (
                     f"<strong>{r['monitor_name']}</strong> "
                     f"<span style=\"color:#888\">[{r['target_ref']}]</span> — "
-                    f"종가 {r['close']} / 손절 {r['stop']} — "
+                    f"종가 {_close_with_date(r)} / 손절 {r['stop']} — "
                     f"손절까지 <strong>{r['to_stop_pct']:+.1f}%</strong>"
                     f"<span style=\"color:#888\">{_near_stop_suffix(r)}</span>"
                 )
