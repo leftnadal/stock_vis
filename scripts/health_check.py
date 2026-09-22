@@ -1335,6 +1335,87 @@ def check_story_title_gate() -> CheckResult:
     return CheckResult(name=name, status=OK, detail=detail, evidence=evidence)
 
 
+def check_celery_failure_digest() -> CheckResult:
+    """최근 24h Celery 실패 건수 + digest 산출물 신선도. [HEARTBEAT-1 C-2]
+
+    **이중화가 목적이다.** 이 항목은 이메일 발송과 무관하게 뜬다 — 2026-09-12~17
+    SMTP 535 로 알림이 5일간 끊겼을 때 아무 소리도 나지 않았고, 설상가상 digest
+    자체가 TypeError 로 죽어 있었다(NotRegistered 실패의 task_name=NULL 이 정렬을
+    깨뜨림). 경로가 하나뿐이면 그 하나가 죽을 때 침묵한다.
+
+    임계는 두지 않는다(C-3) — 건수만 노출하고 2주 관측 후 정한다. 임계를 먼저 박으면
+    정상 국면을 경고로 오인한다(제목 게이트 탈락률에서 배운 방식).
+    digest **생성** 실패만 ERROR 로 본다 — 그건 감시 장치 자체의 고장이기 때문이다.
+    """
+    name = "Celery 실패 요약"
+    try:
+        import datetime as _dt
+        import json as _json
+        import os
+
+        import django
+
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+        django.setup()
+        from django.apps import apps as _apps
+        from django.utils import timezone as _tz
+    except Exception as e:  # noqa: BLE001 — 비-런타임 환경은 검사 대상 아님
+        return CheckResult(
+            name=name, status=OK,
+            detail="Django/DB 미가용 — 검사 생략(비-런타임 환경)",
+            evidence=[str(e)[:120]],
+        )
+
+    evidence: list[str] = []
+    # ⑴ TaskResult 직접 집계 — digest 가 죽어 있어도 이 숫자는 나온다.
+    try:
+        TR = _apps.get_model("django_celery_results", "TaskResult")
+        since = _tz.now() - _dt.timedelta(hours=24)
+        rows = TR.objects.filter(status="FAILURE", date_done__gte=since)
+        total = rows.count()
+        counts: dict[str, int] = {}
+        for r in rows:
+            try:
+                exc = _json.loads(r.result or "{}").get("exc_type", "?")
+            except Exception:  # noqa: BLE001
+                exc = "?"
+            key = f"{r.task_name or '(이름없음·NotRegistered)'} / {exc}"
+            counts[key] = counts.get(key, 0) + 1
+        top = sorted(counts.items(), key=lambda kv: -kv[1])[:3]
+        for k, v in top:
+            evidence.append(f"{k}: {v}건")
+    except Exception as e:  # noqa: BLE001
+        return CheckResult(
+            name=name, status=WARN, detail="TaskResult 조회 실패",
+            evidence=[str(e)[:160]],
+        )
+
+    # ⑵ digest 산출물 신선도 — 생성 자체가 죽었는지 본다.
+    artifact = Path.home() / "Library" / "Logs" / "stockvis" / "celery_error_digest.json"
+    if not artifact.exists():
+        return CheckResult(
+            name=name, status=ERROR,
+            detail=f"최근 24h 실패 {total}건 · digest 산출물 부재 — 요약 생성이 죽었을 수 있음",
+            evidence=evidence + [f"기대 경로: {artifact}"],
+        )
+    age_h = (_dt.datetime.now().timestamp() - artifact.stat().st_mtime) / 3600
+    evidence.append(f"digest 산출물 age {age_h:.1f}h (일 1회 생성)")
+    evidence.append("임계 미설정(C-3) — 건수만 노출, 2주 관측 후 결정")
+    if age_h > 48:
+        return CheckResult(
+            name=name, status=ERROR,
+            detail=f"최근 24h 실패 {total}건 · digest 산출물 {age_h:.0f}h 미갱신 — 생성 실패 의심",
+            evidence=evidence,
+        )
+    return CheckResult(
+        name=name, status=OK,
+        detail=f"최근 24h Celery 실패 {total}건 (유형별 상위 {len(top)})",
+        evidence=evidence,
+    )
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -1565,6 +1646,7 @@ CHECKS = [
     check_launchd_tree_alignment,
     check_env_symlink,
     check_story_title_gate,
+    check_celery_failure_digest,
 ]
 
 

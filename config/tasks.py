@@ -4,10 +4,12 @@ Celery 에러 모니터링 태스크
 - send_celery_error_digest: 일일 에러 요약 이메일 발송
 - cleanup_old_task_results: TaskResult 정리 (SUCCESS 30일, FAILURE 90일)
 """
+import json
 import logging
 import re
 from collections import defaultdict
 from datetime import timedelta
+from pathlib import Path
 
 from celery import shared_task
 from django.conf import settings
@@ -40,6 +42,34 @@ def _parse_exception_class(traceback_text, result_text=None):
     return 'Unknown'
 
 
+# C-1: digest 산출물 경로. DB 모델 신설 없이(마이그 0) 파일로 남긴다 —
+# health_check 는 별도 프로세스라 캐시보다 파일이 확실하다.
+CELERY_DIGEST_ARTIFACT = Path.home() / 'Library' / 'Logs' / 'stockvis' / 'celery_error_digest.json'
+
+
+def _write_digest_artifact(payload):
+    """요약 산출물을 파일로 남긴다. 저장 실패가 발송을 막지 않는다(로그만)."""
+    try:
+        CELERY_DIGEST_ARTIFACT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = CELERY_DIGEST_ARTIFACT.with_suffix('.json.tmp')
+        tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+        tmp.replace(CELERY_DIGEST_ARTIFACT)  # atomic
+        logger.info('Celery error digest 산출물 저장: %s', CELERY_DIGEST_ARTIFACT)
+    except Exception:
+        logger.exception('Celery error digest 산출물 저장 실패 — 발송은 계속 진행')
+
+
+def _task_sort_key(task_name):
+    """정렬 키 — `task_name` 이 NULL 일 수 있다.
+
+    워커에 등록되지 않은 태스크(NotRegistered)는 이름을 알 수 없어 TaskResult.task_name
+    이 NULL 로 저장된다. 그 레코드가 섞이면 `sorted()` 가 str 과 None 을 비교하다
+    TypeError 로 죽는다 — 실패를 알려줄 장치가 실패 때문에 죽는 구조(HEARTBEAT-1 B).
+    None 은 빈 문자열로 취급해 맨 앞에 오게만 한다(그룹화·집계는 불변).
+    """
+    return task_name or ""
+
+
 @shared_task
 def send_celery_error_digest(days=1):
     """매일 에러 요약 이메일 발송"""
@@ -57,7 +87,26 @@ def send_celery_error_digest(days=1):
     retry_count = retries.count()
 
     if failure_count == 0:
-        logger.info('Celery error digest: 에러 없음, 이메일 미발송')
+        # HB-1-C1-GAP: **'할 일이 없었음'도 기록이다.** 여기서 산출물을 쓰지 않고
+        # 돌아가면 정상일마다 age 만 늘어, 신선도 임계(C-2 의 48h)가 **정상 상태를
+        # ERROR 로 뒤집는다** — 2026-09-22 실측: 실패 0건인데 age 68h → health ❌.
+        # '오늘 확인했고 실패가 없었다(성공)' 와 '오늘 아예 안 돌았다(미실행)' 는
+        # 산출물로만 구분된다. 발송은 건드리지 않는다 — 0건에 메일을 보내지 않는
+        # 동작은 그대로다.
+        _write_digest_artifact({
+            'generated_at': timezone.now().isoformat(),
+            'window_days': days,
+            'failure_count': 0,
+            'new_failure_count': 0,
+            'ignored_failure_count': 0,
+            'retry_count': retry_count,
+            'by_task': {},
+            'body': (
+                f'신규 에러: 0건 / 재시도: {retry_count}건\n\n'
+                f'최근 {days}일 실패 없음 — 확인 기록만 남긴다(메일 미발송).\n'
+            ),
+        })
+        logger.info('Celery error digest: 에러 없음, 이메일 미발송 (산출물만 기록)')
         return 'No errors — email skipped'
 
     ignored_list = getattr(settings, 'CELERY_IGNORED_ERRORS', [])
@@ -94,7 +143,7 @@ def send_celery_error_digest(days=1):
 
     if new_errors:
         body_lines.append('태스크별 요약:')
-        for task_name in sorted(new_errors.keys()):
+        for task_name in sorted(new_errors.keys(), key=_task_sort_key):
             exc_counts = new_errors[task_name]
             total = sum(exc_counts.values())
             body_lines.append(
@@ -108,13 +157,33 @@ def send_celery_error_digest(days=1):
         body_lines.append(
             f'Known Issues (무시됨): {ignored_failure_count}건'
         )
-        for task_name in sorted(ignored_errors.keys()):
+        for task_name in sorted(ignored_errors.keys(), key=_task_sort_key):
             exc_counts = ignored_errors[task_name]
             for exc_class, count in exc_counts.items():
                 body_lines.append(f'  {task_name} -- {exc_class}: {count}회')
         body_lines.append('')
 
     body = '\n'.join(body_lines)
+
+    # C-1(HEARTBEAT-1): 산출물을 발송과 분리한다. 발송이 실패해도 요약은 남아야 한다.
+    # 이번 사고의 본질은 "장치가 없다"가 아니라 "알림 경로가 하나뿐이었고 그 하나가
+    # 죽었다"였다 — 이메일이 죽으면 아무 소리도 나지 않았다. 여기서 먼저 저장하고,
+    # health_check 가 그 파일을 읽어 이메일과 무관하게 실패 건수를 보여준다(C-2).
+    digest_payload = {
+        'generated_at': timezone.now().isoformat(),
+        'window_days': days,
+        'failure_count': failure_count,
+        'new_failure_count': new_failure_count,
+        'ignored_failure_count': ignored_failure_count,
+        'retry_count': retry_count,
+        'by_task': {
+            (task_name or '(이름없음·NotRegistered)'): dict(exc_counts)
+            for task_name, exc_counts in groups.items()
+        },
+        'body': body,
+    }
+    _write_digest_artifact(digest_payload)
+
     recipients = getattr(settings, 'CELERY_ERROR_RECIPIENTS', [])
 
     if not recipients:
