@@ -39,11 +39,12 @@
 
 - ✅ **HB-1-B·C** (done·**랜딩+배포 완료** 2026-09-20, main `cf11e78c`) — digest `sorted()` NULL 방어 + 산출물/발송 분리 + health "Celery 실패 요약" 신설(임계 미설정). 런타임 3종 `cf11e78c` 정렬·worker/beat·daphne 재기동·사후 health ❌0. pytest 975(랜딩 게이트 digest 7/7)·마이그 0. web 리빌드 = **FE 앱코드 증분 0으로 조건 미충족, 미실행**.
 - ✅ **HB-1-A-DISPOSITION** (종결 2026-09-20 · 목표 상태 달성·**본 세션 쓰기 0**) — 디렉터 W-1 승인(비활성, 삭제 아님)으로 집행하려 했으나 **집행 시점에 이미 3건 모두 `enabled=False`**였다(130/133 enabled). `semantic-cache-stats` 마지막 발화 09-19 13:00 KST·`date_changed` 13:01 → **09-19 13:00~13:53 사이 미상 주체가 비활성화**. `django_admin_log` 0건·beat 로그 `Disabling` 0 → 스케줄러 자동 아님, **타 세션/수동 shell 추정·출처 미규명**. 사후 확인: 24h TaskResult 513건 중 FAILURE 0·`task_name` NULL 0·NotRegistered 0(마지막 09-19 04:00Z). **변경 주체를 특정할 수 없다는 사실 자체가 층1 소재** → `BEAT-CHANGE-AUDIT`로 이월.
-- 🔴 **HB-1-C1-GAP** (★처분 대기 · 신규 2026-09-20 · 코드 변경 + 2차 배포) — `send_celery_error_digest`가 `failure_count == 0`이면 **산출물 쓰기 전에 early return**(`config/tasks.py:89`). 결과: 실패 0건인 **정상일에는 산출물이 갱신되지 않고 age만 증가**(실측 26.7h). C-2가 'digest **생성** 실패만 ERROR'로 보도록 설계됐으므로, C-3 임계를 박는 순간 **정상 상태가 오탐으로 뒤집힌다** — HEARTBEAT가 고치려던 구조(감시 장치가 스스로 신호를 죽임)의 거울상. 수리 = 0건 payload를 early return **앞에서** `_write_digest_artifact`로 기록(3줄·마이그 0·테스트 1건). **미집행**.
+- ✅ **HB-1-C1-GAP** (done 2026-09-22 · X-1~X-5) — `failure_count == 0`에도 `_write_digest_artifact`를 **조기 반환 앞에서** 호출한다. payload에 `failure_count: 0` + `generated_at` 포함(= '오늘 확인했고 실패가 없었다'의 증거). **발송 로직 무접촉**(0건 메일 미발송 유지, 테스트로 잠금). **결함은 수리 전 이미 발화**했다 — 2026-09-22 09:10 실측 health `❌ 최근 24h 실패 0건 · digest 산출물 68h 미갱신`(C-2의 `age_h > 48` 임계는 처음부터 박혀 있었다). 파생 함정 1건 동시 수리: 0건 경로에 부수효과가 생기면서 **산출물 경로를 monkeypatch 하지 않은 기존 테스트가 운영 산출물을 덮어쓰게 됨** → 해당 테스트도 격리. 테스트 7→8건.
 - 🆕 **BEAT-CHANGE-AUDIT** (todo·측정만) — `PeriodicTask.enabled` 변경에 **감사 흔적이 없다**(admin 미사용·beat 로그 무기록·`date_changed`는 매 실행 갱신이라 변경 시각과 구분 불가). 누가·언제·왜 껐는지 사후에 알 수 없다. HB-1-A에서 실제로 부딪혔다.
 - 🆕 **HB-1-D-CLOSED** (종결) — SMTP 535는 `.env` 수리(09-17 18:11)로 **이미 해소**됐다. 09-19 실측에서 digest 발송 성공 확인. **Gmail 앱 비밀번호 재발급 불필요**(09-18 보고 정정).
 - 🆕 **BEAT-TASK-FIELD-AUDIT** (todo·측정만) — beat `PeriodicTask.task` 필드에 **모듈 경로가 아닌 잡 이름**이 든 항목이 **약 17건** 관측됨(`chainsight-snapshot-etf-metrics`·`sec-8k-daily` 등). 정상 동작 여부 미확인. HB-0 집계에서 root 분류가 튄 원인이기도 하다.
 - 🕒 **HB-2 층1** (미착수·이번 슬라이스 밖) — 테이블·시그널·감시 항목 신설. HB-0 H0-4의 무음 후보 11종과 H0-5 빈틈 4건이 입력.
+  - **★설계 전제(HB-1-C1-GAP에서 확정)**: **주기 작업은 '아무 일도 없었음'을 기록하고 끝내야 한다.** 아무것도 안 쓰고 돌아가면 '성공(확인했고 할 일이 없었다)'과 '미실행(아예 안 돌았다)'이 산출물 상에서 동일해지고, 신선도 임계를 거는 순간 정상이 경보로 뒤집힌다. **주간·월간 잡에서 더 치명적** — '안 돌았다' vs '돌았는데 처리할 게 없었다'를 구분하려면 **매 실행마다 갱신되는 하트비트 기록**이 필요하다. 상세=`common-bugs.md` 해당 항목.
 
 ## 📈 GATE-DROP-TREND — 제목 게이트 탈락률 추세 관찰 (등재만·2주 뒤 재판단, CS-S3-1E U-6 2026-09-17) [chainsight][harness]
 
