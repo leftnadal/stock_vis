@@ -1921,3 +1921,10 @@
 
 - 📋 **3-B 손절 접근 메일 — "남은 리드일" 표기 + 급한 순 정렬** (@backend) — 현재 `near_stops` 섹션이 **이름순**이라 가장 급한 종목이 중간·하단에 온다. 그리고 **퍼센트 거리는 착시**다: 09-15 실측에서 IONQ(-8.0%, median 3.537%)가 TLN(-3.9%, median 1.594%)보다 급하다 — 리드일로 환산하면 IONQ 2.45일 vs TLN 2.53일. 수리 = ⑴ 행에 **남은 리드일**(= 필요버퍼 ÷ median, 필요버퍼는 **손절가 기준** `close/stop − 1`) 표기 ⑵ 리드일 오름차순 정렬. 이벤트 dict에 이미 `band_pct`가 있으므로 `median` 또는 `lead_days`만 추가하면 된다. ⚠️ 리드일 산식은 `test_required_buffer_is_stop_anchored`가 고정한 **손절가 기준**을 따를 것 — 종가 기준으로 나누면 틀린다(0917-A 보고 오류 선례).
 - 📋 **[OPS] pre-commit 훅이 `~/worktrees/`를 비표준·iCloud 의심 경로로 판정** (@infra) — 격리 worktree에서 커밋 시 매번 `⚠️ pre-commit 경고: 비표준 작업 경로 / iCloud 측 작업 의심` 출력(차단 아님). 격리 worktree가 표준 동선이 됐으므로(D-SESSION-NO-KILL-FOREIGN·OPS-GATE-1 관측 3) `scripts/hooks/pre-commit`의 경로 판정에 `~/worktrees/` 화이트리스트 보강 필요. 경고 피로가 실제 iCloud 사고 신호를 묻는다.
+
+## PRICE-FRESH 후속 (2026-09-22 등재, LANDED `14c22b93`)
+
+> 결정 = [[DECISIONS]] PRICE-FRESH-1 LANDED 절. 본 트랙 배포 후 이월 2건. **둘 다 착수 금지 — 별도 지시 필요**.
+
+- 📋 **[조사] EODSignal 종목별 결손 원인** (@infra/@backend) — 전체 EODSignal 최신일은 정상인데 **종목별로 산발적 결손**. 실측 성질 3가지: ⑴ **SP500 편입 무관**(GOOGL·GEV = SP500인데 갭, 비SP500 IREN은 갭 0) ⑵ **이동성** — 09-19 TLN·GOOGL 4일 → 09-22 GEV 4일로 대상이 바뀐다 ⑶ DailyPrice는 같은 날 정상이므로 수집 자체가 아니라 **EODSignal 생성 단계** 문제. 원인 미규명. 신규 health 점검 `가격 입력 신선도`가 발생 시 ⚠로 알린다 — **점검이 있으니 급하지 않으나, 근본은 그대로다**.
+- 📋 **[설계] 자동 근거 지표 구성 재검토** (@backend/@investment-advisor) — 현재 9종 중 자동 근거로 쓸 수 있는 것이 사실상 4종뿐이다. **bounded 2종**(`high_52w_proximity`·`rsi14`)은 `raw_z`가 상시 0(설계상 — `technical.py:247` 하드코딩)이라 z 기반 판정에 기여하지 않고, **EODSignal 3종**(`eod_composite`·`change_percent`·`dollar_volume`)은 위 결손 경로에 노출된다. 남는 것 = zscore + DailyPrice 소스 **4종**(`sma200_gap`·`momentum_12_1`·`volume_ratio`·`macd_histogram`). 근거 입력 설계를 이 4종 기준으로 재구성할지 결정 필요. ⚠️ 가중치·`evidence_strength` 재산정이 따라오므로 과거 점수와의 비교 가능성에 영향.
