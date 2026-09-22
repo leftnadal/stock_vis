@@ -58,10 +58,6 @@ const PENDING_ANCHORS: Record<string, { until: string; why: string }> = {
     until: '2026-10-31',
     why: '3e7b15c3(RC-C-1, 08-31) 도입·문구 미작성 — GUIDE-CS-REFRESH 2단계에서 등재 / 기한 연장 D-GUIDE-ANCHOR-DEFER-1031(2026-09-20) — 소유: chain_sight 트랙, 트리거 sess-s3s1 착지 완료',
   },
-  'dashboard.tabs': {
-    until: '2026-10-31',
-    why: 'DASH-TAB(09-09) 도입·문구 미작성 — TASKQUEUE GUIDE-ORPHAN-DASHTABS, dashboard 트랙 소유 / 기한 연장 D-GUIDE-ANCHOR-DEFER-1031(2026-09-20) — 소유: dashboard 앱 트랙, 재연장은 소유 트랙 요청 시에만',
-  },
 }
 
 describe('data-guide 앵커 계약', () => {

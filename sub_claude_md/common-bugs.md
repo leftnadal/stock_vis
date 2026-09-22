@@ -2229,6 +2229,19 @@ is_stale = generated_at.date() != date.today()   # ← UTC date vs 로컬(KST) d
 
 **교훈**: [[lesson_worker_sync_excludes_fe_prod_build]]·교훈 ④(트리 이동 ≠ 프로세스 교체)의 **환경변수판**이다. 같은 구조가 세 층에서 반복된다 — ⑴ FE 소스 vs prod 빌드 ⑵ 워커 트리 vs 메모리 적재 코드 ⑶ `.env` 파일 vs 프로세스 환경. 공통 규율: **"파일을 바꾸는 일"과 "그것을 들고 도는 프로세스를 갈아끼우는 일"은 별개이며, 후자를 하기 전까지 변경은 검증되지 않았다.**
 
+---
+
+## 행위보존 diff 검증은 `as_of`를 고정해야 한다 — 자정 경과가 거짓 ❌를 만든다 (채번 후보, SCB-CONTEXT-S2 2026-09-21) `[harness][process][portfolio]`
+
+**증상**: 구현 전후 응답을 파일로 저장해 `diff`로 행위보존을 증명하는 절차에서, **코드는 아무 관련 없이 바뀌지 않았는데 ❌가 났다**. 실측(2026-09-21 SCB-CONTEXT-S2 §3-6): 1차 diff에 `as_of` `2026-09-20`→`2026-09-21`, `pending_d_day` `-1`→`-2` 등이 떴다.
+
+**원인**: 기준선을 `build_scorecard(timezone.localdate(), h)`로 떴기 때문이다. 성적판 payload는 `as_of`에서 파생되는 필드(`as_of`·`pending_d_day`·`status`·만기 도래 여부)를 담는데, **장시간 세션이 자정을 넘기면 입력이 움직인다**. 데이터도 코드도 그대로인데 비교 좌표만 바뀐 것이라 diff는 정직하게 차이를 보고하지만, 읽는 쪽은 행위보존 위반으로 오독한다. 이 슬라이스는 `승인 MIGRATE` 대기로 하룻밤을 넘겼고 그래서 걸렸다.
+
+**해결**: 기준선과 사후 측정 **양쪽에 같은 `as_of`를 명시적으로 주입**한다 — `build_scorecard(date(2026,9,20), 21)`. 실측: 고정 후 **0바이트 차이**. 부수로, `reproduction.git_head`는 `_git_head()`가 런타임 HEAD를 읽는 **재현 좌표**라 커밋하면 반드시 바뀐다 — 이것도 diff에 뜨므로 데이터 필드와 분리해 읽어야 한다(`grep -v '"git_head"'` 후 비교하면 데이터 동일성이 드러난다).
+
+**디렉터 지시서 결함**: S1·S2 §3의 *"구현 전후 응답을 파일로 저장해 전건 동일을 diff로 증명"* 이 **`as_of` 고정을 명시하지 않았다.** 시간 의존 payload를 다루는 슬라이스의 DoD에는 "비교 좌표를 고정한다"가 함께 들어가야 한다.
+
+**교훈**: **행위보존 검증의 전제는 "입력이 같다"이지 "코드가 같다"가 아니다.** 시계를 입력으로 받는 함수는 그 시계를 고정하지 않으면 자기 자신과도 diff가 난다. 검증 절차를 설계할 때 "이 비교가 실패한다면 그게 정말 내 변경 때문인가"를 먼저 묻는다.
 ## 실패 알림 장치가 자기가 알려야 할 실패 때문에 죽는다 — `NotRegistered` → `task_name=NULL` → digest `sorted()` TypeError (채번 후보, HEARTBEAT-1 2026-09-19) `[infra][celery][harness]`
 
 **증상**: Celery 실패가 5일간(09-12~17) 아무에게도 도달하지 않았다. 원인이 둘로 겹쳐 있었다 — ⑴ SMTP 535로 발송 불가 ⑵ **`send_celery_error_digest` 자체가 `TypeError: '<' not supported between instances of 'str' and 'NoneType'`로 죽음**(`config/tasks.py:97`).
