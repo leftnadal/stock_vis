@@ -1,39 +1,24 @@
-# DECISIONS.md — 아키텍처 결정 로그
+# StockVis Decisions
 
-> 에이전트는 구현 전 이 파일을 확인하고, 기존 결정과 충돌하는 작업은 수행하지 않는다.
-> 각 결정에는 **근거(Why)**를 반드시 포함한다.
->
-> **이 파일의 역할**: 아키텍처 결정의 **1차 소스**. 항목 구조 = **결정 / Why(근거) / How to apply / (해당 시) STEP 0 측정 · 검증 결과 · 머지 hash 출처**. 이 구조를 표준으로 유지한다(이미 최상위 품질 — 보존 우선).
-> 함정·버그는 여기가 아니라 [`sub_claude_md/common-bugs.md`](sub_claude_md/common-bugs.md). 결정 ↔ KB 동기화: 새 결정 → 이 파일 **먼저** → `shared_kb` 큐 → 검색KB 드레인.
+## D-RESEARCH-WORK-BOUNDARY — Research Chat/Lab와 Research Work 역할 분리
 
----
+**Date:** 2026-09-20  
+**Status:** Active  
+**Owner approval:** Approved by Project Owner
 
-## [2026-09-17] D-SENSE-PLACEMENT — 거시 허브 의미문 배치 = 카드 아래 트레이 [market_pulse][frontend][ux]
+**Decision**
 
-> 출처: 결정 사이클 C1(디렉터 채팅, 목업 4프레임 비교). 선행 등재 = TASKQUEUE `MACRO-SENSE-PLACEMENT`. 집행 = `HUB-SENSE-DETAIL` S1(커밋 `75c6120c`).
+Research Chat/Lab은 연구의 의미·구조·실험 설계·해석과 material한 의사결정을 책임진다. Research Work는 승인된 설계를 구현하고 실험을 실행하며, 실행 중 발생한 기술 결함을 승인 범위 안에서 자율적으로 보완하고 결과를 집계·검증·패키징한다.
 
-**결정**: 거시 허브 4카드의 의미문(`SenseNote`)·일반론(교육 토글)을 **위젯 카드 아래에 끼워 넣은 트레이 한 덩어리**로 묶고 순서를 뒤집는다 — 오늘의 적용이 위, 일반론이 아래. **위젯 파일은 수정하지 않는다**: 심리·금리 위젯에는 `showEducation={false}`만 넘기고, 일반론은 허브가 `EDUCATIONAL_CONTENT`에서 직접 그린다.
+Work는 모든 기술 수정마다 Chat 승인을 요청하지 않는다. 새 권한·비용·데이터 전달이 필요하거나 연구 질문·실험 contrast·평가 의미·해석 경계를 바꿔야 하는 경우, 또는 연구 방향을 흔드는 material result/blocker가 있는 경우에만 Chat으로 escalation한다.
 
-| 옵션 | 가중합 |
-|---|---|
-| ⓐ 위젯 내부에 `senseSlot` prop | 3.41 |
-| **ⓑ 허브가 설명 스택을 소유(트레이)** | **4.45** ← 채택 |
-| ⓒ 현행 유지 + 토글만 추가 | 3.77 |
+**Why**
 
-가중치(합 1.00) = 이해도달 0.30 · 경계규율 0.22 · 유지보수 0.20 · 4카드일관성 0.18 · 회귀위험 0.10.
-**마진 = 0.68** (ⓑ−ⓒ) → 자동결정선(1 초과) 미달 · 타이브레이커선(0.40 미만) 초과 → **병진 확인으로 닫음**.
+반복적인 Chat↔Work 인계가 Project Owner를 수동 중계자로 만들고 Research Lab의 연구 설계 집중도를 낮췄다. 공식 Research Methodology도 Research Design과 Investigation을 구분한다. 따라서 연구 의미와 설계를 Chat/Lab에, 승인된 설계의 실행과 기술적 완성을 Work에 두어 책임을 명확히 하고 불필요한 승인 ping-pong을 줄인다.
 
-**Why**: ⑴ 순서 — 지금은 일반론(카드 안)이 오늘의 적용(카드 밖)보다 위라 원론이 먼저 읽힌다. ⑵ 소속 — 의미문이 흰 카드 밖 페이지 배경에 놓여 어느 숫자를 설명하는지 시각 단서가 없다. ⑶ **4장 균일** — 교육 토글은 현재 `FearGreedGauge`·`YieldCurveChart` **2장에만** 존재한다(실측). ⓒ는 이 불균일을 굳히고, ⓐ는 위젯마다 따로 손봐야 한다. ⓑ만 네 장을 같은 구조로 만든다.
-**거리로 고른 것이 아니다**: 값→의미문 수직 거리는 현재 354px / ⓐ 198px(−44%) / ⓑ 314px(−11%) / ⓒ 354px(이득 0) — 목업 재현 실측(카드 폭 334px, 실화면 아님). 거리를 실제로 줄이는 것은 ⓐ뿐이며, ⓑ는 **순서·소속·균일**로 산다.
-**ⓐ를 버린 이유**: 위젯 4종을 v1 `/market-pulse`가 함께 import한다(실측) → "위젯 diff 0" 규율이 깨지고 감시 범위가 두 화면으로 늘어난다.
+**Boundary**
 
-| 동반 자동결정 | 내용 |
-|---|---|
-| `AUTO-SENSE-SRC` | 상세 문구 단일출처 = 신규 `app/market-pulse-v2/macroDetail.ts` (`macroMeaning.ts` 확장 아님). 채점 4.40 vs 3.10, **마진 1.30 → 자동 결정** |
-| `AUTO-SENSE-ATTACH` | 부착 = **음수 마진 트레이**. 자식 선택자(`[&>div]:rounded-b-none` 류)로 위젯 카드 모서리를 누르는 방식 **금지** — 위젯 내부 DOM 의존은 ⓑ가 사는 이유를 되돌린다 |
-| `AUTO-SENSE-FOLD` | 토글 기본 **접힘** |
-| `AUTO-SENSE-EDU` | 일반론 = 공용 `cards/EducationNote.tsx` 1종, **4장 모두 허브가 그림** |
-| `AUTO-SENSE-COPY` | "다음 확인 지점"(S2) 카피 게이트 = 행동지시·예측·투자권유·연도 금지, 임계는 `insights.py` 앵커 **인용만** |
+이 결정은 기존의 승인되지 않은 모델/API 호출, 유료 비용, private payload 전송, push/merge/deploy 같은 권한을 새로 부여하지 않는다. Research Knowledge admission, 공식 Methodology 변경, 연구 결론의 일반화는 Work가 독자 확정하지 않는다.
 
 **기한부 관찰**: 거리 미해결분(40px)은 남긴다. 실사용에서 "무슨 숫자 얘긴지 모르겠다"가 재발하거나 `MP-V1-RETIRE`가 집행되면 ⓐ(위젯 슬롯)를 별건으로 재평가한다. 그때는 문구 출처·토글 구조가 이미 정리돼 있어 **렌더 위치만 옮기는 작업**이 된다.
 
