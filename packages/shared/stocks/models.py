@@ -1424,6 +1424,61 @@ class AnalystSignalSnapshot(models.Model):
         return f"AnalystSignalSnapshot({self.symbol} @ {self.captured_at:%Y-%m-%d})"
 
 
+class AnalystGradeChange(models.Model):
+    """개별 애널리스트 등급 변경 사건 (SCB-CONTEXT-S2, D-SCB-GRADES-KEY-1).
+
+    원천 = FMP `/stable/grades`. `AnalystSignalSnapshot`이 담는 **분포/추세**와 달리
+    "어느 기관이 언제 무엇을 무엇으로 바꿨는가"라는 **사건 단위** 원장이다.
+
+    ★ 자연키가 필드 조합만으로는 유일해지지 않는다(S2 §1-B 실측, 9심볼 6,137행):
+      6필드 전부를 넣어도 완전동일 행이 1군 잔존(AAPL/2023-06-16/Jefferies/Buy→Buy/maintain).
+      → **적재 전 dedup + `source_row_count`** 로 해소한다. 완전동일 N행 = 1행 + count=N
+      이므로 정보 손실 0이고, 내용이 다른 동일-날짜·동일-기관 행(TSLA/2018-05-05/Argus의
+      downgrade+upgrade 공존 등 6군)은 **별 행으로 보존**된다. 이 보존이 설계 목적이다.
+
+    ★ `date`는 원천이 `YYYY-MM-DD`(시각 없음)라 같은 날 복수 사건의 **순서는 복원 불가**.
+    ★ 멱등: 재수집 시 같은 키에 update_or_create → 행 수 불변·count 동일값 덮어쓰기.
+      (등급 API가 과거 전체를 매번 반환하므로 append 전용이면 멱등이 깨진다 — D-I1-2와 반대.)
+    ★ symbol=CharField(FK 아님) — `AnalystSignalSnapshot` 관행 승계(Stock 부재 심볼 대비).
+    """
+
+    symbol = models.CharField(max_length=16, db_index=True)
+    date = models.DateField(db_index=True, help_text="등급 변경 발표일 (원천 YYYY-MM-DD, 시각 없음)")
+    grading_company = models.CharField(max_length=128, help_text="평가 기관 (실측 최장 26자)")
+    previous_grade = models.CharField(max_length=32, blank=True, default="")
+    new_grade = models.CharField(max_length=32, blank=True, default="")
+    action = models.CharField(max_length=16, blank=True, default="", help_text="maintain / upgrade / downgrade")
+
+    # 그 자연키로 원천이 준 **원본 행 수**. dedup으로 접은 만큼을 보존한다(기본 1).
+    source_row_count = models.IntegerField(default=1)
+
+    source = models.CharField(max_length=16, default="fmp")
+    captured_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "stocks_analyst_grade_change"
+        ordering = ["symbol", "-date"]
+        unique_together = [
+            (
+                "symbol",
+                "date",
+                "grading_company",
+                "previous_grade",
+                "new_grade",
+                "action",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["symbol", "-date"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"AnalystGradeChange({self.symbol} {self.date} {self.grading_company}: "
+            f"{self.previous_grade}→{self.new_grade})"
+        )
+
+
 class CalendarEvent(models.Model):
     """예정 시장 이벤트 통합 원장 (EVT 트랙, 설계 앵커 docs/design/event_calendar_design.md §2).
 
