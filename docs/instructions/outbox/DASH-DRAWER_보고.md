@@ -30,3 +30,33 @@
 "본체 절대경로에서 읽어 복사·커밋"으로 명시하는 것(README 수정은 OPS 트랙 위임).
   ※ 실행자 재실측: 디렉터 문안의 mtime "09-19 04:55"는 실측과 다름 — `stat` 결과 **2026-09-19 13:55:57**.
     바이트 수(12,768)와 untracked 판정은 디렉터 실측과 일치. 시각만 정정한다.
+
+## 착지 (2026-09-22)
+
+판정: **착지·서빙 반영 완료** — 역머지 2회 충돌 0 · 게이트 4종 신규 델타 0 · DoD 10파일 · push ff · 리빌드 교체 확인.
+
+- **착지 해시 `c4f6ea2b`** (커밋 `033a03bf` 슬라이스 + `(d)` 정정 + 역머지 2건). merge-base `76a2b651`→상류 흡수.
+- **push 전/후 origin/main**: `82b218fe` → (상류 전진) `14d91d50` → **`c4f6ea2b`** (`14d91d50..c4f6ea2b` **fast-forward** · force 0 · 브랜치/worktree 삭제 0).
+- **역머지 충돌 0** (2회 실행: 16 behind → 8 behind → 0). 상류가 `frontend/__tests__/guide/guideAnchors.test.ts`·`lib/guide/dashboard.ts`를 건드렸으나 내 구획과 충돌 없음.
+  ⚠ **실행자 자기 정정**: 역머지 전 "겹침 사전 검사"에 **two-dot(`HEAD..origin/main`)을 써서** 내 파일 9건이 "상류가 건드림"으로 오검출됐다. 지시서가 경고한 그 함정을 검사 단계에서 재현한 것이며, 충돌 0이 오검출을 실증했다. **사전 검사도 three-dot이어야 한다.**
+- **S2 three-dot 파일 수 = 10** (코드·테스트 9 + outbox 1). 구획 밖 0건. 고정 base 해시 미사용.
+- **게이트 재측정(역머지 후)**
+  | 게이트 | 상류 기준선(origin/main 트리) | 내 브랜치 | 판정 |
+  |---|---|---|---|
+  | health | ✅22/⚠2/❌0 | ✅21/⚠3/❌0 | ❌ 0 · **신규 델타 0**. 차이 = "실행 트리 정합" ⚠(미push 아티팩트, #118) |
+  | vitest eod | — | **16 files / 144 / 0 fail** | 기준선 129 → +15 |
+  | vitest 전체 | — | **181 files / 1413 passed / 0 fail** | |
+  | guide 앵커 가드 | — | **41 / 0 fail** | 상류가 건드린 파일 포함 재실행 |
+  | tsc | — | **0** | |
+  - ⚠ **health 검사 수가 22→24로 증가**(상류 신설). `가격 입력 신선도`·`지표 판독 신선도` ⚠2는 **상류 기준선에 이미 존재 = 선존**, 내 변경 무관. 절대값 비교 금지(#118) 근거가 이번에도 실증됐다.
+  - ⚠ vitest 전체 1회 실행에서 `Errors 1 error` 관측(passed/failed 수치는 동일) → **재실행 시 재현 안 됨**. jsdom `Not implemented: navigation to another Document` 경고의 간헐 집계로 판단. 로그 `scratchpad/drawer_vitest.log`.
+- **리빌드 전후 서빙 트리 대조(2026-09-19 신규 규율 첫 적용)**
+  - 직전: 트리 HEAD **`14c22b93`** · BUILD_ID **`5WlsO_NVJ_E3OHYBaZWGe`** · 내 착지 **미포함** → sync 필요 확정
+  - 전진: `checkout --detach origin/main` → **`c4f6ea2b`**(내 착지 포함 YES) · `format.ts` 실존 · `countByOption` 6회
+  - `npm run build`만(**`npm ci` 미사용** — lock diff 0 실측) · 로그 `scratchpad/DASHDRAWER_build_20260922.log` · 폴백 `.next.bak-drawer` 보존
+  - 직후: 트리 HEAD **`c4f6ea2b`**(불변 — **병렬 세션 덮어쓰기 없음**) · **BUILD_ID `rCQKEBK6452Je8n72s0-R`**
+  - 빌드 청크에 슬라이스 고유 문자열 실존(`한 종목이 여러 카드에 걸립니다`·`거래대금 전체` @ `app_page_tsx_0es_sk2._.js`)
+  - 스모크 `/`·`/?tab=market`·`/?direction=bull` **전건 200** · **리스너 단독** pid 22743(LISTEN·cwd=런타임 트리·ppid 22720=launchd 등록 pid) · 빌드 11:33:39 → 기동 11:33:47
+  - ⚠ **실행자 자기 정정 2**: 처음 `lsof -ti:3000|head -1`이 **Claude Helper의 CLOSED 클라이언트 소켓(pid 63022)**을 집어 "서빙 cwd=/", "리스너 2개(고아 의심)"로 오판했다. `lsof -nP -iTCP:3000 -sTCP:LISTEN`으로 재측정하니 리스너는 **단독**. **서빙 트리 판별은 `-sTCP:LISTEN`을 붙여야 한다**(브라우저·앱의 클라이언트 소켓이 같은 포트로 잡힌다).
+- **★ 상신(승인 범위 밖 · 미집행)**: 상류 `14c22b93..origin/main`에 **미적용 Django 마이그레이션 1건** — `packages/shared/stocks/migrations/0019_analystgradechange.py`(`e276337f` SCB-CONTEXT-S2 등급 변경 원장). web(Next.js) 리빌드와 무관하므로 프론트 배포는 안전하나, **DB 쓰기·백엔드 sync는 이 슬라이스 승인 범위 밖**이라 손대지 않았다. api/worker 트리 sync + migrate 판단은 해당 트랙/병진 소관.
+- 채번 후보 추가: (e) **`lsof -ti:<port>`만으로 서빙 트리를 판별하면 클라이언트 소켓에 속는다** — 위 자기 정정 2. 런북 1장 "고아 단독 리스너 확인"에 `-sTCP:LISTEN` 명시 필요(OPS 트랙).
