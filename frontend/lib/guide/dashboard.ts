@@ -17,6 +17,12 @@ export const DASHBOARD_GUIDE: GuideScreen[] = [
       '지금 보는 숫자가 언제 만들어진 것인지 — 오래된 데이터면 배지가 먼저 말해준다',
     ],
     regions: [
+      // dashboard.tabs 등재 2026-09-22 (GUIDE-TABS-1 · 09-30 기한 해소)
+      {
+        anchor: 'dashboard.tabs',
+        title: '발견 / 시장 탭',
+        desc: '이 화면을 두 갈래로 나눕니다. [발견]은 오늘 개별 종목에서 잡힌 신호, [시장]은 그 신호들이 놓인 배경입니다. 같은 +3%도 시장이 오른 날과 내린 날의 의미가 다르므로, 신호가 애매할 때 [시장]으로 건너가 배경을 먼저 보는 것이 이 탭의 쓰임입니다. 오른쪽 끝에는 데이터 신선도 배지가 붙어 있습니다.',
+      },
       {
         anchor: 'dashboard.freshness',
         title: '데이터 신선도',
