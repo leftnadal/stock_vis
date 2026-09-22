@@ -88,7 +88,44 @@ class TestDigestWithNullTaskName:
         assert "failed" in str(out).lower()
         assert art.exists(), "발송 실패해도 산출물은 남아야 한다"
 
-    def test_no_failures_skips_everything(self):
-        """실패 0건이면 종전대로 조기 반환(동작 범위 불변)."""
+    def test_no_failures_skips_send(self, tmp_path, monkeypatch):
+        """실패 0건이면 **메일은 여전히 안 나간다**(발송 동작 불변).
+
+        ⚠ 산출물 경로를 monkeypatch 해야 한다 — 안 그러면 이 테스트가 운영
+        산출물(~/Library/Logs/stockvis/celery_error_digest.json)을 덮어쓴다.
+        """
+        import config.tasks as ct
+
+        monkeypatch.setattr(ct, "CELERY_DIGEST_ARTIFACT", tmp_path / "digest.json")
+        monkeypatch.setattr(ct.settings, "CELERY_ERROR_RECIPIENTS", ["x@example.com"], raising=False)
+
+        def _boom(*a, **k):  # 호출되면 실패 — 0건에 메일이 나가면 안 된다
+            raise AssertionError("실패 0건인데 메일을 보냈다")
+
+        monkeypatch.setattr(ct, "send_mail", _boom)
+
         out = send_celery_error_digest(days=1)
         assert "No errors" in str(out)
+
+    def test_artifact_written_when_no_failures(self, tmp_path, monkeypatch):
+        """★ HB-1-C1-GAP — 실패 0건인 날에도 산출물이 기록된다.
+
+        '할 일이 없었음'도 기록이다. 쓰지 않으면 정상일마다 age 만 늘어
+        신선도 임계(C-2 의 48h)가 정상 상태를 ERROR 로 뒤집는다
+        (2026-09-22 라이브 실측: 실패 0건 · age 68h · health ❌).
+        """
+        import datetime as _dt
+        import config.tasks as ct
+
+        art = tmp_path / "digest.json"
+        monkeypatch.setattr(ct, "CELERY_DIGEST_ARTIFACT", art)
+        monkeypatch.setattr(ct.settings, "CELERY_ERROR_RECIPIENTS", [], raising=False)
+
+        send_celery_error_digest(days=1)
+
+        assert art.exists(), "실패 0건이어도 '확인했다'는 기록은 남아야 한다"
+        d = json.loads(art.read_text(encoding="utf-8"))
+        assert d["failure_count"] == 0
+        assert d["by_task"] == {}
+        # 생성 시각 = '언제 확인했는가'의 증거. 파싱 가능해야 한다.
+        assert _dt.datetime.fromisoformat(d["generated_at"])

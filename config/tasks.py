@@ -87,7 +87,26 @@ def send_celery_error_digest(days=1):
     retry_count = retries.count()
 
     if failure_count == 0:
-        logger.info('Celery error digest: 에러 없음, 이메일 미발송')
+        # HB-1-C1-GAP: **'할 일이 없었음'도 기록이다.** 여기서 산출물을 쓰지 않고
+        # 돌아가면 정상일마다 age 만 늘어, 신선도 임계(C-2 의 48h)가 **정상 상태를
+        # ERROR 로 뒤집는다** — 2026-09-22 실측: 실패 0건인데 age 68h → health ❌.
+        # '오늘 확인했고 실패가 없었다(성공)' 와 '오늘 아예 안 돌았다(미실행)' 는
+        # 산출물로만 구분된다. 발송은 건드리지 않는다 — 0건에 메일을 보내지 않는
+        # 동작은 그대로다.
+        _write_digest_artifact({
+            'generated_at': timezone.now().isoformat(),
+            'window_days': days,
+            'failure_count': 0,
+            'new_failure_count': 0,
+            'ignored_failure_count': 0,
+            'retry_count': retry_count,
+            'by_task': {},
+            'body': (
+                f'신규 에러: 0건 / 재시도: {retry_count}건\n\n'
+                f'최근 {days}일 실패 없음 — 확인 기록만 남긴다(메일 미발송).\n'
+            ),
+        })
+        logger.info('Celery error digest: 에러 없음, 이메일 미발송 (산출물만 기록)')
         return 'No errors — email skipped'
 
     ignored_list = getattr(settings, 'CELERY_IGNORED_ERRORS', [])

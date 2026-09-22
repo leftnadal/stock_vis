@@ -735,6 +735,20 @@ class FMPClient:
             return data[0] if data else None
         return data if isinstance(data, dict) else None
 
+    def get_grades(self, symbol: str) -> List[Dict[str, Any]]:
+        """개별 애널리스트 등급 변경 사건 이력 (SCB-CONTEXT-S2).
+
+        API: GET /stable/grades?symbol={}. 응답 list → 그대로.
+        필드: symbol/date/gradingCompany/previousGrade/newGrade/action.
+        `grades-historical`(월별 카운트 추세)과 다른 엔드포인트 — 이쪽은 **사건 단위**다.
+
+        ★ 원천이 과거 전체를 매번 반환한다(실측 9심볼 6,137행·2012~현재). 소비측은
+          append가 아니라 멱등 upsert여야 한다(D-SCB-GRADES-KEY-1).
+        ★ FMPRateLimitError는 `_make_request`(일일/분 한도)에서 발생·재시도 제외 → 그대로 전파.
+        """
+        data = self._make_request("/stable/grades", {"symbol": symbol.upper()})
+        return data if isinstance(data, list) else []
+
     def get_grades_historical(
         self, symbol: str, limit: int = 12
     ) -> List[Dict[str, Any]]:
