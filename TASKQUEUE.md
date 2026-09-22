@@ -1898,7 +1898,8 @@
 
 ## GUIDE-ORPHAN-DASHTABS (2026-09-10 등재)
 
-- 🔴 **GUIDE-ORPHAN-DASHTABS** (@frontend — **소유: dashboard 앱 트랙**) — `dashboard.tabs` 앵커(`components/eod/DashboardTabs.tsx:28`, `006d48cf` DASH-TAB 09-09)가 가이드 데이터 미등재 = 고아. **기한 2026-09-30**까지 ⑴ `lib/guide/dashboard.ts`에 등재(문구 작성) 또는 ⑵ `data-guide` 속성 제거 중 하나. **미이행 시 `guideAnchors.test.ts`의 기한 테스트가 자동 RED**가 되어 전 랜딩을 막는다.
+- ✅ **GUIDE-ORPHAN-DASHTABS** — **종결 2026-09-22 (GUIDE-TABS-1, ⓐ 등재)**. `lib/guide/dashboard.ts`의 `dashboard.main` regions 맨 앞에 `dashboard.tabs` 등재(regions 5→6) + `PENDING_ANCHORS`에서 제거(같은 커밋 — 죽은 allowlist 가드가 강제). **`PENDING_ANCHORS` 잔여 1건** = `chainsight.backbone`(GUIDE-BACKBONE-DROP-1 소유, 동일 기한 09-30). 화면 컴포넌트 무접촉·`reviewStatus` confirmed 유지(야간 루브릭 잔류). 게이트 vitest 1,398 · pytest 5,582 · tsc 0 · health ❌0. ★`sv sync` 상신 대기(가이드 데이터는 FE 빌드 대상 — 리빌드 필요).
+  - <원 등재 내용> `dashboard.tabs` 앵커(`components/eod/DashboardTabs.tsx:28`, `006d48cf` DASH-TAB 09-09)가 가이드 데이터 미등재 = 고아. **기한 2026-09-30**까지 ⑴ `lib/guide/dashboard.ts`에 등재(문구 작성) 또는 ⑵ `data-guide` 속성 제거 중 하나. **미이행 시 `guideAnchors.test.ts`의 기한 테스트가 자동 RED**가 되어 전 랜딩을 막는다.
   - **ops는 문구를 쓰지 않는다**(소유 경계) — GUIDE-CS-GUARD-1D는 유예만 등록했고 `dashboard.ts`를 건드리지 않았다.
   - 기한 연장이 필요하면 **DECISIONS.md에 근거를 남긴 뒤** `until`을 갱신한다. 코드에서 조용히 날짜만 바꾸는 것은 금지 — 그 순간 구조가 장식이 된다.
   - 재발 맥락: `chainsight.backbone`(08-31)과 동일 패턴이 9일 만에 재발. 근본 처방은 게이트(OPS-FE-GATE-0 측정 완료) + [[GUIDE-COUPDATE-DOD]](지시서 템플릿 DoD).
