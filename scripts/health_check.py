@@ -908,6 +908,167 @@ def check_monitor_refresh_freshness() -> CheckResult:
 # WARN-only(FAIL 아님. 1주 클린 후 FAIL 승격은 별도 — 지금 승격 금지).
 # TASKQUEUE 제외: 큐는 설계상 장기 pending(💤/🕓 트리거 게이트) 보유 — ⏸️ 미사용이라 오탐 원천.
 # 거래일 캘린더 = issuance/execution-tree의 "달력일 임계로 주말 흡수" 관례 재사용(엄밀 NYSE 캘린더 부재).
+# 가격/지표 신선도 임계 — 1 거래일 초과부터 ⚠.
+# "1 거래일"을 달력일 3으로 흡수한다(금요일 판독 → 월요일 점검 = 3 달력일이 정상).
+# 근거: DIRECTIVE-PRICE-FRESH-1. 가드(ensure_price_freshness)는 DailyPrice만 보장하므로
+# EODSignal이 독립적으로 뒤처질 수 있고, 그 갭이 zone 판정·지표 판독값에 그대로 들어간다.
+PRICE_INPUT_STALE_DAYS = 3
+
+
+def _monitor_django():
+    """monitor 검사용 Django 부트스트랩. 실패 시 (None, 사유) — 비-런타임은 검사 대상 아님."""
+    try:
+        import os
+
+        import django
+
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+        django.setup()
+        return True, None
+    except Exception as e:  # noqa: BLE001 — 비-런타임 환경은 검사 대상 아님
+        return False, str(e)[:120]
+
+
+def check_price_input_freshness() -> CheckResult:
+    """활성 monitor 종목의 EODSignal ↔ DailyPrice 최신일 갭. [DIRECTIVE-PRICE-FRESH-1 B-1]
+
+    수집 층 점검. 두 소스는 신선도가 독립이며(가드는 DailyPrice만 보장), EODSignal이
+    뒤처지면 zone 판정이 묵은 종가를 본다 — 2026-09-17 TLN 거짓 발화의 입력이었다.
+    갭은 SP500 편입과 무관하고 종목 사이를 옮겨 다닌다(09-19 TLN/GOOGL → 09-22 GEV).
+    """
+    name = "가격 입력 신선도"
+    ok, err = _monitor_django()
+    if not ok:
+        return CheckResult(
+            name=name, status=OK,
+            detail="Django/DB 미가용 — 검사 생략(비-런타임 환경)", evidence=[err],
+        )
+    try:
+        from django.db.models import Max
+
+        from apps.monitor.models import Monitor
+        from packages.shared.stocks.models import DailyPrice, EODSignal
+
+        symbols = sorted(
+            set(
+                Monitor.objects.filter(scope="stock", current_state="active")
+                .values_list("target_ref", flat=True)
+            )
+        )
+    except Exception as e:  # noqa: BLE001 — 테이블 부재 등
+        return CheckResult(
+            name=name, status=WARN,
+            detail="monitor/가격 테이블 조회 실패 — 테이블 부재 가능",
+            evidence=[str(e)[:120]],
+        )
+
+    if not symbols:
+        return CheckResult(
+            name=name, status=OK,
+            detail="활성 stock Monitor 0건 — 검사 생략(관제 대상 없음)",
+        )
+
+    stale = []
+    for sym in symbols:
+        e = EODSignal.objects.filter(stock__symbol=sym).aggregate(x=Max("date"))["x"]
+        d = DailyPrice.objects.filter(stock__symbol=sym).aggregate(x=Max("date"))["x"]
+        if e is None or d is None:
+            stale.append(f"{sym}: EODSignal={e or '없음'} DailyPrice={d or '없음'} (한쪽 부재)")
+            continue
+        gap = abs((d - e).days)
+        if gap > PRICE_INPUT_STALE_DAYS:
+            older, newer = ("EODSignal", "DailyPrice") if e < d else ("DailyPrice", "EODSignal")
+            stale.append(f"{sym}: {gap}일 갭 ({older} {min(e, d)} < {newer} {max(e, d)})")
+
+    if stale:
+        return CheckResult(
+            name=name, status=WARN,
+            detail=(
+                f"{len(stale)}/{len(symbols)}종목 가격 소스 갭 {PRICE_INPUT_STALE_DAYS}일 초과 "
+                "— 묵은 종가가 zone 판정에 들어간다"
+            ),
+            evidence=stale,
+        )
+    return CheckResult(
+        name=name, status=OK,
+        detail=f"활성 {len(symbols)}종목 EODSignal↔DailyPrice 갭 ≤ {PRICE_INPUT_STALE_DAYS}일",
+    )
+
+
+def check_indicator_reading_freshness() -> CheckResult:
+    """활성 monitor 지표 판독값(IndicatorReading) 신선도. [DIRECTIVE-PRICE-FRESH-1 B-2]
+
+    이식 층 점검. B-1(수집 층)과 실패 지점이 다르다 — 가격이 도착해도 ingest가
+    밀리면 판독값만 묵는다. MonitorSnapshot.asof는 최신인데 구성 지표가 뒤처진 상태를
+    이 항목 없이는 아무도 못 본다(2026-09-22 실측: GEV asof 09-21, 지표 3종은 09-17).
+    """
+    name = "지표 판독 신선도"
+    ok, err = _monitor_django()
+    if not ok:
+        return CheckResult(
+            name=name, status=OK,
+            detail="Django/DB 미가용 — 검사 생략(비-런타임 환경)", evidence=[err],
+        )
+    try:
+        from django.db.models import Max
+        from django.db.models.functions import TruncDate
+
+        from apps.monitor.models import IndicatorReading, Monitor
+        from packages.shared.stocks.models import DailyPrice
+
+        monitors = list(Monitor.objects.filter(scope="stock", current_state="active"))
+        latest_trading = DailyPrice.objects.aggregate(x=Max("date"))["x"]
+    except Exception as e:  # noqa: BLE001 — 테이블 부재 등
+        return CheckResult(
+            name=name, status=WARN,
+            detail="monitor/판독값 테이블 조회 실패 — 테이블 부재 가능",
+            evidence=[str(e)[:120]],
+        )
+
+    if not monitors:
+        return CheckResult(
+            name=name, status=OK,
+            detail="활성 stock Monitor 0건 — 검사 생략(관제 대상 없음)",
+        )
+    if latest_trading is None:
+        return CheckResult(
+            name=name, status=WARN,
+            detail="DailyPrice 0건 — 최신 거래일 산정 불가",
+        )
+
+    stale, total = [], 0
+    for m in monitors:
+        for ind in m.indicators.filter(is_active=True):
+            total += 1
+            d = (
+                IndicatorReading.objects.filter(indicator=ind)
+                .annotate(dd=TruncDate("asof"))
+                .aggregate(x=Max("dd"))["x"]
+            )
+            if d is None:
+                stale.append(f"{m.target_ref}/{ind.source_key}: 판독값 0건")
+                continue
+            gap = (latest_trading - d).days
+            if gap > PRICE_INPUT_STALE_DAYS:
+                stale.append(f"{m.target_ref}/{ind.source_key}: {gap}일 뒤처짐(최신 {d})")
+
+    if stale:
+        return CheckResult(
+            name=name, status=WARN,
+            detail=(
+                f"{len(stale)}/{total}지표 판독값이 최신 거래일({latest_trading}) 대비 "
+                f"{PRICE_INPUT_STALE_DAYS}일 초과 — 스냅샷 asof가 최신이어도 구성 지표는 묵었다"
+            ),
+            evidence=stale,
+        )
+    return CheckResult(
+        name=name, status=OK,
+        detail=f"활성 {total}지표 판독값 최신 거래일({latest_trading}) 대비 ≤ {PRICE_INPUT_STALE_DAYS}일",
+    )
+
+
 PENDING_STALE_DAYS = 3
 PENDING_MARKER = "⏸️"
 PENDING_DELTA_MARKERS = ("RESOLVED", "LANDED", "SUPERSEDED", "해소 델타", "소화됨", "해소됨")
@@ -1639,6 +1800,8 @@ CHECKS = [
     check_issuance_log_freshness,
     check_execution_tree_alignment,
     check_monitor_refresh_freshness,
+    check_price_input_freshness,
+    check_indicator_reading_freshness,
     check_stale_pending_backannotation,
     check_runtime_check_log,
     check_weekly_firing_contract,

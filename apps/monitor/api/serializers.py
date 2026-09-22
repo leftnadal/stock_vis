@@ -98,8 +98,10 @@ class SwapHoldLogSerializer(serializers.ModelSerializer):
     """교체 검토 "보류" 클릭 이력 (RECON-SWAP-0813 PART 3-BE). 쓰기는
     /api/v1/monitor/swap-hold-logs/에서 — 횟수·누적일수는 조회 측(FE)이 이 로그를 집계."""
 
-    # 서버 계산 성과(스냅샷 시점 대비 DailyPrice 종가 변화, RECON-SWAP-0813 후속 —
+    # 서버 계산 성과(스냅샷 시점 대비 종가 변화, RECON-SWAP-0813 후속 —
     # FE "현재가 데이터 없음" 제거). 새 가격 API 없음(latest_close 재사용). null-safe.
+    # 종가 소스는 DailyPrice 단독이 아니다 — latest_close가 EODSignal·DailyPrice 중
+    # 더 최신 날짜 쪽을 고른다(DIRECTIVE-PRICE-FRESH-1).
     hold_performance_pct = serializers.SerializerMethodField()
     candidate_performance_pct = serializers.SerializerMethodField()
 
