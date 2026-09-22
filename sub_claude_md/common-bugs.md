@@ -2228,3 +2228,49 @@ is_stale = generated_at.date() != date.today()   # ← UTC date vs 로컬(KST) d
 **추적 한계**: 유입 경로는 **미규명**. 내 수리가 mtime을 덮었고, 쉘 히스토리·스크립트·에디터 잔재에 본체 `.env` 편집 흔적이 없었다. 구조적 이유 = **worktree 26개가 전부 본체 `.env`를 심링크로 가리킨다** — 어느 트리에서 편집해도 본체가 바뀌고 출처를 남기지 않는다.
 
 **교훈**: [[lesson_worker_sync_excludes_fe_prod_build]]·교훈 ④(트리 이동 ≠ 프로세스 교체)의 **환경변수판**이다. 같은 구조가 세 층에서 반복된다 — ⑴ FE 소스 vs prod 빌드 ⑵ 워커 트리 vs 메모리 적재 코드 ⑶ `.env` 파일 vs 프로세스 환경. 공통 규율: **"파일을 바꾸는 일"과 "그것을 들고 도는 프로세스를 갈아끼우는 일"은 별개이며, 후자를 하기 전까지 변경은 검증되지 않았다.**
+
+## 실패 알림 장치가 자기가 알려야 할 실패 때문에 죽는다 — `NotRegistered` → `task_name=NULL` → digest `sorted()` TypeError (채번 후보, HEARTBEAT-1 2026-09-19) `[infra][celery][harness]`
+
+**증상**: Celery 실패가 5일간(09-12~17) 아무에게도 도달하지 않았다. 원인이 둘로 겹쳐 있었다 — ⑴ SMTP 535로 발송 불가 ⑵ **`send_celery_error_digest` 자체가 `TypeError: '<' not supported between instances of 'str' and 'NoneType'`로 죽음**(`config/tasks.py:97`).
+
+**원인(사슬)**: beat가 쏘는 태스크명이 워커 등록명과 접두사가 달라(`rag_analysis.tasks.*` vs `services.rag_analysis.tasks.*`) `NotRegistered`가 난다. 워커는 **이름을 알 수 없으므로 `TaskResult.task_name`을 NULL로 저장**한다. digest가 `sorted(new_errors.keys())`로 태스크명을 정렬할 때 그 NULL이 섞여 `str < None` 비교로 죽는다. **즉 알려야 할 실패(NotRegistered)가 만든 레코드가, 그 실패를 알려줄 장치를 죽였다.** 자기참조 침묵이라 관측 신호가 하나도 남지 않는다.
+
+**해결**: ⑴ 정렬 키에 NULL 방어(`key=lambda t: t or ""`) — 집계·발송 로직은 건드리지 않는다. ⑵ **산출물을 발송과 분리**한다: `생성 → 파일 저장(atomic) → 발송`. 발송이 실패해도 요약은 남는다(`~/Library/Logs/stockvis/celery_error_digest.json`, DB 모델 신설 0). ⑶ health에 **TaskResult를 직접 집계하는** 항목을 두어 digest·이메일과 독립적으로 실패 건수가 보이게 한다. digest *생성* 실패만 ERROR로 본다 — 그건 감시 장치 자체의 고장이므로. ⑷ 임계는 즉시 박지 않는다(2주 관측 후) — 정상 국면을 경고로 오인한다.
+
+**교훈**: **알림 경로가 하나뿐이면 그 하나가 죽을 때 침묵한다.** "장치가 없다"가 아니라 "경로가 단일"인 것이 이번 사고의 본질이었다. 그리고 감시 장치는 **자기가 감시하는 대상의 이상 입력에 견뎌야 한다** — 실패 레코드로 죽는 실패 요약기는 감시가 아니다. cf. [[lesson_beat_dict_upsert_expires_dropped]](dict 삭제 ≠ DB 비활성 — 폐기된 잡이 DB에 고아로 남아 이 사슬의 출발점이 됐다).
+
+## 외부로 나가는 행위의 검증 기본값은 dry-run이다 — 지시서가 방법을 지정하지 않으면 실발송이 아니라 locmem으로 검증한다 (채번 후보, HEARTBEAT-1 마감 2026-09-19) `[harness][ops][infra]`
+
+**증상**: 알림 장치(digest)를 수리한 뒤 "동작하는가"를 확인하려고 태스크를 직접 실행했고, 그 결과 **실제 메일 3통이 수신자에게 발송**됐다. 검증 목적의 실행이 운영 발송과 구분되지 않았다.
+
+**원인**: 지시서가 **검증 방법을 지정하지 않았다**. "digest가 뜨는지 확인" 같은 지시는 관측 대상만 말하고 경로를 말하지 않는다. 실행자는 가장 직접적인 경로(운영 태스크 그대로 실행)를 고르게 되고, 그 경로에 외부 부수효과(SMTP 발송)가 붙어 있으면 검증이 곧 발송이 된다. **지시서 결함이며 실행자 과실이 아니다** — 다만 결함이 반복되지 않게 기본값을 규약으로 고정한다.
+
+**규율(기본값)**: 외부로 나가는 행위 — **메일 발송·웹훅·외부 API 쓰기·SMS/푸시·결제** — 를 검증할 때 **기본은 dry-run이다.**
+- 실제 발송으로 검증하려면 **지시서가 그렇게 하라고 명시**해야 한다.
+- 명시가 없으면 실행자는 **dry-run 경로로 검증하고, 그 사실을 보고에 적는다**(무엇을 억제했는지 포함).
+- 산출물이 발송과 분리된 설계(HEARTBEAT-1 C-1)면 **산출물만 확인**하는 것이 최우선 경로다.
+
+**메일 dry-run 표준 레시피** (Django · 실발송 0):
+```python
+from django.test.utils import override_settings
+with override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend'):
+    from config.tasks import send_celery_error_digest
+    print(send_celery_error_digest())
+```
+`mail.outbox`는 **테스트 러너 밖에서는 존재하지 않는다**(`AttributeError: module 'django.core.mail' has no attribute 'outbox'`) — 포획 건수를 세려면 `django.core.mail.backends.locmem.EmailBackend`의 `connection.test_outbox`를 쓰거나, 세지 말고 **산출물 파일로 검증**한다.
+
+**교훈**: 검증은 **관측 대상**과 **관측 경로**가 둘 다 지정돼야 실행 가능한 지시다. 경로를 비워두면 실행자는 부수효과가 가장 큰 경로를 고를 수 있다. 지시서 작성자는 "무엇을 볼 것인가"만큼 "어느 경로로 볼 것인가"를 적고, 실행자는 경로가 비었을 때 **부수효과가 없는 쪽으로 기울어 선택하고 상신**한다. cf. 이 파일 바로 앞 항목(HEARTBEAT-1 digest 사슬) · [[feedback_surface_await_disposition]]
+
+## 주기 작업의 산출물은 '할 일이 없었음'도 기록해야 한다 — 0건에 쓰지 않으면 '성공'과 '미실행'이 구분되지 않는다 (채번 후보, HB-1-C1-GAP 2026-09-22) `[infra][celery][harness]`
+
+**증상**: 실패가 **0건인 정상 상태**에서 health가 `❌ Celery 실패 요약 — 최근 24h 실패 0건 · digest 산출물 68h 미갱신 — 생성 실패 의심`으로 뒤집혔다. 시스템은 멀쩡했고, 오히려 **멀쩡해서** 경보가 울렸다.
+
+**원인**: `send_celery_error_digest`가 `failure_count == 0`이면 **산출물을 쓰기 전에 조기 반환**했다(`config/tasks.py:89`). 산출물은 "실패가 있었을 때"만 생겼고, 신선도(age)는 "마지막으로 실패가 있었던 때"를 가리켰다. 감시 쪽(C-2)은 그 age를 **"생성이 살아 있는가"**로 읽으므로, 실패가 없는 날이 이틀 이어지면 48h 임계를 넘어 ERROR가 된다. **관측 대상이 조용할수록 감시가 시끄러워지는 역전.**
+
+**해결**: 0건 경로에서도 `_write_digest_artifact`를 **조기 반환보다 앞에서** 호출한다. payload에 **`failure_count: 0`과 `generated_at`을 반드시 담는다** — 그것이 "오늘 확인했고 실패가 없었다"의 증거다. **발송 로직은 건드리지 않는다**(0건에 메일을 보내지 않는 동작은 유지). 테스트는 두 축으로 건다: ⑴ 0건에도 산출물이 기록되고 `failure_count == 0`·`generated_at` 파싱 가능 ⑵ 0건에 `send_mail`이 호출되면 실패(발송 불변 잠금).
+
+**⚠ 파생 함정**: 0건 경로가 산출물을 쓰게 되면, **산출물 경로를 monkeypatch 하지 않은 기존 테스트가 운영 산출물을 덮어쓴다**(`~/Library/Logs/stockvis/celery_error_digest.json`). 부수효과가 없던 경로에 부수효과가 생기면, 그 경로를 지나는 **모든 기존 테스트의 격리 가정을 재점검**해야 한다.
+
+**원칙(★HEARTBEAT-2 설계 전제)**: **주기 작업은 '아무 일도 없었음'을 기록하고 끝내야 한다.** 아무것도 안 쓰고 돌아가면 **'성공(확인했고 할 일이 없었다)'과 '미실행(아예 안 돌았다)'이 산출물 상에서 동일**해지고, 신선도 임계를 거는 순간 정상 상태가 경보로 뒤집힌다. 이는 주간·월간 잡에서 더 치명적이다 — 주간 잡이 '안 돌았다'와 '돌았는데 처리할 게 없었다'를 구분하려면 **매 실행마다 갱신되는 하트비트 기록**이 필요하다. 지시서 C-2의 결함이며 실행자 과실이 아니다.
+
+**교훈**: 상태 기록의 값어치는 **"이벤트가 있을 때"가 아니라 "검사를 수행할 때마다"** 갱신될 때 생긴다. **0건도 하나의 관측 결과다.** cf. 이 파일의 `pipeline_status "running"` 항목(종료 전이가 산출물 쓰기와 같은 트랜잭션에 묶여야 한다)과 같은 계열 — 그쪽은 **완료를 안 적어서**, 이쪽은 **빈 결과를 안 적어서** 상태 필드가 상수로 수렴했다.
