@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, ArrowDownRight, Network } from 'lucide-react';
 import { MiniSparkline } from './MiniSparkline';
@@ -7,6 +8,7 @@ import { NewsContextBadge } from './NewsContextBadge';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { AxisChipStrip } from './AxisChipStrip';
 import { buildTechnicalDetail } from './technicalLabels';
+import { formatCompactUSD } from './format';
 import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 import type { SignalStock } from '@/types/eod';
 
@@ -31,15 +33,8 @@ function formatVolume(volume: number): string {
 }
 
 // 체급($) 압축 표기 — 시총·거래대금. 정칙 ⑸(합류 배지-체급 문맥 결박).
-function formatCompactUSD(value: number | null | undefined): string | null {
-  if (value == null || value <= 0) return null;
-  if (value >= 1_000_000_000_000) return `$${(value / 1_000_000_000_000).toFixed(1)}T`;
-  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(0)}M`;
-  return `$${(value / 1_000).toFixed(0)}K`;
-}
 
-export function StockRow({ stock, axisCount = 0 }: StockRowProps) {
+function StockRowImpl({ stock, axisCount = 0 }: StockRowProps) {
   const isPositive = stock.change_percent >= 0;
   const marketCapText = formatCompactUSD(stock.market_cap);
   const dollarVolumeText = formatCompactUSD(stock.dollar_volume);
@@ -129,3 +124,12 @@ export function StockRow({ stock, axisCount = 0 }: StockRowProps) {
     </div>
   );
 }
+
+/**
+ * ⑦-3: 행 단위 memo. 비교는 `symbol` + `axisCount`(현 props 전량).
+ * ⚠ ⑦-2(래퍼 key에서 필터 상태 제거) **다음에** 의미가 있다 — remount가 남아 있으면
+ *   memo는 무의미하고 효과를 측정할 수도 없다.
+ */
+export const StockRow = memo(StockRowImpl, (prev, next) =>
+  prev.stock.symbol === next.stock.symbol && prev.axisCount === next.axisCount,
+);

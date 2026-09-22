@@ -70,6 +70,97 @@ export function applyScannerFilters(
   });
 }
 
+// ── 필터 옵션 카탈로그 (F5+F6) ──────────────────────────────────────────────
+// ⚠ `value`(임계 상수)는 **불변**이다. 살아 있는 필터는 임계를 고치는 게 아니라
+//   "이 옵션이 지금 몇 건을 거르는가"를 세서 라벨에 붙이고 죽은 옵션을 감출 뿐이다.
+//   ScannerFilterBar(표시)와 countByOption(집계)이 같은 목록을 보게 하려고 여기 둔다.
+
+export interface FilterOption<V> {
+  label: string;
+  value: V;
+}
+
+export const MKTCAP_OPTS: FilterOption<number>[] = [
+  { label: '시총 전체', value: 0 },
+  { label: '$1B+', value: 1_000_000_000 },
+  { label: '$10B+', value: 10_000_000_000 },
+  { label: '$50B+', value: 50_000_000_000 },
+];
+export const DVOL_OPTS: FilterOption<number>[] = [
+  { label: '거래대금 전체', value: 0 },
+  { label: '$1M+', value: 1_000_000 },
+  { label: '$10M+', value: 10_000_000 },
+  { label: '$50M+', value: 50_000_000 },
+];
+export const AXES_OPTS: FilterOption<number>[] = [
+  { label: '합류 전체', value: 0 },
+  { label: '2축+', value: 2 },
+  { label: '3축+', value: 3 },
+];
+
+/**
+ * 한 축의 값을 `value`로 **바꿔** 적용했을 때 남는 종목 수.
+ *
+ * **다른 축의 현재 선택은 유지한다** = "지금 상태에서 이걸 *더* 걸면 몇 개".
+ * 전체 목록 기준으로 세면 숫자는 안정적이지만 눌렀을 때 예상과 어긋난다 —
+ * 필터의 목적이 좁히기이므로 현재 상태 기준이 맞다.
+ *
+ * ⚠ `applyScannerFilters`를 **그대로 재사용**한다. 세는 규칙과 거르는 규칙이
+ *   어긋날 수 없게 하는 것이 이 함수의 요점이다. 판정식을 복제하면 값어치가 사라진다.
+ */
+export function countByOption<K extends keyof ScannerFilters>(
+  stocks: SignalStock[],
+  filters: ScannerFilters,
+  map: ConfluenceMap | undefined,
+  axis: K,
+  value: ScannerFilters[K],
+): number {
+  return applyScannerFilters(stocks, { ...filters, [axis]: value }, map).length;
+}
+
+/** 옵션별 잔여 수 전수. `base` = 현재 필터 결과 수(= 아무것도 안 거르는 옵션의 기준선). */
+export interface ScannerOptionCounts {
+  base: number;
+  marketCapMin: Record<number, number>;
+  dollarVolumeMin: Record<number, number>;
+  minAxes: Record<number, number>;
+  /** 키 '' = 섹터 전체(null). */
+  sector: Record<string, number>;
+  /** newsOnly=true 를 적용했을 때 남는 수. */
+  newsOnly: number;
+}
+
+/** 표시 계층이 쓸 개수 전수 집계. 호출부에서 useMemo 한 겹으로 감싼다. */
+export function buildOptionCounts(
+  stocks: SignalStock[],
+  filters: ScannerFilters,
+  map: ConfluenceMap | undefined,
+  sectors: string[],
+): ScannerOptionCounts {
+  const countAxis = <K extends keyof ScannerFilters>(
+    axis: K,
+    values: ScannerFilters[K][],
+  ): Record<string, number> => {
+    const out: Record<string, number> = {};
+    for (const v of values) out[String(v)] = countByOption(stocks, filters, map, axis, v);
+    return out;
+  };
+
+  return {
+    base: applyScannerFilters(stocks, filters, map).length,
+    marketCapMin: countAxis('marketCapMin', MKTCAP_OPTS.map((o) => o.value)),
+    dollarVolumeMin: countAxis('dollarVolumeMin', DVOL_OPTS.map((o) => o.value)),
+    minAxes: countAxis('minAxes', AXES_OPTS.map((o) => o.value)),
+    sector: {
+      '': countByOption(stocks, filters, map, 'sector', null),
+      ...Object.fromEntries(
+        sectors.map((sec) => [sec, countByOption(stocks, filters, map, 'sector', sec)]),
+      ),
+    },
+    newsOnly: countByOption(stocks, filters, map, 'newsOnly', true),
+  };
+}
+
 /** 선택 카드 종목에서 실제 등장하는 유효 섹터 목록(필터 드롭다운용·정렬). */
 export function availableSectors(stocks: SignalStock[]): string[] {
   const set = new Set<string>();

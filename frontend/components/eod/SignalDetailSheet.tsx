@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, TrendingUp, AlertTriangle, Layers, ArrowRight } from 'lucide-react';
 import { DetailSheetShell } from './DetailSheetShell';
@@ -9,6 +9,7 @@ import { ScannerFilterBar } from './ScannerFilterBar';
 import { getAxisCount, type ConfluenceMap } from './confluence';
 import {
   applyScannerFilters,
+  buildOptionCounts,
   sortScannerStocks,
   availableSectors,
   DEFAULT_SCANNER_FILTERS,
@@ -50,6 +51,12 @@ export function SignalDetailSheet({ card, onClose, confluenceMap }: SignalDetail
   const sectors = availableSectors(stocks);
   const filteredStocks = applyScannerFilters(stocks, filters, confluenceMap);
   const sortedStocks = sortScannerStocks(filteredStocks, sortBy, confluenceMap, rankLists);
+
+  // F5+F6: 옵션 20여 개 × 목록 수백 건 = 수천 회 비교 → useMemo 한 겹.
+  const optionCounts = useMemo(
+    () => buildOptionCounts(stocks, filters, confluenceMap, sectors),
+    [stocks, filters, confluenceMap, sectors],
+  );
 
   return (
     <DetailSheetShell
@@ -156,6 +163,7 @@ export function SignalDetailSheet({ card, onClose, confluenceMap }: SignalDetail
         sectors={sectors}
         resultCount={sortedStocks.length}
         totalCount={stocks.length}
+        optionCounts={optionCounts}
       />
 
       {/* 종목 리스트 */}
@@ -171,7 +179,10 @@ export function SignalDetailSheet({ card, onClose, confluenceMap }: SignalDetail
             필터 조건에 맞는 종목이 없습니다.
           </p>
         ) : (
-          <div key={`${sortBy}-${filters.minAxes}-${filters.sector}`} className="animate-fadeIn">
+          /* ⑦-2: 래퍼 key에 필터 상태를 넣지 않는다 — 넣으면 필터를 바꿀 때마다 전 행이
+             언마운트→재마운트되어 스파크라인이 통째로 다시 그려진다. 행 key(stock.symbol)가
+             안정적이므로 React가 행 단위로 재조정한다. animate-fadeIn은 남긴다(마운트 1회). */
+          <div className="animate-fadeIn">
             {sortedStocks.map((stock) => (
               <StockRow
                 key={stock.symbol}

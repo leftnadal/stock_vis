@@ -16,6 +16,40 @@ const stock = {
   technical: { rsi: 49.6, rsi_state: 'neutral', dist_52w_high_pct: 98.2, ma_state: 'above' },
 } as unknown as SignalStock;
 
+describe('RecommendationDetailSheet — 위험 섹션 (g 비대칭 해소)', () => {
+  it('risk가 있으면 드로어에 위험 섹션을 그린다', () => {
+    render(
+      <RecommendationDetailSheet
+        rec={rec({ risk: '밸류에이션 부담' })}
+        stock={stock}
+        axisCategories={['momentum']}
+        onClose={() => {}}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: '위험' })).toBeInTheDocument();
+    expect(screen.getByText('밸류에이션 부담')).toBeInTheDocument();
+  });
+
+  it('risk가 없으면 섹션 제목째 생략한다(정칙 ⑴ — "정보 없음" 금지)', () => {
+    render(
+      <RecommendationDetailSheet rec={rec()} stock={stock} axisCategories={['momentum']} onClose={() => {}} />,
+    );
+    expect(screen.queryByRole('heading', { name: '위험' })).not.toBeInTheDocument();
+  });
+
+  it('공백만 있는 risk도 생략한다', () => {
+    render(
+      <RecommendationDetailSheet
+        rec={rec({ risk: '   ' })}
+        stock={stock}
+        axisCategories={['momentum']}
+        onClose={() => {}}
+      />,
+    );
+    expect(screen.queryByRole('heading', { name: '위험' })).not.toBeInTheDocument();
+  });
+});
+
 describe('RecommendationDetailSheet — 3섹션', () => {
   it('한 줄 요약 · 세 관점 · 체급·기술을 그린다', () => {
     render(<RecommendationDetailSheet rec={rec()} stock={stock} axisCategories={['momentum', 'volume']} onClose={() => {}} />);

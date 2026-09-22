@@ -7,6 +7,7 @@ import { DIRECTION_BADGE } from '@/components/common/colorSemantics';
 import { DetailSheetShell } from './DetailSheetShell';
 import { PERSPECTIVE_LABEL, presentPerspectives } from './recommendation';
 import { validSector } from './scannerFilters';
+import { formatCompactUSD } from './format';
 import { buildTechnicalDetail } from './technicalLabels';
 import { SIGNAL_CATEGORY_LABELS } from '@/types/eod';
 import type { Recommendation, SignalCategory, SignalStock } from '@/types/eod';
@@ -21,13 +22,6 @@ interface RecommendationDetailSheetProps {
 }
 
 // 체급($) 압축 표기 — 시총·거래대금. (StockRow의 표기 규칙과 동일)
-function formatCompactUSD(value: number | null | undefined): string | null {
-  if (value == null || value <= 0) return null;
-  if (value >= 1_000_000_000_000) return `$${(value / 1_000_000_000_000).toFixed(1)}T`;
-  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(0)}M`;
-  return `$${(value / 1_000).toFixed(0)}K`;
-}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -56,6 +50,9 @@ export function RecommendationDetailSheet({
   const badgeClass = isBuy ? DIRECTION_BADGE.buy : DIRECTION_BADGE.sell;
 
   const summary = rec.thesis && rec.thesis.trim() ? rec.thesis : null;
+  // (g) 비대칭 해소: risk가 카드에는 있고 드로어에는 없었다. 드로어가 더 자세한 화면인데
+  //     카드에만 있는 정보가 있는 건 사이클 2 P3(카드 한 줄 + 드로어 전문)와 어긋난다.
+  const risk = rec.risk && rec.risk.trim() ? rec.risk : null;
   const perspectives = presentPerspectives(rec);
 
   const sector = stock && validSector(stock.sector) ? stock.sector : null;
@@ -153,6 +150,12 @@ export function RecommendationDetailSheet({
             {technical.length > 0 && (
               <p className="mt-1.5 text-xs text-gray-600 dark:text-gray-300">{technical.join(' · ')}</p>
             )}
+          </Section>
+        )}
+
+        {risk && (
+          <Section title="위험">
+            <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">{risk}</p>
           </Section>
         )}
 
