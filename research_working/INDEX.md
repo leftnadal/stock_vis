@@ -67,6 +67,14 @@ This file helps humans and agents find relevant Working Records. It is a locator
 - [`2026-09-19_record-reconstruction-evaluation-target_08.md`](records/2026-09-19_record-reconstruction-evaluation-target_08.md)
 - [`2026-09-19_record-reconstruction-evaluation-target_09.md`](records/2026-09-19_record-reconstruction-evaluation-target_09.md)
 
+## Bootstrap Diagnostic Review / Phase A
+
+**Topic:** Bootstrap Diagnostic Phase A Source Preflight  
+**Keywords:** bootstrap diagnostic, Phase A, Gold v0.2.2, frozen claims, source inventory, blind-first, selected route validity, shared miss, transfer canary, 배치 혼동, 사전 점검, 근거 경로  
+**Latest recorded state:** Checkpoint 01 verifies retrieved source bytes and corrects the proposed case counts to 14/13/16 for batch 8737355c. It distinguishes this later development batch from the original all-source_direct collapse, and proposes separating blind-first assessment from post-reveal selected-route audit, preserving evidential prior assessments, and checking agreement cases. The stored 40/3/0 result was recounted, not independently semantically revalidated. No new blind payload/model run or Phase B readiness is claimed; the existing historical transfer canary is not duplicated.  
+**Records:**
+- [`2026-09-25_bootstrap-diagnostic-phase-a-preflight_01.md`](records/2026-09-25_bootstrap-diagnostic-phase-a-preflight_01.md)
+
 ## Retrieval Rule
 
 When using this index:
