@@ -69,11 +69,12 @@ This file helps humans and agents find relevant Working Records. It is a locator
 
 ## Bootstrap Diagnostic Review / Phase A
 
-**Topic:** Bootstrap Diagnostic Phase A Source Preflight  
-**Keywords:** bootstrap diagnostic, Phase A, Gold v0.2.2, frozen claims, source inventory, blind-first, selected route validity, shared miss, transfer canary, 배치 혼동, 사전 점검, 근거 경로  
-**Latest recorded state:** Checkpoint 01 verifies retrieved source bytes and corrects the proposed case counts to 14/13/16 for batch 8737355c. It distinguishes this later development batch from the original all-source_direct collapse, and proposes separating blind-first assessment from post-reveal selected-route audit, preserving evidential prior assessments, and checking agreement cases. The stored 40/3/0 result was recounted, not independently semantically revalidated. No new blind payload/model run or Phase B readiness is claimed; the existing historical transfer canary is not duplicated.  
+**Topic:** Bootstrap Diagnostic Phase A Source Preflight and Input Visibility  
+**Keywords:** bootstrap diagnostic, Phase A, Gold v0.2.2, frozen claims, source inventory, blind-first, selected route validity, shared miss, transfer canary, post-reveal, batch barrier, work contract, 배치 혼동, 사전 점검, 근거 경로, 입력 공개, 사전 봉인  
+**Latest recorded state:** Checkpoint 01 corrects the source inventory to 14/13/16 and separates the later development batch from the original collapse. Checkpoint 02 materializes three blind input candidates and three operator-only reveal bases, preserves original source hints and evidential prior assessments, and specifies an all-blind-first batch barrier before post-reveal selected-route audit. Local reference checks pass 36/36; a second build matches 8/8 JSON files. These are not independent semantic or runtime-isolation checks. A maximum six-call execution envelope is only proposed: provider/model, cost and private-payload approval remain unresolved. No new model run, final provider request freeze, Phase B transition, or transfer-canary duplication is claimed.  
 **Records:**
 - [`2026-09-25_bootstrap-diagnostic-phase-a-preflight_01.md`](records/2026-09-25_bootstrap-diagnostic-phase-a-preflight_01.md)
+- [`2026-09-26_bootstrap-diagnostic-input-visibility_02.md`](records/2026-09-26_bootstrap-diagnostic-input-visibility_02.md)
 
 ## Retrieval Rule
 
